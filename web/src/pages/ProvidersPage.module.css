@@ -28,12 +28,6 @@
   gap: 16px;
 }
 
-.family-count {
-  color: var(--meta);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 .window-summary {
   display: inline-flex;
   align-items: center;
@@ -41,14 +35,14 @@
   gap: 4px 12px;
   margin-left: auto;
   color: var(--fg-2);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
 .window-label {
   color: var(--meta);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }

@@ -1,8 +1,7 @@
 import { CustomIconLibrary } from './CustomIconLibrary';
 import { shouldCloseIconPicker } from '../types/customIcons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Input, Tag, Empty, Segmented, theme } from 'antd';
-import { SearchOutlined } from './icons';
+import { Modal, Segmented, theme } from 'antd';
 import {
   LOBE_ICON_CATALOG,
   type LobeIconCatalogEntry,
@@ -10,6 +9,10 @@ import {
 import { LobeIcon } from './LobeIcon';
 import { useT } from '../i18n';
 import { useOverlayHistory } from '../hooks/useOverlayHistory';
+import { SearchInput } from './common/SearchInput';
+import { EmptyState } from './common/EmptyState';
+import { ToggleTag } from './common/Tag';
+import styles from './IconPickerModal.module.css';
 
 /**
  * ANTD_CONTAINER_ZINDEX_STEP is the step antd 6 reserves per container level
@@ -146,6 +149,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
       }}
       footer={null}
       width={720}
+      // antd's `styles` is the only route to the dialog body, which the module cannot name.
       styles={{
         body: { maxHeight: 'calc(100dvh - 180px)', overflowY: 'auto' },
       }}
@@ -153,7 +157,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
       zIndex={zIndex}
     >
       <Segmented
-        style={{ marginBottom: 16 }}
+        className={styles['source-tabs']}
         value={tab}
         disabled={isSelecting || isLibraryBusy}
         options={[
@@ -172,59 +176,50 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
         />
       ) : (
         <>
-          <div style={{ marginBottom: 16 }}>
-            <Input
-              prefix={<SearchOutlined style={{ color: 'var(--meta)' }} />}
-              placeholder={t('pro.search_icon_ph')}
+          <div className={styles['filters']}>
+            <SearchInput
+              label={t('pro.search_icon_ph')}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              allowClear
-              style={{ marginBottom: 12 }}
+              onChange={setSearch}
+              className={styles['search']}
               autoFocus
             />
 
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Tag.CheckableTag
+            <div className={styles['groups']}>
+              <ToggleTag
                 checked={selectedGroup === 'all'}
                 onChange={() => setSelectedGroup('all')}
               >
                 {t('common.all')} ({groupCounts.all})
-              </Tag.CheckableTag>
-              <Tag.CheckableTag
+              </ToggleTag>
+              <ToggleTag
                 checked={selectedGroup === 'provider'}
                 onChange={() => setSelectedGroup('provider')}
               >
                 {t('pro.group_providers')} ({groupCounts.provider})
-              </Tag.CheckableTag>
-              <Tag.CheckableTag
+              </ToggleTag>
+              <ToggleTag
                 checked={selectedGroup === 'model'}
                 onChange={() => setSelectedGroup('model')}
               >
                 {t('pro.group_models')} ({groupCounts.model})
-              </Tag.CheckableTag>
-              <Tag.CheckableTag
+              </ToggleTag>
+              <ToggleTag
                 checked={selectedGroup === 'application'}
                 onChange={() => setSelectedGroup('application')}
               >
                 {t('pro.group_apps')} ({groupCounts.application})
-              </Tag.CheckableTag>
+              </ToggleTag>
             </div>
           </div>
 
           <div
             ref={attachIconGrid}
-            style={{
-              maxHeight: 420,
-              overflowY: 'auto',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))',
-              gap: 10,
-              padding: '4px 2px',
-            }}
+            className={styles['grid']}
           >
             {filteredIcons.length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', padding: '40px 0' }}>
-                <Empty description={t('pro.no_icons_found')} />
+              <div className={styles['grid-empty']}>
+                <EmptyState title={t('pro.no_icons_found')} />
               </div>
             ) : (
               filteredIcons.map((item) => {
@@ -249,48 +244,15 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({
                         void selectIcon(item.id);
                       }
                     }}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                      padding: '10px 4px',
-                      borderRadius: 'var(--radius-sm, 4px)',
-                      border: isSelected
-                        ? '2px solid var(--accent)'
-                        : '1px solid var(--border)',
-                      background: isSelected
-                        ? 'color-mix(in srgb, var(--accent) 12%, var(--surface))'
-                        : 'var(--surface)',
-                      cursor: 'pointer',
-                      transition:
-                        'border-color var(--motion-fast), background-color var(--motion-fast)',
-                      userSelect: 'none',
-                    }}
+                    className={styles['tile']}
                     title={`${item.fullTitle} (${item.id})`}
                   >
                     {visibleIconIds.has(item.id) ? (
                       <LobeIcon iconId={item.id} size={28} loading="lazy" />
                     ) : (
-                      <div
-                        aria-hidden="true"
-                        style={{ width: 28, height: 28 }}
-                      />
+                      <div aria-hidden="true" className={styles['tile-placeholder']} />
                     )}
-                    <div
-                      style={{
-                        fontSize: 11,
-                        textAlign: 'center',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        width: '100%',
-                        padding: '0 4px',
-                        color: isSelected ? 'var(--accent)' : 'var(--fg)',
-                        fontWeight: isSelected ? 600 : 400,
-                      }}
-                    >
+                    <div className={styles['tile-name']}>
                       {item.title || item.id}
                     </div>
                   </div>

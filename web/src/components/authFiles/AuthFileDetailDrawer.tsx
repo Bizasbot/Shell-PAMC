@@ -1,8 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  Drawer,
-  Descriptions,
-  Tag,
   Tabs,
   Button,
   Typography,
@@ -18,7 +15,6 @@ import {
   DownloadOutlined,
   ExclamationCircleOutlined,
   CopyOutlined,
-  SearchOutlined,
   SyncOutlined,
 } from '../icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -55,6 +51,11 @@ import {
   readCredentialPolicyDraft,
   type CredentialPolicyDraft,
 } from './credentialPolicy';
+import { SearchInput } from '../common/SearchInput';
+import { SectionHeading } from '../common/SectionHeading';
+import { AppDrawer } from '../common/AppDrawer';
+import { Tag } from '../common/Tag';
+import { FactList } from '../common/FactList';
 
 const { Text } = Typography;
 
@@ -420,11 +421,11 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
   const statusBadge = file?.runtime_only ? (
     <Tag>{t('af.runtime_only_badge')}</Tag>
   ) : isDisabled ? (
-    <Tag color="error">{t('af.disabled')}</Tag>
+    <Tag tone="danger">{t('af.disabled')}</Tag>
   ) : isProblem ? (
-    <Tag color="warning">{t('af.status_problem')}</Tag>
+    <Tag tone="warn">{t('af.status_problem')}</Tag>
   ) : (
-    <Tag color="success">{t('af.enabled')}</Tag>
+    <Tag tone="success">{t('af.enabled')}</Tag>
   );
 
   const renderModelsContent = () => {
@@ -451,13 +452,10 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
     }
     return (
       <div className={styles['models-scroll']}>
-        <Input
-          allowClear
-          prefix={<SearchOutlined />}
+        <SearchInput
           value={modelFilter}
-          aria-label={t('omc.models_search_placeholder')}
-          onChange={(event) => setModelFilter(event.target.value)}
-          placeholder={t('omc.models_search_placeholder')}
+          onChange={setModelFilter}
+          label={t('omc.models_search_placeholder')}
           style={{ marginBottom: 12 }}
         />
         <Table<ManagementAuthFileModel>
@@ -504,10 +502,9 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
   };
 
   return (
-    <Drawer
+    <AppDrawer
       title={identity?.primary || t('af.drawer_title')}
-      closable={{ placement: 'end', 'aria-label': t('common.close') }}
-      size="large"
+      width="wide"
       open={open}
       onClose={handleAttemptClose}
     >
@@ -528,33 +525,27 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
                       <summary>{t('common.details')}</summary>
                       {/* Overview and identity */}
                       <div className={styles['drawer-section']}>
-                        <div className={styles['section-header']}>
-                          <h3 className={styles['section-title']}>{t('common.details')}</h3>
-                          {statusBadge}
-                        </div>
+                        <SectionHeading className={styles['section-header']} title={t('common.details')} extra={statusBadge} />
                         <div className={styles['section-body']}>
-                          <Descriptions column={{ xs: 1, sm: 2 }} size="small" bordered className={styles['overview-table']}>
-                            <Descriptions.Item label={t('af.detail_file_name')}>
-                              <span className="mono-num">{file.name}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t('af.detail_provider')}>
-                              <Tag color="purple">{file.type || file.provider || 'unknown'}</Tag>
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t('af.detail_auth_index')}>
-                              <span className="mono-num">{file.auth_index || '—'}</span>
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t('af.detail_status')}>
-                              {statusBadge}
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t('af.detail_identity')}>
-                              {identity?.primary || t('af.identity_missing')}
-                            </Descriptions.Item>
-                            <Descriptions.Item label={t('af.detail_total_requests')}>
-                              <span className="mono-num">
-                                {t('dash.success_n', { n: file.success })} · {t('dash.failure_n', { n: file.failed })}
-                              </span>
-                            </Descriptions.Item>
-                          </Descriptions>
+                          <FactList
+                            emphasis="quiet"
+                            facts={[
+                              { key: 'name', label: t('af.detail_file_name'), value: <span className="mono-num">{file.name}</span> },
+                              { key: 'provider', label: t('af.detail_provider'), value: <Tag>{file.type || file.provider || 'unknown'}</Tag> },
+                              { key: 'auth-index', label: t('af.detail_auth_index'), value: <span className="mono-num">{file.auth_index || '—'}</span> },
+                              { key: 'status', label: t('af.detail_status'), value: statusBadge },
+                              { key: 'identity', label: t('af.detail_identity'), value: identity?.primary || t('af.identity_missing') },
+                              {
+                                key: 'requests',
+                                label: t('af.detail_total_requests'),
+                                value: (
+                                  <span className="mono-num">
+                                    {t('dash.success_n', { n: file.success })} · {t('dash.failure_n', { n: file.failed })}
+                                  </span>
+                                ),
+                              },
+                            ]}
+                          />
                           {hasWarning && file.status_message && (
                             <Notice
                               tone="warning"
@@ -575,18 +566,17 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
 
                       {/* Quota Observations */}
                       <div className={styles['drawer-section']}>
-                        <div className={styles['section-header']}>
-                          <h3 className={styles['section-title']}>{t('af.quota_title')}</h3>
-                        </div>
+                        <SectionHeading className={styles['section-header']} title={t('af.quota_title')} />
                         <div className={styles['section-body']}>
                           {quotaSignals.length > 0 ? (
-                            <Descriptions column={1} size="small" bordered className={styles['overview-table']}>
-                              {quotaSignals.map(([k, v]) => (
-                                <Descriptions.Item key={k} label={k}>
-                                  <span className="mono-num">{v}</span>
-                                </Descriptions.Item>
-                              ))}
-                            </Descriptions>
+                            <FactList
+                              emphasis="quiet"
+                              facts={quotaSignals.map(([signal, reading]) => ({
+                                key: signal,
+                                label: signal,
+                                value: <span className="mono-num">{reading}</span>,
+                              }))}
+                            />
                           ) : (
                             <Text type="secondary">{t('af.quota_empty')}</Text>
                           )}
@@ -600,13 +590,14 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
               {
                 key: 'configuration',
                 forceRender: true,
-                label: <span>{t('omc.tab_configuration')}{isDirty && <Tag color="warning">{t('cfg.dirty_bar_unsaved')}</Tag>}</span>,
+                label: <span className={styles['tab-label']}>{t('omc.tab_configuration')}{isDirty && <Tag tone="warn">{t('cfg.dirty_bar_unsaved')}</Tag>}</span>,
                 children: (
                   <div className={styles['drawer-section']}>
-                    <div className={styles['section-header']}>
-                      <h3 className={styles['section-title']}>{t('af.fields_title')}</h3>
-                      {isDirty && <Tag color="warning">{t('cfg.dirty_bar_unsaved')}</Tag>}
-                    </div>
+                    <SectionHeading
+                      className={styles['section-header']}
+                      title={t('af.fields_title')}
+                      extra={isDirty && <Tag tone="warn">{t('cfg.dirty_bar_unsaved')}</Tag>}
+                    />
                     <div className={styles['section-body']}>
                       {safeFieldsFailed && (
                         <LoadFailure
@@ -786,10 +777,11 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
                 disabled: saveMutation.isPending,
                 children: (
                   <div className={styles['drawer-section']}>
-                    <div className={styles['section-header']}>
-                      <h3 className={styles['section-title']}>{t('af.models_title')}</h3>
-                      {models.length > 0 && <Tag>{filteredModels.length}</Tag>}
-                    </div>
+                    <SectionHeading
+                      className={styles['section-header']}
+                      title={t('af.models_title')}
+                      count={models.length > 0 ? filteredModels.length : undefined}
+                    />
                     <div className={styles['section-body']}>
                       {renderModelsContent()}
                     </div>
@@ -826,6 +818,6 @@ export const AuthFileDetailDrawer: React.FC<AuthFileDetailDrawerProps> = ({
           </div>
         </div>
       ) : null}
-    </Drawer>
+    </AppDrawer>
   );
 };

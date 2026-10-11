@@ -3,11 +3,9 @@ import {
   Button,
   Checkbox,
   Col,
-  Drawer,
   Form,
   Input,
   InputNumber,
-  Popconfirm,
   Row,
   Select,
 } from 'antd';
@@ -33,6 +31,8 @@ import { modelOptionsProblem } from './modelOptions';
 import { ModelPickerModal } from './ModelPickerModal';
 import { SecretInput } from '../common/SecretInput';
 import styles from './ProviderEditorDrawer.module.css';
+import { AppDrawer } from '../common/AppDrawer';
+import { ConfirmAction } from '../common/ConfirmAction';
 
 type ProviderManagement = ReturnType<typeof useProviderManagement>;
 
@@ -237,21 +237,15 @@ export function ProviderEditorDrawer({
 
   return (
 
-      <Drawer
-        title={
-          <div>
-            <div className={styles['drawer-title']}>
-              {editingProvider
-                ? `${t('common.edit')} · ${familyDisplayNames[formFamily] || formFamily}`
-                : `${t('pro.add_provider')} · ${familyDisplayNames[formFamily] || formFamily}`}
-            </div>
-          </div>
-        }
+      <AppDrawer
+        title={editingProvider
+          ? `${t('common.edit')} · ${familyDisplayNames[formFamily] || formFamily}`
+          : `${t('pro.add_provider')} · ${familyDisplayNames[formFamily] || formFamily}`}
         open={providerDrawerOpen}
         onClose={handleCloseProviderDrawer}
-        size="large"
+        width="wide"
         footer={
-          <div className={styles['drawer-footer']}>
+          <>
             <Button onClick={handleCloseProviderDrawer}>
               {t('common.cancel')}
             </Button>
@@ -264,7 +258,7 @@ export function ProviderEditorDrawer({
             >
               {t('common.save')}
             </Button>
-          </div>
+          </>
         }
       >
         <Form layout="vertical">
@@ -519,7 +513,7 @@ export function ProviderEditorDrawer({
                               onClick={() => toggleKeyExpanded(k.id)}
                             />
                             {formKeys.length > 1 && (
-                              <Popconfirm
+                              <ConfirmAction
                                 title={t('pro.delete_key_confirm')}
                                 onConfirm={() => {
                                   setFormKeys((prev) => prev.filter((item) => item.id !== k.id));
@@ -529,9 +523,7 @@ export function ProviderEditorDrawer({
                                     return next;
                                   });
                                 }}
-                                okText={t('common.confirm')}
-                                cancelText={t('common.cancel')}
-                                okButtonProps={{ danger: true }}
+                                isDanger
                               >
                                 <Button
                                   type="text"
@@ -540,7 +532,7 @@ export function ProviderEditorDrawer({
                                   icon={<CloseOutlined />}
                                   aria-label={`${t('common.delete')}: ${t('pro.key_label', { n: idx + 1 })}`}
                                 />
-                              </Popconfirm>
+                              </ConfirmAction>
                             )}
                           </div>
                         </div>
@@ -936,6 +928,6 @@ export function ProviderEditorDrawer({
           onApply={handleAddPickedModels}
           onClose={() => setIsModelPickerOpen(false)}
         />
-      </Drawer>
+      </AppDrawer>
   );
 }

@@ -2,7 +2,7 @@ import { ActionMenu } from '../components/common/ActionMenu';
 import { useTimeZone } from '../utils/TimeZoneProvider';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Empty, Select, Tooltip, Typography } from 'antd';
+import { Button, Select, Tooltip } from 'antd';
 import { HistoryOutlined, KeyOutlined, QuestionCircleOutlined, RightOutlined } from '../components/icons';
 import { PageHeader } from '../components/common/PageHeader';
 import { LoadingRegion, Placeholder } from '../components/common/Placeholder';
@@ -53,8 +53,9 @@ import {
   type DashboardSeriesPoint,
 } from '../types/dashboard';
 import { LoadFailure } from '../components/feedback';
-
-const { Text } = Typography;
+import { EmptyState } from '../components/common/EmptyState';
+import { Panel } from '../components/common/Panel';
+import '../components/dashboard/dashboard.css';
 
 const PLAIN_NUMBER_FORMAT = new Intl.NumberFormat('en');
 
@@ -300,18 +301,18 @@ export const DashboardPage: React.FC = () => {
         <PageHeader title={t('nav.dashboard')} subtitle={t('dash.loading')} />
         <LoadingRegion className="dashboard-grid">
           {[0, 1].map((index) => (
-            <Card key={`wide-${index}`} className="dashboard-tile is-wide" styles={{ body: { padding: 20 } }}>
+            <Panel key={`wide-${index}`} className="dashboard-tile is-wide">
               <Placeholder width="28%" row={index} className="placeholder-line is-meta" />
               <Placeholder width="42%" height={34} row={index + 1} className="tile-placeholder-hero" />
               <Placeholder width="100%" height={44} row={index + 2} className="tile-placeholder-spark" />
-            </Card>
+            </Panel>
           ))}
           {[0, 1, 2, 3].map((index) => (
-            <Card key={`small-${index}`} className="dashboard-tile" styles={{ body: { padding: 20 } }}>
+            <Panel key={`small-${index}`} className="dashboard-tile">
               <Placeholder width="46%" row={index + 2} className="placeholder-line is-meta" />
               <Placeholder width="58%" height={24} row={index + 3} className="tile-placeholder-value" />
               <Placeholder width="72%" row={index + 4} className="placeholder-line is-meta" />
-            </Card>
+            </Panel>
           ))}
         </LoadingRegion>
       </div>
@@ -375,7 +376,7 @@ export const DashboardPage: React.FC = () => {
       )}
 
       <div className="dashboard-grid">
-        <Card className="dashboard-tile is-wide" styles={{ body: { padding: 20 } }}>
+        <Panel className="dashboard-tile is-wide">
           <div className="tile-head">
             <div className="tile-label">{t('dash.total_requests')}</div>
             <Button
@@ -411,9 +412,9 @@ export const DashboardPage: React.FC = () => {
             label={formatTrendTime}
             format={formatRequests}
           />
-        </Card>
+        </Panel>
 
-        <Card className="dashboard-tile is-wide" styles={{ body: { padding: 20 } }}>
+        <Panel className="dashboard-tile is-wide">
           <div className="tile-label">{t('dash.total_tokens')}</div>
           <div className="tile-value" title={formatTokensFull(data.tokens.total)}>
             <RollingNumber readout={resolveTokenFlowReadout(data.tokens.total, tokenStyle)} />
@@ -435,9 +436,9 @@ export const DashboardPage: React.FC = () => {
             format={formatTokens}
             formatExact={formatExactTokens}
           />
-        </Card>
+        </Panel>
 
-        <Card className="dashboard-tile" styles={{ body: { padding: 20 } }}>
+        <Panel className="dashboard-tile">
           <div className="tile-label">{t('dash.rpm')}</div>
           <div className="tile-value is-small">
             <RollingNumber readout={resolveCountFlowReadout(data.metrics.rpm)} />
@@ -455,9 +456,9 @@ export const DashboardPage: React.FC = () => {
             label={formatTrendTime}
             format={formatRequestRate}
           />
-        </Card>
+        </Panel>
 
-        <Card className="dashboard-tile" styles={{ body: { padding: 20 } }}>
+        <Panel className="dashboard-tile">
           <div className="tile-label">{t('dash.tpm')}</div>
           <div className="tile-value is-small" title={data.metrics.tpm == null ? undefined : `${formatTokensFull(data.metrics.tpm)} ${t('dash.unit_tokens_per_min')}`}>
             <RollingNumber readout={resolveTokenRateFlowReadout(data.metrics.tpm)} />
@@ -477,9 +478,9 @@ export const DashboardPage: React.FC = () => {
             format={formatTokenRateLabel}
             formatExact={formatExactTokenRate}
           />
-        </Card>
+        </Panel>
 
-        <Card className="dashboard-tile" styles={{ body: { padding: 20 } }}>
+        <Panel className="dashboard-tile">
           <div className="tile-label">
             {t('dash.cache_rate')}
             <Tooltip title={t('dash.cache_rate_hint')}>
@@ -512,9 +513,9 @@ export const DashboardPage: React.FC = () => {
             format={formatTokens}
             formatExact={formatExactTokens}
           />
-        </Card>
+        </Panel>
 
-        <Card className="dashboard-tile" styles={{ body: { padding: 20 } }}>
+        <Panel className="dashboard-tile">
           <div className="tile-label">
             {t('dash.total_cost')}
             <Tooltip title={t('dash.cost_hint')}>
@@ -547,7 +548,7 @@ export const DashboardPage: React.FC = () => {
             label={formatTrendTime}
             format={formatTrendCost}
           />
-        </Card>
+        </Panel>
       </div>
 
       {/* Between the six KPI tiles and the activity grid: the same window the tiles describe, read at
@@ -579,16 +580,7 @@ export const DashboardPage: React.FC = () => {
           response must not claim the deployment has never been used. */}
       {!data.coverage.has_usage && data.partial_errors.length === 0 && (
         <div className="terminal-panel dashboard-empty">
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <span>
-                {t('dash.empty_title')}
-                <br />
-                <Text type="secondary">{t('dash.empty_desc')}</Text>
-              </span>
-            }
-          />
+          <EmptyState title={t('dash.empty_title')} description={t('dash.empty_desc')} />
         </div>
       )}
 

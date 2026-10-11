@@ -1,11 +1,13 @@
 import React from 'react';
-import { Empty, Pagination, Table } from 'antd';
+import { Table } from 'antd';
 import type { TableProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useIsPhoneViewport } from '../../hooks/useIsPhoneViewport';
 import { PageLoading } from './PageLoading';
 import { PhoneRow } from './PhoneRow';
 import { phoneRowFields, renderedCell } from './phoneRowFields';
+import { EmptyState } from './EmptyState';
+import { Pager } from './Pager';
 
 export interface ResponsiveListPhoneLayout {
   /** The column drawn as the row's headline. */
@@ -85,7 +87,7 @@ export function ResponsiveList<T extends object>({
     if (list && list.getBoundingClientRect().top < 0) list.scrollIntoView({ block: 'start' });
   };
 
-  const empty = isBlocked ? null : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />;
+  const empty = isBlocked ? null : <EmptyState size="compact" title={emptyText} />;
 
   if (!isPhone) {
     return (
@@ -128,15 +130,8 @@ export function ResponsiveList<T extends object>({
           />
         );
       })}
-      {pageSize !== false && dataSource.length > pageSize && (
-        <Pagination
-          size="small"
-          simple
-          current={safePage}
-          pageSize={pageSize}
-          total={dataSource.length}
-          onChange={changePage}
-        />
+      {pageSize !== false && (
+        <Pager variant="stepped" page={safePage} pageSize={pageSize} total={dataSource.length} onChange={changePage} />
       )}
     </div>
   );

@@ -16,8 +16,23 @@
  * - an information-only dialog, `modal.warning/error/info/success` or `Modal.*` of the same
  *   (a confirmation is still `modal.confirm`; a result is a toast).
  *
- * The same resolution guards the console's one on/off control: antd's `Switch` is refused
- * everywhere, because `components/common/Switch` is drawn without it (docs/design.md, Switch).
+ * The same resolution guards the shared components that replace an antd one outright
+ * (docs/design.md, Shared primitives):
+ *
+ * - `Switch` is refused everywhere, because `components/common/Switch` is drawn without it;
+ * - `Empty` is refused everywhere, because `components/common/EmptyState` is;
+ * - `Tag` is refused everywhere, because `components/common/Tag` is;
+ * - `Drawer` is refused outside `components/common/AppDrawer` and the two sheets that are not side
+ *   panels - the navigation sheet and the time-range sheet (`PRIMITIVE_OWNERS`);
+ * - `Popconfirm` is refused outside `components/common/ConfirmAction`, which fixes the cancel
+ *   label and colours a destructive confirmation;
+ * - `Card` is refused outside `components/common/Panel`, which keeps the inset in the stylesheet
+ *   where the phone rules can reach it;
+ * - `Descriptions` is refused everywhere, because `components/common/FactList` is the console's
+ *   label/value list;
+ * - `Pagination` is refused outside `components/common/Pager`, which hides itself on one page and
+ *   never offers a page-size menu;
+ * - `Progress` is refused everywhere, because `components/common/Meter` draws a reading.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,6 +42,17 @@ import { fileURLToPath } from 'node:url';
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ts = createRequire(path.join(DEFAULT_ROOT, 'web', 'package.json'))('typescript');
 const FEEDBACK_MODULE = 'web/src/components/feedback/';
+/** The files allowed to hold the raw antd component a shared primitive is built on. */
+const PRIMITIVE_OWNERS = {
+  'raw-drawer': [
+    'web/src/components/common/AppDrawer.tsx',
+    'web/src/components/common/AppLayout.tsx',
+    'web/src/components/common/timeRange/TimeRangePicker.tsx',
+  ],
+  'raw-popconfirm': ['web/src/components/common/ConfirmAction.tsx'],
+  'raw-card': ['web/src/components/common/Panel.tsx'],
+  'raw-pagination': ['web/src/components/common/Pager.tsx'],
+};
 
 function lineOf(source, index) {
   return source.slice(0, index).split('\n').length;
@@ -47,6 +73,22 @@ export function findViolations(source) {
       violations.push({ line, rule: 'raw-alert', message: 'import `Notice` or `LoadFailure` from components/feedback instead of antd `Alert`' });
     } else if (kind === 'Switch') {
       violations.push({ line, rule: 'raw-switch', message: 'import `Switch` from components/common/Switch instead of antd' });
+    } else if (kind === 'Empty') {
+      violations.push({ line, rule: 'raw-empty', message: 'import `EmptyState` from components/common/EmptyState instead of antd `Empty`' });
+    } else if (kind === 'Tag') {
+      violations.push({ line, rule: 'raw-tag', message: 'import `Tag` from components/common/Tag instead of antd' });
+    } else if (kind === 'Popconfirm') {
+      violations.push({ line, rule: 'raw-popconfirm', message: 'import `ConfirmAction` from components/common/ConfirmAction instead of antd `Popconfirm`' });
+    } else if (kind === 'Card') {
+      violations.push({ line, rule: 'raw-card', message: 'import `Panel` from components/common/Panel instead of antd `Card`' });
+    } else if (kind === 'Descriptions') {
+      violations.push({ line, rule: 'raw-descriptions', message: 'import `FactList` from components/common/FactList instead of antd `Descriptions`' });
+    } else if (kind === 'Pagination') {
+      violations.push({ line, rule: 'raw-pagination', message: 'import `Pager` from components/common/Pager instead of antd `Pagination`' });
+    } else if (kind === 'Progress') {
+      violations.push({ line, rule: 'raw-progress', message: 'import `Meter` from components/common/Meter instead of antd `Progress`' });
+    } else if (kind === 'Drawer') {
+      violations.push({ line, rule: 'raw-drawer', message: 'import `AppDrawer` from components/common/AppDrawer instead of antd `Drawer`' });
     } else if (kind === 'message' || kind === 'notification') {
       violations.push({ line, rule: 'raw-toast', message: `use \`useToast\` instead of \`${kind}\` from ${origin}` });
     }
@@ -78,7 +120,7 @@ export function findViolations(source) {
   }
 
   function memberKind(owner, name) {
-    if (owner === 'antd' && ['Modal', 'App', 'Alert', 'Switch', 'message', 'notification'].includes(name)) return name;
+    if (owner === 'antd' && ['Modal', 'App', 'Alert', 'Switch', 'Empty', 'Tag', 'Drawer', 'Popconfirm', 'Card', 'Descriptions', 'Pagination', 'Progress', 'message', 'notification'].includes(name)) return name;
     if (owner === 'app') {
       if (name === 'modal') return 'Modal';
       if (name === 'message' || name === 'notification') return name;
@@ -152,16 +194,17 @@ export function runCheck({ projectRoot = DEFAULT_ROOT, output = console } = {}) 
     const relative = path.relative(projectRoot, file).split(path.sep).join('/');
     if (relative.startsWith(FEEDBACK_MODULE)) continue;
     for (const violation of findViolations(fs.readFileSync(file, 'utf8'))) {
+      if (PRIMITIVE_OWNERS[violation.rule]?.includes(relative)) continue;
       failures.push({ file: relative, ...violation });
     }
   }
   if (failures.length > 0) {
-    output.error('Feedback surfaces bypassed (docs/design.md, Feedback surfaces):');
+    output.error('Feedback surfaces or shared primitives bypassed (docs/design.md, Feedback surfaces and Shared primitives):');
     for (const failure of failures) {
       output.error(`  ${failure.file}:${failure.line} [${failure.rule}] ${failure.message}`);
     }
   } else {
-    output.log('Feedback surfaces: every toast and inline notice goes through components/feedback.');
+    output.log('Feedback surfaces: every toast and inline notice goes through components/feedback, and every switch, tag, empty state, panel, fact list, pager, meter, side panel and anchored confirmation through its shared component.');
   }
   return failures;
 }

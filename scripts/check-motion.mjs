@@ -106,7 +106,7 @@ const EXCEPTIONS = [
   },
   {
     kind: 'duration',
-    file: 'index.css',
+    file: 'components/dashboard/dashboard.css',
     selector: '.heatmap-progress::after',
     property: 'animation',
     why: 'The heatmap panel\u2019s own indeterminate re-read bar: 1200ms is its period, not a transition between two states, and §7 freezes it under reduced motion rather than shortening it.',
@@ -120,7 +120,7 @@ const EXCEPTIONS = [
   },
   {
     kind: 'layout',
-    file: 'index.css',
+    file: 'components/config/config.css',
     selector: '.settings-tls-body',
     property: 'grid-template-rows',
     why: 'A disclosure. Expanding and collapsing an accordion reflows by definition, and the grid 0fr/1fr technique is the least costly form of it; the alternative is an accordion that snaps open, which reads as broken.',
@@ -134,21 +134,21 @@ const EXCEPTIONS = [
   },
   {
     kind: 'layout',
-    file: 'index.css',
+    file: 'components/config/config.css',
     selector: '.config-dirty-bar-portal',
     property: 'inset-inline-start',
     why: 'The floating save bar is centred in the content column, and collapsing the sider resizes that column. Encoding the shift as a transform would mean recomputing a delta outside CSS; here the custom property already carries it.',
   },
   {
     kind: 'layout',
-    file: 'pages/UsageEventsPage.css',
+    file: 'components/usage/RequestFoldControls.css',
     selector: '.request-collapsible-header',
     property: 'grid-template-rows',
     why: 'A disclosure, and a large one: this block is the request page\u2019s own header and its whole filter toolbar, folded away so a reader can scroll it out of the way. The grid 0fr/1fr technique folds it from its own height, as `.settings-tls-body` does. Its `margin` rides along in the same declaration for the same reason.',
   },
   {
     kind: 'layout',
-    file: 'pages/UsageEventsPage.css',
+    file: 'components/usage/RequestFoldControls.css',
     selector: '.request-collapsible-header',
     property: 'margin',
     why: 'Part of the same disclosure: collapsing the header to zero height still leaves its box gap, and the negative margin is what takes that back.',

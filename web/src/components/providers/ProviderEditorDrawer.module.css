@@ -1,18 +1,3 @@
-/* ── drawer head and foot ────────────────────────────────────────────────── */
-
-.drawer-title {
-  color: var(--fg);
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.drawer-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 4px 0;
-}
-
 /* ── brand mark ──────────────────────────────────────────────────────────── */
 
 .icon-card {
@@ -52,13 +37,13 @@
 .icon-label {
   margin-bottom: 2px;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .icon-name {
   overflow: hidden;
   color: var(--fg);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -74,7 +59,7 @@
 
 .label-hint {
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 400;
 }
 
@@ -85,7 +70,7 @@
 .field-hint {
   margin-top: 4px;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .flag-list {
@@ -107,7 +92,7 @@
 .flag-desc {
   margin: 2px 0 0 24px;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 /* ── collapsible groups (`EditorSection`) ───────────────────────────────── */
@@ -140,21 +125,19 @@
 }
 
 .section-title {
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
 .section-count {
   margin-left: 8px;
-  color: var(--meta);
   font-weight: 400;
-  font-variant-numeric: tabular-nums;
 }
 
 .section-chevron {
   display: inline-flex;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .section-body {
@@ -172,7 +155,7 @@
 
 .section-note {
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .section-note-accent {
@@ -230,7 +213,7 @@
 
 .item-title {
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
@@ -238,7 +221,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--fg-2);
-  font-size: 12.5px;
+  font-size: var(--text-md);
   letter-spacing: .02em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -263,7 +246,7 @@
   display: block;
   margin-bottom: 6px;
   color: var(--fg);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 500;
 }
 
@@ -282,7 +265,7 @@
 
 .option-problem {
   color: var(--danger);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 /* The checkboxes close the row, so the list's own bottom margin would double its padding. */
@@ -316,7 +299,7 @@
 .policy-desc {
   margin-top: 6px;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 /* ── custom headers ─────────────────────────────────────────────────────── */
@@ -347,7 +330,7 @@
   gap: 8px;
   padding: 0 12px 6px;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
@@ -375,7 +358,7 @@
 
 .model-suffix {
   color: var(--meta);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* A thinking level is a toggle drawn as a tile: the accent edge and a tint mixed from the accent
@@ -418,5 +401,5 @@
 
 .level-value {
   color: var(--meta);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }

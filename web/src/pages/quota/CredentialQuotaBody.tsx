@@ -1,6 +1,6 @@
 import { useTimeZone } from '../../utils/TimeZoneProvider';
 import React from 'react';
-import { Button, Popconfirm, Tag } from 'antd';
+import { Button } from 'antd';
 import { SyncOutlined, ThunderboltOutlined } from '../../components/icons';
 import { useT } from '../../i18n';
 import type { QuotaItem } from '../../types/quota';
@@ -10,6 +10,9 @@ import { orderQuotaWindows } from './quotaWindowSelection';
 import { quotaStatusTag } from './quotaStatusTag';
 import styles from './QuotaPresentation.module.css';
 import { Notice } from '../../components/feedback';
+import { SectionHeading } from '../../components/common/SectionHeading';
+import { Tag } from '../../components/common/Tag';
+import { ConfirmAction } from '../../components/common/ConfirmAction';
 
 interface CredentialQuotaBodyProps {
   item: QuotaItem;
@@ -106,10 +109,10 @@ export const CredentialQuotaBody: React.FC<CredentialQuotaBodyProps> = ({
       <div className={styles['quota-status-row']}>
         {quotaStatusTag(item, t)}
         {!item.capabilities?.refresh_supported && (
-          <Tag style={{ margin: 0 }}>{t('omc.quota_unsupported')}</Tag>
+          <Tag>{t('omc.quota_unsupported')}</Tag>
         )}
         {item.recommendation?.action === 'reauth' && (
-          <Tag color="warning" style={{ margin: 0 }}>{t('omc.reauthenticate')}</Tag>
+          <Tag tone="warn">{t('omc.reauthenticate')}</Tag>
         )}
       </div>
 
@@ -201,9 +204,7 @@ export const CredentialQuotaBody: React.FC<CredentialQuotaBodyProps> = ({
 
       {item.reset_credits && creditRows.length > 0 && (
         <div className={styles.section}>
-          <div className={styles['section-title']}>
-            {t('quota.reset_expiry_title_zoned', { zone: formatGmtOffsetLabel(new Date(nowMS)) })}
-          </div>
+          <SectionHeading level="label" as="div" title={t('quota.reset_expiry_title_zoned', { zone: formatGmtOffsetLabel(new Date(nowMS)) })} />
           <div className={styles['reset-list']}>
             {creditRows.map((credit, index) => (
               <div className={styles['reset-row']} key={credit.id || index}>
@@ -218,7 +219,7 @@ export const CredentialQuotaBody: React.FC<CredentialQuotaBodyProps> = ({
       )}
 
       <div className={styles.section}>
-        <div className={styles['section-title']}>{t('quota.windows_title')}</div>
+        <SectionHeading level="label" as="div" title={t('quota.windows_title')} />
         <div className={styles['windows-list']}>
           {windows.length > 0 ? (
             renderWindowRows(windows)
@@ -258,13 +259,11 @@ export const CredentialQuotaBody: React.FC<CredentialQuotaBodyProps> = ({
         <div className={styles['card-meta-time']}>{formatObservedAgo(item.observed_at_ms, nowMS, t)}</div>
         <div className={styles['card-actions']}>
           {canRedeem && (
-            <Popconfirm
+            <ConfirmAction
               title={t('quota.redeem_credit_confirm_title')}
               description={t('quota.redeem_credit_confirm_desc')}
               onConfirm={() => onRedeemCredit?.(item.auth_index)}
-              okText={t('common.confirm')}
-              cancelText={t('common.cancel')}
-              okButtonProps={{ danger: true }}
+              isDanger
             >
               <Button
                 size="small"
@@ -274,7 +273,7 @@ export const CredentialQuotaBody: React.FC<CredentialQuotaBodyProps> = ({
               >
                 {t('quota.btn_reset_quota')}
               </Button>
-            </Popconfirm>
+            </ConfirmAction>
           )}
           {onRefresh && (
             <Button

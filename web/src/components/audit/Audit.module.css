@@ -29,12 +29,6 @@
   gap: 16px;
 }
 
-.category-count {
-  color: var(--meta);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 .audit-alert {
   margin-bottom: 16px;
 }
@@ -67,13 +61,13 @@
 .audit-day-head h2 {
   margin: 0;
   color: var(--fg);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
 .audit-day-count {
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .audit-row {
@@ -93,7 +87,7 @@
 
 .audit-time {
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -117,7 +111,7 @@
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-md);
 }
 
 .audit-action {
@@ -139,7 +133,7 @@
   background: var(--surface);
   color: var(--fg-2);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-sm);
   line-height: 20px;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -149,7 +143,7 @@
 .audit-meta,
 .audit-none {
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .audit-footer {
@@ -157,7 +151,7 @@
   justify-content: center;
   padding: 4px 0 8px;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 /* ── the entry Drawer ─────────────────────────────────────────────────────── */
@@ -198,11 +192,6 @@
 
 .drawer-section-title {
   margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .drawer-section :global(.fact-list-row) dd {
@@ -210,15 +199,9 @@
   overflow-wrap: anywhere;
 }
 
-.drawer-footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .audit-mono {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .audit-copyable {
@@ -283,7 +266,7 @@
 
 .phone-entry-result {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .phone-entry-meta {
@@ -301,7 +284,7 @@
 .phone-entry-chevron {
   flex-shrink: 0;
   color: var(--meta);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

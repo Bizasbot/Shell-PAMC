@@ -1,6 +1,6 @@
 import type React from 'react';
 import clsx from 'clsx';
-import { Button, Popconfirm, Tag, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { Switch } from '../common/Switch';
 import { DeleteOutlined, EditOutlined, EyeOutlined } from '../icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -24,6 +24,9 @@ import {
   providerModelCount,
   type ProviderTraffic,
 } from './providerOverview';
+import { Tag } from '../common/Tag';
+import { ConfirmAction } from '../common/ConfirmAction';
+import { Meter } from '../common/Meter';
 
 type ProviderManagement = ReturnType<typeof useProviderManagement>;
 
@@ -278,9 +281,7 @@ export function ProviderTable({
               <span className={styles['traffic-requests']}>{t('pro.traffic_requests', { n: row.total.toLocaleString() })}</span>
               <span className={clsx(styles['traffic-rate'], styles[`tone-${tone}`])}>{`${rate.toFixed(1)}%`}</span>
             </div>
-            <div className={clsx('dashboard-meter', styles['traffic-meter'])} aria-hidden="true">
-              <span className={styles[`meter-${tone}`]} style={{ width: `${Math.max(0, Math.min(100, rate))}%` }} />
-            </div>
+            <Meter className={styles['traffic-meter']} value={rate} color={`var(--${tone === 'neutral' ? 'meta' : tone})`} />
             {row.failure > 0 && (
               <span className={styles['traffic-failed']}>{t('pro.traffic_failed', { n: row.failure.toLocaleString() })}</span>
             )}
@@ -355,12 +356,10 @@ export function ProviderTable({
               aria-label={`${t('common.edit')}: ${record.name}`}
             />
           </Tooltip>
-          <Popconfirm
+          <ConfirmAction
             title={t('pro.delete_provider_confirm')}
             onConfirm={() => deleteProviderMutation.mutate(record.id)}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-            okButtonProps={{ danger: true }}
+            isDanger
             disabled={isDemo}
           >
             <Tooltip title={isDemo ? t('demo.blocked') : t('common.delete')}>
@@ -374,7 +373,7 @@ export function ProviderTable({
                 aria-label={`${t('common.delete')}: ${record.name}`}
               />
             </Tooltip>
-          </Popconfirm>
+          </ConfirmAction>
         </div>
       ),
     },

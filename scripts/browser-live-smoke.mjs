@@ -316,24 +316,24 @@ async function main() {
   const yamlLen = (await yamlEditor.inputValue()).length;
   await yamlEditor.fill((await yamlEditor.inputValue()) + '\n# acceptance-test-comment\n');
   await page.waitForTimeout(400);
-  const dirtyTag = await page.locator('.config-source-toolbar .ant-tag').innerText();
+  const dirtyTag = await page.locator('.config-source-toolbar .tag').innerText();
   await page.locator('.config-header-actions button', { hasText: '刷新' }).click();
   await page.waitForTimeout(300);
   await page.locator('.ant-popconfirm .ant-btn-primary, .ant-popover .ant-btn-primary').click();
   await page.waitForTimeout(600);
-  const cleanTag = await page.locator('.config-source-toolbar .ant-tag').innerText();
+  const cleanTag = await page.locator('.config-source-toolbar .tag').innerText();
   check('配置源码按需加载并支持脏状态保护与重载', `len=${yamlLen} dirtyTag=${dirtyTag} cleanTag=${cleanTag}`,
     yamlLen > 1000 && dirtyTag.includes('已修改') && cleanTag.includes('已同步'));
 
   // The plugin manager renders the gateway's own plugin list (or its empty state).
   await page.goto(`${appURL}/plugins`, { waitUntil: 'domcontentloaded' });
-  await page.locator('[data-plugin-panel="installed"], .plugins-page .ant-empty').first().waitFor({ timeout: 10000 });
+  await page.locator('[data-plugin-panel="installed"], .plugins-page .empty-state').first().waitFor({ timeout: 10000 });
   const pluginRows = await page.locator('[data-plugin-panel="installed"] article[data-plugin-id]').count();
   const pluginsResponse = await page.request.get(`${appURL}/api/v1/management/plugins`);
   const pluginsBody = pluginsResponse.ok() ? await pluginsResponse.json() : undefined;
   // A body without a plugin array is a broken answer, not an empty list.
   const pluginsListed = Array.isArray(pluginsBody?.plugins) ? pluginsBody.plugins.length : -1;
-  const pluginsEmptyShown = (await page.locator('.plugins-page .ant-empty').count()) > 0;
+  const pluginsEmptyShown = (await page.locator('.plugins-page .empty-state').count()) > 0;
   // The installed list is not paged: every plugin CPA reports is a row.
   const pluginsMatch = pluginsListed === 0 ? pluginsEmptyShown : pluginRows === pluginsListed;
   check('插件管理页渲染 CPA 插件列表', `rows=${pluginRows} listed=${pluginsListed}`, pluginsListed >= 0 && pluginsMatch);

@@ -2,7 +2,7 @@ import { FilterDisclosure } from '../common/FilterDisclosure';
 import { ActionMenu } from '../common/ActionMenu';
 import { useTimeZone } from '../../utils/TimeZoneProvider';
 import React from 'react';
-import { Button, Input, Segmented, Select, Tooltip } from 'antd';
+import { Button, Segmented, Select, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import dayjs from '../../utils/time';
@@ -19,7 +19,6 @@ import {
   RightOutlined,
   RobotOutlined,
   SafetyCertificateOutlined,
-  SearchOutlined,
   SettingOutlined,
   ThunderboltOutlined,
 } from '../icons';
@@ -51,6 +50,9 @@ import { AuditEventDrawer } from './AuditEventDrawer';
 import styles from './Audit.module.css';
 import { useToast } from '../feedback';
 import { LoadFailure } from '../feedback';
+import { SearchInput } from '../common/SearchInput';
+import { Toolbar } from '../common/Toolbar';
+import { Count } from '../common/Count';
 
 /** How long typing settles before the search asks the server. */
 const SEARCH_SETTLE_MS = 300;
@@ -365,15 +367,12 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ title, filters, onFilter
         }))}
       />
 
-      <div className={clsx('logs-toolbar', styles.toolbar)}>
-        <Input
-          allowClear
+      <Toolbar variant="ruled" className={clsx('logs-toolbar', styles.toolbar)}>
+        <SearchInput
           className={styles['audit-search']}
-          prefix={<SearchOutlined aria-hidden="true" />}
-          placeholder={t('audit.search_placeholder')}
-          aria-label={t('audit.search_placeholder')}
+          label={t('audit.search_placeholder')}
           value={searchDraft}
-          onChange={(event) => setSearchDraft(event.target.value)}
+          onChange={setSearchDraft}
         />
         <FilterDisclosure activeLabel={[
           category ? t(`audit.cat.${category}`) : '',
@@ -391,7 +390,7 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ title, filters, onFilter
                 label: (
                   <span className={styles['category-option']}>
                     <span>{t(`audit.cat.${name}`)}</span>
-                    {hasCounts && <span className={styles['category-count']}>{facets.categories[name] ?? 0}</span>}
+                    {hasCounts && <Count>{facets.categories[name] ?? 0}</Count>}
                   </span>
                 ),
               })),
@@ -422,7 +421,7 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ title, filters, onFilter
             </Button>
           )}
         </FilterDisclosure>
-      </div>
+      </Toolbar>
 
       {isBlocked && (
         <LoadFailure

@@ -1,6 +1,6 @@
 import { useTimeZone } from '../../utils/TimeZoneProvider';
 import React from 'react';
-import { Button, Collapse, Drawer, Input, InputNumber, Popconfirm, Segmented } from 'antd';
+import { Button, Collapse, Input, InputNumber, Segmented } from 'antd';
 import { ParagraphPlaceholder } from '../common/ContentPlaceholder';
 import dayjs from '../../utils/time';
 import clsx from 'clsx';
@@ -33,6 +33,8 @@ import { PRICING_QUERY_KEYS } from './pricingQueries';
 import styles from './Pricing.module.css';
 import { useToast } from '../feedback';
 import { LoadFailure, Notice } from '../feedback';
+import { AppDrawer } from '../common/AppDrawer';
+import { ConfirmAction } from '../common/ConfirmAction';
 
 export interface PriceEditorDrawerProps {
   model: string;
@@ -255,38 +257,33 @@ export const PriceEditorDrawer: React.FC<PriceEditorDrawerProps> = ({ model, ini
   );
 
   const footer = (
-    <div className={styles['drawer-footer']}>
-      <span className={styles['drawer-footer-note']}>{t('pricing.editor.forward_note')}</span>
-      <div className={styles['drawer-footer-actions']}>
+    <>
         {current && (
-          <Popconfirm
+          <ConfirmAction
             title={t('pricing.delete_confirm', { model })}
-            okText={t('pricing.editor.remove')}
-            okButtonProps={{ danger: true }}
-            cancelText={t('common.cancel')}
+            confirmLabel={t('pricing.editor.remove')}
+            isDanger
             onConfirm={() => remove.mutate()}
           >
             <Button danger type="text" loading={remove.isPending}>{t('pricing.editor.remove')}</Button>
-          </Popconfirm>
+          </ConfirmAction>
         )}
         <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button type="primary" disabled={!canSave} loading={save.isPending} onClick={() => save.mutate()} data-testid="pricing-editor-save">
           {t('common.save')}
         </Button>
-      </div>
-    </div>
+    </>
   );
 
   return (
-    <Drawer
+    <AppDrawer
       title={title}
-      size={600}
       open={isOpen}
       onClose={onClose}
       footer={footer}
+      footerStart={t('pricing.editor.forward_note')}
       destroyOnHidden
       className={styles.drawer}
-      closable={{ 'aria-label': t('common.close') }}
       data-testid="pricing-editor"
     >
       {detail.isLoading || mode === null ? (
@@ -495,7 +492,7 @@ export const PriceEditorDrawer: React.FC<PriceEditorDrawerProps> = ({ model, ini
           />
         </div>
       )}
-    </Drawer>
+    </AppDrawer>
   );
 };
 

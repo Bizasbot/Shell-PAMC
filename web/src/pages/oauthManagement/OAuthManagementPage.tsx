@@ -5,9 +5,6 @@ import {
   App as AntdApp,
   Button,
   Dropdown,
-  Empty,
-  Input,
-  Pagination,
   Select,
   Space,
 } from 'antd';
@@ -65,6 +62,10 @@ import {
 import styles from './OAuthManagementPage.module.css';
 import { PageHeader } from '../../components/common/PageHeader';
 import { LoadFailure, Notice, useToast } from '../../components/feedback';
+import { SearchInput } from '../../components/common/SearchInput';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Toolbar } from '../../components/common/Toolbar';
+import { Pager } from '../../components/common/Pager';
 
 interface OAuthManagementViewPreference {
   pageSize: 12 | 24 | 48;
@@ -697,15 +698,12 @@ export const OAuthManagementPage: React.FC = () => {
         onDelete={() => void actions.batchDelete(selectedRecords)}
       />
 
-      <div className={styles.toolbar}>
+      <Toolbar className={styles.toolbar}>
         <div className={styles.search}>
-          <Input
-            prefix={<SearchOutlined />}
+          <SearchInput
             value={searchValue}
-            allowClear
-            aria-label={t('af.search_ph')}
-            placeholder={t('af.search_ph')}
-            onChange={(event) => setSearchValue(event.target.value)}
+            label={t('af.search_ph')}
+            onChange={setSearchValue}
           />
         </div>
         <Button
@@ -743,7 +741,7 @@ export const OAuthManagementPage: React.FC = () => {
             <Button icon={<DownOutlined />} disabled={visibleRecords.length === 0} aria-label={t('common.more')} />
           </Dropdown>
         </Space.Compact>
-      </div>
+      </Toolbar>
       {isFiltersOpen && (
         <div id="oauth-collection-filters" className={styles['advanced-filters']}>
           <div className={styles['filter-field']}>
@@ -817,10 +815,7 @@ export const OAuthManagementPage: React.FC = () => {
         </LoadingRegion>
       ) : visibleRecords.length === 0 ? (
         <div className={`terminal-panel ${styles.empty}`}>
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={records.length === 0 ? t('af.empty_all') : t('af.empty_filter')}
-          />
+          <EmptyState title={records.length === 0 ? t('af.empty_all') : t('af.empty_filter')} />
         </div>
       ) : (
         <>
@@ -892,16 +887,13 @@ export const OAuthManagementPage: React.FC = () => {
               options={[12, 24, 48].map((size) => ({ value: size, label: t('af.page_size_n', { n: size }) }))}
             />
 
-            {visibleRecords.length > pageSize && (
-              <Pagination
-                current={page}
-                pageSize={pageSize}
-                total={visibleRecords.length}
-                showSizeChanger={false}
-                showQuickJumper
-                onChange={(nextPage) => setSearch({ page: nextPage === 1 ? null : nextPage })}
-              />
-            )}
+            <Pager
+              page={page}
+              pageSize={pageSize}
+              total={visibleRecords.length}
+              hasQuickJumper
+              onChange={(nextPage) => setSearch({ page: nextPage === 1 ? null : nextPage })}
+            />
           </div>
         </>
       )}

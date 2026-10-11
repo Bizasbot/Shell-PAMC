@@ -45,7 +45,7 @@
   flex-wrap: wrap;
   gap: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -64,10 +64,6 @@
 .keys-search {
   width: 260px;
   max-width: 100%;
-}
-
-.keys-search-icon {
-  color: var(--muted);
 }
 
 /* Loading and failure states take the rows' own inset, so the surface does not change shape

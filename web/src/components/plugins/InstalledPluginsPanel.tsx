@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button, Dropdown, Empty, Input, Popconfirm, Tooltip } from 'antd';
+import { Button, Dropdown, Tooltip } from 'antd';
 import { Switch } from '../common/Switch';
 import { PageLoading } from '../common/PageLoading';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { DeleteOutlined, ExternalLinkOutlined, GithubOutlined, MoreOutlined, SearchOutlined, SettingOutlined, ShopOutlined } from '../icons';
+import { DeleteOutlined, ExternalLinkOutlined, GithubOutlined, MoreOutlined, SettingOutlined, ShopOutlined } from '../icons';
 import { api, apiErrorCode, describeError } from '../../api/client';
 import { useT } from '../../i18n';
 import { pluginDisplayName, type PluginItem, type StorePluginItem } from '../../types/plugin';
@@ -14,6 +14,10 @@ import { waitForPluginRuntime } from './pluginRuntime';
 import { formatPluginVersion, PluginLogo, PluginMeta } from './PluginParts';
 import styles from './Plugins.module.css';
 import { useToast } from '../feedback';
+import { SearchInput } from '../common/SearchInput';
+import { EmptyState } from '../common/EmptyState';
+import { ConfirmAction } from '../common/ConfirmAction';
+import { Toolbar } from '../common/Toolbar';
 
 interface InstalledPluginsPanelProps {
   plugins: PluginItem[];
@@ -114,33 +118,27 @@ export function InstalledPluginsPanel({
 
   if (plugins.length === 0) {
     return (
-      <Empty
-        className={styles.empty}
-        description={t('plugin.installed_empty')}
-      >
+      <EmptyState className={styles.empty} title={t('plugin.installed_empty')}>
         <Button type="primary" icon={<ShopOutlined />} onClick={onBrowseStore}>
           {t('plugin.browse_store')}
         </Button>
-      </Empty>
+      </EmptyState>
     );
   }
 
   return (
     <div data-plugin-panel="installed">
-      <div className={styles.toolbar}>
-        <Input
-          allowClear
+      <Toolbar>
+        <SearchInput
           className={styles.search}
-          prefix={<SearchOutlined />}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t('plugin.search_installed')}
-          aria-label={t('plugin.search_installed')}
+          onChange={setQuery}
+          label={t('plugin.search_installed')}
         />
-      </div>
+      </Toolbar>
 
       {visible.length === 0 ? (
-        <Empty className={styles.empty} description={t('plugin.search_empty')} />
+        <EmptyState className={styles.empty} title={t('plugin.search_empty')} />
       ) : (
         <div className={styles['installed-list']}>
           {visible.map((plugin) => {
@@ -230,7 +228,7 @@ export function InstalledPluginsPanel({
                       />
                     </Tooltip>
                     {pendingDeleteId === plugin.id ? (
-                      <Popconfirm
+                      <ConfirmAction
                         open
                         title={t('plugin.delete_confirm_title', { name })}
                         description={t('plugin.delete_confirm_desc')}
@@ -242,12 +240,11 @@ export function InstalledPluginsPanel({
                         onOpenChange={(isOpen) => {
                           if (!isOpen) setPendingDeleteId(null);
                         }}
-                        okText={t('plugin.delete')}
-                        cancelText={t('common.cancel')}
-                        okButtonProps={{ danger: true }}
+                        confirmLabel={t('plugin.delete')}
+                        isDanger
                       >
                         {moreButton}
-                      </Popconfirm>
+                      </ConfirmAction>
                     ) : (
                       <Dropdown
                         trigger={['click']}

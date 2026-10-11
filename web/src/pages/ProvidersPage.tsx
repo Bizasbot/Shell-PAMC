@@ -2,9 +2,9 @@ import { FilterDisclosure } from '../components/common/FilterDisclosure';
 import { ActionMenu } from '../components/common/ActionMenu';
 import React, { useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Input, Select } from 'antd';
+import { Button, Select } from 'antd';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { PlusOutlined, SearchOutlined } from '../components/icons';
+import { PlusOutlined } from '../components/icons';
 import { PageHeader } from '../components/common/PageHeader';
 import { RefreshButton } from '../components/common/RefreshButton';
 import { StatTiles } from '../components/common/StatTiles';
@@ -36,6 +36,9 @@ import {
 } from '../components/providers/providerOverview';
 import { api } from '../api/client';
 import { LoadFailure, useToast } from '../components/feedback';
+import { SearchInput } from '../components/common/SearchInput';
+import { Toolbar } from '../components/common/Toolbar';
+import { Count } from '../components/common/Count';
 
 /**
  * The window the list's traffic column counts. It is the key list's window too, so the two pages
@@ -283,15 +286,12 @@ export const ProvidersPage: React.FC = () => {
           }))}
         />
 
-        <div className="logs-toolbar">
-          <Input
-            allowClear
+        <Toolbar variant="ruled" className="logs-toolbar">
+          <SearchInput
             className={styles['provider-search']}
-            prefix={<SearchOutlined />}
-            placeholder={t('pro.search_placeholder')}
-            aria-label={t('pro.search_placeholder')}
+            label={t('pro.search_placeholder')}
             value={filters.search}
-            onChange={(event) => updateFilters({ search: event.target.value })}
+            onChange={(text) => updateFilters({ search: text })}
           />
           <FilterDisclosure activeLabel={filters.family !== 'all' ? familyDisplayNames[filters.family] ?? filters.family : undefined}>
             <Select
@@ -307,7 +307,7 @@ export const ProvidersPage: React.FC = () => {
                   label: (
                     <span className={styles['family-option']}>
                       <span>{familyDisplayNames[family] ?? family}</span>
-                      <span className={styles['family-count']}>{overview.familyCounts[family] ?? 0}</span>
+                      <Count>{overview.familyCounts[family] ?? 0}</Count>
                     </span>
                   ),
                 })),
@@ -336,7 +336,7 @@ export const ProvidersPage: React.FC = () => {
               <span>{trafficQuery.isPending ? '…' : t('pro.traffic_unknown')}</span>
             )}
           </div>
-        </div>
+        </Toolbar>
       </section>
 
       <ProviderTable

@@ -1,11 +1,11 @@
 import { useTimeZone } from '../../utils/TimeZoneProvider';
 import React from 'react';
-import { Button, Descriptions, Drawer, Empty, Modal, Tabs, Tooltip } from 'antd';
+import { Button, Modal, Tabs, Tooltip } from 'antd';
+import { FactList } from '../common/FactList';
 import { ParagraphPlaceholder } from '../common/ContentPlaceholder';
 import {
   ArrowRightOutlined,
   NonStreamOutlined,
-  CopyOutlined,
   DownloadOutlined,
   DownOutlined,
   SwapOutlined,
@@ -18,7 +18,6 @@ import dayjs from '../../utils/time';
 import { api, ApiError } from '../../api/client';
 import { useT } from '../../i18n';
 import { isDemoMode } from '../../types/demoMode';
-import { copyText } from '../../utils/clipboard';
 import { maskKeyText } from '../../utils/maskKey';
 import { useTokenDisplayStyle } from '../../types/tokenDisplayContext';
 import { ModelMark } from '../ModelMark';
@@ -39,6 +38,11 @@ import { useOverlayHistory } from '../../hooks/useOverlayHistory';
 import { CostBreakdownView } from '../pricing/CostBreakdownView';
 import { useToast } from '../feedback';
 import { LoadFailure, Notice } from '../feedback';
+import { EmptyState } from '../common/EmptyState';
+import { AppDrawer } from '../common/AppDrawer';
+import { CopyButton } from '../common/CopyButton';
+import './UsageEventDrawer.css';
+import './requestMarks.css';
 
 export interface UsageEventDrawerProps {
   eventId: number | null;
@@ -101,11 +105,9 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
   const missing = <span className="terminal-muted">{t('events.not_captured')}</span>;
   const value = (text: string | null | undefined) => text || missing;
   const fields = (items: Array<[string, React.ReactNode]>) => (
-    <Descriptions
-      size="small"
-      column={1}
-      colon={false}
-      items={items.map(([label, children], index) => ({ key: index, label, children }))}
+    <FactList
+      emphasis="quiet"
+      facts={items.map(([label, content], index) => ({ key: String(index), label, value: content }))}
     />
   );
   const section = (title: string, content: React.ReactNode) => (
@@ -114,13 +116,6 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
       {content}
     </section>
   );
-  const copy = async (text: string) => {
-    if (await copyText(text)) {
-      toast.success(t('res.copied'));
-      return;
-    }
-    toast.error(t('events.copy_failed'));
-  };
   const download = async () => {
     if (eventId == null || !event?.request_id) return;
     setDownloading(true);
@@ -226,13 +221,12 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
   const streamPercent = latency > 0 && streamTime > 0 ? Math.min(100 - ttftPercent, Math.max(2, (streamTime / latency) * 100)) : 0;
 
   return (
-    <Drawer
+    <AppDrawer
       title={drawerTitle}
-      size={720}
+      width="wide"
       open={eventId != null}
       onClose={onClose}
       className="request-detail"
-      closable={{ 'aria-label': t('common.close') }}
     >
       {result.isLoading ? (
         <ParagraphPlaceholder rows={12} />
@@ -277,13 +271,7 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
             <div className="request-detail-id">
               <span>{event.request_id || t('events.no_request_id')}</span>
               {event.request_id && (
-                <Button
-                  size="small"
-                  type="text"
-                  icon={<CopyOutlined />}
-                  aria-label={t('events.copy_id')}
-                  onClick={() => void copy(event.request_id!)}
-                />
+                <CopyButton text={event.request_id} label={t('events.copy_id')} />
               )}
             </div>
             <p className="request-window">{dayjs(event.timestamp_ms).format('YYYY-MM-DD HH:mm:ss.SSS')}</p>
@@ -331,14 +319,7 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
                           </span>
                           <div className="req-overview-error-btns">
                             {errors.length > 0 && errors[0].body && (
-                              <Button
-                                size="small"
-                                type="text"
-                                icon={<CopyOutlined />}
-                                onClick={() => void copy(errors[0].body || '')}
-                              >
-                                {t('events.copy_error')}
-                              </Button>
+                              <CopyButton showLabel text={errors[0].body} label={t('events.copy_error')} />
                             )}
                             <Button
                               size="small"
@@ -569,14 +550,7 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
                         <>
                           <p className="request-detail-note request-header-note">
                             <span>{t('events.response_headers_note')}</span>
-                            <Button
-                              size="small"
-                              type="text"
-                              icon={<CopyOutlined />}
-                              aria-label={t('events.response_headers_copy')}
-                              title={t('events.response_headers_copy')}
-                              onClick={() => void copy(responseHeadersText(event.response_headers ?? []))}
-                            />
+                            <CopyButton text={responseHeadersText(event.response_headers ?? [])} label={t('events.response_headers_copy')} />
                           </p>
                           {headerGroups.map((group) => (
                             <div className="request-header-group" key={group.id}>
@@ -630,10 +604,7 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
                               </article>
                             ))
                           : !isRelatedErrorsPartial && (
-                              <Empty
-                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                description={t('events.no_correlated_errors')}
-                              />
+                              <EmptyState size="compact" title={t('events.no_correlated_errors')} />
                             )}
                       </>,
                     )}
@@ -684,6 +655,6 @@ export const UsageEventDrawer: React.FC<UsageEventDrawerProps> = ({
         <Notice tone="warning" description={t('events.download_log_desc')} />
         <p className="request-detail-id">Request ID: {event?.request_id}</p>
       </Modal>
-    </Drawer>
+    </AppDrawer>
   );
 };

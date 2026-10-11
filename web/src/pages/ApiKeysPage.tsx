@@ -4,16 +4,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
-  Card,
   Input,
   Modal,
 } from 'antd';
 import { PageLoading } from '../components/common/PageLoading';
 import {
-  CopyOutlined,
   KeyOutlined,
   PlusOutlined,
-  SearchOutlined,
   SyncOutlined,
   TagOutlined,
 } from '../components/icons';
@@ -25,7 +22,6 @@ import { api, ApiError, apiErrorCode, describeError } from '../api/client';
 import { useT } from '../i18n';
 import { isDemoMode } from '../types/demoMode';
 import { useOverlayHistory } from '../hooks/useOverlayHistory';
-import { copyText } from '../utils/clipboard';
 import { ApiKeysList, type ApiKeyRecord } from '../components/keys/ApiKeysList';
 import { updateFieldWithBaseline, getFieldSemanticValue } from '../components/config/configDirty';
 import { computeConfigChanges } from '../components/config/configPatch';
@@ -38,6 +34,10 @@ import { RefreshButton } from '../components/common/RefreshButton';
 import { SecretInput } from '../components/common/SecretInput';
 import styles from './ApiKeysPage.module.css';
 import { LoadFailure, Notice, useToast } from '../components/feedback';
+import { SearchInput } from '../components/common/SearchInput';
+import { Panel } from '../components/common/Panel';
+import { CopyButton } from '../components/common/CopyButton';
+import '../components/keys/keys.css';
 
 /** The longest name the alias endpoint accepts. */
 const MAX_ALIAS_LENGTH = 64;
@@ -429,7 +429,7 @@ export const ApiKeysPage: React.FC = () => {
           rather than a card holding another card holding a toolbar (design.md: prefer
           border-separated open rows over nested card wrappers). The card keeps its own 20px
           inset, which is what makes this list exactly as wide as every other list. */}
-      <Card className={styles['keys-panel']}>
+      <Panel className={styles['keys-panel']}>
         <div className={styles['keys-head']}>
           <div className={styles['keys-head-title']}>
             <h2 className={styles['keys-head-name']}>{t('cfg.api_keys_list')}</h2>
@@ -451,14 +451,11 @@ export const ApiKeysPage: React.FC = () => {
             </div>
           </div>
           {keyCount > 0 && (
-            <Input
-              allowClear
-              placeholder={t('keys.search_placeholder')}
-              prefix={<SearchOutlined className={styles['keys-search-icon']} />}
+            <SearchInput
+              label={t('keys.search_placeholder')}
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={setSearchQuery}
               className={styles['keys-search']}
-              aria-label={t('keys.search_placeholder')}
             />
           )}
         </div>
@@ -490,7 +487,7 @@ export const ApiKeysPage: React.FC = () => {
             onViewRequests={viewRequestsFor}
           />
         )}
-      </Card>
+      </Panel>
 
       {/* One editor for both of a key's editable parts: the secret CPA authenticates it with,
           and the name this console shows it by. */}
@@ -531,20 +528,7 @@ export const ApiKeysPage: React.FC = () => {
             >
               {t('cfg.api_keys_generate')}
             </Button>
-            <Button
-              size="small"
-              icon={<CopyOutlined />}
-              disabled={!keyInput.trim()}
-              onClick={async () => {
-                if (await copyText(keyInput.trim())) {
-                  toast.success(t('cfg.source_copy_success'));
-                  return;
-                }
-                toast.error(t('cfg.copy_failed'));
-              }}
-            >
-              {t('cfg.api_keys_copy')}
-            </Button>
+            <CopyButton showLabel text={keyInput.trim()} label={t('cfg.api_keys_copy')} disabled={!keyInput.trim()} />
           </div>
           {isValueChanged && (
             <Notice tone="warning" title={t('keys.value_change_warning')} />

@@ -3,8 +3,6 @@ import React from 'react';
 import {
   Button,
   Dropdown,
-  Empty,
-  Popconfirm,
   Table,
   Tooltip,
 } from 'antd';
@@ -34,6 +32,9 @@ import { PhoneRow } from '../common/PhoneRow';
 import { phoneRowFields } from '../common/phoneRowFields';
 import styles from './ApiKeysList.module.css';
 import { useToast } from '../feedback';
+import { EmptyState } from '../common/EmptyState';
+import { ConfirmAction } from '../common/ConfirmAction';
+import './keys.css';
 
 /** One rendered row: a key from CPA's client-key list plus the identity and
  *  traffic Oh My CPA knows about it. A key has no state of its own to report —
@@ -309,13 +310,12 @@ export const ApiKeysList: React.FC<ApiKeysListProps> = ({
           </button>
         </Tooltip>
         {pendingDeleteId === record.id ? (
-          <Popconfirm
+          <ConfirmAction
             open
             title={t('cfg.api_keys_delete_confirm')}
             description={t('keys.delete_confirm_desc')}
-            okText={t('cfg.api_keys_delete')}
-            cancelText={t('common.cancel')}
-            okButtonProps={{ danger: true }}
+            confirmLabel={t('cfg.api_keys_delete')}
+            isDanger
             onConfirm={() => {
               setPendingDeleteId(null);
               handleDelete(record);
@@ -329,7 +329,7 @@ export const ApiKeysList: React.FC<ApiKeysListProps> = ({
             }}
           >
             {moreButton}
-          </Popconfirm>
+          </ConfirmAction>
         ) : (
           <Dropdown menu={{ items: menuItems(record) }} trigger={['click']} placement="bottomRight">
             {moreButton}
@@ -407,7 +407,7 @@ export const ApiKeysList: React.FC<ApiKeysListProps> = ({
     <>
       {filteredData.length === 0 ? (
         <div className={styles['empty-box']}>
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('keys.search_empty')} />
+          <EmptyState size="compact" title={t('keys.search_empty')} />
         </div>
       ) : isPhone ? (
         /* One record per block below 640px. The fields are derived from `columns` rather than

@@ -2,7 +2,7 @@ import { useTimeZone } from '../../utils/TimeZoneProvider';
 import { formatGatewayTimestamp } from '../../utils/time';
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Checkbox, Empty, Input, Popconfirm, Segmented, Select, Tabs, Tooltip, Typography } from 'antd';
+import { Button, Checkbox, Segmented, Select, Tabs, Tooltip, Typography } from 'antd';
 import {
   ClearOutlined,
   DownloadOutlined,
@@ -12,7 +12,6 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
   ReloadOutlined,
-  SearchOutlined,
   WrapTextOutlined,
 } from '../icons';
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
@@ -50,6 +49,12 @@ import styles from './Logs.module.css';
 import { useToast } from '../feedback';
 import { LoadFailure, Notice } from '../feedback';
 import { ParagraphPlaceholder } from '../common/ContentPlaceholder';
+import { SearchInput } from '../common/SearchInput';
+import { EmptyState } from '../common/EmptyState';
+import { ConfirmAction } from '../common/ConfirmAction';
+import { Toolbar } from '../common/Toolbar';
+import { Count } from '../common/Count';
+import './logs.css';
 
 const { Text } = Typography;
 
@@ -117,7 +122,7 @@ const ErrorLogFiles: React.FC = () => {
     );
   }
   if (query.data.files.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('logs.errors_empty')} />;
+    return <EmptyState size="compact" title={t('logs.errors_empty')} />;
   }
   const columns: ColumnsType<ErrorLogFile> = [
     { title: t('logs.file_name'), dataIndex: 'name', key: 'name', ellipsis: true },
@@ -317,16 +322,14 @@ export const CpaLogPanel: React.FC = () => {
           tabIndex={-1}
           className={`${styles.panel}${isFullscreen ? ` ${styles['panel-fullscreen']}` : ''}`}
         >
-          <div className="logs-toolbar">
+          <Toolbar variant="ruled" className="logs-toolbar">
             {isTail && (
               <>
-                <Input
-                  allowClear
+                <SearchInput
                   className="logs-search"
-                  prefix={<SearchOutlined />}
-                  placeholder={t('logs.search_placeholder')}
+                  label={t('logs.search_placeholder')}
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={setSearch}
                 />
                 <div className="logs-levels">
                   {LOG_LEVELS.map((level) => (
@@ -394,20 +397,20 @@ export const CpaLogPanel: React.FC = () => {
               <RefreshButton isIconOnly label={t('logs.reload')} onRefresh={tail.reload} disabled={!isTail} />
               {/* Truncating the file is irreversible, so it asks first - in the same popover every
                   other destructive action in the console uses. */}
-              <Popconfirm
+              <ConfirmAction
                 title={t('logs.clear_hint')}
-                okText={t('logs.clear_confirm')}
-                cancelText={t('common.cancel')}
-                okButtonProps={{ danger: true, loading: truncate.isPending }}
+                confirmLabel={t('logs.clear_confirm')}
+                isDanger
+                isConfirming={truncate.isPending}
                 onConfirm={() => truncate.mutate()}
                 disabled={isDemo}
               >
                 <Tooltip title={isDemo ? t('demo.blocked') : t('logs.clear')}>
                   <Button icon={<ClearOutlined />} disabled={isDemo} aria-label={t('logs.clear')} />
                 </Tooltip>
-              </Popconfirm>
+              </ConfirmAction>
             </div>
-          </div>
+          </Toolbar>
 
           {isTail && isFiltersOpen && (
             <div id="log-request-filters" className={styles.filters}>
@@ -442,7 +445,7 @@ export const CpaLogPanel: React.FC = () => {
                           })}
                         >
                           {method}
-                          <span className={styles['method-count']}>{facets.methods[method] ?? 0}</span>
+                          <Count className={styles['method-count']}>{facets.methods[method] ?? 0}</Count>
                         </button>
                       );
                     })}
@@ -467,7 +470,7 @@ export const CpaLogPanel: React.FC = () => {
                     optionRender={(option) => (
                       <span className={styles['path-option']}>
                         <span className={styles['path-option-name']}>{option.value}</span>
-                        <span className={styles['path-option-count']}>{option.data.count}</span>
+                        <Count className={styles['path-option-count']}>{option.data.count}</Count>
                       </span>
                     )}
                   />

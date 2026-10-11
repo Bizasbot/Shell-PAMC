@@ -7,7 +7,7 @@
 .intro {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.5;
 }
 
@@ -20,7 +20,7 @@
 .scope-label {
   flex: none;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-md);
   letter-spacing: 0.04em;
 }
 
@@ -62,7 +62,7 @@
 .provider-option-meta {
   flex: none;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -96,22 +96,8 @@
 }
 
 .summary-count {
-  font-size: 13px;
+  font-size: var(--text-md);
   font-variant-numeric: tabular-nums;
-}
-
-.meter {
-  display: block;
-  height: 4px;
-  border-radius: var(--radius-sm);
-  background: var(--border);
-  overflow: hidden;
-}
-
-.meter-fill {
-  display: block;
-  height: 100%;
-  background: var(--fg-2);
 }
 
 .section {
@@ -119,14 +105,6 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-}
-
-.section-title {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0.04em;
 }
 
 .rule-entry {
@@ -143,7 +121,7 @@
 .field-error,
 .field-warning {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
@@ -192,23 +170,17 @@
 
 .row-id {
   overflow-wrap: anywhere;
-  font-size: 13px;
+  font-size: var(--text-md);
 }
 
 .row-meta {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
 
 .row-action {
   flex: none;
-}
-
-.catalog-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .catalog-search {
@@ -248,19 +220,6 @@
    opaque in the table's own surface, hovered or not, and never shows through. */
 .alias-table:global(.ant-table-wrapper) :global(.ant-table-tbody) > tr > td:global(.ant-table-cell-fix) {
   background: var(--surface);
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.footer-actions {
-  display: flex;
-  gap: 8px;
 }
 
 /* A phone: the label sits above the picker and the typed-rule button takes its

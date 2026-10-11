@@ -1,12 +1,10 @@
 import { useTimeZone } from '../utils/TimeZoneProvider';
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Card,
   Button,
   Typography,
   Spin,
   Modal,
-  Drawer,
 } from 'antd';
 import {
   DownloadOutlined,
@@ -48,6 +46,8 @@ import { saveBlob } from '../utils/download';
 import { deriveVersionPresentation, summarizeUpdateCheck } from './SystemPage/versionPresentation';
 import styles from './SystemPage.module.css';
 import { LoadFailure, Notice, useToast } from '../components/feedback';
+import { AppDrawer } from '../components/common/AppDrawer';
+import { Panel } from '../components/common/Panel';
 
 const { Text, Paragraph } = Typography;
 
@@ -490,7 +490,7 @@ export const SystemPage: React.FC = () => {
           and a phone all meet the cards in the order the grid draws them. */}
       <div className={styles['system-grid']}>
         {/* Card 1: Versions & Updates */}
-        <Card
+        <Panel
           className={styles['system-card']}
           data-testid="sys-card-versions"
           title={
@@ -533,10 +533,10 @@ export const SystemPage: React.FC = () => {
               />
             </>
           )}
-        </Card>
+        </Panel>
 
         {/* Card 2: Maintenance & Diagnostics */}
-        <Card
+        <Panel
           className={`${styles['system-card']} ${styles['detail-card']}`}
           data-testid="sys-card-maintenance"
           title={(
@@ -696,10 +696,10 @@ export const SystemPage: React.FC = () => {
               )}
             </div>
           )}
-        </Card>
+        </Panel>
 
         {/* Card 3: SQLite Storage */}
-        <Card
+        <Panel
           className={`${styles['system-card']} ${styles['detail-card']}`}
           data-testid="sys-card-storage"
           title={(
@@ -740,10 +740,10 @@ export const SystemPage: React.FC = () => {
 
             </>
           )}
-        </Card>
+        </Panel>
 
         {/* Card 4: Component Topology & Health */}
-        <Card
+        <Panel
           className={`${styles['system-card']} ${styles['detail-card']}`}
           data-testid="sys-card-health"
           title={(
@@ -832,21 +832,16 @@ export const SystemPage: React.FC = () => {
               </div>
             </div>
           )}
-        </Card>
+        </Panel>
       </div>
 
       {/* The change log drawer. Its title names the product it belongs to, because the two
           logs are identical in shape and a reader who opened one must be able to tell which
           one they are looking at. */}
-      <Drawer
+      <AppDrawer
         open={expandedProduct !== null}
         onClose={closeChangelog}
-        // `size` rather than `width`: antd declares `size?: sizeType | number | string`, and a string
-        // here is applied as the panel's own `width` style - measured at exactly 760px on a desktop
-        // viewport and 390px on a phone. It also matches the two other drawers in this console, which
-        // use the same spelling. A reviewer has twice read this as an invalid prop; the type and the
-        // rendered geometry are what settle it.
-        size="min(760px, 100vw)"
+        width="wide"
         title={t('sys.changelog_title', {
           product: changelogProduct === 'cpa' ? t('sys.cpa_version') : t('sys.omc_version'),
         })}
@@ -856,7 +851,7 @@ export const SystemPage: React.FC = () => {
             <ProductChangelog product={changelogProduct} />
           </React.Suspense>
         )}
-      </Drawer>
+      </AppDrawer>
 
       {/* VACUUM Confirmation Modal */}
       <Modal

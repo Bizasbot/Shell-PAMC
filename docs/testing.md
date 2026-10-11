@@ -498,10 +498,24 @@ and identity remain covered by the workspace and plugin-logo logic suites.
   `onChange`, activation through a wrapping label, refusal while disabled or pending, a caller-owned
   `aria-busy` that stays clickable, and `Form.Item valuePropName="checked"` binding. Its drawn
   geometry belongs to the browser.
-- `scripts/check-feedback.test.mjs` also pins the `raw-switch` rule in both directions. It checks Ant Design feedback bindings and aliases (named and namespace
+- `web/tests/shared-primitives.component.test.tsx` owns the contracts of `SearchInput` (accessible
+  name, placeholder fallback, text-valued `onChange`, clearing), `EmptyState` (the mark per size, the
+  optional second line and action), `SectionHeading` (outline element, count, description and
+  `extra` per weight), `AppDrawer` (named close, two-slot footer, no footer without content, the
+  width step), `Tag` and `ToggleTag` (tone and size classes, hidden glyph, pressed state),
+  `ConfirmAction` (fixed cancel label, named and coloured confirmation), `SelectionBar` (live count,
+  note, trailing actions), `Toolbar` (the trailing slot and the ruled variant), `Panel` (header
+  from `title`, no inline inset), `Meter` (share, clamping, semantics with and without a label) and
+  `Pager` (absent on one page, no page-size menu, the stepped variant). Their drawn geometry belongs to the browser.
+- `scripts/check-feedback.test.mjs` also pins the `raw-switch`, `raw-empty`, `raw-tag`, `raw-drawer`, `raw-popconfirm`, `raw-card`, `raw-descriptions`, `raw-pagination` and `raw-progress` rules in both directions, including the per-rule file exemptions for the components that own a raw antd primitive. It checks Ant Design feedback bindings and aliases (named and namespace
   imports, `App.useApp()` results and modal hooks), scope shadowing, false positives in comments,
   strings and type-only imports, legal confirmations, diagnostic locations and the
   feedback module exemption. It is automatically discovered by the repository self-test runner.
+- `scripts/check-style-tokens.test.mjs` pins the type and radius scale rules in both directions:
+  scale-sized and fractional font sizes, display sizes that stay literal, custom properties that only
+  end in `font-size`, small radii in shorthand and longhand, undefined and fallback-carrying token
+  references, commented-out declarations, and an empty tree. It is automatically discovered by the
+  repository self-test runner.
 - The `oauth-management` browser scenario checks that ordinary copy acknowledgements cannot evict
   a persistent quota report, another refresh replaces it, and its close action removes it. It also
   checks one credential-aware authorization toast for a unique new credential, an ambiguous result
