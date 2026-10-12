@@ -746,6 +746,12 @@ The shared tooltip names each item by its own series key and lists measured zero
 stepped visibly on every steep section. The browser scales the bitmap down, so the geometry is unchanged
 and only its edges are averaged.
 
+**Chart canvases follow their container.** G2's `autoFit` refits a chart only on a window resize, so
+`useChartPlugins` also observes each chart's own container and refits it when that box changes size for
+any other reason - the console font arriving after the first paint and re-measuring the text beside a
+chart is the common one. A canvas left at its first size kept the model ring inscribed in a smaller
+square than its frame, with the total beside the hole.
+
 **No y-axis.** The reading is the shape of each line against its own baseline - which models rose, and
 when - and the numbers are in the tooltip and in the usage list beside it. An axis would take the width
 the lines need to add a scale nothing on the card refers to. The plot floor and the x labels stay: the
@@ -857,12 +863,23 @@ length, so the mask never reveals the secret's length.
 Font stack   "Sarasa Mono SC", "Sarasa UI SC", "Sarasa Term SC", "更纱黑体 SC",
              "Berkeley Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular,
              Menlo, Monaco, Consolas, "Liberation Mono", monospace
-Subset font  Build-time subsetted woff2 (~105KB per weight, Regular & Bold)
-             embedded in assets; local Sarasa Mono SC takes zero-latency priority.
+Font files   Complete Sarasa Mono SC, Regular & Bold, in unicode-range woff2
+             shards embedded in assets; local Sarasa Mono SC takes priority.
 Base size    14px (antd token fontSize)
 Line height  1.5
 Tabular      font-variant-numeric: tabular-nums on all numeric data
 ```
+
+**The embedded font is complete, and a page fetches only what it draws.** The woff2 files
+under `web/src/assets/fonts/sarasa/` are the whole of Sarasa Mono SC cut into shards with
+`unicode-range` (ADR 0094), so any character the font has - in the console's copy, an Agent
+answer or a model name - is drawn in it rather than in a system font. Shard 000 (ASCII,
+Latin-1, common punctuation and every character in `web/src`) is declared in render-blocking
+CSS by `core.css`; the rest are registered by `web/src/theme/sarasaFont.ts`, an
+asynchronous chunk started at startup, and fetched only when a page draws one of their
+characters, which then swaps in from the fallback. `pnpm subset-font` regenerates the
+shards, the manifest, `core.css` and `shardUrls.ts`; copy added since then still renders in
+Sarasa, from a deferred shard.
 
 **The type scale is seven variables**, defined in `web/src/index.css`:
 

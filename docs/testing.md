@@ -221,6 +221,8 @@ The probe runner owns Vite through an unpredictable readiness header, rejects po
 collisions, uses a fresh context per scenario, and retains a 120-second scenario
 budget and the 480-second batch watchdog. Catalog entrypoints use at most two
 independent scenario contexts; `--workers 1` reproduces identical coverage serially.
+A scenario marked `shouldRunAlone`, one that asserts motion frame by frame, runs after
+the rest of its batch with no sibling (ADR 0095).
 Separate built/browser/demo lanes and separate local batches still never overlap.
 Each worker owns its fixture/error/late-fault ledger and outcome; failures are
 collated in catalog order, every admitted worker is joined before shared teardown,
@@ -472,6 +474,8 @@ The phone header breakpoint sweep observes layout completion after each viewport
 
 The existing `dashboard-charts` and `dashboard-model-panels` probes measure compact tooltip gutters, row centers, marker/name columns and numeric edges, including the donut's shared readout, while logic tests cover escaped full names, exact values and localized units. `scroll-smoothing` exercises native Playground model popups with the list library's shared holder structure, repeated/reversed notches, filtering and reopening, alongside the virtual time-zone popup and request list. `provider-model-picker` verifies newly added custom models remain collapsed until explicit disclosure; `oauth-management` and the automatically discovered quota-cooldown logic suite distinguish recognized quota conditions from unexpected reasons, use the generic explanation for blank cooldown tooltips and preserve full Drawer diagnostics.
 
+`dashboard-model-panels` also narrows and re-widens the ring's frame without a window resize and requires the ring to refill it on the readout's centre, the case G2's own window-only refit missed when the console font arrived after the first paint.
+
 ### Dashboard model-view regressions
 
 The existing `dashboard-model-panels-states` probe owns window selection, manual refresh,
@@ -531,6 +535,14 @@ and identity remain covered by the workspace and plugin-logo logic suites.
   end in `font-size`, small radii in shorthand and longhand, undefined and fallback-carrying token
   references, commented-out declarations, and an empty tree. It is automatically discovered by the
   repository self-test runner.
+- `scripts/font-shards.test.mjs` pins the font sharding (ADR 0094): `cmap` formats 4 and 12,
+  WOFF2 and sfnt table directories, `unicode-range` formatting, and the shard plan's order
+  (core, frequency tiers, remainder) with each code point in exactly one shard. It also holds
+  the committed outputs together: `core.css` and `shardUrls.ts` equal what the manifest renders, the shard files
+  are exactly the manifest's, every shard draws every character it declares, ranges never
+  overlap, and every character in `web/src` (colour emoji aside) is in some shard. It is
+  automatically discovered by the repository self-test runner. The logic suite
+  `scripts/test-font-shards.ts` pins which shards an export embeds for its text.
 - The `oauth-management` browser scenario checks that ordinary copy acknowledgements cannot evict
   a persistent quota report, another refresh replaces it, and its close action removes it. It also
   checks one credential-aware authorization toast for a unique new credential, an ambiguous result
@@ -726,7 +738,7 @@ startup. The configuration page must defer its YAML editor until requested.
 
 The hard size checks are broad anomaly ceilings, not per-chunk feature quotas:
 startup JS 3 MiB raw / 1 MiB gzip; startup CSS 256 / 96 KiB; largest JS 4 MiB raw;
-all JS 16 MiB raw; distribution 20 MiB raw; Lobe SVGs 2 MiB raw. Gzip values are
+all JS 16 MiB raw; distribution 32 MiB raw (ADR 0094); Lobe SVGs 2 MiB raw. Gzip values are
 level-6 per-file estimates, including binary files in aggregate estimates, not
 actual served bytes or browser-performance measurements. Growth greater than both
 10% and 16 KiB for entry/startup metrics, or 128 KiB for other metrics, is advisory.
@@ -1081,7 +1093,11 @@ changes scheduling only, not selected IDs, assertions, waits or verdicts.
 increase concurrency or a budget to make a run pass. Watchdog diagnostics name all
 active scenarios/steps. Existing condition-based readiness and complete hosted
 shard coverage remain mandatory. ADR 0091 and the governance ledger record measured
-wall/CPU/memory trade-offs and retained failure ownership.
+wall/CPU/memory trade-offs and retained failure ownership. Scenarios marked
+`shouldRunAlone` in `scripts/acceptance/scenarios.mjs` (`scroll-smoothing`,
+`request-list-touch`) run after the shared part of their batch, one at a time, because a
+sibling context drops frames their checks would count as the defect (ADR 0095). The mark
+states its frame-level reason; it is not a way to quiet a scenario that fails for others.
 
 ### Demo replay and generated-UI exports
 
@@ -1110,7 +1126,8 @@ real download/controls/mobile checks. These browser claims are not replaced by D
 
 `scripts/readme-screenshot-readiness.test.mjs` pins the capture predicate: visible
 page content, no visible loading surfaces, and no mounted toast (including its exit
-motion). It is automatically discovered by `pnpm test:self`; it does not launch a
+motion), and the font predicate that waits for the deferred Sarasa shards (ADR 0094)
+before capture. It is automatically discovered by `pnpm test:self`; it does not launch a
 browser or certify pixels. `pnpm build && pnpm readme:screenshots` supplies the real
 Chromium evidence and regenerates the English/Chinese desktop and mobile images
 under `docs/images/readme/`. The dashboard combines light and dark captures in one
