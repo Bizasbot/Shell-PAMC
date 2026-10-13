@@ -1146,3 +1146,25 @@ admission, timeout propagation, and context cleanup without launching Chromium;
 the immediate-check implementation fails these cases. Image freshness remains
 outside verification gates because the sample traffic is rebased to the capture
 clock.
+
+### Credential warmup verification
+
+`internal/warmup` tests own calendar, explicit billing evidence, sliding/fixed boundaries,
+cycle decisions and fixed adapter terminal responses. API tests exercise real CPA-facade
+requests, persistent receipts, confirmed revisions, paid protection and uncertain/concurrent
+execution. `scripts/acceptance/contracts/warmup.json` is certified by a Go handler test and
+consumed by the actual typed client in `web/tests/warmup.contract.test.ts`. Rendered tests
+own inheritance and draft controls; the `oauth-window-warmup` browser scenario owns
+viewport geometry and native Back discard confirmation. All are discovered by the
+existing runners. Real-account activation is explicitly consented manual acceptance,
+never a hermetic test or automatic development step.
+
+Warmup review regressions pin field-by-field run validation (including reordered or changed
+refusal bodies), the typed client's emitted confirmation/revision, and credential/provider
+fixture isolation. API tests inject pre-send credential/policy refusals and an observable
+startup database failure with manually delivered ticks. Rendered tests cover both field-save
+close paths with an externally owned draft, a draft flag changing during an in-flight save,
+explicit protection facts, and a
+single inline run outcome. The browser warmup scenario also saves another section, retains
+its draft and exercises the subsequent native discard decision. These extend existing
+owners; no new runner, fixed wait or live consuming test is introduced.
