@@ -1882,6 +1882,11 @@ Dashboard KPI, model-trend and model-donut tooltip rows share `web/src/charts/ch
 
 ## 7. Motion
 
+Drawer wrappers transition only their transform. Width and maximum width adopt the current
+viewport immediately, including during opening motion; resizing never interpolates a sheet
+past the viewport. Under reduced motion the wrapper transition is disabled entirely.
+The existing motion durations, palette and token mappings are unchanged.
+
 ```text
 hover / state colour   ≤ fast — the acknowledgement must land on the pointer's frame (rule 7)
 fast    50ms    antd motionDurationFast
@@ -2530,7 +2535,8 @@ inside those bounds; their observers/listeners are effect-owned and cleaned unde
 
 antd starts a drawer's panel at 70% opacity and fades it in over the slide. On a phone a sheet is
 the width of the screen, so the page it covers stays readable through it for the whole slide: two
-layers of text on one surface. The panel's opacity is held at 1 for every drawer, and the mask
+layers of text on one surface. Drawer wrapper dimensions update immediately; only transform
+transitions normally, and reduced motion disables the wrapper transition entirely. The panel's opacity is held at 1 for every drawer, and the mask
 keeps its fade. A panel on its way out keeps drawing what it held: the request detail drawer
 remembers the record it showed, so what leaves is the record and not an emptied sheet.
 
@@ -2874,8 +2880,11 @@ Saving confirms the effect on all current and future inheriting credentials.
 
 The credential Quota tab adds a Window warmup section with provider inheritance or a
 complete override, effective policy, next check, latest durable result and safe pause
-reason. Two quiet facts always show selected-model activation verification and the latest
-paid-fallback evidence, including unknown evidence. Its drafts survive tab changes, remain
+reason. Two quiet facts always show selected-model activation observations and the latest
+paid-fallback evidence, including unknown evidence. An absent activation observation is neutral
+history, not an instruction or readiness gate. The reason explains current window or billing
+state. Saving an enabled policy authorizes eligible automatic requests; manual activation
+remains optional. Its drafts survive tab changes, remain
 open after another section saves, and participate in the parent Drawer close guard.
 Manual activation requires confirmation naming the credential and model and explaining
 quota consumption. Pending and uncertain outcomes never read as activation success.

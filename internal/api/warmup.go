@@ -52,7 +52,8 @@ func (h *Handler) warmupPolicyTarget(file management.AuthFile) string {
 }
 
 // This is a replacement guard, never a quota join or an account lookup. An
-// identity projection changing must revoke verification, even at the same index.
+// identity projection changing must discard activation observations and scheduling
+// state, even at the same index.
 func (h *Handler) warmupCredentialIdentity(file management.AuthFile) string {
 	// CPA's account field is opaque and can carry secret material. Hash the
 	// replacement guard with a keyed purpose; never persist or expose its input.
@@ -155,11 +156,6 @@ func (h *Handler) warmupCredential(ctx context.Context, client *management.Clien
 		credential.State.CredentialID = "demo-credential/" + file.AuthIndex
 	}
 	_, credential.Reason, _, credential.NextAtMS = warmup.Decide(policy, state, h.now().In(h.repo.Timezone().Location()), false)
-	if policy.IsEnabled() && (!state.IsProtocolVerified || state.VerifiedModel != policy.Model) {
-		if credential.Reason == "" || credential.Reason == "already_active" || credential.Reason == "disabled" {
-			credential.Reason = "activation_unverified"
-		}
-	}
 	if file.Disabled {
 		credential.Reason = "credential_disabled"
 	}
@@ -400,6 +396,14 @@ func isWarmupActivated(before, after *warmup.Observation) bool {
 	return after.PaidFallback == "disabled" && (before.FiveHour.State != "idle" || after.FiveHour.State == "active") && (before.Weekly.State != "idle" || after.Weekly.State == "active") && (before.FiveHour.State == "idle" || before.Weekly.State == "idle")
 }
 func (h *Handler) persistWarmupResult(ctx context.Context, authIndex string, state warmup.State, result warmup.Result) error {
+	// Latest receipts change during a recheck; the model's refusal survives until activation.
+	state.ProtocolPause = state.ReadProtocolPause()
+	if result.Reason == "protocol_unsupported" || result.Reason == "unexpected_tool" {
+		state.ProtocolPause = &warmup.ProtocolPause{Model: result.Model, Reason: result.Reason}
+	} else if result.Status == "activated" && state.ProtocolPause != nil && state.ProtocolPause.Model == result.Model {
+		state.ProtocolPause = nil
+	}
+	// A non-consuming refusal must not erase unresolved or unsupported-model evidence.
 	if result.Status != "skipped" || state.LastResult == nil {
 		state.LastResult = &result
 	}
@@ -497,8 +501,16 @@ func (h *Handler) executeWarmup(ctx context.Context, authIndex, requestID, revis
 			previous.Status = "uncertain"
 			previous.Reason = "outcome_unknown"
 		}
-		_ = h.persistWarmupResult(ctx, authIndex, state, previous)
-		return finish("outcome_unknown")
+		if err := h.persistWarmupResult(ctx, authIndex, state, previous); err != nil {
+			return warmup.Result{}, err
+		}
+		// This receipt refuses the new request without overwriting the observed prior run.
+		result.Reason = "outcome_unknown"
+		result.FinishedAtMS = h.now().UnixMilli()
+		if result.RequestID == "" {
+			return result, nil
+		}
+		return result, h.repo.WriteWarmupRun(ctx, defaultInstanceID(), authIndex, result)
 	}
 	trigger, reason, cycle, _ := warmup.Decide(credential.Policy, state, now, isManual)
 	if trigger == "" {
@@ -507,9 +519,6 @@ func (h *Handler) executeWarmup(ctx context.Context, authIndex, requestID, revis
 			_ = h.repo.WriteWarmupState(ctx, defaultInstanceID(), authIndex, state, now.UnixMilli())
 		}
 		return finish(reason)
-	}
-	if !isManual && (!state.IsProtocolVerified || state.VerifiedModel != credential.Policy.Model) {
-		return finish("activation_unverified")
 	}
 	if state.LastCycle == fmt.Sprintf("cycle/%d", state.Generation) && !isManual {
 		return finish("already_attempted")
@@ -553,10 +562,6 @@ func (h *Handler) executeWarmup(ctx context.Context, authIndex, requestID, revis
 	result.InputTokens = outcome.InputTokens
 	result.OutputTokens = outcome.OutputTokens
 	result.FinishedAtMS = h.now().UnixMilli()
-	if outcome.Reason == "protocol_unsupported" || outcome.Reason == "unexpected_tool" {
-		state.IsProtocolVerified = false
-		state.VerifiedModel = ""
-	}
 	if outcome.Status == "pending" {
 		after, readErr := h.refreshWarmupObservation(ctx, client, file)
 		state.VerificationReads = 1
@@ -717,9 +722,6 @@ func (h *Handler) runCredentialWarmupRound(ctx context.Context) error {
 		trigger, _, cycle, next := warmup.Decide(credential.Policy, state, now, false)
 		latest := h.loadPriorNormalizedQuota(ctx, file.AuthIndex)
 		hasNewReading := latest != nil && latest.WarmupEvidence != nil && (state.Observation == nil || latest.WarmupEvidence.ObservedAtMS > state.Observation.ObservedAtMS)
-		if !isPending && !hasNewReading && !hasElapsedReset && isFresh && (!state.IsProtocolVerified || state.VerifiedModel != credential.Policy.Model) {
-			continue
-		}
 		if !isPending && !hasNewReading && !hasElapsedReset && !strings.HasPrefix(cycle, "daily/") && isFresh && trigger == "" && (next == nil || *next > now.UnixMilli()) {
 			continue
 		}
