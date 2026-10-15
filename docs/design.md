@@ -25,12 +25,13 @@ registered one; see `docs/adr/0011-theme-modes-and-derived-palettes.md`.
 
 Terminal-flat console. Depth comes from **1px borders + background shifts**,
 never shadows or gradients. Sarasa Mono SC first (Berkeley Mono, then IBM Plex
-Mono as fallbacks), 4px radii, dense but breathable spacing.
+Mono as fallbacks) unless the operator chooses another typeface, 4px radii, dense but
+breathable spacing.
 
 | Principle | Meaning |
 | --- | --- |
 | Flat | `box-shadow: none` globally; borders carry all structure |
-| Monospace | All text uses the mono stack; tabular numerals for data |
+| Typography roles | Interface text uses the UI stack; code and aligned data use the mono stack, with tabular numerals |
 | Quiet chrome, loud data | UI scaffolding stays muted; status color is reserved for real state |
 | Semantic color only | Green/red/amber mean enabled/error/warning — never decoration |
 
@@ -775,9 +776,9 @@ four, because those are the two a reader places the window with. The label forma
 `HH:mm` within a day, `MM-DD` beyond it - which is the only place the window's extent is stated, and
 keeps the outermost label narrow enough to sit inside the card's gutter.
 
-**The legend is app-owned DOM.** G2's legend is built from its own type scale, so it would be the one
-place in the console not set in the mono stack. It also has to be the same colour assignment the usage
-list uses, which is only guaranteed if one ranked list produces both.
+**The legend is app-owned DOM.** It follows the console's type scale and chosen interface font.
+It also has to be the same colour assignment the usage list uses, which is only guaranteed if one
+ranked list produces both.
 
 **The ring's centre is DOM**, and it is the window's own total rather than the KPI tile's. The two read
 on different cadences, so borrowing the tile's number would let the centre disagree with the slices
@@ -880,6 +881,16 @@ asynchronous chunk started at startup, and fetched only when a page draws one of
 characters, which then swaps in from the fallback. `pnpm subset-font` regenerates the
 shards, the manifest, `core.css` and `shardUrls.ts`; copy added since then still renders in
 Sarasa, from a deferred shard.
+
+**The typeface is two roles, and Sarasa is their default.** `--font-ui` (the root
+`font-family` and Ant Design's `fontFamily` token) and `--font-mono` (code, keys and
+aligned figures, and Ant Design's `fontFamilyCode`) are custom properties that
+`web/src/theme/fontLibrary.ts` overwrites on the root element from the `omc_fonts`
+preference. Components never name a family: they inherit, or read `var(--font-mono)`, so
+an operator's choice reaches every surface. The two that cannot use the cascade - the
+Monaco editor and canvas chart labels - read the resolved role with `currentFontStack`.
+Every role ends in the Sarasa stack, which draws any character a chosen family lacks
+(ADR 0100).
 
 **The type scale is seven variables**, defined in `web/src/index.css`:
 
