@@ -459,7 +459,19 @@ and the places it deliberately differs from the hand-tuned values it replaced.
   style (`omc_token_style`), TPS calculation mode (`omc_tps_calculation_mode`),
   the model display view (`omc_models_view`), request list model brand icons
   (`omc_request_model_icons`, boolean, default true), the theme (`omc_theme`), scroll smoothing
-  (`omc_scroll_smoothing`) and the typeface roles (`omc_fonts`).
+  (`omc_scroll_smoothing`), the typeface roles (`omc_fonts`) and the rail entries the
+  console hides (`omc_nav_hidden`).
+- **Sidebar Visibility**: Which of the rail's entries this console shows, stored as the
+  `omc_nav_hidden` preference - the set of *hidden* route keys, so a destination a later release
+  adds arrives already visible rather than waiting to be re-enabled. The entries are turned off
+  in a panel that a single row on OMC Settings opens - the panel lists the same model the rail
+  draws, so a plugin's page or a later release's destination appears there without a second list
+  to maintain - and the row states how many entries are out of the rail, so the page reads without
+  opening it. It is console state rather
+  than a deployment capability: it changes nothing about what the gateway serves, the pages it
+  hides stay reachable by URL, the filter applies to the expanded rail, the collapsed rail and
+  the phone sheet from one model, and OMC Settings - the page that owns the choice - cannot be
+  hidden. See [[Preference]].
 - **Font Library**: The deployment's installed typefaces, from which the two
   **Font Roles** are chosen: `ui` (the interface) and `mono` (code, identifiers and
   aligned figures), stored as `omc_fonts` (`builtin:<id>` or `font:<library id>`; a

@@ -1001,10 +1001,22 @@ and halo. Ringing the inner field too drew a second rectangle inside the control
 
 - `body { overflow: hidden }` — the shell is `100dvh`; sidebar and content
   scroll independently (`overscroll-behavior: contain`).
-- Nav groups: Operate / Gateway / Observe / Control. Group labels 10px
+- Nav groups: Operate / Gateway / Observe / Control, with the plugins group - management, the
+  store, then each plugin's own page - before Control. Group labels 10px
   uppercase `--meta`. Items: icon + label only, no subtitles. Selected item =
   2px `--fg` inset rule (`box-shadow: inset 2px 0 0 var(--fg)`) + `--fg` bold text,
   never a filled background block. Hover uses `--surface` for immediate feedback.
+- The rail is the operator's: which of its entries a deployment shows is a stored preference
+  (`omc_nav_hidden`, holding the *hidden* routes, so an entry a later release adds arrives
+  already visible), set from the OMC settings page - one row that opens the rail's own panel,
+  rather than sixteen rows grown onto a page of one-line settings - and applied to the expanded
+  rail, the collapsed rail and the phone sheet from one filtered model. The panel lists the model
+  the rail draws, including the pages a running plugin registered, so the two cannot disagree
+  about which destinations exist. A group whose every entry is hidden goes with
+  them, the OMC settings entry itself is shown switched on and inert - a preference that could
+  hide its own surface would leave the console unable to undo it - and everything else on the
+  shell reads the unfiltered model, so a page opened by URL still names itself in the breadcrumb
+  and the document title.
 - The rail ends with its navigation: CPA connection and version are read on the
   System Information page, not repeated in the shell.
 

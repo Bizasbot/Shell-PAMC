@@ -213,6 +213,9 @@ export async function omcSettings({ base, page, check, context, expectProblem })
     'Font library',
     'Language',
     'Smooth scrolling',
+    // The rail's own entries are listed in the panel this row opens, not inline on the page: a
+    // settings page carries what an operator sets, and the rail panel carries the rail.
+    'Sidebar entries',
   ];
   const labels = await page.locator('.omc-settings-page .settings-toggle-title').allInnerTexts();
   check(
