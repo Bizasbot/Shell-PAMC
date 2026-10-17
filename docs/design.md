@@ -2196,9 +2196,17 @@ no-blank rule still applies — fall back to a static loading state.
 
 ADRs 0052 and 0054 record the task accounting, placeholder treatment and separate activity signal.
 
-**The fill hints at progress; the marker reports waiting.** Every non-silent query and every module
-download behind a Suspense boundary is a task (`web/src/utils/loadProgress.ts`,
-`web/src/utils/progressTasks.ts`). A settled task counts in full; a pending task earns capped
+**The fill hints at progress; the marker reports waiting.** Every query read the reader waits on and
+every module download behind a Suspense boundary is a task (`web/src/utils/loadProgress.ts`,
+`web/src/utils/progressTasks.ts`). A query read counts when nothing is on screen for it yet (a first
+load, a new key, a retry after a failure), when an action invalidated data that last read
+successfully, or when a query nobody polls is re-read (a refresh button). A polled query re-reading
+the data it already shows - including the poll after a failed one - is background refresh and never
+counts. The rule is read from the query (`isQueryProgressWork` in `web/src/utils/progressSources.ts`),
+so a poll needs no opt-in; because an interval tick and a manual `refetch()` look the same there, a
+refresh that must report waiting on a polled query invalidates it. `meta: { silent: true }` remains
+for reads the query cannot classify: a live read that moves to a new key per signal, and background
+reads silent even on their first load. A settled task counts in full; a pending task earns capped
 exponential credit toward 85% of its share. This is a rough estimate, not a measurable remaining
 duration or byte percentage. The fill never moves backwards, including when new work joins.
 
