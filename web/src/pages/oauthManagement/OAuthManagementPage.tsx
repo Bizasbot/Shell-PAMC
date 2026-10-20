@@ -46,6 +46,8 @@ import { VertexImportModal } from '../../components/authFiles/VertexImportModal'
 import { OAuthConnectPanel } from './OAuthConnectPanel';
 import { OAuthCredentialRecord } from './OAuthCredentialRecord';
 import { useOAuthSessions } from './useOAuthSessions';
+import { isSIWCPending, useSIWCBindings } from '../../hooks/useSIWCBindings';
+import { SIWCBindingPanel } from '../../components/authFiles/SIWCBindingPanel';
 import { useOAuthWorkspaceActions } from './useOAuthWorkspaceActions';
 import {
   buildOAuthWorkspaceProjection,
@@ -231,6 +233,7 @@ export const OAuthManagementPage: React.FC = () => {
       [providerId]: { providerId, snapshot, startedAt: Date.now() },
     }));
   }, []);
+  const siwcBindings = useSIWCBindings();
   const sessions = useOAuthSessions(choices, handleAuthorizationCompleted, { shouldNotifyCompletion: false });
   const startSession = React.useCallback((providerId: string) => {
     preStartSnapshotRef.current[providerId] = new Set(recordsRef.current.map((record) => record.key));
@@ -244,8 +247,9 @@ export const OAuthManagementPage: React.FC = () => {
   // Sessions outlive the drawer, so an ordinary route departure must be an
   // explicit operator decision. The browser handles hard unloads; the router
   // blocker covers in-app navigation without a history monkey patch.
+  const hasPendingAuthorization = sessions.activeProviders.length > 0 || Object.values(siwcBindings.sessions).some(isSIWCPending);
   const routeBlocker = useBlocker(({ currentLocation, nextLocation }) => (
-    sessions.activeProviders.length > 0 && currentLocation.pathname !== nextLocation.pathname
+    hasPendingAuthorization && currentLocation.pathname !== nextLocation.pathname
   ));
   React.useEffect(() => {
     if (routeBlocker.state !== 'blocked') return;
@@ -259,14 +263,14 @@ export const OAuthManagementPage: React.FC = () => {
     });
   }, [modal, routeBlocker, t]);
   React.useEffect(() => {
-    if (sessions.activeProviders.length === 0) return;
+    if (!hasPendingAuthorization) return;
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [sessions.activeProviders.length]);
+  }, [hasPendingAuthorization]);
 
   React.useEffect(() => {
     if (Object.keys(completionPending).length === 0 || filesQuery.isFetching) return;
@@ -920,6 +924,7 @@ export const OAuthManagementPage: React.FC = () => {
         initialSection={drawerSection}
         canEdit={Boolean(selectedRecord?.canEditFile)}
         hasExternalDraft={hasWarmupDraft}
+        siwcContent={selectedRecord?.file ? <SIWCBindingPanel file={selectedRecord.file} canEdit={selectedRecord.canEditFile} bindings={siwcBindings} /> : undefined}
         quotaContent={selectedRecord ? quotaBodyForRecord(selectedRecord, false) : undefined}
         warmupContent={selectedRecord?.authIndex && selectedRecord.hasUniqueAuthIndex && ['codex', 'claude'].includes(selectedRecord.displayProvider)
           ? <CredentialWarmup key={selectedRecord.authIndex} authIndex={selectedRecord.authIndex} onDirtyChange={setHasWarmupDraft} /> : undefined}
