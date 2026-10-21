@@ -30,6 +30,14 @@ import { countPolicyOverrides } from './runtimePolicy';
 import { ModelOptionsFields } from './ModelOptionsFields';
 import { modelOptionsProblem } from './modelOptions';
 import { ModelPickerModal } from './ModelPickerModal';
+import {
+  OPENCODE_SESSION_HEADER,
+  OPENCODE_SESSION_HEADER_VALUE,
+  openCodeSessionState,
+  isOpenCodeEndpoint,
+  withOpenCodeSessionHeader,
+} from './opencodeSession';
+import { Notice } from '../feedback';
 import { SecretInput } from '../common/SecretInput';
 import styles from './ProviderEditorDrawer.module.css';
 import { AppDrawer } from '../common/AppDrawer';
@@ -235,6 +243,14 @@ export function ProviderEditorDrawer({
   const configuredModelNames = new Set(
     formModels.map((m) => m.name.trim()).filter((name) => name !== ''),
   );
+  const openCodeSession = isOpenCodeEndpoint(formBaseURL) ? openCodeSessionState(formHeaders) : null;
+
+  // The one click only edits the draft: the header travels with the Save the
+  // operator already has to make, so nothing is written behind their back.
+  const handleAddOpenCodeSessionHeader = () => {
+    setFormHeaders((prev) => withOpenCodeSessionHeader(prev, `hdr-opencode-${Date.now()}`));
+    setHeadersSectionOpen(true);
+  };
 
   return (
 
@@ -378,6 +394,41 @@ export function ProviderEditorDrawer({
               placeholder={t('pro.field_base_url_ph')}
             />
           </Form.Item>
+
+          {/* Guidance sits with the URL that makes the header necessary: the
+              Custom Headers group is collapsed by default, and a requirement
+              discovered only after a failed request is the bug this prevents. */}
+          {openCodeSession === 'missing' && (
+            <Notice
+              tone="warning"
+              className={styles['endpoint-notice']}
+              title={t('pro.opencode_session_title')}
+              description={t('pro.opencode_session_desc', {
+                header: OPENCODE_SESSION_HEADER,
+                value: OPENCODE_SESSION_HEADER_VALUE,
+              })}
+              action={
+                <Button size="small" onClick={handleAddOpenCodeSessionHeader}>
+                  {t('pro.opencode_session_add', { header: OPENCODE_SESSION_HEADER })}
+                </Button>
+              }
+            />
+          )}
+          {/* Two configured ids are reported, never resolved: whichever one this
+              console picked would silently replace the other on the wire. */}
+          {openCodeSession === 'conflict' && (
+            <Notice
+              tone="warning"
+              className={styles['endpoint-notice']}
+              title={t('pro.opencode_session_conflict_title')}
+              description={t('pro.opencode_session_conflict_desc', { header: OPENCODE_SESSION_HEADER })}
+              action={
+                <Button size="small" onClick={() => setHeadersSectionOpen(true)}>
+                  {t('pro.opencode_session_review')}
+                </Button>
+              }
+            />
+          )}
 
           {/* Website: console metadata, deliberately not a CPA field. */}
           <Form.Item
