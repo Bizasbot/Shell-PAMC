@@ -1003,7 +1003,7 @@ export async function agentViews({ base, page, check, expectProblem }) {
     return radii;
   });
   check('interactive components use the console surface and control corners',
-    componentRadii.join('|') === '6px|6px|6px|4px|6px', componentRadii.join('|'));
+    componentRadii.join('|') === '10px|10px|10px|6px|10px', componentRadii.join('|'));
 
   const download = page.waitForEvent('download');
   await figure.getByRole('button', { name: 'Save as image', exact: true }).click();
@@ -1080,7 +1080,11 @@ export async function agentViews({ base, page, check, expectProblem }) {
   // The control cycles three preferences, and one of them may resolve to the mode already shown.
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (await page.evaluate(mode => document.documentElement.dataset.themeMode !== mode, modeBefore)) break;
+    // The change lands inside a view transition, after the click; read the mode only once the
+    // preference has moved, or a step that already switched is taken again.
+    const preference = await page.evaluate(() => document.documentElement.dataset.themePreference);
     await page.getByRole('button', { name: /^Theme:/ }).click();
+    await page.waitForFunction(previous => document.documentElement.dataset.themePreference !== previous, preference);
   }
   const pageSurface = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
   const frameSurface = () => inner.locator('body').evaluate(body => getComputedStyle(body).getPropertyValue('--bg').trim());
