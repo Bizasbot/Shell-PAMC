@@ -2290,6 +2290,26 @@ range therefore revise both current estimates and historical references on the n
 read. Reset detection is limited to observed/retained evidence, not a complete upstream
 lifecycle. There are no new tables, migrations or routing inputs (ADR 0058 and ADR 0059).
 
+**A failed read is not a reading, but it is recorded.** Every surface that reads a
+credential — the manual refresh, the background loop, the warmup probe and the Agent
+capability — goes through `Handler.refreshQuotaReading`
+(`internal/api/management_quota.go`), which classifies the outcome with
+`quota.ReadOutcome` and upserts one row per credential in `quota_refresh_attempts`
+(migration 044: `auth_index`, `attempted_at_ms`, `outcome`, `error`; an older attempt
+never overwrites a newer one). The overview and the credential detail serve that row as
+`last_refresh` beside the retained observation, and `quota.ApplyReadingHealth` derives
+the status the console presents: a failed attempt newer than the reading outranks it —
+auth-like failures become `error` with the `reauth` recommendation, the rest `stale` with
+the previous numbers standing, and a credential with no stored observation at all becomes
+`error` rather than `stale`, because there is nothing on screen to call out of date — an
+active cooldown still outranks both, and a healthy or warning reading whose own announced
+boundary has passed unseen (past `reset_at_ms` + the reset grace, and taken before that
+boundary) becomes `stale` with no error attached. `exhausted` keeps its status: it is what stops the credential, and the
+reset-driven read answers it within minutes. The workspace therefore states a failure
+that outlives its toast, counts a stale reading apart from the healthy total, offers a
+single-credential refresh in the row that reports it, and never presents a reading days
+old as the current answer.
+
 Readings are also refreshed in the background (ADR 0094). `Handler.RunQuotaAutoRefresh`
 in `internal/api/quota_auto_refresh.go` wakes every minute, reads the
 `omc_quota_auto_refresh` preference, lists the credentials and their latest snapshots,
@@ -2300,10 +2320,10 @@ hour), and a scheduled read once the newer of the observation and the process's 
 attempt is `interval_minutes` old, less a thirty-second slack for the observation being
 stamped after its tick. Due credentials - reset-driven first,
 then oldest reading first, at most sixteen per round and four at a time - go through
-`RefreshCredentialQuota` and `persistNormalizedQuotaSnapshot`, exactly as a manual
-refresh does. Attempts are remembered in process memory because a failed read is not
-persisted, and a round failure is logged when it starts or changes rather than every
-minute. `app.Run` joins the loop before returning, as it does the pipeline. Disabled credentials, providers without a probe, duplicated `auth_index`
+`Handler.refreshQuotaReading` and `persistNormalizedQuotaSnapshot`, exactly as a manual
+refresh does, so the attempt is recorded beside the reading it could not replace. Only the
+retry backoff is remembered in process memory, because a failed read is never stored as an
+observation; a round failure is logged when it starts or changes rather than every minute. `app.Run` joins the loop before returning, as it does the pipeline. Disabled credentials, providers without a probe, duplicated `auth_index`
 claims and Meta (whose observation is an audited key exchange) are skipped. The
 preference API refuses any document for this key other than
 `{"interval_minutes": 0 | 5-1440, "refresh_on_reset": bool}` with
