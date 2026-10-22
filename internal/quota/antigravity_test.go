@@ -112,6 +112,79 @@ func TestParseAntigravityUsageOrdersFiveHourFirst(t *testing.T) {
 	}
 }
 
+func TestParseAntigravityUsageKeepsSnapshotBucketIdentities(t *testing.T) {
+	const raw = `{"groups":[{"displayName":"Plugin","buckets":[
+		{"window":"monthly","remainingFraction":0.125},
+		{"window":"FIVE_WINDOW","remainingFraction":0.25},
+		{"bucketId":"upstream-week","bucket_id":"ignored","window":"WEEK_WINDOW","remainingFraction":0.375},
+		{"bucket_id":"upstream-day","window":"daily","remainingFraction":0.5},
+		{"window":"WEEK_WINDOW","remainingFraction":0.625},
+		{"window":"burst","remainingFraction":0.75}
+	]},{"displayName":"Other","buckets":[{"window":"monthly","remainingFraction":0.875}]}]}`
+	sourceRemaining := []float64{12.5, 25, 37.5, 50, 62.5, 75, 87.5}
+	for _, scenario := range []struct {
+		name, fiveHour, weekly string
+		wantIDs                []string
+		sourceOrder            []int
+	}{
+		{"unrecognized", "unreported-five", "unreported-week", []string{
+			"ag_Plugin_bucket_0_0", "ag_Plugin_bucket_0_1", "ag_Plugin_upstream-week", "ag_Plugin_upstream-day", "ag_Plugin_bucket_0_4", "ag_Plugin_bucket_0_5", "ag_Other_bucket_1_0",
+		}, []int{0, 1, 2, 3, 4, 5, 6}},
+		{"canonical", "5h", "weekly", []string{
+			"ag_Plugin_bucket_0_0", "ag_Plugin_upstream-week", "ag_Plugin_bucket_0_2", "ag_Plugin_bucket_0_3", "ag_Plugin_upstream-day", "ag_Plugin_bucket_0_5", "ag_Other_bucket_1_0",
+		}, []int{1, 2, 4, 0, 3, 5, 6}},
+		{"established aliases", " FIVE-HOUR ", " 7 DaYs ", []string{
+			"ag_Plugin_bucket_0_0", "ag_Plugin_upstream-week", "ag_Plugin_bucket_0_2", "ag_Plugin_bucket_0_3", "ag_Plugin_upstream-day", "ag_Plugin_bucket_0_5", "ag_Other_bucket_1_0",
+		}, []int{1, 2, 4, 0, 3, 5, 6}},
+		{"aliases", "FIVE-HOURS", "7_days", []string{
+			"ag_Plugin_bucket_0_1", "ag_Plugin_upstream-week", "ag_Plugin_bucket_0_4", "ag_Plugin_bucket_0_0", "ag_Plugin_upstream-day", "ag_Plugin_bucket_0_5", "ag_Other_bucket_1_0",
+		}, []int{1, 2, 4, 0, 3, 5, 6}},
+		{"mixed", "FIVE-HOURS", "weekly", []string{
+			"ag_Plugin_bucket_0_3", "ag_Plugin_upstream-week", "ag_Plugin_bucket_0_1", "ag_Plugin_bucket_0_2", "ag_Plugin_upstream-day", "ag_Plugin_bucket_0_5", "ag_Other_bucket_1_0",
+		}, []int{1, 2, 4, 0, 3, 5, 6}},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			payload := strings.NewReplacer("FIVE_WINDOW", scenario.fiveHour, "WEEK_WINDOW", scenario.weekly).Replace(raw)
+			windows, err := ParseAntigravityUsage([]byte(payload), 0, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(windows) != len(scenario.wantIDs) {
+				t.Fatalf("windows = %d, want %d", len(windows), len(scenario.wantIDs))
+			}
+			for windowIndex, window := range windows {
+				if window.ID != scenario.wantIDs[windowIndex] {
+					t.Errorf("windows[%d].ID = %q, want the persisted identity %q", windowIndex, window.ID, scenario.wantIDs[windowIndex])
+				}
+				if window.RemainingPercent == nil || *window.RemainingPercent != sourceRemaining[scenario.sourceOrder[windowIndex]] {
+					t.Errorf("windows[%d] lost its source bucket's quota value: %+v", windowIndex, window)
+				}
+			}
+		})
+	}
+}
+
+func TestParseAntigravityUsageKeepsSourceOrderWithinNormalizedPeriods(t *testing.T) {
+	windows, err := ParseAntigravityUsage([]byte(`{"groups":[{"displayName":"Plugin","buckets":[
+		{"window":"five-hours","remainingFraction":0.125},
+		{"window":"5h","remainingFraction":0.25},
+		{"window":"7-days","remainingFraction":0.375},
+		{"window":"weekly","remainingFraction":0.5}
+	]}]}`), 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantIDs := []string{"ag_Plugin_bucket_0_2", "ag_Plugin_bucket_0_0", "ag_Plugin_bucket_0_3", "ag_Plugin_bucket_0_1"}
+	if len(windows) != len(wantIDs) {
+		t.Fatalf("windows = %d, want %d", len(windows), len(wantIDs))
+	}
+	for windowIndex, window := range windows {
+		if window.ID != wantIDs[windowIndex] || window.RemainingPercent == nil || *window.RemainingPercent != float64(windowIndex+1)*12.5 {
+			t.Errorf("windows[%d] changed display order or identity: %+v", windowIndex, window)
+		}
+	}
+}
+
 func TestAntigravityCapacityScopeAndUnknownPeriod(t *testing.T) {
 	windows, err := ParseAntigravityUsage([]byte(`{"groups":[{"displayName":"Gemini models","buckets":[{"bucketId":"five","window":"5h","remainingFraction":0.8,"resetTime":"2026-01-01T17:00:00Z"}]},{"displayName":"Gemini and future models","buckets":[{"bucketId":"future","window":"unreported","remainingFraction":0.8,"resetTime":"2026-01-01T17:00:00Z"}]}]}`), 0, 0)
 	if err != nil {
@@ -123,7 +196,7 @@ func TestAntigravityCapacityScopeAndUnknownPeriod(t *testing.T) {
 }
 
 func TestAntigravityPeriodsRequireCompleteFixedDuration(t *testing.T) {
-	for _, label := range []string{"15h", "25 hours", "biweekly", "2 weeks", "monthly", "1m", "month", "unknown"} {
+	for _, label := range []string{"15h", "25 hours", "biweekly", "2 weeks", "bimonthly", "quarterly", "monthly", "1m", "1mo", "1 month", "calendar_month", "month", "unknown"} {
 		if hours := parseAntigravityWindowHours(label); hours != 0 {
 			t.Errorf("unreviewed period %q guessed as %v hours", label, hours)
 		}
@@ -131,6 +204,31 @@ func TestAntigravityPeriodsRequireCompleteFixedDuration(t *testing.T) {
 	for label, expected := range map[string]float64{"5h": 5, "daily": 24, "weekly": 168, "30d": 720} {
 		if hours := parseAntigravityWindowHours(label); hours != expected {
 			t.Errorf("period %q=%v, want %v", label, hours, expected)
+		}
+	}
+}
+
+func TestAntigravityCommonWindowIdentifiers(t *testing.T) {
+	for _, scenario := range []struct {
+		identifiers []string
+		label       string
+		hours       float64
+	}{
+		{[]string{"5h", "5hour", "5hours", "5 hour", "5_hours", "5-hours", "five_hour", "five-hours", " FIVE  HOURS "}, "5小时限制 (5-Hour)", 5},
+		{[]string{"24h", "24hour", "24_hours", "24-hour", "1d", "day", "DAILY"}, "每日限制 (Daily)", 24},
+		{[]string{"7d", "7days", "7_days", "7-day", "1w", "week", "WEEKLY"}, "每周限制 (Weekly)", 168},
+		{[]string{"30d", "30days", "30_days", "30-day"}, "每月限制 (Monthly)", 720},
+		{[]string{"month", "MONTHLY", "1mo", "1month", "1_month", "calendar-month"}, "每月限制 (Monthly)", 0},
+	} {
+		for _, identifier := range scenario.identifiers {
+			t.Run(identifier, func(t *testing.T) {
+				if got := translateAntigravityBucketLabel("Plugin", "bucket_0_4", identifier); got != "Plugin · "+scenario.label {
+					t.Errorf("label = %q, want %q", got, "Plugin · "+scenario.label)
+				}
+				if got := parseAntigravityWindowHours(identifier); got != scenario.hours {
+					t.Errorf("period = %v, want %v", got, scenario.hours)
+				}
+			})
 		}
 	}
 }
@@ -143,9 +241,44 @@ func TestAntigravityBucketLabelsFollowRenamedBuckets(t *testing.T) {
 		{"Weekly Limit - Remaining", "weekly", "Gemini Models · 每周限制 (Weekly)"},
 		{"Quota", "5h", "Gemini Models · 5小时限制 (5-Hour)"},
 		{"Burst Remaining", "unreported", "Gemini Models · Burst"},
+		{"Quota", "bimonthly", "Gemini Models · Quota"},
 	} {
 		if got := translateAntigravityBucketLabel("Gemini Models", scenario.name, scenario.window); got != scenario.want {
 			t.Errorf("label(%q, %q) = %q, want %q", scenario.name, scenario.window, got, scenario.want)
 		}
+	}
+}
+
+func TestParsePluginMonthlyQuotaLabelWithoutBucketMetadata(t *testing.T) {
+	for _, window := range []string{"monthly", "month", " Monthly "} {
+		t.Run(window, func(t *testing.T) {
+			raw := []byte(`{"groups":[{"displayName":"Cline Pass","buckets":[
+				{"window":"5h","remainingFraction":1},
+				{"window":"7d","remainingFraction":0.41},
+				{"window":"` + window + `","remainingFraction":0.25,"resetTime":"2026-10-26T00:11:00Z"},
+				{"displayName":"Burst budget","window":"burst","remainingFraction":0.5},
+				{"displayName":"Image credits","window":"images","remainingFraction":0.75}
+			]}]}`)
+			windows, err := ParseAntigravityUsage(raw, 0, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(windows) != 5 {
+				t.Fatalf("windows = %+v, want all five quota windows", windows)
+			}
+			monthly := windows[2]
+			if monthly.Label != "Cline Pass · 每月限制 (Monthly)" {
+				t.Errorf("monthly label = %q, want the named monthly limit", monthly.Label)
+			}
+			if monthly.PeriodHours == nil || *monthly.PeriodHours != 0 {
+				t.Errorf("calendar month acquired a fixed duration: %v", monthly.PeriodHours)
+			}
+			if monthly.RemainingPercent == nil || *monthly.RemainingPercent != 25 || monthly.ResetAtMS == nil || *monthly.ResetAtMS != time.Date(2026, 10, 26, 0, 11, 0, 0, time.UTC).UnixMilli() {
+				t.Fatalf("monthly quota values changed: %+v", monthly)
+			}
+			if windows[3].Label != "Cline Pass · Burst budget" || windows[4].Label != "Cline Pass · Image credits" {
+				t.Fatalf("later custom window names changed: %q, %q", windows[3].Label, windows[4].Label)
+			}
+		})
 	}
 }
