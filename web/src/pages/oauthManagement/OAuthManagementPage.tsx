@@ -54,6 +54,7 @@ import {
   consumeOneShotIntent,
   filterOAuthWorkspaceRecords,
   resolveAuthorizationProviderId,
+  resolveCompletedRecord,
   sortOAuthWorkspaceRecords,
   workspaceProviderCounts,
   workspaceProviderOptions,
@@ -69,9 +70,18 @@ import { Toolbar } from '../../components/common/Toolbar';
 import { ToolButton } from '../../components/common/ToolButton';
 import { Pager } from '../../components/common/Pager';
 
+function recordFingerprint(record: OAuthWorkspaceRecord): string {
+  const file = record.file as unknown as Record<string, unknown>;
+  return JSON.stringify([file.updated_at ?? null, file.last_refresh ?? null, file.created_at ?? null, file.status ?? null]);
+}
+
+function snapshotRecords(records: OAuthWorkspaceRecord[]): Map<string, string> {
+  return new Map(records.map((record) => [record.key, recordFingerprint(record)]));
+}
+
 interface CompletionPending {
   providerId: string;
-  snapshot: Set<string>;
+  snapshot: Map<string, string>;
   startedAt: number;
 }
 
@@ -224,11 +234,11 @@ export const OAuthManagementPage: React.FC = () => {
   }, [filesQuery.data, filesQuery.isError, pendingFocusQuota]);
 
   const [completionPending, setCompletionPending] = React.useState<Record<string, CompletionPending>>({});
-  const preStartSnapshotRef = React.useRef<Record<string, Set<string>>>({});
+  const preStartSnapshotRef = React.useRef<Record<string, Map<string, string>>>({});
   const announceCompletionRef = React.useRef<(result: CompletionResult) => void>(() => undefined);
   const handleAuthorizationCompleted = React.useCallback((providerId: string) => {
     const snapshot = preStartSnapshotRef.current[providerId]
-      ?? new Set(recordsRef.current.map((record) => record.key));
+      ?? snapshotRecords(recordsRef.current);
     setCompletionPending((previous) => ({
       ...previous,
       [providerId]: { providerId, snapshot, startedAt: Date.now() },
@@ -237,7 +247,7 @@ export const OAuthManagementPage: React.FC = () => {
   const siwcBindings = useSIWCBindings();
   const sessions = useOAuthSessions(choices, handleAuthorizationCompleted, { shouldNotifyCompletion: false });
   const startSession = React.useCallback((providerId: string) => {
-    preStartSnapshotRef.current[providerId] = new Set(recordsRef.current.map((record) => record.key));
+    preStartSnapshotRef.current[providerId] = snapshotRecords(recordsRef.current);
     return sessions.start(providerId);
   }, [sessions]);
   const sessionController = React.useMemo(
@@ -284,12 +294,14 @@ export const OAuthManagementPage: React.FC = () => {
         continue;
       }
       if (filesQuery.dataUpdatedAt <= pending.startedAt) continue;
-      const candidates = records.filter((record) => {
-        if (pending.snapshot.has(record.key)) return false;
-        return record.authorizationProviderId === providerId || record.displayProvider === providerId;
-      });
-      nextResults[providerId] = candidates.length === 1
-        ? { providerId, kind: 'new', recordKey: candidates[0].key }
+      const sameProvider = records.filter((record) => (
+        record.authorizationProviderId === providerId || record.displayProvider === providerId
+      ));
+      // Re-linking an existing account overwrites its credential file in place, so the key never
+      // changes: fall back to records whose fingerprint changed since the sign-in started.
+      const resolvedKey = resolveCompletedRecord(sameProvider, pending.snapshot, (record) => recordFingerprint(record as OAuthWorkspaceRecord));
+      nextResults[providerId] = resolvedKey
+        ? { providerId, kind: 'new', recordKey: resolvedKey }
         : { providerId, kind: 'ambiguous' };
       settled.push(providerId);
     }

@@ -43,6 +43,9 @@ export interface ManagementAuthFile {
   priority?: number;
   weight?: number;
   note?: string;
+  created_at?: string | number | null;
+  updated_at?: string | number | null;
+  last_refresh?: string | number | null;
 }
 
 export interface ManagementAuthFilesResponse {

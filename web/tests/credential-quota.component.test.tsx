@@ -141,7 +141,7 @@ describe('credential quota presentation', () => {
 
     const meters = within(rows[2]).getAllByRole('meter');
     expect(meters.map((meter) => meter.getAttribute('aria-valuenow'))).toEqual(['64', '12']);
-    expect(rows[2].textContent).toContain('30h left');
+    expect(rows[2].textContent).toContain('1 d 6 h');
     expect(within(rows[3]).getByText('ample@example.com')).toBeTruthy();
     expect(within(rows[4]).getByText('No quota reading')).toBeTruthy();
 

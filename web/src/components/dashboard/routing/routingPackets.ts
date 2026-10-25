@@ -74,6 +74,7 @@ export interface PacketStage {
     flowOn: string;
     flowBack: string;
     gatewayBusy: string;
+    nodeLive?: string;
     washRequest: string;
     washSuccess: string;
     washFailure: string;
@@ -162,6 +163,16 @@ export function createPacketPlayer(stage: PacketStage) {
     }
     lit.delete(pathKey);
     stage.flow(pathKey)?.classList.remove(stage.classNames.flowOn, stage.classNames.flowBack);
+  };
+
+  /** A node stays "live" (blinking, colour-cycling) for as long as any request is inside it. */
+  const live = new Map<string, number>();
+  const setLive = (key: string, on: boolean) => {
+    const cls = stage.classNames.nodeLive;
+    const node = stage.halo(key)?.parentElement;
+    const n = Math.max(0, (live.get(key) ?? 0) + (on ? 1 : -1));
+    if (n > 0) live.set(key, n); else live.delete(key);
+    if (cls && node) node.classList.toggle(cls, n > 0);
   };
 
   const setBusy = () => stage.gateway()?.classList.toggle(stage.classNames.gatewayBusy, inFlight > 0 && !isDisposed);
@@ -299,11 +310,14 @@ export function createPacketPlayer(stage: PacketStage) {
     const trip = generation;
     const packet = launch();
     if (!packet) return;
+    const heldKeys: string[] = [];
     inFlight++;
     setBusy();
     try {
       const color = stage.color(route.modelId);
       const home = laneKey(route.modelId);
+      setLive(route.modelId, true);
+      heldKeys.push(route.modelId);
       acknowledge(route.modelId, 'request');
       if (!(await fly(trip, packet, home, color, false, LANE_HOP_MS))) return;
       acknowledge(GATEWAY_NODE, 'request');
@@ -314,6 +328,8 @@ export function createPacketPlayer(stage: PacketStage) {
         // A credential past the map's limit has no lane; the request ends at the gateway.
         if (!(await fly(trip, packet, edge, color, false, EDGE_HOP_MS))) return;
         // The credential lights as the request docks, and washes in the answer's tone when it answers.
+        setLive(attempt.targetId, true);
+        heldKeys.push(attempt.targetId);
         acknowledge(attempt.targetId, 'request', false);
         await hold(edge, color, holdFor(attempt.event.latency_ms));
         if (!isCurrent(trip)) return;
@@ -340,6 +356,7 @@ export function createPacketPlayer(stage: PacketStage) {
         break;
       }
     } finally {
+      for (const key of heldKeys) setLive(key, false);
       inFlight--;
       setBusy();
       land(packet);

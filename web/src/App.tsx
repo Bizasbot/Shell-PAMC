@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import enUS from 'antd/locale/en_US';
+import esES from 'antd/locale/es_ES';
 import msMY from 'antd/locale/ms_MY';
 import zhCN from 'antd/locale/zh_CN';
 import zhTW from 'antd/locale/zh_TW';
@@ -65,6 +66,7 @@ const ANTD_LOCALES = {
   'zh-Hant': zhTW,
   en: enUS,
   ms: msMY,
+  es: esES,
 } as const;
 
 export const App: React.FC = () => (

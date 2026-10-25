@@ -1,3 +1,4 @@
+import type { ManagementAuthFileModel } from '../../../types/managementAuthFile';
 import React from 'react';
 import clsx from 'clsx';
 import { Tooltip } from 'antd';
@@ -30,6 +31,7 @@ import {
   type UsageRoutingCooldown,
   type UsageRoutingResponse,
 } from '../../../types/usageRouting';
+import { allowedProfileModels, fetchProfileModels, filterRoutingByProfiles } from '../../../types/profileModels';
 import { RoutingMap, type RoutingArrivals } from './RoutingMap';
 import { routeColor, type IdentitySources } from './routingIdentity';
 import styles from './RoutingPanel.module.css';
@@ -163,10 +165,38 @@ export function RoutingPanel() {
     queryFn: () => api.getManagementAuthFiles(),
     staleTime: 60_000,
   });
+  // The list endpoint never carries `models`; idle models come from the per-credential endpoint.
+  const listedFiles = authFiles.data?.files;
+  const servedModels = useQuery({
+    queryKey: ['management-auth-files-models', (listedFiles || []).filter((f) => !f.disabled).map((f) => f.name).join('|')],
+    enabled: Boolean(listedFiles?.length),
+    staleTime: 30_000,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        (listedFiles || []).filter((f) => !f.disabled && f.name).map(async (f) => {
+          try {
+            return [f.name, (await api.getManagementAuthFileModels(f.name)).models] as const;
+          } catch {
+            return [f.name, [] as ManagementAuthFileModel[]] as const;
+          }
+        }),
+      );
+      return new Map(entries);
+    },
+  });
+  const inventory = React.useMemo(
+    () => listedFiles?.map((f) => ({ ...f, models: f.models?.length ? f.models : servedModels.data?.get(f.name) ?? [] })),
+    [listedFiles, servedModels.data],
+  );
   const nowMs = useServerNow(rolling?.skewMs ?? 0);
+  const profileModels = useQuery({ queryKey: ['profile-models'], queryFn: ({ signal }) => fetchProfileModels(signal), refetchInterval: 15_000, staleTime: 10_000, retry: false });
+  const allowedModels = React.useMemo(() => allowedProfileModels(profileModels.data), [profileModels.data]);
   const model = React.useMemo<RoutingModel | undefined>(
-    () => (rolling ? buildRoutingModel(liveRecords(rolling.records, nowMs, rolling.windowMs), rolling.cooldowns, nowMs, authFiles.data?.files) : undefined),
-    [rolling, nowMs, authFiles.data],
+    () => {
+      if (!rolling) return undefined;
+      return filterRoutingByProfiles(buildRoutingModel(liveRecords(rolling.records, nowMs, rolling.windowMs), rolling.cooldowns, nowMs, inventory), allowedModels);
+    },
+    [rolling, nowMs, inventory, allowedModels],
   );
 
   // A model keeps its colour for as long as it stays on the panel.

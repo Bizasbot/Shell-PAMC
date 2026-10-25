@@ -70,9 +70,24 @@ export function newestRecordIdOf(records: ReadonlyMap<number, UsageEvent> | read
   return newest;
 }
 
+/**
+ * One short display name per model. Routing aliases (`pv-`), per-account Antigravity
+ * slots (`vc002/`, `vc002-`) and dashed Gemini versions (`3-8`) collapse into the name
+ * Claude/GPT already show, so N accounts of the same model are one row.
+ */
+export function canonicalModelName(raw: string): string {
+  const trimmed = raw.trim();
+  const routed = /^pv-/i.test(trimmed) || /^vc\d+[/-]/i.test(trimmed);
+  let name = trimmed.replace(/^pv-/i, '').replace(/^vc\d+[/-]/i, '').replace(/^vc\d+[/-]/i, '');
+  if (!routed) return name;
+  // Routed through the Gemini subscription: Claude/GPT read `gemini-claude-opus-5.5`.
+  if (!/^gemini-/i.test(name)) name = `gemini-${name}`;
+  return name.replace(/(\d)-(\d)(?=-|$)/g, '$1.$2');
+}
+
 /** The model a caller asked for: the alias it named, else the model. */
 export function callModelOf(event: Pick<UsageEvent, 'model' | 'model_alias'>): string {
-  return event.model_alias?.trim() || event.model?.trim() || '';
+  return canonicalModelName(event.model_alias?.trim() || event.model?.trim() || '');
 }
 
 export function modelIdOf(event: Pick<UsageEvent, 'model' | 'model_alias'>): string {
@@ -204,7 +219,8 @@ export interface RoutingModel {
 export const MAX_DRAWN_MODELS = 7;
 export const MAX_DRAWN_TARGETS = 7;
 /** With an inventory, idle accounts and models are listed too, up to this many rows per column. */
-export const MAX_LISTED_ROWS = 24;
+export const MAX_LISTED_ROWS = 100;
+export const MAX_LISTED_TARGETS = 100;
 
 /** A placeholder attempt that lets an idle credential reuse the identity of a live one. */
 function idleSample(file: ManagementAuthFile, model: string): UsageEvent {
@@ -284,7 +300,7 @@ export function buildRoutingModel(
     for (const file of inventory) {
       if (file.disabled || !file.auth_index?.trim()) continue;
       const id = `auth:${file.auth_index.trim()}`;
-      const served = (file.models || []).map((m) => m.id?.trim()).filter((m): m is string => Boolean(m));
+      const served = (file.models || []).map((m) => (m.id?.trim() ? canonicalModelName(m.id) : '')).filter((m): m is string => Boolean(m));
       for (const name of served) {
         const modelId = `model:${name}`;
         if (!models.has(modelId)) models.set(modelId, { id: modelId, name, requests: 0, failures: 0, lastAtMs: 0, latencyMs: 0, latencyTotal: 0 });
@@ -300,8 +316,23 @@ export function buildRoutingModel(
       if (file.disabled && file.auth_index?.trim()) targets.delete(`auth:${file.auth_index.trim()}`);
     }
   }
+  // Only active models and credentials are shown and animated: a model no enabled credential
+  // serves (disabled, or excluded) is dropped, and so is any route that touches a removed one.
+  let liveRoutes = routes;
+  if (inventory) {
+    const servedActive = new Set<string>();
+    for (const file of inventory) {
+      if (file.disabled) continue;
+      for (const m of file.models || []) if (m.id?.trim()) servedActive.add(`model:${canonicalModelName(m.id)}`);
+    }
+    if (servedActive.size > 0) {
+      for (const id of [...models.keys()]) if (!servedActive.has(id)) models.delete(id);
+    }
+    liveRoutes = routes.filter((route) => (!inventory || servedActive.size === 0 || models.has(route.modelId))
+      && route.attempts.every((a) => targets.has(a.targetId)));
+  }
   const maxModels = inventory ? MAX_LISTED_ROWS : MAX_DRAWN_MODELS;
-  const maxTargets = inventory ? MAX_LISTED_ROWS : MAX_DRAWN_TARGETS;
+  const maxTargets = inventory ? MAX_LISTED_TARGETS : MAX_DRAWN_TARGETS;
   const drawnModels = [...models.values()].sort(byVolume((row) => row.requests)).slice(0, maxModels);
   const allTargets = [...targets.values()].sort(byVolume((target) => target.attempts));
   const drawnTargets = [
@@ -319,7 +350,7 @@ export function buildRoutingModel(
         ...target,
         cooldown: resting.get(target.id),
       })),
-    routes,
+    routes: liveRoutes,
     attempts: records.length,
     hiddenModels: models.size - drawnModels.length,
     hiddenTargets: targets.size - drawnTargets.length,

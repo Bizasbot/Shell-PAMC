@@ -1,4 +1,4 @@
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 
 const cleanup = typeof window !== 'undefined'
   ? (await import('@testing-library/react')).cleanup
@@ -15,4 +15,10 @@ afterEach(() => {
     window.localStorage.clear();
     delete window.__OMCPA_CONFIG__;
   }
+});
+
+// The fork defaults to a deferred Spanish catalog, and the provider renders nothing until it
+// arrives. Tests render synchronously, so they pin the bundled English catalog.
+beforeEach(() => {
+  if (typeof window !== 'undefined') window.localStorage.setItem('omc-lang', 'en');
 });

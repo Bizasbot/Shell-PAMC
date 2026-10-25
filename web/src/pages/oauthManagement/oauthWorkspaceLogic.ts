@@ -600,3 +600,22 @@ export function legacyOAuthManagementRedirect(
 }
 
 export { quotaRefreshOutcomeKind } from '../../utils/quotaRefreshOutcome';
+
+/**
+ * Picks the credential a finished sign-in produced. A new key wins; otherwise a record whose
+ * fingerprint changed; otherwise, when the provider has exactly one credential, a re-link can only
+ * have overwritten that one (the backend may rewrite the file without touching any timestamp).
+ */
+export function resolveCompletedRecord(
+  sameProvider: Array<{ key: string }>,
+  snapshot: Map<string, string>,
+  fingerprint: (record: { key: string }) => string,
+): string | null {
+  const added = sameProvider.filter((record) => !snapshot.has(record.key));
+  if (added.length === 1) return added[0].key;
+  if (added.length > 1) return null;
+  const changed = sameProvider.filter((record) => snapshot.get(record.key) !== fingerprint(record));
+  if (changed.length === 1) return changed[0].key;
+  if (changed.length > 1) return null;
+  return sameProvider.length === 1 ? sameProvider[0].key : null;
+}
