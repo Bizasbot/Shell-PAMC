@@ -1,5 +1,6 @@
 import React from 'react';
 import cnFlagMarkup from 'country-flag-icons/string/3x2/CN';
+import esFlagMarkup from 'country-flag-icons/string/3x2/ES';
 import hkFlagMarkup from 'country-flag-icons/string/3x2/HK';
 import myFlagMarkup from 'country-flag-icons/string/3x2/MY';
 import usFlagMarkup from 'country-flag-icons/string/3x2/US';
@@ -15,6 +16,7 @@ import usFlagMarkup from 'country-flag-icons/string/3x2/US';
  */
 const FLAG_MARKUP: Record<string, string> = {
   CN: cnFlagMarkup,
+  ES: esFlagMarkup,
   HK: hkFlagMarkup,
   MY: myFlagMarkup,
   US: usFlagMarkup,

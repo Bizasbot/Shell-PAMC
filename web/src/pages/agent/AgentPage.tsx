@@ -25,6 +25,7 @@ import { useOverlayHistory } from '../../hooks/useOverlayHistory';
 import { useVisibleViewport } from '../../hooks/useVisibleViewport';
 import { usePreference } from '../../hooks/usePreference';
 import { gatewayCallPointOf } from '../../types/gatewayModels';
+import { curateAgentModels } from '../../types/agentModels';
 import { referenceContextWindow } from '../../types/modelSquare';
 import { DEFAULT_INFERENCE_ENDPOINT, parseInferenceEndpoint } from '../../types/inferenceEndpoints';
 import type { InferenceEndpoint } from '../../types/inferenceEndpoints';
@@ -181,7 +182,7 @@ export function AgentPage() {
     setFingerprint('');
     setModel('');
   }, [keys.isSuccess, keys.data, fingerprint]);
-  const models = directory.data?.models;
+  const models = React.useMemo(() => curateAgentModels(directory.data?.models), [directory.data?.models]);
   React.useEffect(() => {
     if (!models || directory.isFetching) return;
     if (model && !models.some(item => gatewayCallPointOf(item) === model)) setModel('');
@@ -424,7 +425,7 @@ export function AgentPage() {
     return {
       commands: offered.filter((command): command is ComposerCommand => !!command),
       mentions: [
-        ...(directory.data?.models ?? []).map(item => ({ id: `model:${gatewayCallPointOf(item)}`, label: gatewayCallPointOf(item), group: t('conversation.model') })),
+        ...(models ?? []).map(item => ({ id: `model:${gatewayCallPointOf(item)}`, label: gatewayCallPointOf(item), group: t('conversation.model') })),
         ...(keys.data?.keys ?? []).filter(key => Boolean(key.alias)).map(key => ({ id: `key:${key.alias}`, label: key.alias as string, group: t('conversation.client_key') })),
         ...(capabilities.data ?? []).map(capability => ({ id: `capability:${capability.name}`, label: capability.name, group: t('agent.mention.capability') })),
       ],
@@ -660,7 +661,7 @@ export function AgentPage() {
                     />
                     <TargetChip
                       keys={keys.data?.keys ?? []}
-                      models={directory.data?.models ?? []}
+                      models={models ?? []}
                       fingerprint={fingerprint}
                       model={model}
                       isKeysLoading={keys.isFetching}

@@ -20,7 +20,7 @@
  * is a stable internal key, not a locale tag: `zh` means Simplified Chinese in
  * every existing browser profile.
  */
-export type Lang = 'zh' | 'zh-Hant' | 'en' | 'ms';
+export type Lang = 'zh' | 'zh-Hant' | 'en' | 'ms' | 'es';
 
 export interface LanguageOption {
   readonly id: Lang;
@@ -31,10 +31,8 @@ export interface LanguageOption {
 }
 
 export const LANGUAGES: readonly LanguageOption[] = [
-  { id: 'zh', name: '简体中文', code: '中', country: 'CN', locale: 'zh-CN' },
-  { id: 'zh-Hant', name: '繁體中文', code: '繁', country: 'HK', locale: 'zh-Hant' },
   { id: 'en', name: 'English', code: 'EN', country: 'US', locale: 'en' },
-  { id: 'ms', name: 'Bahasa Melayu', code: 'MS', country: 'MY', locale: 'ms-MY' },
+  { id: 'es', name: 'Español', code: 'ES', country: 'ES', locale: 'es' },
 ];
 
 /**

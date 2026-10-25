@@ -1,3 +1,4 @@
+import type { ManagementAuthFile } from './managementAuthFile';
 import type { UsageEvent } from './usageEvents';
 
 /**
@@ -202,6 +203,18 @@ export interface RoutingModel {
 
 export const MAX_DRAWN_MODELS = 7;
 export const MAX_DRAWN_TARGETS = 7;
+/** With an inventory, idle accounts and models are listed too, up to this many rows per column. */
+export const MAX_LISTED_ROWS = 24;
+
+/** A placeholder attempt that lets an idle credential reuse the identity of a live one. */
+function idleSample(file: ManagementAuthFile, model: string): UsageEvent {
+  return {
+    id: 0, event_key: `idle:${file.auth_index}`, timestamp_ms: 0,
+    provider: file.provider || file.type || '', auth_index: file.auth_index, model,
+    failed: false, generate: false, latency_ms: 0, has_request_log: false,
+    tokens: { input: 0, output: 0, reasoning: 0, cached: 0, cache_read: 0, cache_creation: 0, total: 0 },
+  } as UsageEvent;
+}
 
 /**
  * Builds what the panel draws from the window's attempts.
@@ -216,6 +229,7 @@ export function buildRoutingModel(
   records: readonly UsageEvent[],
   cooldowns: readonly UsageRoutingCooldown[],
   nowMs: number,
+  inventory?: readonly ManagementAuthFile[],
 ): RoutingModel {
   const routes = groupRoutes(records);
   const models = new Map<string, RoutingModelRow & { latencyTotal: number }>();
@@ -264,12 +278,36 @@ export function buildRoutingModel(
 
   const byVolume = <T extends { lastAtMs: number }>(count: (value: T) => number) => (left: T, right: T) =>
     count(right) - count(left) || right.lastAtMs - left.lastAtMs;
-  const drawnModels = [...models.values()].sort(byVolume((row) => row.requests)).slice(0, MAX_DRAWN_MODELS);
+  // Sync accounts <-> models: every enabled credential and every model it serves is listed,
+  // idle ones with zero traffic; live traffic still decides the counts and the ordering.
+  if (inventory) {
+    for (const file of inventory) {
+      if (file.disabled || !file.auth_index?.trim()) continue;
+      const id = `auth:${file.auth_index.trim()}`;
+      const served = (file.models || []).map((m) => m.id?.trim()).filter((m): m is string => Boolean(m));
+      for (const name of served) {
+        const modelId = `model:${name}`;
+        if (!models.has(modelId)) models.set(modelId, { id: modelId, name, requests: 0, failures: 0, lastAtMs: 0, latencyMs: 0, latencyTotal: 0 });
+      }
+      if (!targets.has(id)) {
+        targets.set(id, { id, sample: idleSample(file, served[0] || ''), attempts: 0, failures: 0, lastAtMs: 0, latencyMs: 0, latencyTotal: 0 });
+      }
+    }
+  }
+  // Disabled credentials are hidden entirely, even when they still have recent traffic.
+  if (inventory) {
+    for (const file of inventory) {
+      if (file.disabled && file.auth_index?.trim()) targets.delete(`auth:${file.auth_index.trim()}`);
+    }
+  }
+  const maxModels = inventory ? MAX_LISTED_ROWS : MAX_DRAWN_MODELS;
+  const maxTargets = inventory ? MAX_LISTED_ROWS : MAX_DRAWN_TARGETS;
+  const drawnModels = [...models.values()].sort(byVolume((row) => row.requests)).slice(0, maxModels);
   const allTargets = [...targets.values()].sort(byVolume((target) => target.attempts));
   const drawnTargets = [
     ...allTargets.filter((target) => resting.has(target.id)),
     ...allTargets.filter((target) => !resting.has(target.id)),
-  ].slice(0, MAX_DRAWN_TARGETS);
+  ].slice(0, maxTargets);
 
   return {
     models: drawnModels

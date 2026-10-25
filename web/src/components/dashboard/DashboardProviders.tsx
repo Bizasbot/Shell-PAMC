@@ -216,7 +216,7 @@ export const DashboardProviders: React.FC<DashboardProvidersProps> = ({
                   {/* Credentials Count */}
                   <div className="provider-creds-col">
                     <span className="provider-credentials">
-                      {t('dash.credentials_n', { n: provider.credentials })}
+                      {t(provider.credentials === 1 ? "dash.credentials_one" : "dash.credentials_n", { n: provider.credentials })}
                     </span>
                   </div>
 

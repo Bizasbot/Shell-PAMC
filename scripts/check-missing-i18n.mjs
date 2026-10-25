@@ -100,8 +100,7 @@ export function runCheck({
   dictionaryFile = path.join(root, 'web', 'src', 'i18n', 'index.tsx'),
   sourceDirectory = path.join(root, 'web', 'src'),
   catalogFiles = [
-    { id: 'zh-Hant', file: path.join(root, 'web', 'src', 'i18n', 'locales', 'zh-Hant.ts') },
-    { id: 'ms', file: path.join(root, 'web', 'src', 'i18n', 'locales', 'ms.ts') },
+    { id: 'es', file: path.join(root, 'web', 'src', 'i18n', 'locales', 'es.ts') },
   ],
   output = console,
 } = {}) {

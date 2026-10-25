@@ -390,13 +390,22 @@
 .quota-row + .quota-row { border-top: 1px solid var(--border-soft); }
 .quota-row {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1.7fr) 78px;
-  grid-template-areas: "icon name reading when";
+  grid-template-columns: 28px 18px minmax(0, 1fr) minmax(0, 2.6fr) 78px;
+  grid-template-areas: "idx icon name reading when";
   align-items: center;
   gap: 6px 12px;
   min-height: var(--quota-row-height);
   color: var(--fg);
   font-size: var(--text-md);
+}
+.quota-row-idx {
+  grid-area: idx;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  user-select: none;
 }
 .quota-row-icon { grid-area: icon; }
 .quota-row-name { grid-area: name; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -407,7 +416,18 @@
   gap: 16px;
   min-width: 0;
 }
-.quota-window { display: grid; grid-template-columns: auto minmax(0, 1fr) 34px; align-items: center; gap: 8px; min-width: 0; }
+.quota-window { display: grid; grid-template-columns: auto minmax(0, 1fr) 34px auto; align-items: center; gap: 8px; min-width: 0; }
+.quota-window.is-named { grid-template-columns: minmax(0, 1fr) 34px auto; }
+.quota-window.is-named .quota-window-label { display: none; }
+.quota-columns {
+  position: sticky; top: 0; z-index: 1;
+  min-height: 24px; background: var(--panel, var(--bg, transparent));
+  color: var(--muted); font-size: var(--text-sm); letter-spacing: .04em;
+  border-bottom: 1px solid var(--border-soft);
+}
+.quota-columns .quota-row-windows { grid-column: 4; grid-row: 1; }
+.quota-columns .quota-row-windows > span { padding-left: 2px; }
+.quota-window-refill { display: inline-flex; align-items: center; gap: 3px; min-width: 64px; justify-content: flex-end; color: var(--muted); font-size: var(--text-sm); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .quota-window-label { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--text-sm); }
 .quota-window-track { display: block; height: 6px; border-radius: var(--radius-xs); background: var(--border); overflow: hidden; }
 .quota-window-fill { display: block; height: 100%; border-radius: inherit; }
@@ -450,9 +470,12 @@
 }
 @media (max-width: 640px) {
   .credential-quota-panel { --quota-row-height: 68px; }
+  .quota-columns { display: none; }
+  .quota-window.is-named { grid-template-columns: auto minmax(0, 1fr) 34px auto; }
+  .quota-window.is-named .quota-window-label { display: inline; }
   .quota-row {
-    grid-template-columns: 18px minmax(0, 1fr) auto;
-    grid-template-areas: "icon name when" "reading reading reading";
+    grid-template-columns: 24px 18px minmax(0, 1fr) auto;
+    grid-template-areas: "idx icon name when" ". reading reading reading";
     align-content: center;
   }
 }

@@ -54,7 +54,7 @@ const (
 	// at or above the current Claude Code release.
 	ClaudeCLIUserAgent = "claude-cli/2.1.308 (external, cli)"
 	// The changelist was verified for Hub 2.24.0; update the release and CL together.
-	AntigravityUserAgent = "antigravity/hub/2.24.0 (aidev_client; os_type=darwin; arch=arm64; cl=1000335682)"
+	AntigravityUserAgent = "antigravity"
 	XaiGrokClientVersion = "1.0.46"
 	XaiGrokUserAgent     = "grok-pager/" + XaiGrokClientVersion + " grok-shell/" + XaiGrokClientVersion + " (macos; aarch64)"
 	XaiPaidHealthModel   = "grok-4.5"

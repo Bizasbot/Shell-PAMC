@@ -59,9 +59,23 @@ function pickRowWindows(windows: QuotaWindow[]): QuotaWindow[] {
   const familyOf = (window: QuotaWindow) => (
     window.scope === 'group' ? `group:${window.label.split(' · ')[0]}` : window.scope === 'model' ? `model:${window.model || window.label}` : window.scope
   );
+  // A credential with several model groups (Antigravity: Gemini and Claude/GPT) can still serve
+  // while any one group has room, so the row follows the group with the most headroom.
+  const familyRoom = new Map<string, number>();
+  for (const window of windows) {
+    const remaining = quotaWindowRemaining(window);
+    const key = familyOf(window);
+    if (remaining == null) continue;
+    familyRoom.set(key, Math.min(familyRoom.get(key) ?? 100, remaining));
+  }
+  let chosen = familyOf(first);
+  let best = familyRoom.get(chosen) ?? -1;
+  for (const [key, room] of familyRoom) {
+    if (room > best) { best = room; chosen = key; }
+  }
   const seenIds = new Set<string>();
   return windows
-    .filter((window) => familyOf(window) === familyOf(first))
+    .filter((window) => familyOf(window) === chosen)
     .filter((window) => {
       if (!window.id) return true;
       if (seenIds.has(window.id)) return false;
@@ -113,7 +127,8 @@ export function isCredentialQuotaBlocked(state: CredentialQuotaState): boolean {
 function resolveState(file: ManagementAuthFile, item: QuotaItem | undefined, remainingPercent: number | undefined): CredentialQuotaState {
   if (item?.recommendation?.action === 'reauth' || item?.recommendation?.status === 'needs_reauth') return 'reauth';
   if (item?.active_cooldown?.is_active || item?.status === 'cooldown') return 'cooldown';
-  if (item?.status === 'exhausted' || remainingPercent === 0) return 'exhausted';
+  // Gateway status reflects the worst model group; the row's windows already follow the best one.
+  if (remainingPercent === 0 || (item?.status === 'exhausted' && remainingPercent == null)) return 'exhausted';
   if (isUnavailable(file) || item?.status === 'error') return 'problem';
   if (remainingPercent == null) return 'unread';
   return remainingPercent < QUOTA_LOW_PERCENT ? 'low' : 'healthy';

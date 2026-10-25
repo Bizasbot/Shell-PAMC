@@ -425,6 +425,9 @@ func (h *Handler) ensureAgent() error {
 		if h.agent.err == nil {
 			h.agent.err = agent.RegisterAskQuestion(registry)
 		}
+		if h.agent.err == nil {
+			h.agent.err = agent.RegisterWebSearch(registry)
+		}
 		if h.agent.err != nil {
 			return
 		}

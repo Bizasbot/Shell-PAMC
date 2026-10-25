@@ -86,12 +86,28 @@ function formatTimeUntil(targetMS: number | undefined, nowMS: number, t: TFunc):
   return hours < 48 ? t('quota.in_hours', { n: hours }) : t('quota.in_days', { n: Math.round(hours / 24) });
 }
 
-const QuotaWindowMeter: React.FC<{ window: QuotaWindow }> = ({ window }) => {
+/** Compact refill countdown for one window; units are symbols, so no translation is needed. */
+function formatRefill(targetMS: number | undefined, nowMS: number): string {
+  if (!targetMS || targetMS <= nowMS) return '';
+  const minutes = Math.ceil((targetMS - nowMS) / 60_000);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ${minutes % 60} min`;
+  const days = Math.floor(hours / 24);
+  return `${days} d ${hours % 24} h`;
+}
+
+const QuotaWindowMeter: React.FC<{ window: QuotaWindow; nowMS: number }> = ({ window, nowMS }) => {
   const t = useT();
+  const refill = formatRefill(window.reset_at_ms, nowMS);
+  const refillApprox = refill && window.reset_accuracy && window.reset_accuracy !== 'exact' ? '~' : '';
   const remaining = quotaWindowRemaining(window);
   const label = windowShortLabel(window, t);
+  // The 5 h and weekly windows are named once by the list header; others keep their own label.
+  const period = quotaWindowPeriod(window);
+  const named = period === 'five_hour' || period === 'weekly';
   return (
-    <span className="quota-window">
+    <span className={clsx('quota-window', named && 'is-named')}>
       <span className="quota-window-label" title={window.label}>{label}</span>
       <span
         className="quota-window-track"
@@ -104,18 +120,21 @@ const QuotaWindowMeter: React.FC<{ window: QuotaWindow }> = ({ window }) => {
         <span className={clsx('quota-window-fill', remainingTone(remaining))} style={{ width: `${remaining ?? 0}%` }} />
       </span>
       <span className="quota-window-value">{remaining == null ? '--' : `${remaining}%`}</span>
+      <span className="quota-window-refill" title={refill ? t('dash.quota.refill_title') : undefined}>
+        {refill && (<><ClockCircleOutlined aria-hidden="true" /> {refillApprox}{refill}</>)}
+      </span>
     </span>
   );
 };
 
-const CredentialQuotaRowView: React.FC<{ row: CredentialQuotaRow; nowMS: number }> = ({ row, nowMS }) => {
+const CredentialQuotaRowView: React.FC<{ row: CredentialQuotaRow; index: number; nowMS: number }> = ({ row, index, nowMS }) => {
   const t = useT();
   const status = STATUS_ROW_STATES[row.state];
   // A blocked row counts down to when it serves again; a serving one to when its tightest window
   // refills. An instant the provider did not state exactly keeps its `~`.
-  const reset = row.bindingWindow?.reset_at_ms;
   const isEstimated = !row.recoverAtMS && Boolean(row.bindingWindow?.reset_accuracy) && row.bindingWindow?.reset_accuracy !== 'exact';
-  const until = formatTimeUntil(row.recoverAtMS ?? (status ? undefined : reset), nowMS, t);
+  // Serving rows show each window's own refill time inside the meter.
+  const until = formatTimeUntil(row.recoverAtMS ?? (status ? undefined : undefined), nowMS, t);
   const when = until ? `${isEstimated ? '~' : ''}${until}` : '';
   return (
     // A row is not a link. It scrolls under a finger, and a row that navigates turns every touch
@@ -124,6 +143,7 @@ const CredentialQuotaRowView: React.FC<{ row: CredentialQuotaRow; nowMS: number 
       className={clsx('quota-row', `is-${row.state}`, isCredentialQuotaBlocked(row.state) && 'is-blocked')}
       data-quota-state={row.state}
     >
+      <span className="quota-row-idx" title={`#${index + 1}`}>#{index + 1}</span>
       <ProviderBrandIcon
         iconId={credentialProviderIconId(row.provider, row.fileName)}
         providerKeys={[row.provider]}
@@ -138,7 +158,7 @@ const CredentialQuotaRowView: React.FC<{ row: CredentialQuotaRow; nowMS: number 
         </span>
       ) : (
         <span className="quota-row-windows">
-          {row.windows.map((window) => <QuotaWindowMeter key={window.id || window.label} window={window} />)}
+          {row.windows.map((window) => <QuotaWindowMeter key={window.id || window.label} window={window} nowMS={nowMS} />)}
         </span>
       )}
       <span className="quota-row-when">
@@ -272,7 +292,15 @@ export const CredentialQuotaPanel: React.FC<CredentialQuotaPanelProps> = ({
               // Every credential is listed and the list scrolls inside the panel, so a large fleet
               // is readable here without the panel outgrowing the row it shares.
               <ul className="quota-list">
-                {board.rows.map((row) => <CredentialQuotaRowView key={row.key} row={row} nowMS={nowMS} />)}
+                <li className="quota-row quota-columns" aria-hidden="true">
+                  <span className="quota-row-windows">
+                    <span>{t('dash.quota.window_five_hour')}</span>
+                    <span>{t('dash.quota.window_weekly')}</span>
+                  </span>
+                </li>
+                {board.rows.map((row, idx) => (
+                  <CredentialQuotaRowView key={row.key} row={row} index={idx} nowMS={nowMS} />
+                ))}
               </ul>
             ) : (
               <p className="empty-copy quota-all-disabled">{t('dash.quota.all_disabled')}</p>

@@ -1448,6 +1448,7 @@ const DICT: Record<string, [string, string]> = {
   'dash.providers_show_less': ['收起', 'Show less'],
   'dash.empty_providers': ['尚无 provider 流量数据', 'No provider traffic yet'],
   'dash.credentials_n': ['{n} 个凭据', '{n} credentials'],
+  'dash.credentials_one': ['{n} 个凭据', '{n} credential'],
   'dash.quota.title': ['凭证额度', 'Credential quota'],
   'dash.layout.arrange': ['自定义布局', 'Customize layout'],
   'dash.layout.done': ['完成', 'Done'],
@@ -3805,8 +3806,7 @@ type Catalog = Readonly<Record<string, string>>;
  * asks for one of these ids, this map supplies the catalog that makes it readable.
  */
 const CATALOG_LOADERS: Partial<Record<Lang, () => Promise<Catalog>>> = {
-  'zh-Hant': () => import('./locales/zh-Hant').then((module) => module.ZH_HANT),
-  ms: () => import('./locales/ms').then((module) => module.MS),
+  es: () => import('./locales/es').then((module) => module.ES),
 };
 
 const loadedCatalogs = new Map<Lang, Catalog>();
@@ -3880,16 +3880,16 @@ const LANG_KEY = 'omc-lang';
  * It is the same language `readInitialLang` picks for an unrecognized stored id, so a console that
  * cannot read its stored preference still lands somewhere deliberate instead of nowhere.
  */
-const FALLBACK_LANG: Lang = 'zh';
+const FALLBACK_LANG: Lang = 'es';
 function readInitialLang(): Lang {
-  if (typeof window === 'undefined') return 'zh';
+  if (typeof window === 'undefined') return 'es';
   try {
     const stored = window.localStorage.getItem(LANG_KEY);
-    return LANGUAGES.some((language) => language.id === stored) ? (stored as Lang) : 'zh';
+    return LANGUAGES.some((language) => language.id === stored) ? (stored as Lang) : 'es';
   } catch {
     // Storage can be blocked by the browser or a sandboxed frame. The console
     // still has to render its default reading language.
-    return 'zh';
+    return 'es';
   }
 }
 

@@ -158,10 +158,15 @@ export function RoutingPanel() {
     }
   }, [read]);
 
+  const authFiles = useQuery({
+    queryKey: ['management-auth-files'],
+    queryFn: () => api.getManagementAuthFiles(),
+    staleTime: 60_000,
+  });
   const nowMs = useServerNow(rolling?.skewMs ?? 0);
   const model = React.useMemo<RoutingModel | undefined>(
-    () => (rolling ? buildRoutingModel(liveRecords(rolling.records, nowMs, rolling.windowMs), rolling.cooldowns, nowMs) : undefined),
-    [rolling, nowMs],
+    () => (rolling ? buildRoutingModel(liveRecords(rolling.records, nowMs, rolling.windowMs), rolling.cooldowns, nowMs, authFiles.data?.files) : undefined),
+    [rolling, nowMs, authFiles.data],
   );
 
   // A model keeps its colour for as long as it stays on the panel.
@@ -176,11 +181,6 @@ export function RoutingPanel() {
     return slot === undefined ? 'var(--accent)' : routeColor(slot);
   }, [slots]);
 
-  const authFiles = useQuery({
-    queryKey: ['management-auth-files'],
-    queryFn: () => api.getManagementAuthFiles(),
-    staleTime: 60_000,
-  });
   const providersQuery = useQuery({
     // The sanitized entry, never the providers page's plaintext one.
     queryKey: ['management-providers-sanitized'],

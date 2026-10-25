@@ -310,6 +310,7 @@ var LANGUAGES = map[string]string{
 	"zh-Hant": "Traditional Chinese",
 	"en":      "English",
 	"ms":      "Malay",
+	"es":      "Spanish",
 }
 
 type ModelClient interface {

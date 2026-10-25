@@ -373,6 +373,23 @@
   min-width: 0;
 }
 
+.node-with-idx {
+  grid-template-columns: auto 28px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.node-idx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+  user-select: none;
+  min-width: 22px;
+}
+
 /* Past four rows a column tightens a step, never below a comfortable two-line row. */
 .map-dense .node {
   gap: 10px;
@@ -513,6 +530,59 @@
 
 .wash-failure {
   --wash-color: color-mix(in oklch, var(--danger) 10%, transparent);
+}
+
+/* A node with a request inside it: its edge blinks, a colour sweep runs across it and a
+   spectrum bar on its left cycles hue. Only compositor-cheap properties plus a short
+   box-shadow pulse; reduced motion keeps a static glow. */
+.node-live {
+  border-color: color-mix(in oklch, var(--route-color) 70%, var(--border));
+  animation: node-blink 900ms ease-in-out infinite;
+}
+
+.node-live::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 35%, color-mix(in oklch, var(--route-color) 22%, transparent) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: node-sweep 1400ms linear infinite;
+  pointer-events: none;
+}
+
+.node-live::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--route-color), var(--accent), var(--success), var(--route-color));
+  background-size: 100% 300%;
+  animation: node-spectrum 1800ms linear infinite;
+  pointer-events: none;
+}
+
+@keyframes node-blink {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--route-color) 0%, transparent), 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 3px color-mix(in oklch, var(--route-color) 28%, transparent), 0 0 18px color-mix(in oklch, var(--route-color) 45%, transparent); }
+}
+
+@keyframes node-sweep {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+@keyframes node-spectrum {
+  from { background-position: 0 0; }
+  to { background-position: 0 300%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-live { animation: none; box-shadow: 0 0 0 2px color-mix(in oklch, var(--route-color) 30%, transparent); }
+  .node-live::before, .node-live::after { animation: none; }
 }
 
 /* ---- Packets ---- */

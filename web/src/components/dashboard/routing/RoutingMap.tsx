@@ -235,6 +235,7 @@ export function RoutingMap({ model, colorOf, nowMs, strategy, sources, arrivals 
         flowOn: styles['edge-flow-on'],
         flowBack: styles['edge-flow-back'],
         gatewayBusy: styles['gateway-busy'],
+        nodeLive: styles['node-live'],
         washRequest: styles['wash-request'],
         washSuccess: styles['wash-success'],
         washFailure: styles['wash-failure'],
@@ -280,7 +281,7 @@ export function RoutingMap({ model, colorOf, nowMs, strategy, sources, arrivals 
             modelId={key}
             color={colorFor(key)}
             width={strokeFor(item.requests / maxModel)}
-            isFailing={item.failures === item.requests}
+            isFailing={item.requests > 0 && item.failures === item.requests}
             pathRef={paths.ref(laneKey(key))}
             flowRef={flows.ref(laneKey(key))}
           />
@@ -293,7 +294,7 @@ export function RoutingMap({ model, colorOf, nowMs, strategy, sources, arrivals 
             targetId={key}
             color="var(--fg-2)"
             width={strokeFor(item.attempts / maxTarget)}
-            isFailing={item.failures === item.attempts}
+            isFailing={item.attempts > 0 && item.failures === item.attempts}
             isResting={Boolean(item.cooldown)}
             pathRef={paths.ref(edgeKey(key))}
             flowRef={flows.ref(edgeKey(key))}
@@ -354,6 +355,7 @@ export function RoutingMap({ model, colorOf, nowMs, strategy, sources, arrivals 
           <TargetNode
             key={key}
             target={item}
+            index={index}
             phase={phase}
             delayMs={enterDelay(index)}
             containerRef={containerRef}
@@ -511,6 +513,7 @@ function ModelNode({ row, phase, delayMs, containerRef, color, washRef, haloRef,
 
 interface TargetNodeProps {
   target: RoutingTarget;
+  index: number;
   phase: PresencePhase;
   delayMs: number;
   containerRef: React.RefObject<HTMLElement | null>;
@@ -522,7 +525,7 @@ interface TargetNodeProps {
   ringRef: (element: HTMLElement | null) => void;
 }
 
-function TargetNode({ target, phase, delayMs, containerRef, nowMs, isLatest, sources, washRef, haloRef, ringRef }: TargetNodeProps) {
+function TargetNode({ target, index, phase, delayMs, containerRef, nowMs, isLatest, sources, washRef, haloRef, ringRef }: TargetNodeProps) {
   const t = useT();
   const ref = React.useRef<HTMLDivElement>(null);
   useRowMotion(ref, containerRef, { phase, away: awayFrom(1), delayMs });
@@ -531,7 +534,7 @@ function TargetNode({ target, phase, delayMs, containerRef, nowMs, isLatest, sou
     <div
       ref={ref}
       role="listitem"
-      className={clsx(styles['node'], target.cooldown && styles['node-resting'])}
+      className={clsx(styles['node'], styles['node-with-idx'], target.cooldown && styles['node-resting'])}
       data-route-target={target.id}
       data-testid="routing-target"
       data-phase={phase}
@@ -542,6 +545,7 @@ function TargetNode({ target, phase, delayMs, containerRef, nowMs, isLatest, sou
       <span className={clsx(styles['port'], styles['port-in'])} aria-hidden="true">
         <span ref={ringRef} className={styles['ring']} />
       </span>
+      <span className={styles['node-idx']} title={`#${index + 1}`}>#{index + 1}</span>
       <span className={styles['node-mark']} aria-hidden="true">
         <ProviderBrandIcon iconId={identity.iconId} logo={identity.logo} size={18} />
       </span>
