@@ -14,7 +14,7 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 )
 
-const MAX_PAYLOAD_BYTES = 32 << 10
+const MAX_PAYLOAD_BYTES = 512 << 10
 
 type Principal struct {
 	ID      string
