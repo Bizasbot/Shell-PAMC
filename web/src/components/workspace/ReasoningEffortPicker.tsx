@@ -22,7 +22,7 @@ export function ReasoningEffortPicker({ value, onChange, isDisabled = false }: R
   return (
     <ComposerPicker
       label={t('conversation.reasoning_effort')}
-      valueLabel={value ? parameterLabelOf(value) : t('pg.default')}
+      valueLabel={value ? parameterLabelOf(value) : t('conversation.effort_default')}
       testId="effort-chip"
       contentTestId="effort-popover"
       isDisabled={isDisabled}

@@ -96,7 +96,7 @@ export function TargetChip({
             }} /> : <div className={styles['picker-empty']}>{emptyHint ?? t('conversation.target.pick_key')}</div>
           ) : visible.length > 0 ? (
             <ComposerPickerList key={`models:${fingerprint}:${needle}`} label={t('conversation.model')} options={visible.map(callPoint => ({ value: callPoint, label: callPoint, icon: <ModelMark callPoint={callPoint} /> }))} value={model} optionTestId="target-model" onSelect={next => { onModelChange(next); close(); }} />
-          ) : <div className={styles['picker-empty']}>{needle ? t('conversation.target.no_match') : emptyHint ?? t(fingerprint ? 'pg.no_models' : 'conversation.target.pick_key')}</div>}
+          ) : <div className={styles['picker-empty']}>{needle ? t('conversation.target.no_match') : emptyHint ?? t(fingerprint ? 'conversation.target.no_models' : 'conversation.target.pick_key')}</div>}
           {!isChoosingKey && (
             <button type="button" className={styles['picker-key']} onClick={() => setIsChoosingKey(true)}>
               <KeyOutlined aria-hidden="true" />
