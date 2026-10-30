@@ -71,3 +71,19 @@ caddy-config/
 
 # Local deployment snapshots and ODD working notes
 odd/
+
+# Secrets and key material: never commit
+.env.*
+!.env.example
+!deploy/*.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.kdbx
+/secrets/
+/auth/
+credentials.json
+service-account*.json

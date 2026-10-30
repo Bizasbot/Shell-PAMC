@@ -1,6 +1,6 @@
 # Security Policy
 
-Oh My CPA takes the security of credentials, proxy configurations, and administrative access seriously.
+Shell-PAMC takes the security of credentials, proxy configurations, and administrative access seriously.
 
 ## Supported Versions
 
@@ -15,9 +15,9 @@ Only the latest commit on the `master` branch and the most recent release tag re
 
 **Please do not report security vulnerabilities through public GitHub issues, discussions, or pull requests.**
 
-If you discover a potential vulnerability in Oh My CPA, please report it through **GitHub Private Vulnerability Reporting**:
+If you discover a potential vulnerability in Shell-PAMC, please report it through **GitHub Private Vulnerability Reporting**:
 
-1. Navigate to the [Security tab](https://github.com/WizisCool/oh-my-cpa/security) of the repository.
+1. Navigate to the [Security tab](https://github.com/Bizasbot/Shell-PAMC/security) of the repository.
 2. Click **Report a vulnerability** under "Advisories".
 3. Provide a detailed report including:
    - Type of issue (e.g., SSRF, auth bypass, secret disclosure, SQL injection).
