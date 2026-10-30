@@ -9,13 +9,10 @@ import {
   undeclaredPluginKeys,
 } from '../web/src/components/plugins/pluginConfigForm.ts';
 import {
-  filterStorePlugins,
   normalizePluginSettingsDraft,
-  storeFilterCounts,
-  storeListingsByPluginId,
   validatePluginSettingsDraft,
 } from '../web/src/components/plugins/pluginStoreLogic.ts';
-import type { PluginConfigField, StorePluginItem } from '../web/src/types/plugin.ts';
+import type { PluginConfigField } from '../web/src/types/plugin.ts';
 
 assert.equal(parsePluginConfig('').error, 'object-required');
 assert.deepEqual(parsePluginConfig('{"level":"info"}'), { value: { level: 'info' } });
@@ -143,25 +140,6 @@ assert.deepEqual(composePluginConfig(broken, FIELDS, SAVED), {
   errors: { priority: 'invalid-integer', level: 'invalid-enum', retries: 'invalid-integer', matrix: 'expected-array', labels: 'invalid-json' },
 });
 
-// ── the store ──────────────────────────────────────────────────────────────
-function entry(overrides: Partial<StorePluginItem>): StorePluginItem {
-  return {
-    store_id: 'official/x', source_id: 'official', source_name: 'official', id: 'x', name: 'X', tags: [], platforms: [],
-    is_official: true, auth_required: false, auth_configured: false, installed: false, effective_enabled: false,
-    update_available: false, ...overrides,
-  };
-}
-const STORE = [
-  entry({ store_id: 'official/limiter', id: 'limiter', name: 'Rate Limiter', tags: ['network'] }),
-  entry({ store_id: 'official/logger', id: 'logger', name: 'Logger', installed: true, update_available: true, install_source_status: 'matched' }),
-  entry({ store_id: 'mirror/logger', source_id: 'mirror', id: 'logger', name: 'Logger', is_official: false, installed: true, install_source_status: 'different', description: 'mirror copy' }),
-];
-assert.deepEqual(storeFilterCounts(STORE), { all: 3, installed: 2, available: 1, updates: 1 });
-assert.deepEqual(filterStorePlugins(STORE, 'NETWORK', 'all').map((item) => item.store_id), ['official/limiter']);
-assert.deepEqual(filterStorePlugins(STORE, '', 'updates').map((item) => item.store_id), ['official/logger']);
-// The listing an installed card borrows is the one it was installed from.
-assert.equal(storeListingsByPluginId(STORE).get('logger')?.store_id, 'official/logger');
-
 // ── plugin system settings ─────────────────────────────────────────────────
 assert.deepEqual(
   validatePluginSettingsDraft(
@@ -201,4 +179,4 @@ assert.equal(pluginFieldDefaultText({ name: 'hosts', type: 'array', default: ['a
 assert.equal(pluginFieldDefaultText({ name: 'mode', type: 'string' }), undefined);
 assert.equal(pluginFieldDefaultText({ name: 'blob', type: 'string', default: 'x'.repeat(200) })?.length, 80);
 
-console.log('plugin settings form, store filters and plugin system settings passed.');
+console.log('plugin settings form and plugin system settings passed.');

@@ -1,9 +1,6 @@
 import { answerLayout } from './answerLayout';
 import { argumentSummary, callDuration, statusTone } from './callFacts';
 import type { Conversation, DisplayView, Presentation, Trace, TurnPart } from './types';
-import type { Turn as PlaygroundTurn } from '../pages/playground/state';
-import { effectiveModel } from '../types/requestModel';
-import { extractThinking } from '../utils/thinking';
 
 /** One capability call as its row states it, and what opening the row shows. */
 export interface SnapshotCall {
@@ -44,8 +41,6 @@ export interface SnapshotTurn {
   calls?: number;
 }
 export interface ConversationSnapshot {
-  /** Which workspace's turn anatomy the copy follows: the Playground names the model above each answer. */
-  layout: 'agent' | 'playground';
   turns: SnapshotTurn[];
   omitted: number;
 }
@@ -84,7 +79,6 @@ function snapshotCall(trace: Trace): SnapshotCall {
  */
 export function agentSnapshot(conversation: Conversation, imageData: ReadonlyMap<string, string> = new Map()): ConversationSnapshot {
   return {
-    layout: 'agent',
     omitted: conversation.omitted,
     turns: conversation.turns.map(turn => {
       const parts: TurnPart[] = turn.parts?.length ? turn.parts : [
@@ -119,26 +113,6 @@ export function agentSnapshot(conversation: Conversation, imageData: ReadonlyMap
 /** The figures a snapshot draws, in reading order. */
 export function snapshotViews(snapshot: ConversationSnapshot): DisplayView[] {
   return snapshot.turns.flatMap(turn => turn.segments.flatMap(segment => segment.kind === 'figure' ? [segment.view] : []));
-}
-
-/** Keep each turn's original parameters; the current composer can name a different request. */
-export function playgroundSnapshot(turns: readonly PlaygroundTurn[]): ConversationSnapshot {
-  return { layout: 'playground', omitted: 0, turns: turns.map(turn => {
-    // The same rule PlaygroundTurn draws by: a reasoning channel, even an empty one, means the reply carries no inline thinking.
-    const inline = extractThinking(turn.reply);
-    const thought = turn.thought ?? inline.thought;
-    return {
-      user: turn.user.content.flatMap(part => part.type === 'text' ? [part.text] : []).join('\n'),
-      images: turn.user.content.flatMap(part => part.type === 'image_url' ? [part.image_url.url] : []),
-      segments: [...(thought ? [{ kind: 'thought' as const, text: thought }] : []), { kind: 'text' as const, text: turn.thought !== undefined ? turn.reply : inline.reply }],
-      status: turn.status, code: turn.error?.code, model: effectiveModel(turn.request),
-      startedAt: turn.serverStartedAt ?? turn.startedAt, duration: turn.durationMS,
-      usage: turn.usage ? { ...turn.usage } : undefined,
-      parameters: snapshotValue({ system_prompt: turn.request.system_prompt, temperature: turn.request.temperature,
-        top_p: turn.request.top_p, max_tokens: turn.request.max_tokens, reasoning_effort: turn.request.reasoning_effort,
-        user_agent: turn.request.user_agent, custom_body: turn.request.custom_body }) as Record<string, unknown>,
-    };
-  }) };
 }
 
 export interface ImageSlice { top: number; height: number }

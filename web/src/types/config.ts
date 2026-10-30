@@ -11,8 +11,7 @@ export interface AppConfig {
   demo: boolean;
   /**
    * The running build's version, as the server reports it (`OMCPA_VERSION`).
-   * The playground reads it to name the default User-Agent, so the panel and the
-   * wire cannot disagree about which build is being identified.
+   * Consumers name the build with it, so the panel and the wire cannot disagree about which build is being identified.
    */
   version?: string;
 }

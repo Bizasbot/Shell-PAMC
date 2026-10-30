@@ -39,7 +39,7 @@ type NavItem = Required<MenuProps>['items'][number];
  * transcript and the side panel independently, which only works when the route fills the
  * content area's height instead of growing it.
  */
-const WORKSPACE_ROUTES = new Set(['/playground', '/agent']);
+const WORKSPACE_ROUTES = new Set(['/agent']);
 
 /** A plugin page is a frame that fills the content area and scrolls inside itself. */
 function isWorkspaceRoute(pathname: string): boolean {

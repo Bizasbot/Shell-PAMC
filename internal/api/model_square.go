@@ -23,7 +23,7 @@ func writeModelSquareError(writer http.ResponseWriter, err error) {
 	var gatewayErr *gateway.Error
 	switch {
 	case errors.Is(err, operations.ErrClientKeyRequired):
-		writePlaygroundError(writer, http.StatusConflict, operations.ErrClientKeyRequired.Error())
+		writeRunError(writer, http.StatusConflict, operations.ErrClientKeyRequired.Error())
 	case errors.As(err, &gatewayErr):
 		writeJSON(writer, http.StatusBadGateway, gateway.ErrorEvent(err))
 	default:

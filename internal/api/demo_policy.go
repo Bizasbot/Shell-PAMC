@@ -134,11 +134,10 @@ var demoPolicy = []demoPolicyRule{
 	{http.MethodGet, "/api/v1/agent/operations/{id}", demoRefuse, "agent execution and authorization are unavailable in the demonstration"},
 	{http.MethodPost, "/api/v1/agent/operations/{id}/oauth", demoRefuse, "OAuth authorization is unavailable in the demonstration"},
 	{http.MethodPost, "/api/v1/agent/operations/{id}/decision", demoRefuse, "agent execution and authorization are unavailable in the demonstration"},
-	{http.MethodGet, "/api/v1/playground/models", demoAllow, ""},
-	{http.MethodPost, "/api/v1/playground/chat", demoRefuse, "model inference spends provider entitlement"},
-	{http.MethodGet, "/api/v1/{workspace:agent|playground}/runs/active", demoAllow, ""},
-	{http.MethodGet, "/api/v1/{workspace:agent|playground}/runs/{id}", demoRefuse, "live inference is unavailable in the demonstration"},
-	{http.MethodPost, "/api/v1/{workspace:agent|playground}/runs/{id}/cancel", demoRefuse, "live inference is unavailable in the demonstration"},
+	{http.MethodGet, "/api/v1/agent/models", demoAllow, ""},
+	{http.MethodGet, "/api/v1/agent/runs/active", demoAllow, ""},
+	{http.MethodGet, "/api/v1/agent/runs/{id}", demoRefuse, "live inference is unavailable in the demonstration"},
+	{http.MethodPost, "/api/v1/agent/runs/{id}/cancel", demoRefuse, "live inference is unavailable in the demonstration"},
 	{http.MethodPatch, "/api/v1/resources/{id}/override", demoAllow, ""},
 	{http.MethodGet, "/api/v1/fonts", demoAllow, ""},
 	{http.MethodGet, "/api/v1/fonts/{id}/faces/{faceId}", demoAllow, ""},
@@ -247,12 +246,11 @@ var demoPolicy = []demoPolicyRule{
 	// to pop.
 	{http.MethodPost, "/api/v1/usage/ingest/refresh", demoAllow, ""},
 
-	// Plugin and store reads: the lists are fixture data, and a plugin's declared
+	// Plugin reads: the lists are fixture data, and a plugin's declared
 	// logo is never fetched because no fixture plugin publishes one.
 	{http.MethodGet, "/api/v1/management/plugins", demoAllow, ""},
 	{http.MethodGet, "/api/v1/management/plugins/settings", demoAllow, ""},
 	{http.MethodGet, "/api/v1/management/plugins/{id}/config", demoAllow, ""},
-	{http.MethodGet, "/api/v1/management/plugin-store", demoAllow, ""},
 
 	// Sign-in: starting a real OAuth exchange is the one thing a public demo must
 	// never do, because it would mint a credential against a real provider account.
@@ -284,7 +282,6 @@ var demoPolicy = []demoPolicyRule{
 	{http.MethodGet, "/api/v1/management/system/diagnostics", demoRefuse, "generating a diagnostic bundle is disabled"},
 
 	// Plugin execution.
-	{http.MethodPost, "/api/v1/management/plugin-store/{id}/install", demoRefuse, "installing a plugin is disabled: plugins execute inside the gateway"},
 	{http.MethodPatch, "/api/v1/management/plugins/{id}/enabled", demoRefuse, "changing a plugin's status is disabled: plugins execute inside the gateway"},
 	{http.MethodPut, "/api/v1/management/plugins/settings", demoRefuse, "changing the plugin system settings is disabled: plugins execute inside the gateway"},
 	{http.MethodDelete, "/api/v1/management/plugins/{id}", demoRefuse, "removing a plugin is disabled"},

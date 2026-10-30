@@ -111,7 +111,6 @@ export function PluginSettingsPanel({ isDemo }: PluginSettingsPanelProps) {
       setShowIssues(false);
       setHasConflict(false);
       void queryClient.invalidateQueries({ queryKey: ['management-plugins'] });
-      void queryClient.invalidateQueries({ queryKey: ['management-plugin-store'] });
       void queryClient.invalidateQueries({ queryKey: ['management-config'] });
     },
     onError: (err: unknown) => {

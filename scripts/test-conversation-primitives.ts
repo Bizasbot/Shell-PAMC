@@ -40,9 +40,9 @@ test('ID generation falls through throwing crypto APIs and keeps one monotone fa
   try {
     const source = {randomUUID() { throw new Error('unavailable'); }, getRandomValues() { throw new Error('unavailable'); }};
     const first = createID('agent', source);
-    const second = createID('playground', source);
+    const second = createID('turn', source);
     assert.match(first, /^agent-rs-[0-9a-z]+-i$/);
-    assert.match(second, /^playground-rs-[0-9a-z]+-i$/);
+    assert.match(second, /^turn-rs-[0-9a-z]+-i$/);
     assert.equal(parseInt(second.split('-')[2], 36), parseInt(first.split('-')[2], 36) + 1);
     const fallbackUUID = createID('turn', {randomUUID() { throw new Error('unavailable'); }, getRandomValues(bytes) { bytes.fill(255); }});
     assert.equal(fallbackUUID, 'ffffffff-ffff-4fff-bfff-ffffffffffff');

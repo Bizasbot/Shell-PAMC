@@ -27,7 +27,7 @@ import styles from './SidebarNavSettings.module.css';
  * The panel lists the rail rather than a hand-kept copy of it, from the same navigation model the
  * rail builds itself from, so the two cannot drift - a destination that exists is a row here, an
  * entry a later release adds is a row without the panel being touched, and the pages a running
- * plugin registered are rows too. An operator who does not use the Agent, the Playground or the
+ * plugin registered are rows too. An operator who does not use the Agent or the
  * audit trail turns those off and gets a rail that is only what they use; the pages stay reachable
  * by URL and by whatever links point at them.
  *

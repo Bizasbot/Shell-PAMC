@@ -18,7 +18,7 @@ import { isDemoMode } from '../../types/demoMode';
  * How often a growing answer is published to the transcript.
  *
  * A stream arrives one token at a time - often several hundred frames for one answer - and each
- * published frame re-renders the conversation. Coalescing at the Playground's own cadence keeps
+ * published frame re-renders the conversation. Coalescing at a fixed cadence keeps
  * the transcript at 25 updates a second no matter how fast the gateway is, which is the
  * difference between a streaming answer and a page that repaints on every token. The trailing
  * frame is flushed before the run settles, so an answer is never left one frame short.

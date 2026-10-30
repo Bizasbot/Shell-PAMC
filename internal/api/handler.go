@@ -35,14 +35,14 @@ import (
 )
 
 type Handler struct {
-	agent           agentState
-	browserRuns     browserRuns
-	playgroundSlots chan struct{}
-	cfg             config.Config
-	repo            *repository.Repository
-	cipher          *appcrypto.Cipher
-	discoverer      *discovery.Discoverer
-	logger          *slog.Logger
+	agent       agentState
+	browserRuns browserRuns
+	agentSlots  chan struct{}
+	cfg         config.Config
+	repo        *repository.Repository
+	cipher      *appcrypto.Cipher
+	discoverer  *discovery.Discoverer
+	logger      *slog.Logger
 	// consoleRoot is the built console's root: the directory holding index.html,
 	// manifest.webmanifest and the icons that manifest names. Production points it at
 	// the embedded dist; a test points it at the committed web/public directory,
@@ -129,7 +129,7 @@ func (h *Handler) now() time.Time {
 
 func NewHandler(cfg config.Config, repo *repository.Repository, cipher *appcrypto.Cipher, logger *slog.Logger, authManager *auth.Manager) *Handler {
 	handler := &Handler{
-		playgroundSlots:  make(chan struct{}, 4),
+		agentSlots:       make(chan struct{}, 4),
 		consoleRoot:      consoleRootFiles(),
 		cfg:              cfg,
 		repo:             repo,
@@ -219,11 +219,10 @@ func (h *Handler) routes() chi.Router {
 				v1.Get("/agent/operations/{id}", h.getCapabilityOperation)
 				v1.Post("/agent/operations/{id}/decision", h.decideAgentOperation)
 				v1.Post("/agent/operations/{id}/oauth", h.startAgentOAuth)
-				v1.Get("/playground/models", h.listPlaygroundModels)
-				v1.Post("/playground/chat", h.startPlaygroundRun)
-				v1.Get("/{workspace:agent|playground}/runs/active", h.currentBrowserRun)
-				v1.Get("/{workspace:agent|playground}/runs/{id}", h.subscribeBrowserRun)
-				v1.Post("/{workspace:agent|playground}/runs/{id}/cancel", h.cancelBrowserRun)
+				v1.Get("/agent/models", h.listAgentModels)
+				v1.Get("/agent/runs/active", h.currentBrowserRun)
+				v1.Get("/agent/runs/{id}", h.subscribeBrowserRun)
+				v1.Post("/agent/runs/{id}/cancel", h.cancelBrowserRun)
 				v1.Post("/instances/default/discover", h.discoverDefault)
 				v1.Get("/resources", h.listResources)
 				v1.Patch("/resources/{id}/override", h.updateResourceOverride)
@@ -357,8 +356,6 @@ func (h *Handler) routes() chi.Router {
 				v1.Delete("/management/plugins/{id}", h.deletePlugin)
 				v1.Get("/management/plugins/{id}/config", h.getPluginConfig)
 				v1.Put("/management/plugins/{id}/config", h.setPluginConfig)
-				v1.Get("/management/plugin-store", h.listPluginStore)
-				v1.Post("/management/plugin-store/{id}/install", h.installPlugin)
 				// A plugin's own page and the plugin routes its script calls.
 				v1.Get(PLUGIN_HOST_ROUTE+"/v0/resource/plugins/*", h.servePluginResource)
 				for _, prefix := range []string{management.PluginRoutePrefix, management.PluginRouteV8Prefix} {
@@ -982,9 +979,9 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 		"mediaBaseUrl": mediaBase,
 		"appName":      "Oh My CPA",
 		"demo":         cfg.IsDemoMode,
-		// The running build's own version, so the playground's User-Agent placeholder
-		// and its copied cURL name the version this deployment actually is instead of
-		// a second copy of the number maintained in TypeScript.
+		// The running build's own version, so the console names the version this
+		// deployment actually is instead of a second copy of the number maintained
+		// in TypeScript.
 		"version": cfg.Version,
 	}))
 	script := "<script>" + payload + "</script>"

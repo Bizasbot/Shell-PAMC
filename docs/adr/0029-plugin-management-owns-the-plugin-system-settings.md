@@ -1,6 +1,7 @@
 # ADR 0029: Plugin management owns the plugin system settings
 
 - Status: Accepted
+- Superseded in part: the plugin store tab and `/plugin-store` redirect were removed; the installed and settings tabs remain.
 - Date: 2026-09-28
 
 ## Context

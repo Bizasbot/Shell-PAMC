@@ -1,6 +1,7 @@
 # ADR 0092: Local recordings for demonstration conversations
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-10-10
 - Amends: ADR 0021's read-only public demonstration with browser-local conversation replay.
 

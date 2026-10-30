@@ -2,7 +2,6 @@ import { modelSquare, modelSquareFixtures, modelSquareLedgerFixtures } from './p
 import { mobileConsole } from './probes/mobileConsole.mjs';
 import { routeRenderError, routeLazyError } from './probes/routeError.mjs';
 import { agentWorkspace, agentExternal, agentFailureCopy, agentStream, agentNarrow, agentLive, agentQuestion, agentViews, agentReplace, agentAttach, agentFixtures } from './probes/agent.mjs';
-import { playground, playgroundFixtures, playgroundNarrow } from './probes/playground.mjs';
 /**
  * The browser probe scenarios, as a registry rather than a script.
  *
@@ -200,8 +199,6 @@ export const SCENARIOS = [
   { id: 'agent-failure', name: 'Agent hands a refused message back and reports a failure as a sentence, not a code', options: { routes: agentFixtures() }, run: agentFailureCopy },
   { id: 'agent-stream', name: 'Agent coalesces tokens and follows live reasoning through Markdown layout changes', options: { routes: agentFixtures() }, run: agentStream },
   { id: 'agent-narrow', name: 'Agent keeps its model named in the composer and its drawer follows native Back on phones', options: { routes: agentFixtures(), viewport: { width: 320, height: 850 } }, run: agentNarrow },
-  { id: 'playground', name: 'ephemeral multimodal playground streams and inspects safe requests', options: { routes: playgroundFixtures() }, run: playground },
-  { id: 'playground-narrow', name: 'playground settings follow native Back and fit a phone', options: { routes: playgroundFixtures(), viewport: { width: 320, height: 850 } }, run: playgroundNarrow },
   {
     id: 'omc-settings',
     name: 'OMC settings and the unit style it governs',
@@ -916,7 +913,7 @@ export const SCENARIOS = [
       hasTouch: true,
       routes: [
         ...PHONE_LIST_ROUTES,
-        ...agentFixtures(), ...playgroundFixtures(), ...logsFixtures([]),
+        ...agentFixtures(), ...logsFixtures([]),
         ...modelSquareFixtures(), ...pricingFixtures([]), ...systemFixtures(), ...pluginManagementFixtures([]),
         ...oauthManagementProbeRoutes(), ...configSourceFixtures(),
         [(url) => url.pathname.endsWith('/dashboard'), () => chartDashboard],

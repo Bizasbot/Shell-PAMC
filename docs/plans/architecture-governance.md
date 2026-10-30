@@ -5,6 +5,11 @@
 > not a standing rulebook: its prohibitions describe the scope of that refactor, and
 > later ADRs (0089, 0090, 0091) supersede any that conflict with current practice. Read
 > it for context; do not treat it as a constraint list.
+>
+> **Superseded: Playground removed.** Every mention of the Playground (its page, state, routes,
+> scenarios and measurements) below describes the repository as it was when the audit ran. The
+> page, its `/playground/*` routes and its tests have since been deleted; the measurements are
+> kept unedited as evidence.
 
 ## Scope and baseline
 

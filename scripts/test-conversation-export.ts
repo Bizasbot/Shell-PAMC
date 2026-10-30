@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { test } from 'node:test';
-import { agentSnapshot, playgroundSnapshot, snapshotImageSlices, snapshotValue, snapshotViews, SNAPSHOT_IMAGE_PAGE_HEIGHT } from '../web/src/agent/conversationSnapshot.ts';
+import { agentSnapshot, snapshotImageSlices, snapshotValue, snapshotViews, SNAPSHOT_IMAGE_PAGE_HEIGHT } from '../web/src/agent/conversationSnapshot.ts';
 import { conversationHTML } from '../web/src/agent/conversationHtml.ts';
 import type { SnapshotLabels } from '../web/src/agent/conversationHtml.ts';
 import type { Conversation, DisplayView } from '../web/src/agent/types.ts';
-import type { Turn as PlaygroundTurn } from '../web/src/pages/playground/state.ts';
 
 const LABELS: SnapshotLabels = {
   title: 'OMC conversation', operator: 'Operator', answer: 'Answer', model: 'Model', exportedAt: 'Exported',
@@ -57,20 +56,7 @@ test('Agent exports ordered reasoning, calls and answers, metrics and frozen suc
   for (const status of ['running', 'pending', 'error', 'cancelled']) assert.deepEqual(snapshotViews(agentSnapshot({ ...CONVERSATION, turns: [{ ...CONVERSATION.turns[0], status }] })).map(view => view.title), [VIEW.title]);
 });
 
-test('Playground exports the original request model, images, parameters, partial reasoning and cancellation', () => {
-  const turn: PlaygroundTurn = { id: 't', keyLabel: 'private-key-label', startedAt: 10, durationMS: 20, status: 'cancelled', reply: 'Partial', thought: 'Reasoning before stop',
-    user: { role: 'user', content: [{ type: 'text', text: 'Inspect' }, { type: 'image_url', image_url: { url: 'data:image/png;base64,AAAA' } }, { type: 'image_url', image_url: { url: '[image omitted]' } }] },
-    request: { client_key_fingerprint: 'private-key-fingerprint', model: 'original', system_prompt: 'Original system', temperature: 0,
-      messages: [], custom_body: { model: 'effective-model', api_key: 'private-secret', metadata: { temperature: 0.2, access_token: 'private-token' } } },
-    events: [], eventBytes: 0, isTruncated: false,
-  };
-  const snapshot = playgroundSnapshot([turn]);
-  const html = htmlFor(snapshot);
-  assert.equal(snapshot.turns[0].model, 'effective-model');
-  assert.equal(snapshot.turns[0].parameters?.temperature, 0);
-  assert.ok(html.includes('Original system') && html.includes('Reasoning before stop') && html.includes('cancelled'));
-  assert.ok(html.includes('data:image/png;base64,AAAA') && html.includes('Image omitted'));
-  for (const secret of ['private-key-label', 'private-key-fingerprint', 'private-secret', 'private-token']) assert.equal(html.includes(secret), false, secret);
+test('snapshot values drop credentials and keep the rest', () => {
   assert.deepEqual(snapshotValue({ api_key: 'secret', metadata: [{ access_token: 'secret', model: 'visible' }] }), { metadata: [{ model: 'visible' }] });
 });
 
@@ -194,10 +180,7 @@ test('a document that becomes a picture leaves each canvas a slot instead of a f
   assert.ok(html.includes('Canvas in HTML export'), 'the note stands in when the canvas cannot be drawn');
 });
 
-test('the Playground keeps its model heading, and a failed display call stays a row with its code', () => {
-  const playground = htmlFor(playgroundSnapshot([]));
-  assert.equal(playgroundSnapshot([]).layout, 'playground');
-  assert.ok(!playground.includes('<details class="chain">'));
+test('a failed display call stays a row with its code', () => {
   const failed = { ...CONVERSATION, turns: [{ ...CONVERSATION.turns[0], present: 'ui' as const, rounds: 2, traces: [CONVERSATION.turns[0].traces[0],
     { id: 'display', name: 'render_ui', arguments: '{"title":"x"}', result: { status: 'error', code: 'invalid_view', detail: 'html is required' } }] }] };
   const snapshot = agentSnapshot(failed);

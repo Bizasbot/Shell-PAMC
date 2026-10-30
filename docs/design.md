@@ -140,7 +140,7 @@ reading palettes *for* dark, whichever mode is in force.
 | Porcelain | light | `#f7f8fa` | `#0b6e99` |
 | Sandstone | light | `#f8f3e8` | `#0f766e` |
 
-A **theme mode** is light, dark or follow-the-system; each mode holds one palette. The resolved palette is
+A **theme mode** is light or dark; each mode holds one palette. The header and settings offer only these two choices. Legacy follow-the-system preferences remain readable until an explicit mode is selected. The resolved palette is
 the only source for Ant Design's `ConfigProvider`, the CSS custom properties written to the document root,
 the categorical chart/ring series, the Monaco theme and the token heatmap ramp. `web/src/index.css` keeps
 OMC Dark and OMC Light as the pre-hydration fallback and `themePaletteCssVariables` supplies every
@@ -1357,7 +1357,7 @@ how serious it is:
   repairs the one panel without reloading the page around it. A failed re-read over data still on
   screen is the warning tone above that data; a failed first read takes the data's place, and says so
   once.
-- **A refusal with nothing to answer is a toast.** The Playground refuses a send, a replay or an
+- **A refusal with nothing to answer is a toast.** The Agent refuses a send, a replay or an
   attachment through one keyed toast, so a repeat replaces the last one; a check for updates the
   operator asked for reports its failure in a toast with the reason, and only an automatic check
   states its failure in the versions card.
@@ -1615,28 +1615,9 @@ panel's ground, a hairline and `--shadow-raised`, deepening to `--shadow-float` 
 with a firmer edge rather than an accent ring; the `/` and `@` lists float with `--shadow-float`. Motion stays within §7's budget, with a press scaling a pressed
 object by 2-4% over `--motion-fast`.
 
-The Playground (`/playground`) and the Agent (`/agent`) are one workspace with two bodies. The
-frame, the transcript, the composer, the reasoning disclosure, the code blocks and the side panel
-live in `web/src/components/workspace` and both pages compose them, so two surfaces one click
-apart cannot drift into two resizers, two composers or two ways of drawing an answer.
-
-```text
-┌─ Playground ──────────── [key ▾│ model ▾] ⟳ [+ New conversation] ◧ ┐  head, 1px rule
-│                                                        │ Parameters │ Diagnostics │
-│          ┌──────── reading column, 760px ────────┐     │ GENERATION        ↺ Reset │
-│          │                 ┌ user message ─────┐ │     │ System prompt             │
-│          │                 └───────────────────┘ │     │ Temperature  ──●── [0.7]  │
-│          │ model · ● Complete                    │     │ …                         │
-│          │ ◌ Thought process ›                   │     │ REQUEST                   │
-│          │ answer (Markdown, tables, code)       │     │ User-Agent, custom body   │
-│          │ ⏱ 420 ms  ⏲ 3,120 ms  ⛁ 1.6K   ⧉ ↺ ⌕ │     │                           │
-│          └───────────────────────────────────────┘     │                           │
-│          ┌ composer ─────────────────────────────┐     │                           │
-│          │ message…                         [↑]  │     │                           │
-│          └───────────────────────────────────────┘     │                           │
-│            the cost or privacy boundary, one line      │                           │
-└────────────────────────────────────────────────────────┴───────────────────────────┘
-```
+The Agent (`/agent`) is a conversation workspace. The frame, the transcript, the composer, the
+reasoning disclosure, the code blocks and the side drawers live in `web/src/components/workspace`,
+so the conversation surface keeps one resizer, one composer and one way of drawing an answer.
 
 **The frame spans the content area, and the conversation centres its own column.** Like the
 configuration workbench, the head's rule and the panel's edge are anchored to the viewport; capping
@@ -1645,19 +1626,19 @@ column the transcript, the notices and the composer share one reading width
 (`--workspace-column`, 760px): long enough for a code block, short enough to read prose without
 losing the line. The scroll box itself stays full width so its scrollbar sits at the pane's edge.
 
-**What a message is sent with is chosen in the composer, on both pages.** Key and model are one
+**What a message is sent with is chosen in the composer.** Key and model are one
 decision - the model list is whatever the gateway serves to that key - so they are one chip: it
 names the model, and its list ends with the client key. A key is named by its alias, and by its
 mask only when it has none (§7, "Naming is a first-class action"); the key view shows both, which
 is where two similar names are told apart. A model is led by its maker's mark, on the chip, in the
-list and under the Playground's empty-state wordmark, and by a neutral box when the maker is not
+list and under the empty-state wordmark, and by a neutral box when the maker is not
 recognised; the name stays the call point. Both foot rows lead with a third chip, the
 inference endpoint (ADR 0088): the chip carries a neutral plug mark and the short name (Chat,
 Responses, Messages), and its list the endpoint's full name with its path in mono. The chips sit
 in the composer at every width, so which model and endpoint a message will reach is never hidden
 in a menu or a head row; on a phone's foot the model's name is the one that shortens. The three
 chips state their values in one ink and weight (`--fg`, regular), and a chip that cannot be
-changed - during a Playground run, or while an Agent turn waits on a decision - gives value, mark
+changed - during a run, or while an Agent turn waits on a decision - gives value, mark
 and caret to `--meta` together, with a maker's mark at half opacity.
 
 **An action's name is a tooltip only for a pointer that can rest.** Icon actions in the
@@ -1686,7 +1667,7 @@ the model and a status pip, the reasoning as an unframed disclosure (open
 while reasoning streams and following its newest output until the reader scrolls away, folded when reasoning finishes and closed for an answer that already finished, the reader's own after that;
 its caret turns with the `fast` motion token). The Agent's disclosure reads "Thinking…" while the
 reasoning is written and "Thought process" once it settles, so the separate activity line names a
-phase only when nothing in the answer does; the Playground names the live phase in the disclosure. A live phase label carries the work-in-flight highlight of ADR 0080. The
+phase only when nothing in the answer does; a live phase label carries the work-in-flight highlight of ADR 0080. The
 Markdown answer and a foot complete the message. The foot states measurements - first content, duration,
 tokens, TPS - with missing observations left out rather than shown as zero, and carries its actions
 as muted icon buttons with accessible names. Copy acknowledges itself by turning its glyph into a
@@ -1717,7 +1698,7 @@ they go out when the current answer finishes; each is a row with an up arrow in 
 text on one ellipsized line and a remove control, arriving with the 4px rise. The model and the
 reasoning effort stay choosable during a run, because they belong to the next message; only a
 turn waiting on a decision pins them, and a pinned chip takes the disabled ink. Beneath the composer one line states the boundary
-the operator is about to cross: the Playground's spends the key's entitlement, the Agent's names
+the operator is about to cross: the Agent's names
 what must be allowed before a message can leave.
 
 **`/` runs commands and `@` completes names.** In the Agent, `/` opens the page's commands, and
@@ -1756,7 +1737,7 @@ token counts and says the window is reference information. It is absent when the
 count or the reference catalog lists no window for the model: a guess would read as a measurement.
 
 **The composer starts at one line.** It grows to ten lines on desktop. At the 640px phone
-breakpoint the box grows to five lines, send - and the Playground's image picker - sits beside the
+breakpoint the box grows to five lines, send sits beside the
 input instead of in a foot row, and the foot row appears only for a control that needs it (the
 endpoint, effort and model chips); frame and note
 tighten with it. On a phone the conversation already shares its height with the keyboard, and the
@@ -1770,26 +1751,9 @@ ellipsized line, never the width of its text), and the column is bounded by the 
 sideways swipe on a touch screen never drags the conversation. An answer always uses the full
 column.
 
-**Streaming is published on a cadence.** Both run loops coalesce deltas onto 40ms and every settled
+**Streaming is published on a cadence.** The run loop coalesces deltas onto 40ms and every settled
 turn keeps its object identity, so the memoised transcript re-renders the answer that is growing
 and skips every one above it.
-
-#### Playground
-
-The panel has two tabs. **Parameters** holds the generation settings, each of which is either set or
-left to the model: an unset number shows "Default" and a muted slider resting at a neutral point,
-never a value the request will not carry, and a set temperature or top-p has a control to return it
-to the default. The custom request body is checked as it is typed; an invalid body is flagged beside the
-field and disables sending. **Turn diagnostics** shows the selected turn - its measurements as a
-two-column grid, its immutable request and its bounded response events as code blocks, the cURL
-command as a labelled copy action, and a link to the candidate request records, stated as a
-candidate list. Inspecting a turn from its foot opens this tab. Images are pasted, dropped or picked
-into the composer and shown as thumbnails with a remove control; nothing is uploaded, and a
-restored turn whose image was too large to keep shows a placeholder and cannot be regenerated. The
-last answer's foot regenerates it, and the last message can be edited in place (a composer frame
-at the message's width with Cancel and Resend); the edit asks the same request again, so it
-replaces the answer below it rather than adding a turn. An empty conversation carries the
-wordmark and, once chosen, the call point it will reach.
 
 #### Agent
 
@@ -1962,8 +1926,8 @@ newest few words are ever tinted, with a 2px `--accent` caret
 pulsing after its last word; both stop with the stream, and reduced motion removes them (ADR 0080).
 The operator's message enters the transcript the moment it is
 sent and the composer clears; a message the server refuses before accepting it returns to an empty
-composer. The model's reasoning streams into the live turn as the same reasoning disclosure the
-Playground uses, open while it is being written, and stays with the stored turn, kept apart from
+composer. The model's reasoning streams into the live turn as the same reasoning disclosure
+the workspace uses, open while it is being written, and stays with the stored turn, kept apart from
 the answer. The key, model and effort are the operator's choice and are remembered across reloads;
 New conversation replaces the transcript and nothing else. Failure is stated
 as a sentence with its code beneath it, and a run the operator stopped reads as stopped rather than
@@ -1981,7 +1945,7 @@ first, labelled and hairline-edged, once there is a conversation to replace, the
 quiet icon actions for export, the capability directory and the connection guide. A phone keeps
 the icon and drops the label, and while its software keyboard is up the cluster and the room kept
 clear for it go to the conversation: every action is also a `/` command, and the cluster returns
-with the keyboard's departure. The Playground's head carries one labelled button, New conversation,
+with the keyboard's departure. The Agent's head carries one labelled button, New conversation,
 and quiet icon actions for export and the side panel, whose icon is
 `--accent` while the panel is open. The empty conversation offers example questions as
 keyboard-reachable buttons that fill the composer without sending, and under them one `--meta` line
@@ -2202,7 +2166,7 @@ Hard rules:
    console's own flat blocks (`Placeholder.tsx`), and they *breathe*: an opacity
    cycle, staggered one `base` per row, frozen under reduced motion (ADR 0052).
    The one swept highlight is on a short text label for work still running in the
-   Agent and Playground: a 3.2em `--fg` glint crosses the label's own ink on the 900ms linear
+   Agent: a 3.2em `--fg` glint crosses the label's own ink on the 900ms linear
    `--motion-live-text` loop, both painted by one background clipped to the glyphs, so it
    repaints one line and each glyph is drawn once at full weight (ADR 0080). Reduced motion and unsupported text masking leave plain readable text.
 4. **Suppress spinner flash.** A request that resolves quickly must never paint a
@@ -2448,7 +2412,7 @@ of the very gesture that was expanding it.
 
 ### Wheel and keys glide; a finger is never smoothed
 
-Native option popups (`overflow-y: auto`, including the Playground model picker) retain browser-owned wheel scrolling even when they share the list library's holder structure. Their scroll listener mirrors offsets through deferred React state, so a second offset writer can undo progress. Only a holder with hidden overflow and that structure receives synthetic wheel steps; structural similarity alone does not establish virtual scrolling.
+Native option popups (`overflow-y: auto`, including the Agent model picker) retain browser-owned wheel scrolling even when they share the list library's holder structure. Their scroll listener mirrors offsets through deferred React state, so a second offset writer can undo progress. Only a holder with hidden overflow and that structure receives synthetic wheel steps; structural similarity alone does not establish virtual scrolling.
 
 A notched mouse wheel delivers a scroll as 100px jumps, and whether the browser animates them is the
 operating system's call — Windows readers who switch "Animation effects" off get steps, and the
@@ -2944,7 +2908,7 @@ The list uses fixed 64-pixel virtual rows, with space reserved for the selection
 
 ### Live elapsed labels and Stop
 
-Agent activity, running capability rows and Playground running turns use isolated `LiveElapsed`
+Agent activity and running capability rows use isolated `LiveElapsed`
 labels. A shared visible-only animation-frame clock quantizes milliseconds to 10ms and seconds
 to 0.1s; a formatted external-store snapshot limits second-scale label renders to 10Hz without
 rerendering the page or transcript. Hidden documents and settled labels schedule no frames.
@@ -3184,7 +3148,7 @@ The heatmap starts at the newest edge with a signed-32-bit-safe scroll offset an
 stays pinned through resize only until the reader chooses an older date.
 
 The demonstration announces its nature using the global arrival toast, with contextual
-Agent/Playground replay copy on those pages; it reserves no banner row. Portable Agent HTML
+Agent replay copy on that page; it reserves no banner row. Portable Agent HTML
 keeps the same text, standalone reasoning, working timelines and inline generated figures
 in reading order. Call rows retain argument summaries, outcome and duration disclosures.
 PNG captures generated interfaces at their laid-out width, including kit charts and controls;

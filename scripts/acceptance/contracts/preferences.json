@@ -20,7 +20,6 @@
     "omc_nav_hidden",
     "omc_dashboard_layout",
     "omc_fonts",
-    "playground_session",
     "agent_target",
     "update_dismissals",
     "omc_quota_auto_refresh",
@@ -144,12 +143,12 @@
     {
       "id": "structured-document",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/playground_session",
+      "path": "/omc/api/v1/preferences/provider_websites",
       "body": "{\"names\":[\"OpenAI\",\"Claude\"],\"empty\":null,\"enabled\":false,\"nested\":{\"count\":0}}",
       "authenticated": true,
       "status": 200,
       "response": {
-        "key": "playground_session",
+        "key": "provider_websites",
         "value": {
           "names": [
             "OpenAI",
@@ -267,7 +266,7 @@
         "preferences": {
           "omc_tps_calculation_mode": "future-mode",
           "provider_names": null,
-          "playground_session": {
+          "provider_websites": {
             "names": [
               "OpenAI",
               "Claude"
@@ -314,7 +313,7 @@
         "preferences": {
           "omc_tps_calculation_mode": "future-mode",
           "provider_names": null,
-          "playground_session": {
+          "provider_websites": {
             "names": [
               "OpenAI",
               "Claude"

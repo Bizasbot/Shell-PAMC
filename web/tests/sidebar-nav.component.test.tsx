@@ -97,10 +97,10 @@ describe('sidebar visibility panel', () => {
     // The console's groups, then the plugins group before Control, because that is where the rail
     // puts them.
     expect(titles).toEqual([
-      'Dashboard', 'Agent', 'Playground', 'Model Square',
+      'Dashboard', 'Agent', 'Model Square',
       'AI providers', 'OAuth management', 'Key management',
       'Request Events', 'Cost & Usage', 'Logs', 'Audit trail',
-      'Plugin management', 'Plugin store',
+      'Plugin management',
       'Config', 'OMC Settings', 'System Information',
     ]);
     const settingsToggle = screen.getByRole('switch', { name: 'OMC Settings' });
@@ -124,7 +124,7 @@ describe('sidebar visibility panel', () => {
     const railKeys = retainVisibleGroups(buildNavGroups([]), new Set(['/agent']))
       .flatMap((group) => group.items.map((item) => item.key));
     expect(railKeys).not.toContain('/agent');
-    expect(railKeys).toContain('/playground');
+    expect(railKeys).toContain('/model-square');
     // The page reads without opening the panel: the row states how many entries are out of the rail.
     expect(container.querySelector('[data-testid="sidebar-nav-settings"] .settings-toggle-desc')?.textContent).toBe('1 hidden');
     expect((screen.getByRole('button', { name: 'Show all' }) as HTMLButtonElement).disabled).toBe(false);

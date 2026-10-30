@@ -220,7 +220,6 @@ describe('routing', () => {
       '/api/v1/management/plugins',
       '/api/v1/management/plugins/settings',
       '/api/v1/management/plugins/usage-exporter/config',
-      '/api/v1/management/plugin-store',
       '/api/v1/management/config',
       '/api/v1/pricing',
       '/api/v1/pricing/attention',
@@ -228,7 +227,7 @@ describe('routing', () => {
       '/api/v1/pricing/models/claude-opus-5.5',
       '/api/v1/preferences',
       '/api/v1/resources',
-      '/api/v1/playground/models',
+      '/api/v1/agent/models',
       '/api/v1/usage/events',
       '/api/v1/usage/facets',
       '/api/v1/usage/ingest-status',
@@ -258,18 +257,18 @@ describe('routing', () => {
     assert.equal(responseNameFor(request('/api/v1/pricing/models/not-a-served-model')), undefined);
   });
 
-  it('serves the playground directory and refuses inference', async () => {
+  it('serves the Agent model directory and refuses inference', async () => {
     // The directory is a generated read, while the inference call would spend provider
     // entitlement. The two halves therefore belong on opposite sides of the Worker's
     // boundary even though they share a console page.
     const { default: worker } = await import('./worker.mjs');
     const env = { ASSETS: { fetch: () => new Response('', { status: 200 }) } };
-    const models = await worker.fetch(request('/api/v1/playground/models?client_key_fingerprint=fixture'), env);
+    const models = await worker.fetch(request('/api/v1/agent/models?client_key_fingerprint=fixture'), env);
     assert.equal(models.status, 200);
     assert.ok((await models.json()).models.length > 0);
 
     const chat = await worker.fetch(
-      new Request('https://demo.example/api/v1/playground/chat', { method: 'POST', body: '{}' }),
+      new Request('https://demo.example/api/v1/agent/run', { method: 'POST', body: '{}' }),
       env,
     );
     assert.equal(chat.status, 403);

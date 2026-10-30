@@ -1,6 +1,7 @@
 # ADR 0083: Agent runs retain the work the task needs
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-10-08
 - Amends: the Agent request/session sizing policies in ADRs 0042, 0072, 0074, 0075 and 0078,
   and the Agent journal-size and run-duration policies in ADR 0044. Playground keeps its own

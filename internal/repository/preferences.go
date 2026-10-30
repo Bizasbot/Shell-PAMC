@@ -52,12 +52,6 @@ const (
 	// on write, and deleting a family clears the roles that used it.
 	PreferenceFonts = "omc_fonts"
 
-	// PreferencePlaygroundSession persists the single latest playground session:
-	// the target key's usage fingerprint and call point, the generation parameters
-	// and the latest conversation's bounded turns. It never stores the key secret,
-	// and starting a new conversation clears the stored turns.
-	PreferencePlaygroundSession = "playground_session"
-
 	// PreferenceAgentTarget remembers the Agent's selector: the key's usage fingerprint, the call
 	// point and the reasoning effort. It is the operator's current choice, kept apart from the
 	// stored conversation's target, which records what a turn actually ran with.
@@ -85,7 +79,7 @@ const (
 )
 
 // MaxPreferenceValueBytes bounds a stored value. Preferences are small UI
-// state or playground session states; anything larger is a client bug or an attempt
+// state or Agent selector state; anything larger is a client bug or an attempt
 // to use this table as an unbounded data dump.
 const MaxPreferenceValueBytes = 1024 * 1024
 

@@ -121,7 +121,6 @@ test('mapped directories and page-name prefixes do not make lazy registry helper
     'web/src/pages/agent/helper.ts',
     'web/src/pages/agent/HelperView.tsx',
     'web/src/pages/agent/OtherPage.tsx',
-    'web/src/pages/playground/helper.ts',
     'web/src/pages/oauthManagement/oauthWorkspaceLogic.ts',
     'web/src/pages/pricing/helper.ts',
     'web/src/pages/SystemPageHelper.tsx',
@@ -140,7 +139,6 @@ test('explicit route entries under mapped directories retain narrow lazy plans',
   for (const page of [
     'web/src/pages/agent/AgentPage.tsx',
     'web/src/pages/agent/AuthorizePage.tsx',
-    'web/src/pages/playground/PlaygroundPage.tsx',
     'web/src/pages/oauthManagement/OAuthManagementPage.tsx',
     'web/src/pages/pricing/PricingPage.tsx',
   ]) {

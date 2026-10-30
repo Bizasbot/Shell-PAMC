@@ -205,8 +205,7 @@ The assertion/fault ledger is in `docs/plans/architecture-governance.md`.
 
 `scripts/test-conversation-primitives.ts` owns ID fallback, inline-thinking and
 model-override permutations plus image admission before browser decoding. Existing
-Playground ID and thinking assertions moved intact into that suite; the Playground
-suite still checks its compatibility export and request integration. Browser probes
+ID and thinking assertions live in that suite. Browser probes
 retain real FileReader/Image/canvas admission, normalized uploads, streaming,
 reasoning layout, attachments, export, scroll and focus claims. The automatically
 discovered `scripts/conversation-boundaries.test.mjs` checks the emitted runtime
@@ -522,9 +521,9 @@ and omission notices survive bounded summaries; stored history remains unchanged
 prompt budget including escaped identity metadata. These need neither Chromium nor live model
 calls and are automatically discovered by the existing Go test lane.
 
-Agent/Playground recovery assertions belong at the lowest boundary that owns the behaviour:
+Agent recovery assertions belong at the lowest boundary that owns the behaviour:
 channel-driven facade tests for execution lifetime and replay, injectable transport logic tests
-for connection failures, and the existing `agent-live` / `playground` probes for actual browser
+for connection failures, and the existing `agent-live` probe for actual browser
 reload and rendering. Live elapsed labels are independent external-store consumers: their clock
 and hidden-tab suspension are logic tests, while the Agent probe checks visible tenths and the
 light Stop border. Stream-coalescing probes exclude only elapsed-label mutations, not answer
@@ -568,7 +567,7 @@ The automatically discovered composer-picker logic suite owns navigation indexin
 
 The phone header breakpoint sweep observes layout completion after each viewport resize before counting rendered controls, including the 640/641px boundary. The check still requires the exact two-tool phone and five-tool desktop shapes.
 
-The existing `dashboard-charts` and `dashboard-model-panels` probes measure compact tooltip gutters, row centers, marker/name columns and numeric edges, including the donut's shared readout, while logic tests cover escaped full names, exact values and localized units. `scroll-smoothing` exercises native Playground model popups with the list library's shared holder structure, repeated/reversed notches, filtering and reopening, alongside the virtual time-zone popup and request list. `provider-model-picker` verifies newly added custom models remain collapsed until explicit disclosure; `oauth-management` and the automatically discovered quota-cooldown logic suite distinguish recognized quota conditions from unexpected reasons, use the generic explanation for blank cooldown tooltips and preserve full Drawer diagnostics.
+The existing `dashboard-charts` and `dashboard-model-panels` probes measure compact tooltip gutters, row centers, marker/name columns and numeric edges, including the donut's shared readout, while logic tests cover escaped full names, exact values and localized units. `scroll-smoothing` exercises native Agent model popups with the list library's shared holder structure, repeated/reversed notches, filtering and reopening, alongside the virtual time-zone popup and request list. `provider-model-picker` verifies newly added custom models remain collapsed until explicit disclosure; `oauth-management` and the automatically discovered quota-cooldown logic suite distinguish recognized quota conditions from unexpected reasons, use the generic explanation for blank cooldown tooltips and preserve full Drawer diagnostics.
 
 `dashboard-model-panels` also narrows and re-widens the ring's frame without a window resize and requires the ring to refill it on the readout's centre, the case G2's own window-only refit missed when the console font arrived after the first paint.
 
@@ -1274,13 +1273,13 @@ the timed comparisons.
 
 ### Conversation presentation ownership
 
-`scripts/test-conversation-labels.ts` owns status admission, separate Agent/Playground
+`scripts/test-conversation-labels.ts` owns status admission, Agent
 failure keys, duration thresholds/rounding and the identity of compatibility exports.
 The duration cases formerly in the Agent workspace suite move here without removing
 assertions; page-specific stopped-turn/failure semantics remain there. The runtime
 graph guard in `scripts/conversation-boundaries.test.mjs` forbids shared workspace
 modules from importing page internals, with eager/lazy negative and erased-type cases
-and nonempty real consumers. The existing Agent/Playground probes use `scripts/acceptance/probes/conversation-export.mjs` to
+and nonempty real consumers. The existing Agent probes use `scripts/acceptance/probes/conversation-export.mjs` to
 own actual downloads, standalone HTML/image rendering, controls, privacy, browser
 encoding and responsive behavior. These claims live in the browser today; moving one to
 a cheaper layer requires a replacement of equal strength (ADR 0089).
@@ -1303,8 +1302,8 @@ traffic, idle-day distribution and whole-UTC-date recent-traffic protection, inc
 reference times and equivalent instants in other time zones. `scripts/check-demo.test.ts` owns
 public recording privacy. `scripts/test-agent-workspace.ts` owns send admission: target-free
 demo replay, required live targets, and approval blocking in both modes.
-Built `scripts/verify-demo.mjs` sends both examples: the Agent replay must settle its generated
-interface, while the Playground replay must settle its answer content. The Agent example and
+Built `scripts/verify-demo.mjs` sends the Agent example, whose replay must settle its generated
+interface. The Agent example and
 capability-directory actions use locale-independent identities; built acceptance exercises the
 Agent in English while the other route headings remain Chinese. Because the generated interface
 is an opaque sandbox, the check seeds theme storage only in frames with an origin and tolerates

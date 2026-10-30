@@ -28,7 +28,7 @@ const group = (key: string, labelKey: string, keys: string[]): NavGroup => ({
 });
 
 const model = (): NavGroup[] => [
-  group('operate', 'nav.group.operate', ['/dashboard', '/agent', '/playground']),
+  group('operate', 'nav.group.operate', ['/dashboard', '/agent', '/model-square']),
   group('observe', 'nav.group.observe', ['/logs', '/audit']),
   group('control', 'nav.group.control', ['/omc-settings']),
 ];
@@ -78,7 +78,7 @@ assert.deepEqual(next, ['/agent', '/logs']);
 assert.deepEqual(keysOf(retainVisibleGroups(model(), hiddenNavSet([]))), keysOf(model()), 'nothing hidden means every entry');
 assert.deepEqual(
   keysOf(retainVisibleGroups(model(), hiddenNavSet(['/agent']))),
-  ['/dashboard', '/playground', '/logs', '/audit', '/omc-settings'],
+  ['/dashboard', '/model-square', '/logs', '/audit', '/omc-settings'],
   'a hidden entry leaves the rail and its group keeps the rest',
 );
 const thinned = retainVisibleGroups(model(), hiddenNavSet(['/logs', '/audit']));

@@ -142,17 +142,6 @@ type PluginStore struct {
 	Plugins        []StorePluginItem        `json:"plugins"`
 }
 
-type PluginInstallResult struct {
-	Status          string `json:"status"`
-	SourceID        string `json:"source_id"`
-	SourceName      string `json:"source_name"`
-	ID              string `json:"id"`
-	Version         string `json:"version"`
-	InstallType     string `json:"install_type"`
-	PluginsEnabled  bool   `json:"plugins_enabled"`
-	RestartRequired bool   `json:"restart_required"`
-}
-
 type PluginDeleteResult struct {
 	Status            string `json:"status"`
 	ID                string `json:"id"`
@@ -346,33 +335,6 @@ func (c *Client) PluginStore(ctx context.Context) (PluginStore, error) {
 	}
 	if result.Plugins == nil {
 		result.Plugins = []StorePluginItem{}
-	}
-	return result, nil
-}
-
-// InstallPlugin installs or updates a store plugin. The source pins which
-// registry supplies it when several list the same id; an empty version asks
-// for the newest release. CPA records the installed plugin by saving the
-// configuration file in the v8 layout, so the stored file is kept first.
-func (c *Client) InstallPlugin(ctx context.Context, id, sourceID, version string) (PluginInstallResult, error) {
-	id = strings.TrimSpace(id)
-	if id == "" {
-		return PluginInstallResult{}, errors.New("plugin id is required")
-	}
-	endpoint := "/plugins/store/" + url.PathEscape(id) + "/install"
-	if sourceID = strings.TrimSpace(sourceID); sourceID != "" {
-		endpoint += "?" + url.Values{"source": []string{sourceID}}.Encode()
-	}
-	payload := map[string]any{}
-	if version = strings.TrimSpace(version); version != "" {
-		payload["version"] = version
-	}
-	if _, err := c.keepStoredConfig(WithBackupReason(ctx, BackupReasonPluginInstall)); err != nil {
-		return PluginInstallResult{}, err
-	}
-	var result PluginInstallResult
-	if err := c.doJSONBody(ctx, http.MethodPost, endpoint, payload, &result); err != nil {
-		return PluginInstallResult{}, err
 	}
 	return result, nil
 }

@@ -249,10 +249,6 @@ async function main() {
           await turn.getByTestId('agent-view').waitFor({ state: 'visible', timeout: NAVIGATION_TIMEOUT_MS });
           if (await page.getByTestId('agent-rejected').count() > 0) throw new Error('the demonstration refused its own example question');
         }
-        if (route.path === '/playground') {
-          await page.getByTestId('playground-demo-example').click();
-          await page.getByTestId('playground-answer').getByText('$0.97').waitFor({ state: 'visible', timeout: REPLAY_TIMEOUT_MS });
-        }
         if (route.path === '/oauth-management') {
           await page.getByTestId('oauth-management-model-rules-open').first().click();
           const drawer = page.getByTestId('oauth-model-rules-drawer');

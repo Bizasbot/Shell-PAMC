@@ -130,7 +130,7 @@ func (s *Service) registerKeys(registry *capability.Registry) error {
 		Version     int64  `json:"version"`
 	}
 	metadata := Meta("keys_set_alias", "Change a display-only client key alias using its current version.", "write", "low")
-	metadata.Invalidates = []string{"client-key-aliases", "client-api-keys", "playground-keys", "management-client-keys", "management-config"}
+	metadata.Invalidates = []string{"client-key-aliases", "client-api-keys", "management-client-keys", "management-config"}
 	if err := capability.Register(registry, metadata, nil, func(ctx context.Context, input AliasInput, _, _ string) (repository.ClientKeyAlias, error) {
 		return s.Repo.SetClientKeyAlias(ctx, "default", input.Fingerprint, input.Alias, input.Version)
 	}); err != nil {
@@ -138,7 +138,7 @@ func (s *Service) registerKeys(registry *capability.Registry) error {
 	}
 	metadata = Meta("keys_create", "Create a client API key. The operator supplies the key privately in OMC.", "write", "high")
 	metadata.HumanInput = "secret"
-	metadata.Invalidates = []string{"client-api-keys", "playground-keys", "management-client-keys", "management-config"}
+	metadata.Invalidates = []string{"client-api-keys", "management-client-keys", "management-config"}
 	if err := capability.Register(registry, metadata, func(ctx context.Context, _ Empty) (capability.Preview, error) {
 		keys, err := s.ListKeys(ctx, Empty{})
 		return capability.Preview{Target: "client_api_keys", Revision: keys.Revision, Changes: map[string]string{"action": "create"}}, err
@@ -149,7 +149,7 @@ func (s *Service) registerKeys(registry *capability.Registry) error {
 		return err
 	}
 	metadata = Meta("keys_delete", "Delete one client key; all callers using it lose access.", "destructive", "high")
-	metadata.Invalidates = []string{"client-api-keys", "playground-keys", "management-client-keys", "management-config"}
+	metadata.Invalidates = []string{"client-api-keys", "management-client-keys", "management-config"}
 	return capability.Register(registry, metadata, func(ctx context.Context, input KeyTarget) (capability.Preview, error) {
 		keys, err := s.ListKeys(ctx, Empty{})
 		if err != nil {

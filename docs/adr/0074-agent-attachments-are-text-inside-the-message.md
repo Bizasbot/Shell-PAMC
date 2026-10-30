@@ -1,6 +1,7 @@
 # ADR 0074: Agent attachments are text inside the message
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-10-08
 - Builds on [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md):
   a run still carries one user message as one string.

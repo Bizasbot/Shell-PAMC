@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
@@ -81,24 +80,24 @@ func TestBrowserRunDisconnectReplayAdmissionAndShutdown(t *testing.T) {
 func TestBrowserRunExplicitCancellationAndExpiry(t *testing.T) {
 	handler := &Handler{}
 	entered, cancelled := make(chan struct{}), make(chan struct{})
-	handler.startBrowserRun("playground", func(writer http.ResponseWriter, request *http.Request) {
+	handler.startBrowserRun("agent", func(writer http.ResponseWriter, request *http.Request) {
 		close(entered)
 		<-request.Context().Done()
 		close(cancelled)
 	}, httptest.NewRecorder(), detachedBrowserRequest("cancel-me", `{}`))
 	<-entered
-	run := handler.browserRuns.find("playground", "cancel-me")
+	run := handler.browserRuns.find("agent", "cancel-me")
 	run.cancel()
 	<-cancelled
 	<-run.finished
 	run.mu.Lock()
 	run.endedAt = time.Now().Add(-BROWSER_RUN_RETENTION - time.Second)
 	run.mu.Unlock()
-	if handler.browserRuns.find("playground", "cancel-me") != nil {
+	if handler.browserRuns.find("agent", "cancel-me") != nil {
 		t.Fatal("expired journal retained")
 	}
 	recorder := httptest.NewRecorder()
-	handler.startBrowserRun("playground", func(http.ResponseWriter, *http.Request) { t.Error("expired id restarted") }, recorder, detachedBrowserRequest("cancel-me", `{}`))
+	handler.startBrowserRun("agent", func(http.ResponseWriter, *http.Request) { t.Error("expired id restarted") }, recorder, detachedBrowserRequest("cancel-me", `{}`))
 	if recorder.Code != 409 || !strings.Contains(recorder.Body.String(), "run_expired") {
 		t.Fatalf("expired admission: %s", recorder.Body.String())
 	}
@@ -119,33 +118,6 @@ func TestBrowserRunShutdownJoinsInference(t *testing.T) {
 	case <-joined:
 	default:
 		t.Fatal("shutdown returned before inference")
-	}
-}
-
-func TestPlaygroundOutputBoundSettlesItsProtocol(t *testing.T) {
-	for _, kind := range []string{"playground"} {
-		ctx, cancel := context.WithCancel(context.Background())
-		run := &browserRun{kind: kind, header: http.Header{"Content-Type": []string{"text/event-stream"}}, changed: make(chan struct{}), finished: make(chan struct{}), cancel: cancel}
-		_, _ = run.Write([]byte("data: {}\n\n"))
-		if _, err := run.Write(make([]byte, BROWSER_RUN_BYTES)); err == nil {
-			t.Fatal("unbounded output")
-		}
-		if ctx.Err() != context.Canceled || !strings.Contains(string(run.body), "response_too_large") || len(run.body) > BROWSER_RUN_BYTES+256 {
-			t.Fatal("overflow did not settle bounded journal")
-		}
-		run.finish()
-	}
-}
-
-func TestPlaygroundRecoveryUsesActualRequestAndRedactsImages(t *testing.T) {
-	raw := `{"model":"actual","client_key_fingerprint":"fingerprint","messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":"data:image/png;base64,` + strings.Repeat("X", 20000) + `"}}]}],"recovery_turn":{"id":"invented","reply":"invented","keyLabel":"visible","replaces_id":"previous"}}`
-	turn := playgroundRecoveryTurn([]byte(raw), "authoritative", 100)
-	var decoded map[string]any
-	if json.Unmarshal(turn, &decoded) != nil {
-		t.Fatalf("invalid recovery: %s", turn)
-	}
-	if decoded["id"] != "authoritative" || decoded["status"] != "running" || decoded["reply"] != "" || decoded["replaces_id"] != "previous" || strings.Contains(string(turn), strings.Repeat("X", 20000)) {
-		t.Fatalf("untrusted recovery: %s", turn)
 	}
 }
 
@@ -218,7 +190,7 @@ func (body *browserRunTestBody) Read(buffer []byte) (int, error) {
 func (body *browserRunTestBody) Close() error { return nil }
 
 func TestBrowserRunRejectsBusyAndClosedBeforeReadingBody(t *testing.T) {
-	for _, kind := range []string{"agent", "playground"} {
+	for _, kind := range []string{"agent"} {
 		t.Run(kind, func(t *testing.T) {
 			handler := &Handler{}
 			t.Cleanup(handler.CloseBrowserRuns)
@@ -252,7 +224,7 @@ func TestBrowserRunRejectsBusyAndClosedBeforeReadingBody(t *testing.T) {
 }
 
 func TestBrowserRunBoundsConcurrentSameIDBodyReadsAndReleasesSlots(t *testing.T) {
-	for _, kind := range []string{"agent", "playground"} {
+	for _, kind := range []string{"agent"} {
 		t.Run(kind, func(t *testing.T) {
 			handler := &Handler{}
 			t.Cleanup(handler.CloseBrowserRuns)
@@ -367,8 +339,8 @@ func TestAgentJournalDoesNotTerminateGrowingTasks(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	run := &browserRun{kind: "agent", header: http.Header{"Content-Type": []string{"text/event-stream"}}, changed: make(chan struct{}), finished: make(chan struct{}), cancel: cancel}
-	body := make([]byte, BROWSER_RUN_BYTES+1)
-	if count, err := run.Write(body); err != nil || count != len(body) || ctx.Err() != nil || run.isOverflowed {
+	body := make([]byte, 4<<20+1)
+	if count, err := run.Write(body); err != nil || count != len(body) || ctx.Err() != nil {
 		t.Fatalf("count %d error %v cancelled %v", count, err, ctx.Err())
 	}
 }

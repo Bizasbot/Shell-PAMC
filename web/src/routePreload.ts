@@ -5,7 +5,6 @@ import {
   loadApiKeysPage,
   loadDashboardPage,
   loadAgentPage,
-  loadPlaygroundPage,
   loadModelSquarePage,
   loadLogsPage,
   loadAuditPage,
@@ -25,7 +24,6 @@ const ROUTE_LOADERS: Record<string, () => Promise<unknown>> = {
   '/api-keys': loadApiKeysPage,
   '/dashboard': loadDashboardPage,
   '/agent': loadAgentPage,
-  '/playground': loadPlaygroundPage,
   '/model-square': loadModelSquarePage,
   '/logs': loadLogsPage,
   '/audit': loadAuditPage,
@@ -34,7 +32,6 @@ const ROUTE_LOADERS: Record<string, () => Promise<unknown>> = {
   '/auth-files': loadLegacyOAuthManagementRedirect,
   '/system': loadSystemPage,
   '/plugins': loadPluginsPage,
-  '/plugins/store': loadPluginsPage,
   '/omc-settings': loadOmcSettingsPage,
 };
 

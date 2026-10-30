@@ -34,9 +34,9 @@ test('a lost POST acknowledgement recovers by GET only, using the original id', 
    return stream('event: delta\ndata: {"content":"complete"}\n\n' + DONE);
   };
   const frames = [];
-  for await (const frame of reconnectRun({ workspace: 'playground', id: 'original', signal: new AbortController().signal, initial: { method: 'POST', body: '{}' }, replay: () => { replays++; }, waitForRetry: async () => {} })) frames.push(frame);
+  for await (const frame of reconnectRun({ workspace: 'agent', id: 'original', signal: new AbortController().signal, initial: { method: 'POST', body: '{}' }, replay: () => { replays++; }, waitForRetry: async () => {} })) frames.push(frame);
   assert.deepEqual(calls.map(call => call.method), ['POST','GET']);
-  assert.deepEqual(calls.map(call => call.url), ['/omc/api/v1/playground/chat','/omc/api/v1/playground/runs/original']);
+  assert.deepEqual(calls.map(call => call.url), ['/omc/api/v1/agent/run','/omc/api/v1/agent/runs/original']);
   assert.ok(calls.every(call => call.id === 'original'));
   assert.equal(replays,1); assert.equal(frames.length,2);
  } finally { globalThis.fetch = originalFetch; }
@@ -48,7 +48,7 @@ test('partial SSE reconnect resets before replay, never appending duplicated tok
  let answer = '';
  try {
   globalThis.fetch = async () => ++calls === 1 ? stream('event: delta\ndata: {"content":"half"}\n\n') : stream('event: delta\ndata: {"content":"whole"}\n\n' + DONE);
-  for await (const frame of reconnectRun({ workspace:'playground', id:'same', signal:new AbortController().signal, initial:{method:'POST'}, replay:()=>{answer='';}, waitForRetry:async()=>{} })) {
+  for await (const frame of reconnectRun({ workspace:'agent', id:'same', signal:new AbortController().signal, initial:{method:'POST'}, replay:()=>{answer='';}, waitForRetry:async()=>{} })) {
    if (frame.event==='delta') answer+=JSON.parse(frame.data).content;
   }
   assert.equal(answer,'whole'); assert.equal(calls,2);
@@ -115,7 +115,7 @@ test('auth expiry stops recovery instead of infinitely retrying or resubmitting'
 test('a coded upstream refusal ends a managed run rather than replaying its failure forever', async () => {
  let calls=0;
  const connection = createRunConnection(async () => { calls++; throw new ApiError('gateway_unavailable',502,{code:'gateway_unavailable'}); });
- await assert.rejects(async () => { for await (const _frame of connection.reconnectRun({workspace:'playground',id:'refused',signal:new AbortController().signal,initial:{method:'POST'},replay:()=>{}})) {} }, error=>error instanceof ApiError && error.status===502);
+ await assert.rejects(async () => { for await (const _frame of connection.reconnectRun({workspace:'agent',id:'refused',signal:new AbortController().signal,initial:{method:'POST'},replay:()=>{}})) {} }, error=>error instanceof ApiError && error.status===502);
  assert.equal(calls,1);
 });
 

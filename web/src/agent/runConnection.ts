@@ -14,17 +14,16 @@ export function isConnectionFailure(error: unknown): boolean {
   return error instanceof TypeError || status === 0 || status !== undefined && (status >= 500 || status === 408 || status === 429);
 }
 
-export interface BrowserRun<T = unknown> {
+export interface BrowserRun {
   id: string;
   started_at_ms: number;
   is_running: boolean;
-  request?: T;
 }
 
 type ResponseRequest = (path: string, options?: RequestInit) => Promise<Response>;
 
 export function createRunConnection(requestResponse: ResponseRequest) {
-  async function currentRun<T>(workspace: string, signal?: AbortSignal): Promise<BrowserRun<T> | undefined> {
+  async function currentRun(workspace: string, signal?: AbortSignal): Promise<BrowserRun | undefined> {
     const connection = new AbortController();
     const abort = () => connection.abort();
     signal?.addEventListener('abort', abort, { once: true });
@@ -32,7 +31,7 @@ export function createRunConnection(requestResponse: ResponseRequest) {
     const timer = setTimeout(abort, 45_000);
     try {
       const response = await requestResponse(`/${workspace}/runs/active`, { signal: connection.signal });
-      const body = await response.json() as { run?: BrowserRun<T> | null };
+      const body = await response.json() as { run?: BrowserRun | null };
       return body.run ?? undefined;
     } catch (error) {
       if (connection.signal.aborted && !signal?.aborted) throw new TypeError('run_discovery_idle');
@@ -77,7 +76,7 @@ export function createRunConnection(requestResponse: ResponseRequest) {
       try {
         const isInitialPost = shouldPost;
         shouldPost = false;
-        const response = await requestResponse(isInitialPost ? `/${options.workspace}/${options.workspace === 'agent' ? 'run' : 'chat'}` : `/${options.workspace}/runs/${encodeURIComponent(options.id)}`, {
+        const response = await requestResponse(isInitialPost ? `/${options.workspace}/run` : `/${options.workspace}/runs/${encodeURIComponent(options.id)}`, {
           ...(isInitialPost ? options.initial : {}),
           headers: { Accept: 'text/event-stream', ...(isInitialPost ? options.initial?.headers : {}), 'X-OMC-Run-ID': options.id },
           signal: connection.signal,
@@ -125,10 +124,10 @@ export function createRunConnection(requestResponse: ResponseRequest) {
   }
 
   /** Discovery is retried only on connectivity failures, and is aborted with the view. */
-  async function discoverRun<T>(workspace: string, signal: AbortSignal): Promise<BrowserRun<T> | undefined> {
+  async function discoverRun(workspace: string, signal: AbortSignal): Promise<BrowserRun | undefined> {
     let attempt = 0;
     while (!signal.aborted) {
-      try { return await currentRun<T>(workspace, signal); }
+      try { return await currentRun(workspace, signal); }
       catch (error) {
         if (signal.aborted || !isConnectionFailure(error)) throw error;
         await waitForConnection(signal, Math.min(500 * 2 ** Math.min(attempt++, 4), 8000));

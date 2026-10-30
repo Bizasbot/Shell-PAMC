@@ -1,6 +1,7 @@
 # ADR 0094: The console font ships complete in unicode-range shards
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-10-12
 - Amends: ADR 0053's distribution anomaly ceiling.
 

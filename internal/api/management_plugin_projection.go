@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
 )
 
 /**
@@ -19,7 +18,7 @@ import (
  * decode CPA's document, and a field added there for decoding must not become a field
  * this console serves without somebody deciding it should. The projection is also where
  * a caller-visible value is bounded - plugin text arrives from a plugin manifest or a
- * store registry, not from this process.
+ * registry, not from this process.
  *
  * Two values are derived here rather than in the browser, so every surface reads the
  * same answer: the repository link (a registry usually names a GitHub `owner/repo` slug,
@@ -34,12 +33,6 @@ const (
 	// pluginListLimit bounds every list a manifest declares (tags, fields, enum values,
 	// platforms), for the same reason.
 	pluginListLimit = 64
-	// officialPluginSourceID is the id CPA assigns its built-in registry.
-	officialPluginSourceID = "official"
-	// officialPluginRepositoryPrefix is the whole URL prefix first-party repositories
-	// live under. Matching the full prefix rather than the owner keeps a look-alike host
-	// such as `github.com.example.net/router-for-me/` from passing.
-	officialPluginRepositoryPrefix = "https://github.com/router-for-me/"
 )
 
 var githubRepositorySlug = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$`)
@@ -87,47 +80,6 @@ type PluginPageDTO struct {
 	Path        string `json:"path"`
 	Label       string `json:"label"`
 	Description string `json:"description,omitempty"`
-}
-
-type PluginStoreSourceDTO struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	URL        string `json:"url"`
-	IsOfficial bool   `json:"is_official"`
-}
-
-type PluginStoreSourceErrorDTO struct {
-	SourceID   string `json:"source_id"`
-	SourceName string `json:"source_name"`
-	SourceURL  string `json:"source_url"`
-	Message    string `json:"message"`
-}
-
-type StorePluginItemDTO struct {
-	StoreID             string   `json:"store_id"`
-	SourceID            string   `json:"source_id"`
-	SourceName          string   `json:"source_name"`
-	ID                  string   `json:"id"`
-	Name                string   `json:"name"`
-	Description         string   `json:"description,omitempty"`
-	Author              string   `json:"author,omitempty"`
-	Version             string   `json:"version,omitempty"`
-	RepositoryURL       string   `json:"repository_url,omitempty"`
-	Homepage            string   `json:"homepage,omitempty"`
-	License             string   `json:"license,omitempty"`
-	Tags                []string `json:"tags"`
-	Logo                string   `json:"logo,omitempty"`
-	InstallType         string   `json:"install_type,omitempty"`
-	Platforms           []string `json:"platforms"`
-	IsOfficial          bool     `json:"is_official"`
-	IsOMC               bool     `json:"is_omc"`
-	AuthRequired        bool     `json:"auth_required"`
-	AuthConfigured      bool     `json:"auth_configured"`
-	Installed           bool     `json:"installed"`
-	InstalledVersion    string   `json:"installed_version,omitempty"`
-	InstallSourceStatus string   `json:"install_source_status,omitempty"`
-	EffectiveEnabled    bool     `json:"effective_enabled"`
-	UpdateAvailable     bool     `json:"update_available"`
 }
 
 // projectPluginItems projects the installed plugin list, preserving CPA's order.
@@ -236,115 +188,6 @@ func projectPluginConfigFields(fields []management.PluginConfigField) []PluginCo
 		})
 	}
 	return result
-}
-
-func projectPluginStoreSources(sources []management.PluginStoreSource) []PluginStoreSourceDTO {
-	result := make([]PluginStoreSourceDTO, 0, len(sources))
-	for _, source := range sources {
-		name := boundedText(source.Name, pluginTextLimit)
-		if isOMCPluginStoreURL(source.URL) {
-			name = pluginregistry.OMCSourceName
-		}
-		result = append(result, PluginStoreSourceDTO{
-			ID:         boundedText(source.ID, pluginTextLimit),
-			Name:       name,
-			URL:        boundedText(source.URL, pluginTextLimit),
-			IsOfficial: strings.EqualFold(strings.TrimSpace(source.ID), officialPluginSourceID),
-		})
-	}
-	return result
-}
-
-func projectPluginStoreSourceErrors(sourceErrors []management.PluginStoreSourceError) []PluginStoreSourceErrorDTO {
-	result := make([]PluginStoreSourceErrorDTO, 0, len(sourceErrors))
-	for _, sourceError := range sourceErrors {
-		name := boundedText(sourceError.SourceName, pluginTextLimit)
-		if isOMCPluginStoreURL(sourceError.SourceURL) {
-			name = pluginregistry.OMCSourceName
-		}
-		result = append(result, PluginStoreSourceErrorDTO{
-			SourceID:   boundedText(sourceError.SourceID, pluginTextLimit),
-			SourceName: name,
-			SourceURL:  boundedText(sourceError.SourceURL, pluginTextLimit),
-			Message:    boundedText(sourceError.Message, pluginTextLimit),
-		})
-	}
-	return result
-}
-
-// projectStorePlugins projects the plugin-store list. Oh My CPA's own registry comes
-// first: the console ships it, so an operator looking for an Oh My CPA plugin should
-// not have to search the list the other registries supply. CPA's order is kept inside
-// each group.
-func projectStorePlugins(plugins []management.StorePluginItem) []StorePluginItemDTO {
-	result := make([]StorePluginItemDTO, 0, len(plugins))
-	for _, plugin := range plugins {
-		if isOMCPluginStoreURL(plugin.SourceURL) {
-			result = append(result, projectStorePlugin(plugin))
-		}
-	}
-	for _, plugin := range plugins {
-		if !isOMCPluginStoreURL(plugin.SourceURL) {
-			result = append(result, projectStorePlugin(plugin))
-		}
-	}
-	return result
-}
-
-func projectStorePlugin(plugin management.StorePluginItem) StorePluginItemDTO {
-	isOMC := isOMCPluginStoreURL(plugin.SourceURL)
-	sourceName := boundedText(plugin.SourceName, pluginTextLimit)
-	if isOMC {
-		// CPA names a custom source after its URL's host; the managed registry is
-		// named after the project that publishes it.
-		sourceName = pluginregistry.OMCSourceName
-	}
-	repositoryURL := pluginRepositoryURL(plugin.Repository)
-	platforms := make([]string, 0, len(plugin.Platforms))
-	for _, platform := range plugin.Platforms {
-		if len(platforms) >= pluginListLimit {
-			break
-		}
-		goos, goarch := boundedText(platform.GOOS, 32), boundedText(platform.GOARCH, 32)
-		if goos != "" && goarch != "" {
-			platforms = append(platforms, goos+"/"+goarch)
-		}
-	}
-	return StorePluginItemDTO{
-		StoreID:             boundedText(plugin.StoreID, pluginTextLimit),
-		SourceID:            boundedText(plugin.SourceID, pluginTextLimit),
-		SourceName:          sourceName,
-		ID:                  boundedText(plugin.ID, pluginTextLimit),
-		Name:                boundedText(plugin.Name, pluginTextLimit),
-		Description:         boundedText(plugin.Description, pluginTextLimit),
-		Author:              boundedText(plugin.Author, pluginTextLimit),
-		Version:             boundedText(plugin.Version, pluginTextLimit),
-		RepositoryURL:       repositoryURL,
-		Homepage:            httpURLOrEmpty(plugin.Homepage),
-		License:             boundedText(plugin.License, pluginTextLimit),
-		Tags:                boundedPluginList(plugin.Tags),
-		Logo:                plugin.Logo,
-		InstallType:         boundedText(plugin.InstallType, 64),
-		Platforms:           platforms,
-		IsOfficial:          isOfficialStorePlugin(plugin.SourceID, repositoryURL),
-		IsOMC:               isOMC,
-		AuthRequired:        plugin.AuthRequired,
-		AuthConfigured:      plugin.AuthConfigured,
-		Installed:           plugin.Installed,
-		InstalledVersion:    boundedText(plugin.InstalledVersion, pluginTextLimit),
-		InstallSourceStatus: boundedText(plugin.InstallSourceStatus, 64),
-		EffectiveEnabled:    plugin.EffectiveEnabled,
-		UpdateAvailable:     plugin.UpdateAvailable,
-	}
-}
-
-// isOfficialStorePlugin requires both the registry CPA assigned and the repository to
-// be first-party. A third-party registry can copy a first-party repository name into
-// its own entry, so the repository alone is not evidence of where the artifact comes
-// from.
-func isOfficialStorePlugin(sourceID, repositoryURL string) bool {
-	return strings.EqualFold(strings.TrimSpace(sourceID), officialPluginSourceID) &&
-		strings.HasPrefix(strings.ToLower(repositoryURL), officialPluginRepositoryPrefix)
 }
 
 // pluginRepositoryURL turns a registry's repository reference into a link: an

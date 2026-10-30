@@ -7,7 +7,6 @@ const ids: string[] = JSON.parse(process.env.OMC_PROBE_IDS ?? '[]');
 const modules = process.env.OMC_PROBE_CATALOG === 'harness' ? [] : [
   '/src/main.tsx',
   ...(ids.some(id => id.startsWith('agent')) ? ['/src/pages/agent/AgentPage.tsx'] : []),
-  ...(ids.some(id => id.startsWith('playground')) ? ['/src/pages/playground/PlaygroundPage.tsx'] : []),
 ];
 const server = await createServer({
   server: {

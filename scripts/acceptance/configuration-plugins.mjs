@@ -225,7 +225,6 @@ export async function runConfigurationPluginsAcceptance({
   }
   await auditRoutes(page, responseBodies, [
     ['/plugins', '.plugins-page', { pageSecrets: providerSecrets }],
-    ['/plugins/store', '[data-plugin-panel="store"]', { pageSecrets: providerSecrets }],
     ['/plugins/settings', '[data-plugin-panel="settings"]', { pageSecrets: providerSecrets }],
     ['/system', '.system-page', { pageSecrets: providerSecrets }],
     ['/model-square', '.model-square-page [data-model-identity]', { pageSecrets: providerSecrets }],

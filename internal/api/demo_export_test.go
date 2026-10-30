@@ -125,10 +125,9 @@ func demoExportCases() []demoExportCase {
 		{Name: "providers-with-keys", Path: "/api/v1/management/providers?include_keys=true"},
 		{Name: "agent-session", Path: "/api/v1/agent/session"},
 		{Name: "agent-run-active", Path: "/api/v1/agent/runs/active"},
-		{Name: "playground-run-active", Path: "/api/v1/playground/runs/active"},
 		{Name: "capabilities", Path: "/api/v1/capabilities"},
 		{Name: "api-keys", Path: "/api/v1/management/api-keys"},
-		{Name: "playground-models", Route: "/api/v1/playground/models", From: demoExportPlaygroundModelsPath},
+		{Name: "agent-models", Route: "/api/v1/agent/models", From: demoExportAgentModelsPath},
 		{Name: "api-keys-with-keys", Path: "/api/v1/management/api-keys?include_keys=true"},
 		{Name: "client-key-aliases", Path: "/api/v1/management/client-key-aliases"},
 		{Name: "model-square", Path: "/api/v1/management/model-square"},
@@ -142,7 +141,6 @@ func demoExportCases() []demoExportCase {
 		{Name: "plugin-config-usage-exporter", Path: "/api/v1/management/plugins/usage-exporter/config", Route: "/api/v1/management/plugins/{id}/config"},
 		{Name: "plugin-config-prompt-redactor", Path: "/api/v1/management/plugins/prompt-redactor/config", Route: "/api/v1/management/plugins/{id}/config"},
 		{Name: "plugin-config-quota-notifier", Path: "/api/v1/management/plugins/quota-notifier/config", Route: "/api/v1/management/plugins/{id}/config"},
-		{Name: "plugin-store", Path: "/api/v1/management/plugin-store"},
 		{Name: "auth-files", Path: "/api/v1/management/auth-files"},
 		// The model and alias lists are asked for per credential; `auth-files-models`
 		// without a name is what the console's own model picker sends.
@@ -1302,7 +1300,7 @@ func assertDemoQuotaCapacityExamples(t *testing.T, responses map[string]demoExpo
 	}
 }
 
-func demoExportPlaygroundModelsPath(captured map[string]demoExportResponse) (string, error) {
+func demoExportAgentModelsPath(captured map[string]demoExportResponse) (string, error) {
 	var payload struct {
 		Keys []ClientAPIKeyItemDTO `json:"keys"`
 	}
@@ -1310,9 +1308,9 @@ func demoExportPlaygroundModelsPath(captured map[string]demoExportResponse) (str
 		return "", err
 	}
 	if len(payload.Keys) == 0 || payload.Keys[0].UsageFingerprint == "" {
-		return "", errors.New("client keys must be exported before playground models")
+		return "", errors.New("client keys must be exported before Agent models")
 	}
-	return "/api/v1/playground/models?client_key_fingerprint=" + payload.Keys[0].UsageFingerprint, nil
+	return "/api/v1/agent/models?client_key_fingerprint=" + payload.Keys[0].UsageFingerprint, nil
 }
 
 // The host facts are pinned rather than measured, so this is what keeps the pin

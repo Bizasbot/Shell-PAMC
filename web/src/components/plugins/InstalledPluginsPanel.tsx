@@ -3,10 +3,10 @@ import { Button, Dropdown, Tooltip } from 'antd';
 import { Switch } from '../common/Switch';
 import { PageLoading } from '../common/PageLoading';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { DeleteOutlined, ExternalLinkOutlined, GithubOutlined, MoreOutlined, SettingOutlined, ShopOutlined } from '../icons';
+import { DeleteOutlined, GithubOutlined, MoreOutlined, SettingOutlined } from '../icons';
 import { api, apiErrorCode, describeError } from '../../api/client';
 import { useT } from '../../i18n';
-import { pluginDisplayName, type PluginItem, type StorePluginItem } from '../../types/plugin';
+import { pluginDisplayName, type PluginItem } from '../../types/plugin';
 import { safeExternalURL } from '../../utils/externalUrl';
 import { StatusLabel } from '../common/StatusLabel';
 import { filterInstalledPlugins } from './pluginStoreLogic';
@@ -23,11 +23,8 @@ interface InstalledPluginsPanelProps {
   plugins: PluginItem[];
   isLoading: boolean;
   isPluginSystemEnabled: boolean;
-  /** Store listings by plugin id, when the store has been read; they supply descriptions and tags. */
-  catalog: ReadonlyMap<string, StorePluginItem>;
   isDemo: boolean;
   onConfigure: (plugin: PluginItem) => void;
-  onBrowseStore: () => void;
 }
 
 /**
@@ -42,10 +39,8 @@ export function InstalledPluginsPanel({
   plugins,
   isLoading,
   isPluginSystemEnabled,
-  catalog,
   isDemo,
   onConfigure,
-  onBrowseStore,
 }: InstalledPluginsPanelProps) {
   const t = useT();
   const toast = useToast();
@@ -62,11 +57,10 @@ export function InstalledPluginsPanel({
     if (previousDeleteId && !pendingDeleteId) moreButtonRefs.current.get(previousDeleteId)?.focus();
   }, [pendingDeleteId]);
 
-  const visible = React.useMemo(() => filterInstalledPlugins(plugins, query, catalog), [plugins, query, catalog]);
+  const visible = React.useMemo(() => filterInstalledPlugins(plugins, query), [plugins, query]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['management-plugins'] });
-    void queryClient.invalidateQueries({ queryKey: ['management-plugin-store'] });
   };
 
   const enabledMutation = useMutation({
@@ -118,11 +112,7 @@ export function InstalledPluginsPanel({
 
   if (plugins.length === 0) {
     return (
-      <EmptyState className={styles.empty} title={t('plugin.installed_empty')}>
-        <Button type="primary" icon={<ShopOutlined />} onClick={onBrowseStore}>
-          {t('plugin.browse_store')}
-        </Button>
-      </EmptyState>
+      <EmptyState className={styles.empty} title={t('plugin.installed_empty')} />
     );
   }
 
@@ -142,15 +132,12 @@ export function InstalledPluginsPanel({
       ) : (
         <div className={styles['installed-list']}>
           {visible.map((plugin) => {
-            const listing = catalog.get(plugin.id);
-            const name = pluginDisplayName({ id: plugin.id, metadata: { name: plugin.metadata?.name || listing?.name } });
-            const logo = plugin.logo || plugin.metadata?.logo || listing?.logo;
-            const version = formatPluginVersion(plugin.metadata?.version || listing?.installed_version);
+            const name = pluginDisplayName({ id: plugin.id, metadata: { name: plugin.metadata?.name } });
+            const logo = plugin.logo || plugin.metadata?.logo;
+            const version = formatPluginVersion(plugin.metadata?.version);
             const isUpdating = enabledMutation.isPending && enabledMutation.variables?.id === plugin.id;
             const isDeleting = deleteMutation.isPending && deleteMutation.variables === plugin.id;
-            const repositoryURL = safeExternalURL(plugin.repository_url || listing?.repository_url);
-            const homepageURL = safeExternalURL(listing?.homepage);
-            const hasHomepage = homepageURL !== undefined && homepageURL !== repositoryURL;
+            const repositoryURL = safeExternalURL(plugin.repository_url);
             const moreButton = (
               <Button
                 size="small"
@@ -186,11 +173,6 @@ export function InstalledPluginsPanel({
                       {!plugin.registered && <span className={styles.badge}>{t('plugin.badge_not_registered')}</span>}
                       {plugin.supports_oauth && <span className={styles.badge}>{t('plugin.badge_auth_provider')}</span>}
                       {plugin.supports_quota && <span className={styles.badge}>{t('plugin.badge_quota')}</span>}
-                      {listing?.update_available && (
-                        <span className={`${styles.badge} ${styles['badge-accent']}`}>
-                          {t('plugin.badge_update_to', { version: formatPluginVersion(listing.version) })}
-                        </span>
-                      )}
                     </span>
                   </div>
                   {name !== plugin.id && <span className={styles['plugin-id']}>{plugin.id}</span>}
@@ -202,7 +184,6 @@ export function InstalledPluginsPanel({
                       !plugin.configured && t('plugin.not_configured'),
                     ]}
                   />
-                  {listing?.description && <p className={styles.description}>{listing.description}</p>}
                 </div>
                 <div className={styles['installed-actions']}>
                   <span className={styles['switch-cell']}>
@@ -256,12 +237,7 @@ export function InstalledPluginsPanel({
                               icon: <GithubOutlined />,
                               label: <a href={repositoryURL} target="_blank" rel="noreferrer noopener">{t('plugin.open_repository')}</a>,
                             }] : []),
-                            ...(hasHomepage ? [{
-                              key: 'homepage',
-                              icon: <ExternalLinkOutlined />,
-                              label: <a href={homepageURL} target="_blank" rel="noreferrer noopener">{t('plugin.open_homepage')}</a>,
-                            }] : []),
-                            ...(repositoryURL || hasHomepage ? [{ type: 'divider' as const }] : []),
+                            ...(repositoryURL ? [{ type: 'divider' as const }] : []),
                             {
                               key: 'delete',
                               icon: <DeleteOutlined />,

@@ -1,5 +1,5 @@
 import { settleLayout, until } from '../harness.mjs';
-import { playgroundFixtures } from './playground.mjs';
+import { agentFixtures } from './agent.mjs';
 
 /**
  * Console-wide wheel smoothing (`web/src/utils/scrollSmoothing.ts`).
@@ -304,9 +304,9 @@ export async function scrollSmoothing({ base, page, check }) {
 }
 
 async function checkNativeModelPopup({ page, base, check }) {
-  for (const [matches, respond] of playgroundFixtures()) {
+  for (const [matches, respond] of agentFixtures()) {
     await page.route(url => matches(new URL(url)), async route => {
-      const body = new URL(route.request().url()).pathname.endsWith('/playground/models')
+      const body = new URL(route.request().url()).pathname.endsWith('/agent/models')
         ? { models: Array.from({ length: 80 }, (_, index) => ({
           id: `model-${String(index).padStart(3, '0')}`,
           call_point: `model-${String(index).padStart(3, '0')}`,
@@ -316,7 +316,7 @@ async function checkNativeModelPopup({ page, base, check }) {
       await route.fulfill({ json: body });
     });
   }
-  await page.goto(`${base}/playground`);
+  await page.goto(`${base}/agent`);
   const modelPicker = page.locator('[data-testid="target-chip"]');
   await modelPicker.click();
   // The list is rebuilt when its filter changes, so it is found again rather than held.
@@ -338,7 +338,7 @@ async function checkNativeModelPopup({ page, base, check }) {
     element.setAttribute('data-probe-scroller', '');
     return getComputedStyle(element).overflowY === 'auto' && element.querySelectorAll(':scope > [role="option"]').length === 80;
   });
-  check('the Playground model popup uses native overflow with the shared list structure', hasNativeHolder);
+  check('the Agent model popup uses native overflow with the shared list structure', hasNativeHolder);
   const popupAt = await pointAtPopup();
   let notch = describeNotch(await sampleNotch(page, popupAt));
   check('a native model popup scrolls down by one notch', Math.abs(notch.travelled - NOTCH) <= 1, notch.detail);

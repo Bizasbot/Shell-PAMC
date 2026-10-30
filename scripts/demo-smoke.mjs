@@ -37,7 +37,6 @@ const { check, checkEventually, failures, checks } = createChecker();
  * exists for, so every entry asserts on content rather than on a status code.
  */
 const PAGES = [
-  { route: 'playground', label: 'playground', selector: '[data-testid="playground-page"]', min: 1 },
   { route: 'dashboard', label: 'dashboard', selector: '.dashboard-tile', min: 4 },
   { route: 'model-square', label: 'model square', selector: '.model-square-page [data-model-identity]', min: 1 },
   { route: 'ai-providers', label: 'providers', selector: '.ant-table-row', min: 2 },
@@ -76,7 +75,6 @@ const REFUSED = [
   { method: 'GET', path: '/api/v1/management/request-error-logs/request-error-2026-01-01T00-00-00Z.log' },
   { method: 'GET', path: '/api/v1/usage/events/1/request-log' },
   { method: 'GET', path: '/api/v1/management/request-logs/41dbb9ee' },
-  { method: 'POST', path: '/api/v1/management/plugin-store/otel-bridge/install', body: {} },
   { method: 'PATCH', path: '/api/v1/management/plugins/usage-exporter/enabled', body: { enabled: false } },
   { method: 'PUT', path: '/api/v1/management/plugins/usage-exporter/config', body: { config: { enabled: true } } },
   { method: 'PUT', path: '/api/v1/management/plugins/settings', body: { revision: 'x', enabled: false, store_sources: [], store_auth: [] } },

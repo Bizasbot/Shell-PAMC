@@ -38,7 +38,6 @@ var knownPreferences = map[string]bool{
 	repository.PreferenceFonts:               true,
 	repository.PreferenceNavHidden:           true,
 	repository.PreferenceDashboardLayout:     true,
-	repository.PreferencePlaygroundSession:   true,
 	repository.PreferenceAgentTarget:         true,
 	repository.PreferenceUpdateDismissals:    true,
 	repository.PreferenceQuotaAutoRefresh:    true,

@@ -355,8 +355,10 @@ a { color: inherit; }
 /* A card is drawn on the panel's own ground and enclosed by its hairline: grouping comes from the
    enclosure, not from a second fill, so a page of cards reads as one sheet with sections on it. */
 .ant-card, .ant-table-wrapper .ant-table, .ant-drawer-section {
-  background: var(--bg);
+  /* Modules sit one step above the page ground in both modes so they read as distinct blocks. */
+  background: var(--surface);
 }
+.ant-card { border-color: var(--border) !important; }
 .ant-modal-container { background: var(--elevated); }
 /* Viewport dimensions land immediately; only the sheet's position slides. */
 .ant-drawer .ant-drawer-content-wrapper {
@@ -1188,7 +1190,9 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   height: 100dvh;
   display: grid;
   grid-template-rows: 56px 1fr;
-  background: var(--bg);
+  background:
+    radial-gradient(60% 50% at 50% 38%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    var(--bg);
   overflow: hidden;
 }
 /* The session check and the sign-in request draw along the page's top edge. Compounded with
@@ -1213,13 +1217,31 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 }
 .auth-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   margin: auto;
+  padding: 36px 32px 32px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
+  backdrop-filter: blur(10px);
 }
+.auth-card::before {
+  content: '';
+  display: block;
+  height: 2px;
+  margin: -36px -32px 32px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.auth-form .ant-input-affix-wrapper { border-radius: 10px; }
+.auth-form .ant-input-affix-wrapper:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.auth-submit { height: 44px; border-radius: 10px; letter-spacing: 0.02em; box-shadow: 0 8px 20px -8px var(--accent); transition: transform .15s ease, filter .15s ease; }
+.auth-submit:hover { transform: translateY(-1px); filter: brightness(1.08); }
 .auth-brand {
   display: flex;
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 .auth-title {
   margin: 0 0 32px;
@@ -2459,7 +2481,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   }
 }
 
-/* A conversation workspace (Playground, Agent) owns its scroll columns within the shell. */
+/* A conversation workspace (the Agent) owns its scroll columns within the shell. */
 .workspace-route { height: 100%; min-height: 0; }
 
 /* Content-first phone tools share the existing spacing and surface tokens. */

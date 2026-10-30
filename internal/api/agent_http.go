@@ -47,14 +47,14 @@ func (h *Handler) capabilityPrincipal(request *http.Request) (capability.Princip
 func (h *Handler) authenticateBearer(writer http.ResponseWriter, request *http.Request) bool {
 	ip := resolveClientIP(request, h.trustedProxies)
 	if h.limiter != nil && h.limiter.isLocked(ip) {
-		writePlaygroundError(writer, 429, "authentication_rate_limited")
+		writeRunError(writer, 429, "authentication_rate_limited")
 		return false
 	}
 	if _, ok := h.capabilityPrincipal(request); !ok {
 		if h.limiter != nil {
 			h.limiter.recordFailure(ip)
 		}
-		writePlaygroundError(writer, 401, "authentication_required")
+		writeRunError(writer, 401, "authentication_required")
 		return false
 	}
 	return true
@@ -76,7 +76,7 @@ func readAgentInput(writer http.ResponseWriter, request *http.Request, value any
 	decoder := json.NewDecoder(request.Body)
 	decoder.DisallowUnknownFields()
 	if decoder.Decode(value) != nil || decoder.Decode(new(any)) != io.EOF {
-		writePlaygroundError(writer, 400, "invalid_parameters")
+		writeRunError(writer, 400, "invalid_parameters")
 		return false
 	}
 	return true
@@ -84,7 +84,7 @@ func readAgentInput(writer http.ResponseWriter, request *http.Request, value any
 func (h *Handler) readyAgent(writer http.ResponseWriter) bool {
 	writer.Header().Set("Cache-Control", "no-store")
 	if err := h.ensureAgent(); err != nil {
-		writePlaygroundError(writer, 503, "capability_unavailable")
+		writeRunError(writer, 503, "capability_unavailable")
 		return false
 	}
 	return true
@@ -95,7 +95,7 @@ func (h *Handler) listCapabilities(writer http.ResponseWriter, request *http.Req
 	}
 	principal, ok := h.capabilityPrincipal(request)
 	if !ok && !h.cfg.IsDemoMode {
-		writePlaygroundError(writer, 401, "authentication_required")
+		writeRunError(writer, 401, "authentication_required")
 		return
 	}
 	if h.cfg.IsDemoMode {
@@ -109,7 +109,7 @@ func (h *Handler) invokeCapability(writer http.ResponseWriter, request *http.Req
 	}
 	principal, ok := h.capabilityPrincipal(request)
 	if !ok {
-		writePlaygroundError(writer, 401, "authentication_required")
+		writeRunError(writer, 401, "authentication_required")
 		return
 	}
 	var input struct {
@@ -121,7 +121,7 @@ func (h *Handler) invokeCapability(writer http.ResponseWriter, request *http.Req
 	}
 	result, err := h.agent.executor.Invoke(request.Context(), principal, input.Name, input.Arguments, "")
 	if err != nil {
-		writePlaygroundError(writer, 400, capability.ErrorCode(err))
+		writeRunError(writer, 400, capability.ErrorCode(err))
 		return
 	}
 	writeJSON(writer, 200, result)
@@ -132,12 +132,12 @@ func (h *Handler) getCapabilityOperation(writer http.ResponseWriter, request *ht
 	}
 	principal, ok := h.capabilityPrincipal(request)
 	if !ok {
-		writePlaygroundError(writer, 401, "authentication_required")
+		writeRunError(writer, 401, "authentication_required")
 		return
 	}
 	operation, err := h.agent.executor.Get(request.Context(), principal, chi.URLParam(request, "id"))
 	if err != nil {
-		writePlaygroundError(writer, 404, "operation_not_found")
+		writeRunError(writer, 404, "operation_not_found")
 		return
 	}
 	writeJSON(writer, 200, operation)
@@ -145,7 +145,7 @@ func (h *Handler) getCapabilityOperation(writer http.ResponseWriter, request *ht
 func (h *Handler) decideAgentOperation(writer http.ResponseWriter, request *http.Request) {
 	// Approvals require an actual browser origin, unlike ordinary script-compatible APIs.
 	if request.Header.Get("Origin") == "" || !sameOrigin(request) || request.Header.Get("Authorization") != "" {
-		writePlaygroundError(writer, 403, "capability_forbidden")
+		writeRunError(writer, 403, "capability_forbidden")
 		return
 	}
 	if !h.readyAgent(writer) {
@@ -164,14 +164,14 @@ func (h *Handler) decideAgentOperation(writer http.ResponseWriter, request *http
 	humanInput := input.Secret
 	if len(input.Answer) > 0 && string(input.Answer) != "null" {
 		if humanInput != "" {
-			writePlaygroundError(writer, 400, "invalid_parameters")
+			writeRunError(writer, 400, "invalid_parameters")
 			return
 		}
 		humanInput = string(input.Answer)
 	}
 	operation, err := h.agent.executor.Decide(request.Context(), agent.PRINCIPAL, chi.URLParam(request, "id"), input.Approve, humanInput)
 	if err != nil {
-		writePlaygroundError(writer, 409, capability.ErrorCode(err))
+		writeRunError(writer, 409, capability.ErrorCode(err))
 		return
 	}
 	writeJSON(writer, 200, operation)
@@ -182,7 +182,7 @@ func (h *Handler) currentAgent(writer http.ResponseWriter, request *http.Request
 	}
 	conversation, err := h.agent.runtime.Current(request.Context())
 	if err != nil {
-		writePlaygroundError(writer, 500, "session_unavailable")
+		writeRunError(writer, 500, "session_unavailable")
 		return
 	}
 	projected := agentConversationForConsole(&conversation)
@@ -206,7 +206,7 @@ func (h *Handler) resetAgent(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 	if err := h.agent.runtime.Reset(request.Context(), input.Revision); err != nil {
-		writePlaygroundError(writer, 409, capability.ErrorCode(err))
+		writeRunError(writer, 409, capability.ErrorCode(err))
 		return
 	}
 	h.currentAgent(writer, request)
@@ -249,7 +249,7 @@ func (h *Handler) agentImage(writer http.ResponseWriter, request *http.Request) 
 	header, encoded, _ := strings.Cut(url, ",")
 	content, decodeErr := base64.StdEncoding.DecodeString(encoded)
 	if err != nil || decodeErr != nil || len(content) == 0 {
-		writePlaygroundError(writer, 404, "resource_not_found")
+		writeRunError(writer, 404, "resource_not_found")
 		return
 	}
 	writer.Header().Set("Content-Type", strings.TrimSuffix(strings.TrimPrefix(header, "data:"), ";base64"))
@@ -285,9 +285,9 @@ func (h *Handler) runAgent(writer http.ResponseWriter, request *http.Request) {
 	}
 	if err != nil {
 		if errors.Is(err, agui.ErrRequestTooLarge) {
-			writePlaygroundError(writer, http.StatusRequestEntityTooLarge, "request_too_large")
+			writeRunError(writer, http.StatusRequestEntityTooLarge, "request_too_large")
 		} else {
-			writePlaygroundError(writer, http.StatusBadRequest, "invalid_parameters")
+			writeRunError(writer, http.StatusBadRequest, "invalid_parameters")
 		}
 		return
 	}

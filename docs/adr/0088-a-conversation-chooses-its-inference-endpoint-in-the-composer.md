@@ -1,8 +1,10 @@
 # ADR 0088: A conversation chooses its inference endpoint in the composer
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
+- The links to ADR 0022 below are dead: that ADR was deleted with the Playground.
 - Date: 2026-10-09
-- Extends [ADR 0022](0022-session-authenticated-model-playground.md) and
+- Extends ADR 0022 (deleted) and
   [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md): the Playground and the
   Agent still reach CPA only through the gateway client and fixed paths; there are now three.
 - Completes what [ADR 0076](0076-the-agent-has-its-own-shell-and-names-its-model-in-the-composer.md)

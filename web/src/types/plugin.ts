@@ -66,69 +66,6 @@ export interface PluginDeleteResponse {
   restart_required: boolean;
 }
 
-export interface PluginStoreSource {
-  id: string;
-  name: string;
-  url: string;
-  is_official: boolean;
-}
-
-export interface PluginStoreSourceError {
-  source_id: string;
-  source_name: string;
-  source_url: string;
-  message: string;
-}
-
-export interface StorePluginItem {
-  /** Unique across registries: two registries may list the same plugin id. */
-  store_id: string;
-  source_id: string;
-  source_name: string;
-  id: string;
-  name: string;
-  description?: string;
-  author?: string;
-  version?: string;
-  repository_url?: string;
-  homepage?: string;
-  license?: string;
-  tags: string[];
-  logo?: string;
-  install_type?: string;
-  platforms: string[];
-  /** From the built-in registry and a first-party repository; decided by the server. */
-  is_official: boolean;
-  /** From Oh My CPA's own registry, which the console keeps configured; also decided by the server. */
-  is_omc: boolean;
-  auth_required: boolean;
-  auth_configured: boolean;
-  installed: boolean;
-  installed_version?: string;
-  /** `matched` when this registry supplied the installed copy, `different` when another one did. */
-  install_source_status?: string;
-  effective_enabled: boolean;
-  update_available: boolean;
-}
-
-export interface PluginStoreResponse {
-  plugins_enabled: boolean;
-  plugins_dir: string;
-  sources: PluginStoreSource[];
-  source_errors: PluginStoreSourceError[];
-  plugins: StorePluginItem[];
-  total: number;
-}
-
-export interface PluginInstallResponse {
-  status: string;
-  id: string;
-  version?: string;
-  source_name?: string;
-  plugins_enabled: boolean;
-  restart_required: boolean;
-}
-
 export type PluginStoreAuthType = 'none' | 'bearer' | 'github-token' | 'basic' | 'header';
 export type PluginStoreAuthTarget = 'registry' | 'metadata' | 'artifact';
 

@@ -5,12 +5,12 @@ import { capabilityTitle } from '../../i18n/capabilities';
 import { useToast } from '../feedback';
 import { getTimeZone } from '../../utils/time';
 import { useTokenDisplayStyle } from '../../types/tokenDisplayContext';
-import { callStatusKey, failureKey, formatDuration, isKnownTurnStatus, playgroundErrorKey } from './conversationLabels';
+import { callStatusKey, failureKey, formatDuration, isKnownTurnStatus } from './conversationLabels';
 import { formatTokens } from '../../types/tokenDisplay';
 import type { ConversationSnapshot } from '../../agent/conversationSnapshot';
 import type { SnapshotLabels } from '../../agent/conversationHtml';
 
-export function useConversationExport(kind: 'agent' | 'playground') {
+export function useConversationExport() {
   const { t, lang } = useI18n();
   const { style: tokenStyle } = useTokenDisplayStyle();
   const toast = useToast();
@@ -27,9 +27,9 @@ export function useConversationExport(kind: 'agent' | 'playground') {
     const locale = languageLocale(lang);
     const numberFormat = new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 2 });
     const labels: SnapshotLabels = {
-      title: t(kind === 'agent' ? 'nav.agent' : 'nav.playground'),
+      title: t('nav.agent'),
       operator: t('agent.export.operator'), answer: t('agent.export.answer_heading'), model: t('agent.export.model'),
-      exportedAt: t('agent.export.exported_at'), thought: t('conversation.thought_process'), parameters: t('pg.parameters'),
+      exportedAt: t('agent.export.exported_at'), thought: t('conversation.thought_process'), parameters: t('agent.export.parameters'),
       arguments: t('agent.details.arguments'), result: t('agent.details.model_content'),
       copy: t('agent.export.copy'), copied: t('agent.export.copied'), copyFailed: t('agent.export.copy_failed'),
       search: t('agent.export.search'), expand: t('agent.export.expand'), collapse: t('agent.export.collapse'),
@@ -39,9 +39,9 @@ export function useConversationExport(kind: 'agent' | 'playground') {
       calls: count => t('agent.chain.used', { count: String(count) }),
       turns: count => t('agent.export.turns', { count }),
       number: value => numberFormat.format(value),
-      tokens: count => `${t('pg.total_tokens')} ${new Intl.NumberFormat(locale).format(count)}`, print: t('agent.export.print'), imageOmitted: t('agent.export.image_omitted'), privacy: t('agent.export.privacy'),
+      tokens: count => `${t('agent.export.total_tokens')} ${new Intl.NumberFormat(locale).format(count)}`, print: t('agent.export.print'), imageOmitted: t('agent.export.image_omitted'), privacy: t('agent.export.privacy'),
       omitted: count => t('agent.export.omitted', { count }),
-      status: status => t(kind === 'playground' ? `pg.status.${status}` : status === 'cancelled' ? 'agent.status.stopped' :
+      status: status => t(status === 'cancelled' ? 'agent.status.stopped' :
         status === 'running' ? 'agent.call.running' : isKnownTurnStatus(status) ? `agent.status.${status}` : 'agent.status.unknown'),
       capability: name => capabilityTitle(name, t),
       callStatus: (name, status) => t(callStatusKey({ name, result: { status } })),
@@ -49,7 +49,7 @@ export function useConversationExport(kind: 'agent' | 'playground') {
       rounds: (rounds, calls) => t('agent.foot.rounds', { rounds: String(rounds), calls: String(calls) }),
       present: present => t(`agent.present.${present}`),
       tokenCount: count => formatTokens(count, tokenStyle),
-      failure: code => t(kind === 'agent' ? failureKey(code) : playgroundErrorKey(code)),
+      failure: code => t(failureKey(code)),
       duration: formatDuration,
       date: milliseconds => new Intl.DateTimeFormat(locale, { timeZone: getTimeZone(), dateStyle: 'medium', timeStyle: 'short' }).format(milliseconds),
     };
@@ -58,7 +58,7 @@ export function useConversationExport(kind: 'agent' | 'playground') {
       // Exported canvases read the same format settings the live view does, so a saved page shows the
       // operator's locale, time zone, token style and empty label rather than the kit's defaults.
       const canvasFormat = { tokenStyle, locale, timeZone: getTimeZone(), emptyLabel: t('agent.view.empty') };
-      await downloadConversation({ snapshot, labels, appearance: { variables, isDark: document.documentElement.dataset.themeMode === 'dark', format: canvasFormat }, exportedAt, language: lang }, format, `omc-${kind}`);
+      await downloadConversation({ snapshot, labels, appearance: { variables, isDark: document.documentElement.dataset.themeMode === 'dark', format: canvasFormat }, exportedAt, language: lang }, format, 'omc-agent');
     } catch { toast.error(t('agent.export.failed')); }
     finally { isExportingRef.current = false; setIsExporting(false); }
   };

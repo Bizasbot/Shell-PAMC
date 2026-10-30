@@ -200,23 +200,6 @@ func (f *pluginLogoFetcher) inline(ctx context.Context, plugins []management.Plu
 	}
 }
 
-// inlineStore replaces each store entry's logo with inline artwork, or clears it. A
-// registry's logo is a URL its publisher chose, so it is held to exactly the rules an
-// installed plugin's logo is.
-func (f *pluginLogoFetcher) inlineStore(ctx context.Context, plugins []management.StorePluginItem) {
-	if f == nil {
-		return
-	}
-	raws := make([]string, len(plugins))
-	for index := range plugins {
-		raws[index] = logoCandidate(plugins[index].Logo)
-	}
-	inlined := f.inlineAll(ctx, raws)
-	for index := range plugins {
-		plugins[index].Logo = inlined[index]
-	}
-}
-
 // inlineAll resolves one logo per slot; an empty slot stays empty.
 func (f *pluginLogoFetcher) inlineAll(ctx context.Context, raws []string) []string {
 	// Distinct targets only: two entries may publish the same logo URL, and the cache

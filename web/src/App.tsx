@@ -30,7 +30,6 @@ import {
   DashboardPage,
   AgentPage,
   AuthorizePage,
-  PlaygroundPage,
   ModelSquarePage,
   LogsPage,
   AuditPage,
@@ -155,7 +154,6 @@ const AppRoutes: React.FC = () => {
       children: [
         { index: true, element: <Navigate to="/dashboard" replace /> },
         { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'playground', element: <PlaygroundPage /> },
         { path: 'agent', element: <AgentPage /> },
         { path: 'model-square', element: <ModelSquarePage /> },
         { path: 'ai-providers', element: <ProvidersPage /> },
@@ -170,12 +168,9 @@ const AppRoutes: React.FC = () => {
         { path: 'pricing', element: <PricingPage /> },
         { path: 'config', element: <ConfigPage /> },
         { path: 'omc-settings', element: <OmcSettingsPage /> },
-        // One page under three addresses, so the store and the settings can be linked to
-        // and listed in the navigation.
+        // One page under two addresses, so the settings can be linked to and listed in the navigation.
         { path: 'plugins', element: <PluginsPage /> },
-        { path: 'plugins/store', element: <PluginsPage /> },
         { path: 'plugins/settings', element: <PluginsPage /> },
-        { path: 'plugin-store', element: <Navigate to="/plugins/store" replace /> },
         { path: 'plugin-pages/:pluginId/:pageIndex', element: <PluginPageHost /> },
         { path: 'system', element: <SystemPage /> },
         { path: '*', element: <Navigate to="/dashboard" replace /> },

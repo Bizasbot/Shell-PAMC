@@ -58,11 +58,9 @@ import {
 import type {
   PluginConfigResponse,
   PluginDeleteResponse,
-  PluginInstallResponse,
   PluginSettings,
   PluginSettingsUpdate,
   PluginsResponse,
-  PluginStoreResponse,
 } from '../types/plugin';
 import type {
   PricingAttention,
@@ -626,9 +624,7 @@ export const api = {
   /**
    * The callable model directory for one client key.
    *
-   * One endpoint, two workspaces: the Playground picks a model to request and the Agent picks a
-   * model to reason with, but both read the same gateway directory, so the declaration lives
-   * here rather than in either page's module.
+   * The Agent picks a model to reason with from the gateway directory of one client key.
    */
   async getModelSquare(): Promise<ModelSquareDirectory> {
     return request<ModelSquareDirectory>('/management/model-square', { method: 'GET' });
@@ -636,7 +632,7 @@ export const api = {
 
   async getGatewayModels(fingerprint: string, signal?: AbortSignal): Promise<{ models: GatewayModelItem[] }> {
     return request<{ models: GatewayModelItem[] }>(
-      `/playground/models?client_key_fingerprint=${encodeURIComponent(fingerprint)}`,
+      `/agent/models?client_key_fingerprint=${encodeURIComponent(fingerprint)}`,
       { method: 'GET', signal },
     );
   },
@@ -1096,20 +1092,6 @@ export const api = {
     return request<PluginSettings>('/management/plugins/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
-    });
-  },
-
-  async getPluginStore(): Promise<PluginStoreResponse> {
-    return request<PluginStoreResponse>('/management/plugin-store', { method: 'GET' });
-  },
-
-  async installPlugin(id: string, options: { sourceId?: string; version?: string } = {}): Promise<PluginInstallResponse> {
-    const body: Record<string, string> = {};
-    if (options.sourceId) body.source_id = options.sourceId;
-    if (options.version) body.version = options.version;
-    return request<PluginInstallResponse>(`/management/plugin-store/${encodeURIComponent(id)}/install`, {
-      method: 'POST',
-      body: JSON.stringify(body),
     });
   },
 

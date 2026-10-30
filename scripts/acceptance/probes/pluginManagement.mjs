@@ -1,12 +1,10 @@
 import { settleLayout, until } from '../harness.mjs';
 
 /**
- * Plugin management: the installed list, the store's cards and the plugin system settings,
+ * Plugin management: the installed list and the plugin system settings,
  * on one page, and the pages plugins register, in the navigation.
  *
- * What a browser establishes here is what the operator sees and can reach: a store card draws
- * the registry's own artwork and links, a third-party install cannot be confirmed without the
- * typed id, a plugin's declared fields are typed controls whose invalid values are refused
+ * What a browser establishes here is what the operator sees and can reach: a plugin's declared fields are typed controls whose invalid values are refused
  * before anything is sent, and the settings save carries exactly the rules on screen. A
  * page a running plugin registered is a navigation entry that opens a frame on the console's
  * plugin host.
@@ -55,43 +53,6 @@ const PLUGINS = {
   ],
 };
 
-const STORE = {
-  plugins_enabled: true,
-  plugins_dir: '/srv/cpa/plugins',
-  sources: [
-    { id: 'official', name: 'official', url: 'https://registry.example/plugins.json', is_official: true },
-    { id: 'source-mirror', name: 'mirror.example', url: 'https://mirror.example/registry.json', is_official: false },
-    { id: 'source-omc', name: 'Oh My CPA', url: 'https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json', is_official: false },
-  ],
-  source_errors: [{ source_id: 'source-down', source_name: 'down.example', source_url: 'https://down.example/r.json', message: 'fetch registry: 503' }],
-  total: 4,
-  plugins: [
-    {
-      store_id: 'source-omc/usage-digest', source_id: 'source-omc', source_name: 'Oh My CPA', id: 'usage-digest', name: 'Usage Digest',
-      description: 'Posts a daily spend and request summary.', author: 'oh-my-cpa', version: '0.3.0', repository_url: 'https://github.com/WizisCool/omc-plugin-usage-digest',
-      license: 'MIT', tags: ['digest'], platforms: [], is_official: false, is_omc: true,
-      auth_required: false, auth_configured: false, installed: false, effective_enabled: false, update_available: false,
-    },
-    {
-      store_id: 'official/request-logger', source_id: 'official', source_name: 'official', id: 'request-logger', name: 'Request Logger',
-      description: 'Logs request metadata.', author: 'router-for-me', version: '1.1.0', repository_url: 'https://github.com/router-for-me/request-logger',
-      license: 'MIT', tags: ['logging'], logo: LOGO, platforms: ['linux/amd64'], is_official: true, auth_required: false, auth_configured: false,
-      installed: true, installed_version: '1.0.0', install_source_status: 'matched', effective_enabled: true, update_available: true,
-    },
-    {
-      store_id: 'official/rate-limiter', source_id: 'official', source_name: 'official', id: 'rate-limiter', name: 'Rate Limiter',
-      description: 'Token buckets per caller key.', author: 'router-for-me', version: '2.0.0', repository_url: 'https://github.com/router-for-me/rate-limiter',
-      homepage: 'https://limiter.example', license: 'Apache-2.0', tags: ['network', 'limits'], platforms: [], is_official: true,
-      auth_required: false, auth_configured: false, installed: false, effective_enabled: false, update_available: false,
-    },
-    {
-      store_id: 'source-mirror/team-router', source_id: 'source-mirror', source_name: 'mirror.example', id: 'team-router', name: 'Team Router',
-      description: 'Routes by team.', author: 'someone', version: '0.3.0', tags: [], platforms: [], is_official: false,
-      auth_required: false, auth_configured: false, installed: false, effective_enabled: false, update_available: false,
-    },
-  ],
-};
-
 const SETTINGS = {
   revision: 'rev-1',
   enabled: true,
@@ -126,11 +87,6 @@ export function pluginManagementFixtures(writes) {
         ? { id: 'request-logger', config: { enabled: true, level: 'info', 'sample-rate': 1, 'redact-headers': ['authorization'], legacy: 'kept', store: { name: 'Request Logger', version: '1.0.0', author: 'router-for-me', description: 'Installed from the official registry.', repository: 'router-for-me/request-logger' } } }
         : { id: 'quota-notifier', config: {} };
     }],
-    [(url, method) => method === 'POST' && /\/management\/plugin-store\/[^/]+\/install$/.test(url.pathname), (url, method, request) => {
-      writes.push({ kind: 'install', path: url.pathname, body: JSON.parse(request.postData() ?? '{}') });
-      return { status: 'ok', id: 'team-router', version: '0.3.0', plugins_enabled: true, restart_required: false };
-    }],
-    [(url) => url.pathname.endsWith('/management/plugin-store'), () => STORE],
     [(url, method) => method === 'DELETE' && /\/management\/plugins\/[^/]+$/.test(url.pathname), (url, method) => {
       if (method !== 'DELETE') throw new Error(`Unexpected plugin operation: ${method}`);
       const pluginId = decodeURIComponent(url.pathname.split('/').pop());
@@ -148,25 +104,8 @@ async function isTrue(probe, label) {
 }
 
 export async function pluginManagement({ base, page, check, writes }) {
-  // ── the old store addresses land on the store tab ───────────────────────────
-  await page.goto(`${base}/plugin-store`, { waitUntil: 'domcontentloaded' });
-  const redirected = await isTrue(async () => new URL(page.url()).pathname.endsWith('/plugins/store'), 'the store redirect');
-  check('the old plugin store address opens the store tab', redirected, page.url());
-  await page.goto(`${base}/plugins?tab=store`, { waitUntil: 'domcontentloaded' });
-  const queryRedirected = await isTrue(async () => {
-    const url = new URL(page.url());
-    return url.pathname.endsWith('/plugins/store') && !url.searchParams.has('tab');
-  }, 'the tab query redirect');
-  check('a link that names the tab in its query opens the same tab', queryRedirected, page.url());
-
-  // ── the navigation lists the store and the pages plugins registered ─────────
-  const storeEntry = page.locator('.app-menu [data-route-path="/plugins/store"]').first();
-  check('the store is a navigation entry of its own', await storeEntry.isVisible());
-  const storeSelected = await isTrue(
-    async () => /ant-menu-item-selected/.test((await storeEntry.getAttribute('class')) ?? ''),
-    'the store navigation selection',
-  );
-  check('the store entry is the selected one on the store tab', storeSelected);
+  await page.goto(`${base}/plugins`, { waitUntil: 'domcontentloaded' });
+  // ── the navigation lists the pages plugins registered ───────────────────────
   const pageEntry = page.locator('.app-menu [data-route-path="/plugin-pages/request-logger/0"]').first();
   const pageListed = await isTrue(async () => pageEntry.isVisible(), 'the plugin page entry');
   check('a running plugin\'s page is a navigation entry under its registered label', pageListed && (await pageEntry.innerText()).includes('Logger Console'));
@@ -179,76 +118,11 @@ export async function pluginManagement({ base, page, check, writes }) {
   ), 'the hovered menu glyph colour');
   check('the SVG menu glyph inherits its hover text colour', hoverFollowsText);
 
-  // ── store cards ─────────────────────────────────────────────────────────────
-  const cards = page.locator('[data-plugin-panel="store"] article[data-store-id]');
-  const cardsShown = await isTrue(async () => (await cards.count()) === 4, 'the store cards');
-  check('the store renders one card per registry entry', cardsShown, String(await cards.count()));
-  if (!cardsShown) return;
-
-  const omc = page.locator('article[data-store-id="source-omc/usage-digest"]');
-  check('the Oh My CPA registry is pinned above the other registries', (await cards.first().getAttribute('data-store-id')) === 'source-omc/usage-digest');
-  const omcText = await omc.innerText();
-  check('an Oh My CPA entry carries its own badge and source name', /Oh My CPA/.test(omcText) && !/Third-party|第三方/.test(omcText), omcText);
-
-  const limiter = page.locator('article[data-store-id="official/rate-limiter"]');
-  const limiterText = await limiter.innerText();
-  check('a card shows the author, the tags and the description', /router-for-me/.test(limiterText) && limiterText.includes('limits') && limiterText.includes('Token buckets'), limiterText);
-  check(
-    'a card links the GitHub repository and the homepage',
-    (await limiter.locator('a[href="https://github.com/router-for-me/rate-limiter"]').count()) === 1
-      && (await limiter.locator('a[href="https://limiter.example"]').count()) === 1,
-  );
-  const logger = page.locator('article[data-store-id="official/request-logger"]');
-  const cardGlyph = logger.locator('[data-plugin-logo="svg"]');
-  const logoLoaded = await isTrue(async () => cardGlyph.evaluate(async (glyph) => {
-    const source = getComputedStyle(glyph).maskImage.match(/^url\("(.*)"\)$/)?.[1];
-    if (!source) return false;
-    const image = new Image();
-    image.src = source;
-    await image.decode();
-    return image.naturalWidth > 0;
-  }), 'the card logo');
-  check('a card draws the plugin icon the registry publishes', logoLoaded);
-  const cardInk = await cardGlyph.evaluate((glyph) => {
-    const style = getComputedStyle(glyph);
-    return { mask: style.maskImage, ink: style.backgroundColor, text: getComputedStyle(glyph.closest('article')).color };
-  });
-  check('the SVG card mark uses the registry artwork as an alpha mask in the card text colour',
-    cardInk.mask.includes(LOGO) && cardInk.ink === cardInk.text, JSON.stringify(cardInk));
-  check('a card without an icon draws the generic mark', (await limiter.locator('[data-plugin-logo="fallback"]').count()) === 1);
-  check('an installed entry with a newer release offers the update', (await logger.getByRole('button', { name: /更新|Update/ }).count()) >= 1);
-  check('the failing registry is named above the cards', (await page.getByText('down.example').count()) >= 1);
-
-  await page.getByPlaceholder(/搜索名称|Search by name/).fill('limits');
-  const searched = await isTrue(async () => (await cards.count()) === 1, 'the store search');
-  check('the store search matches tags', searched, String(await cards.count()));
-  await page.getByPlaceholder(/搜索名称|Search by name/).fill('');
-
-  // ── a third-party install needs the typed id ────────────────────────────────
-  const mirror = page.locator('article[data-store-id="source-mirror/team-router"]');
-  await mirror.getByRole('button', { name: /安装|Install/ }).click();
-  const dialog = page.locator('.ant-modal:visible');
-  await dialog.waitFor({ timeout: 5000 });
-  const confirm = dialog.locator('.ant-modal-footer .ant-btn-primary');
-  check('a third-party install cannot be confirmed before the id is typed', await confirm.isDisabled());
-  await dialog.getByPlaceholder('team-router').fill('team-router');
-  check('typing the plugin id enables the install', !(await confirm.isDisabled()));
-  await confirm.click();
-  const installed = await isTrue(async () => writes.some((write) => write.kind === 'install'), 'the install request');
-  const install = writes.find((write) => write.kind === 'install');
-  check('the install names the registry the card came from', installed && install.body.source_id === 'source-mirror' && install.path.endsWith('/team-router/install'), JSON.stringify(install));
-
   // ── the installed list and a plugin's settings ──────────────────────────────
-  // Switched in place rather than reloaded: the store read above is what supplies the
-  // installed rows' descriptions, and a reload would start without it.
-  await page.locator('.plugins-tabs .ant-segmented-item').first().click();
   const rows = page.locator('[data-plugin-panel="installed"] article[data-plugin-id]');
   await isTrue(async () => (await rows.count()) === 2, 'the installed rows');
   const waitingText = await page.locator('article[data-plugin-id="quota-notifier"]').innerText();
   check('an enabled plugin that is not running says so', /未运行|not running/.test(waitingText), waitingText);
-  const describedText = await page.locator('article[data-plugin-id="request-logger"]').innerText();
-  check('an installed row borrows the store description once the store was read', describedText.includes('Logs request metadata.'), describedText);
-  check('an installed row names the release it can update to', /v1\.1\.0/.test(describedText), describedText);
 
   const loggerRow = page.locator('article[data-plugin-id="request-logger"]');
   check('the auth-provider capability does not claim an OAuth login method',
@@ -497,7 +371,7 @@ export async function pluginManagement({ base, page, check, writes }) {
 
 /** At a phone width no card, row or control may run off the right edge. */
 export async function pluginManagementNarrow({ base, page, check }) {
-  for (const tab of ['', '/store', '/settings']) {
+  for (const tab of ['', '/settings']) {
     await page.goto(`${base}/plugins${tab}`, { waitUntil: 'domcontentloaded' });
     await page.locator('[data-plugin-panel]').first().waitFor({ timeout: 20_000 });
     await settleLayout(page);

@@ -26,9 +26,6 @@ type pluginMockState struct {
 	mu           sync.Mutex
 	enabledCalls map[string]bool
 	deleted      string
-	installed    string
-	installQuery string
-	installBody  map[string]any
 	configs      map[string]map[string]any
 	configYAML   string
 	// rejectedManagementCalls counts what CPA would charge to its ban budget.
@@ -201,14 +198,6 @@ func startPluginTestServer(t *testing.T) (*http.Client, string, *repository.Repo
 			_, _ = writer.Write([]byte(`{"status":"deleted","id":"` + id + `","path":"/srv/cpa/plugins/logger.so","file_deleted":true,"configured_removed":true,"restart_required":false}`))
 		case path == "/v8/management/plugins/store" && request.Method == http.MethodGet:
 			_, _ = writer.Write([]byte(`{"plugins_enabled":true,"plugins_dir":"plugins","sources":[{"id":"official","name":"official","url":"https://registry.example/plugins.json"},{"id":"source-abc","name":"mirror.example","url":"https://mirror.example/registry.json"}],"source_errors":[{"source_id":"source-def","source_name":"down.example","source_url":"https://down.example/r.json","message":"fetch registry: 503"}],"plugins":[{"store_id":"official/limiter","source_id":"official","source_name":"official","source_url":"https://registry.example/plugins.json","id":"limiter","name":"Rate Limiter","description":"Token buckets","author":"router-for-me","version":"1.2.0","repository":"router-for-me/limiter","install_type":"github_release","auth_required":false,"auth_configured":false,"platforms":[{"goos":"linux","goarch":"amd64"}],"logo":"https://cdn.example/limiter.png","homepage":"javascript:alert(1)","license":"MIT","tags":["network","limits"],"installed":false,"installed_version":"","path":"","configured":false,"registered":false,"enabled":false,"effective_enabled":false,"update_available":false},{"store_id":"source-abc/limiter","source_id":"source-abc","source_name":"mirror.example","source_url":"https://mirror.example/registry.json","id":"limiter","name":"Rate Limiter","author":"someone","version":"1.2.0","repository":"router-for-me/limiter","homepage":"https://limiter.example","installed":false}]}`))
-		case strings.HasPrefix(path, "/v8/management/plugins/store/") && strings.HasSuffix(path, "/install"):
-			parts := strings.Split(path, "/")
-			id := parts[len(parts)-2]
-			state.installed = id
-			state.installQuery = request.URL.RawQuery
-			state.installBody = map[string]any{}
-			_ = json.NewDecoder(request.Body).Decode(&state.installBody)
-			_, _ = writer.Write([]byte(`{"status":"installed","source_id":"official","source_name":"official","id":"` + id + `","version":"1.2.0","install_type":"github_release","path":"/srv/cpa/plugins/x.so","plugins_enabled":true,"restart_required":false}`))
 		default:
 			_, _ = writer.Write([]byte(`{"status":"ok"}`))
 		}
@@ -394,70 +383,7 @@ func TestPluginsLifecycle(t *testing.T) {
 		t.Errorf("expected deleted logger, got %s", state.deleted)
 	}
 
-	// 5. List store plugins
-	storeResp, err := client.Get(baseURL + "/omc/api/v1/management/plugin-store")
-	if err != nil || storeResp.StatusCode != http.StatusOK {
-		t.Fatalf("get store failed: %v, status: %d", err, storeResp.StatusCode)
-	}
-	var storeData struct {
-		Sources      []map[string]any `json:"sources"`
-		SourceErrors []map[string]any `json:"source_errors"`
-		Plugins      []map[string]any `json:"plugins"`
-		Total        int              `json:"total"`
-	}
-	_ = json.NewDecoder(storeResp.Body).Decode(&storeData)
-	storeResp.Body.Close()
-	if len(storeData.Plugins) != 2 || storeData.Plugins[0]["id"] != "limiter" {
-		t.Fatalf("unexpected store plugins: %#v", storeData)
-	}
-	if storeData.Total != len(storeData.Plugins) {
-		t.Fatalf("store total = %d, want the projected count %d", storeData.Total, len(storeData.Plugins))
-	}
-	if len(storeData.Sources) != 2 || storeData.Sources[0]["is_official"] != true || storeData.Sources[1]["is_official"] != false {
-		t.Fatalf("sources = %#v, want the official registry marked", storeData.Sources)
-	}
-	if len(storeData.SourceErrors) != 1 || storeData.SourceErrors[0]["source_name"] != "down.example" {
-		t.Fatalf("source_errors = %#v, want the failing registry reported", storeData.SourceErrors)
-	}
-	official, mirror := storeData.Plugins[0], storeData.Plugins[1]
-	assertDeclaredKeys(t, "store plugin", official, []string{
-		"store_id", "source_id", "source_name", "id", "name", "description", "author", "version",
-		"repository_url", "homepage", "license", "tags", "logo", "install_type", "platforms",
-		"is_official", "is_omc", "auth_required", "auth_configured", "installed", "installed_version",
-		"install_source_status", "effective_enabled", "update_available",
-	})
-	if storeLogo, _ := official["logo"].(string); !strings.HasPrefix(storeLogo, "data:image/png;base64,") {
-		t.Fatalf("store logo = %q, want the registry's mark inlined", storeLogo)
-	}
-	if _, hasHomepage := official["homepage"]; hasHomepage {
-		t.Fatalf("homepage = %#v, want a non-http link dropped", official["homepage"])
-	}
-	if official["is_official"] != true || official["repository_url"] != "https://github.com/router-for-me/limiter" {
-		t.Fatalf("official entry = %#v", official)
-	}
-	// A third-party registry that copies a first-party repository is still third-party.
-	if mirror["is_official"] != false || mirror["homepage"] != "https://limiter.example" {
-		t.Fatalf("mirror entry = %#v, want it untrusted with its homepage kept", mirror)
-	}
-	if platforms, _ := official["platforms"].([]any); len(platforms) != 1 || platforms[0] != "linux/amd64" {
-		t.Fatalf("platforms = %#v", official["platforms"])
-	}
-
-	// 6. Install plugin from a named registry at a named version.
-	installResp, installBody := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/plugin-store/limiter/install", `{"source_id":"source-abc","version":"1.2.0"}`)
-	if installResp.StatusCode != http.StatusOK || !strings.Contains(string(installBody), `"version":"1.2.0"`) {
-		t.Fatalf("install plugin: status %d body %s", installResp.StatusCode, installBody)
-	}
-	if state.installed != "limiter" || state.installQuery != "source=source-abc" || state.installBody["version"] != "1.2.0" {
-		t.Errorf("install reached CPA as id=%s query=%q body=%#v", state.installed, state.installQuery, state.installBody)
-	}
-	// The body is optional.
-	bareResp, bareBody := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/plugin-store/limiter/install", "")
-	if bareResp.StatusCode != http.StatusOK || state.installQuery != "" {
-		t.Fatalf("bare install: status %d body %s query %q", bareResp.StatusCode, bareBody, state.installQuery)
-	}
-
-	// 7. Check audit events
+	// 5. Check audit events
 	events, err := repo.ListAuditEvents(context.Background(), 20)
 	if err != nil || len(events) < 4 {
 		t.Fatalf("expected at least 4 audit events recorded, got %d, err: %v", len(events), err)
@@ -555,7 +481,6 @@ func TestPluginMutationsRequireExplicitFields(t *testing.T) {
 		{http.MethodPatch, "/omc/api/v1/management/plugins/logger/enabled", `{"enabled":null}`},
 		{http.MethodPut, "/omc/api/v1/management/plugins/logger/config", `{}`},
 		{http.MethodPut, "/omc/api/v1/management/plugins/logger/config", `{"config":null}`},
-		{http.MethodPost, "/omc/api/v1/management/plugin-store/limiter/install", `{"unknown":true}`},
 	}
 	for _, tc := range cases {
 		resp, payload := doJSON(t, client, tc.method, baseURL+tc.path, tc.body)
@@ -566,8 +491,8 @@ func TestPluginMutationsRequireExplicitFields(t *testing.T) {
 
 	state.mu.Lock()
 	defer state.mu.Unlock()
-	if len(state.enabledCalls) != 0 || state.configs["logger"]["level"] != "info" || state.installed != "" {
-		t.Fatalf("an incomplete plugin mutation reached CPA: enabled=%v configs=%v installed=%q", state.enabledCalls, state.configs, state.installed)
+	if len(state.enabledCalls) != 0 || state.configs["logger"]["level"] != "info" {
+		t.Fatalf("an incomplete plugin mutation reached CPA: enabled=%v configs=%v", state.enabledCalls, state.configs)
 	}
 }
 

@@ -266,20 +266,12 @@ test('no scenario id is selected by a path that cannot affect it', () => {
   assert.equal(rows.has('icon-picker-stacking'), false);
 });
 
-test('playground source selects its desktop and phone acceptance', () => {
-  assert.deepEqual(planFor('web/src/pages/playground/PlaygroundPage.tsx'), ['playground', 'playground-narrow', 'mobile-console']);
-});
-
-test('the Agent run layer selects every Agent scenario and the Playground that shares it', () => {
+test('the Agent run layer selects every Agent scenario', () => {
   const agentScenarios = ALL.filter((id) => id.startsWith('agent'));
   for (const file of ['web/src/agent/runReducer.ts', 'web/src/agent/sse.ts', 'web/src/pages/agent/runtime.ts']) {
     const ids = new Set(planFor(file));
     for (const id of agentScenarios) assert.equal(ids.has(id), true, `${file} reaches ${id}`);
   }
-  // The Playground reads its stream through `agent/sse.ts`, so the run layer reaches it too; the
-  // Agent page's own files do not.
-  assert.equal(new Set(planFor('web/src/agent/sse.ts')).has('playground'), true);
-  assert.equal(new Set(planFor('web/src/pages/agent/AgentPage.tsx')).has('playground'), false);
   // Negative control: the run layer loads no chart catalog or request list.
   const runLayer = new Set(planFor('web/src/agent/transport.ts'));
   assert.equal(runLayer.has('dashboard-charts'), false);
@@ -351,7 +343,7 @@ test('the mobile sweep follows console routes and excludes unrelated backend cha
     'web/src/pages/DashboardPage.tsx', 'web/src/pages/ProvidersPage.tsx',
     'web/src/pages/pricing/PricingPage.tsx', 'web/src/pages/PluginsPage.tsx',
     'web/src/pages/oauthManagement/OAuthManagementPage.tsx', 'web/src/pages/ApiKeysPage.tsx',
-    'web/src/pages/agent/AgentPage.tsx', 'web/src/pages/playground/PlaygroundPage.tsx',
+    'web/src/pages/agent/AgentPage.tsx',
     'web/src/pages/LogsPage.tsx', 'web/src/pages/UsageEventsPage.tsx']) {
     assert.ok(planFor(file).includes('mobile-console'), file);
   }
@@ -363,7 +355,7 @@ test('phone source editing and backup dialogs are selected by shared overlay and
     assert.deepEqual(planFor(file), ['overlay-back', 'config-source-editor', 'config-backups', 'model-square', 'mobile-console']);
   }
   assert.deepEqual(planFor('web/src/hooks/useIsPhoneViewport.ts'), [
-    'agent-narrow', 'playground-narrow', 'touch-ergonomics', 'phone-lists',
+    'agent-narrow', 'touch-ergonomics', 'phone-lists',
     'config-source-editor', 'config-backups', 'model-square', 'mobile-console',
   ]);
   // A source-only decision must not schedule unrelated conversation checks.

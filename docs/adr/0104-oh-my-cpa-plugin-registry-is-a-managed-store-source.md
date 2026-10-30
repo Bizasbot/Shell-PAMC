@@ -1,6 +1,7 @@
 # ADR 0104: Oh My CPA's plugin registry is a managed store source
 
 - Status: Accepted
+- Superseded in part: the console has no plugin store page any more; the registry source, its preference and the settings-tab row remain. Mentions of store listing, ordering and install confirmation below are historical.
 - Date: 2026-10-22
 
 ## Context

@@ -1,6 +1,7 @@
 # ADR 0076: The Agent has its own shell and names its model in the composer
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-10-08
 - Narrows [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md)'s
   shared workspace: the transcript, the composer and the message views stay shared

@@ -446,7 +446,7 @@ Corners nest on one scale, **2 · 6 · 8 · 12**; a shape inside another takes t
 - **Chosen by what the message describes**: the outcome of the operator's action is a toast (`useToast`); a region that could not be read is a `LoadFailure` in that region's place with a Retry; a condition that holds while the region is on screen is an inline `Notice`; a refusal of the input in front of the operator (a login, a composer message) stays beside that input. One outcome is reported on one surface, and a result never opens an information-only dialog.
 - **Toast**: a floating panel like a menu — `--elevated` fill, 1px `--border` edge, `--shadow-float`, 12px radius, one 420px width, 18px icon, top centre, never stacked into a pile. A brief success holds 2s, info or a success with detail 3s, warning 4s, error 5s, an offered shortcut 6s; hover pauses the remaining timer without restarting it. Shortcut destinations remain available from the page; exclusive or time-critical actions require a persistent surface. An upstream JSON envelope is read down to its status and sentence.
 - **Report toast**: a batch outcome with per-target reasons lists them under group headings (failures first), each target's full name on its own line with its reason beneath, and stays until closed. Ordinary notifications never evict a report; the next refresh replaces it under the same key. A long context group is summarised one line per reason; nothing in a toast changes height after it opens.
-- **Notice / LoadFailure**: a tinted wash rather than a flagged banner — the tone mixed 8% into `--bg`, a hairline of the tone at 16%, 8px corners and no edge bar; the tone's code (`INFO`, `WARNING`, `ERROR`, `SUCCESS`; the same in every language) on the first line at 11px/600 in the tone's colour, then the 13px headline with detail beneath in `--fg-2`, the action (Retry) as a quiet 26px control with a `--thread-hairline` edge at the trailing edge, centred beside the text or on the last line under it in a narrow box; and an optional 26px close pinned to the top trailing corner, under which the action always takes the last line with its trailing edge on the close glyph's. A refusal with nothing to answer in place (a Playground send, replay or attachment) is a toast.
+- **Notice / LoadFailure**: a tinted wash rather than a flagged banner — the tone mixed 8% into `--bg`, a hairline of the tone at 16%, 8px corners and no edge bar; the tone's code (`INFO`, `WARNING`, `ERROR`, `SUCCESS`; the same in every language) on the first line at 11px/600 in the tone's colour, then the 13px headline with detail beneath in `--fg-2`, the action (Retry) as a quiet 26px control with a `--thread-hairline` edge at the trailing edge, centred beside the text or on the last line under it in a narrow box; and an optional 26px close pinned to the top trailing corner, under which the action always takes the last line with its trailing edge on the close glyph's. A refusal with nothing to answer in place (an Agent send, replay or attachment) is a toast.
 - **Enforced**: `pnpm check:feedback` refuses raw antd `Alert`, `message`, `notification` and information-only `modal.*` dialogs outside `web/src/components/feedback/`. All checks resolve Ant Design bindings, including namespace imports, local aliases and `App.useApp()` results; comments, strings, type-only imports and unrelated or shadowed bindings are ignored.
 
 ### Floating Action Bar (Dirty Bar)
@@ -477,7 +477,7 @@ Corners nest on one scale, **2 · 6 · 8 · 12**; a shape inside another takes t
 
 ## Conversation workspaces
 
-The Playground and the Agent share one frame from `web/src/components/workspace`: a head carrying
+The Agent is built on one conversation frame from `web/src/components/workspace`: a head carrying
 the title, the key-and-model target as one joined control and the page actions; a main column whose
 transcript, notices and composer share a centred 760px reading column; and a resizable side panel
 (a keyboard-operable splitter, never wider than half the viewport) that becomes a Back-aware Drawer
@@ -489,7 +489,7 @@ the configuration workbench.
   `--surface` block; an answer is borderless with a model-and-status head, a reasoning disclosure
   without a frame, Markdown in the console's own styles, and a foot of measurements plus muted
   icon actions. The Agent's disclosure reads "Thinking…" while the reasoning is written and
-  "Thought process" once it settles; the Playground shows its live phase in the disclosure title.
+  "Thought process" once it settles.
 - **Model output**: tables in a hairline frame; fenced code with a language head and copy action,
   highlighted only for allowlisted languages after the fence closes, in a palette-ink syntax theme
   that never borrows the semantic hues. Raw HTML is escaped and images are links.
@@ -538,11 +538,9 @@ the configuration workbench.
   the sent bubble.
 - **Follow-ups**: up to three questions the model offered, as plain lines under the newest answer
   that fill the composer without sending.
-- **Playground**: images pasted, dropped or picked into the composer; the last answer regenerates
+- **Image input**: images pasted, dropped or picked into the composer; the last answer regenerates
   and the last message edits in place, replacing its turn. The Agent quote toolbar styles itself
   from theme tokens even though its portal sits outside Ant Design's variable scope.
-- **Playground panel**: Parameters (unset values read "Default"; sliders rest muted) and Turn
-  diagnostics (metrics grid, request and response code blocks, labelled cURL copy).
 - **Agent**: a capability directory as an open list grouped read / write / destructive with pips,
   each row a localized title with its mono identifier beside it;
   a turn drawn in the order it happened - reasoning, text and capability calls as segments, runs of
@@ -606,7 +604,7 @@ Placeholder blocks retain their opacity breath (ADR 0052).
 
 ### Live elapsed labels and Stop
 
-Agent activity, running capability rows and Playground running turns use isolated `LiveElapsed`
+Agent activity and running capability rows use isolated `LiveElapsed`
 labels. A shared visible-only animation-frame clock quantizes milliseconds to 10ms and seconds
 to 0.1s; a formatted external-store snapshot limits second-scale label renders to 10Hz without
 rerendering the page or transcript. Hidden documents and settled labels schedule no frames.
@@ -899,7 +897,7 @@ An identified `credential_quota` cooldown is explained by the existing CPA coold
 
 ### Native and virtual option scrolling
 
-Native option popups with `overflow-y: auto`, including the Playground model picker, retain browser-owned wheel scrolling even when they share the list library's holder structure. Their scroll listener mirrors offsets through deferred React state, so a second offset writer can undo progress. Only hidden-overflow virtual holders receive synthetic wheel steps; structure alone does not identify virtual scrolling. Existing scroll and motion tokens are unchanged.
+Native option popups with `overflow-y: auto`, including the Agent model picker, retain browser-owned wheel scrolling even when they share the list library's holder structure. Their scroll listener mirrors offsets through deferred React state, so a second offset writer can undo progress. Only hidden-overflow virtual holders receive synthetic wheel steps; structure alone does not identify virtual scrolling. Existing scroll and motion tokens are unchanged.
 
 ### Navigation scroll and portable answer fidelity
 
@@ -911,7 +909,7 @@ The mobile heatmap starts at the newest edge with a signed-32-bit-safe scroll of
 stays pinned through resize only until the reader chooses an older date.
 
 The demonstration announces its nature using the global arrival toast, with contextual
-Agent/Playground replay copy on those pages; it reserves no banner row. Portable Agent HTML
+Agent replay copy on that page; it reserves no banner row. Portable Agent HTML
 keeps the same text, standalone reasoning, working timelines and inline generated figures
 in reading order. Call rows retain argument summaries, outcome and duration disclosures.
 PNG captures generated interfaces at their laid-out width, including kit charts and controls;

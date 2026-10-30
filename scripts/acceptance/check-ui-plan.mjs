@@ -75,12 +75,10 @@ const AGENT_SCENARIOS = ['agent', 'agent-external', 'agent-question', 'agent-liv
  */
 const SCENARIO_PATHS = [
   { prefix: 'web/src/pages/agent/', scenarios: AGENT_SCENARIOS },
-  { prefix: 'web/src/pages/playground/', scenarios: ['playground', 'playground-narrow', 'mobile-console'] },
-  // The run protocol, stream reader and exports: the Agent runs on all of it, and the Playground
-  // reads its stream and writes its export with the same modules.
-  { prefix: 'web/src/agent/', scenarios: [...AGENT_SCENARIOS, 'playground', 'playground-narrow'] },
-  // The conversation frame both workspaces are composed from.
-  { prefix: 'web/src/components/workspace/', scenarios: [...AGENT_SCENARIOS, 'playground', 'playground-narrow'] },
+  // The run protocol, stream reader and exports the Agent runs on.
+  { prefix: 'web/src/agent/', scenarios: AGENT_SCENARIOS },
+  // The conversation frame the Agent is composed from.
+  { prefix: 'web/src/components/workspace/', scenarios: AGENT_SCENARIOS },
   // The request-records page, its row/column rendering and its stylesheet. Column
   // geometry, the virtualized list, the refresh sequence and the search box all live
   // in this one page, so they move together.
@@ -142,7 +140,7 @@ const SCENARIO_PATHS = [
   // SHELL_PATHS because it is about the rules those files carry, not about every scenario.
   {
     prefix: 'web/src/hooks/useIsPhoneViewport',
-    scenarios: ['phone-lists', 'touch-ergonomics', 'agent-narrow', 'playground-narrow', 'config-source-editor', 'config-backups', 'model-square', 'mobile-console'],
+    scenarios: ['phone-lists', 'touch-ergonomics', 'agent-narrow', 'config-source-editor', 'config-backups', 'model-square', 'mobile-console'],
   },
   {
     prefix: 'web/src/components/common/PhoneRow',

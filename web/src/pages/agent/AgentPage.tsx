@@ -133,7 +133,7 @@ export function AgentPage() {
   const [localError, setLocalError] = React.useState('');
   const [rejection, setRejection] = React.useState<{ code: string; text: string }>();
   const targetPref = usePreference<AgentTarget>(AGENT_TARGET_PREFERENCE, DEFAULT_AGENT_TARGET, parseAgentTarget);
-  const { isExporting, exportSnapshot } = useConversationExport('agent');
+  const { isExporting, exportSnapshot } = useConversationExport();
   const [isExportMenuOpen, setIsExportMenuOpen] = React.useState(false);
 
   const session = useQuery({ queryKey: ['agent-session'], queryFn: ({ signal }) => getSession(signal) });
@@ -143,7 +143,7 @@ export function AgentPage() {
   // Shared with the model directory page's cache; only the context window is read from it here.
   const reference = useQuery({ queryKey: ['model-square'], queryFn: () => api.getModelSquare(), staleTime: 30_000 });
   const directory = useQuery({
-    queryKey: ['playground-models', fingerprint],
+    queryKey: ['agent-models', fingerprint],
     queryFn: ({ signal }) => api.getGatewayModels(fingerprint, signal),
     enabled: !!fingerprint,
   });
@@ -442,7 +442,7 @@ export function AgentPage() {
         <LoadFailure title={t('agent.session.failed')} onRetry={() => void session.refetch()} />
       )}
       {!isDemo && keys.isSuccess && keys.data.keys.length === 0 && (
-        <Notice tone="info" title={t('pg.no_keys')} action={<Link to="/api-keys">{t('pg.manage_keys')}</Link>} />
+        <Notice tone="info" title={t('agent.no_keys')} action={<Link to="/api-keys">{t('agent.manage_keys')}</Link>} />
       )}
       {!!session.data?.omitted && <Notice tone="info" title={t('agent.omitted')} />}
       {rejection && (
@@ -587,7 +587,7 @@ export function AgentPage() {
   const isHero = !session.isPending && !hasTurns && !isRunning;
   const hero = (
     <div className={styles['hero']} data-testid="agent-empty">
-      <BrandArtwork shape="wordmark" height={26} className={styles['hero-mark']} label="Oh My CPA" />
+      <BrandArtwork shape="wordmark" height={26} className={styles['hero-mark']} label="Shell-PAMC" />
       <p className={styles['hero-text']}>{t('agent.empty.description')}</p>
     </div>
   );
@@ -646,7 +646,7 @@ export function AgentPage() {
                 blockedReason={isAwaiting ? t('agent.operation.hint') : !isDemo && !isFullyConfigured ? t('conversation.target.choose') : undefined}
                 header={<>{approvalHint}{quote}</>}
                 chips={chips}
-                // The endpoint leads the foot, as in the Playground. A turn waiting on a decision
+                // The endpoint leads the foot, as before. A turn waiting on a decision
                 // pins it with the rest: its calls are replayed in the schema they were made in.
                 footerStart={<EndpointPicker value={endpoint} isDisabled={isAwaiting} onChange={value => chooseTarget({ endpoint: value })} />}
                 footerEnd={(
@@ -676,9 +676,9 @@ export function AgentPage() {
                         if (fingerprint) void directory.refetch();
                       }}
                       emptyHint={!isDemo && keys.isSuccess && keys.data.keys.length === 0
-                        ? <>{t('pg.no_keys')} <Link to="/api-keys">{t('pg.manage_keys')}</Link></>
+                        ? <>{t('agent.no_keys')} <Link to="/api-keys">{t('agent.manage_keys')}</Link></>
                         : !isDemo && !!fingerprint && directory.isSuccess
-                          ? <>{t('pg.no_models')} <Link to="/ai-providers">{t('pg.manage_models')}</Link></>
+                          ? <>{t('conversation.target.no_models')} <Link to="/ai-providers">{t('agent.manage_models')}</Link></>
                           : undefined}
                     />
                   </>

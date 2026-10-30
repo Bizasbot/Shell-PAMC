@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"regexp"
@@ -14,11 +13,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
 )
 
 const (
-	BROWSER_RUN_BYTES      = 4 << 20
 	BROWSER_RUN_RETENTION  = 15 * time.Minute
 	BROWSER_RUN_BODY_READS = 4
 )
@@ -36,12 +33,10 @@ type browserRun struct {
 	body         []byte
 	changed      chan struct{}
 	isDone       bool
-	isOverflowed bool
 	endedAt      time.Time
 	cancel       context.CancelFunc
 	id           string
 	startedAt    int64
-	input        json.RawMessage
 	digest       [32]byte
 	finished     chan struct{}
 }
@@ -69,25 +64,9 @@ func (run *browserRun) WriteHeader(status int) {
 func (run *browserRun) Write(body []byte) (int, error) {
 	run.mu.Lock()
 	defer run.mu.Unlock()
-	if run.isOverflowed {
-		return 0, errors.New("response_too_large")
-	}
 	if run.status == 0 {
 		run.status = http.StatusOK
 		run.frozenHeader = run.header.Clone()
-	}
-	if run.kind != "agent" && len(run.body)+len(body) > BROWSER_RUN_BYTES {
-		run.isOverflowed = true
-		if strings.HasPrefix(run.frozenHeader.Get("Content-Type"), "text/event-stream") {
-			terminal := "event: error\ndata: {\"code\":\"response_too_large\"}\n\n"
-			if run.kind == "agent" {
-				terminal = "data: {\"type\":\"RUN_ERROR\",\"code\":\"response_too_large\",\"message\":\"response_too_large\"}\n\n"
-			}
-			run.body = append(run.body, terminal...)
-		}
-		run.notify()
-		run.cancel()
-		return 0, errors.New("run_output_too_large")
 	}
 	run.body = append(run.body, body...)
 	run.notify()
@@ -137,7 +116,7 @@ func (h *Handler) startBrowserRun(kind string, next http.HandlerFunc, writer htt
 		return
 	}
 	if !BROWSER_RUN_ID.MatchString(id) {
-		writePlaygroundError(writer, 400, "invalid_parameters")
+		writeRunError(writer, 400, "invalid_parameters")
 		return
 	}
 	if h.cfg.IsDemoMode {
@@ -155,7 +134,7 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 	h.browserRuns.mu.Lock()
 	if h.browserRuns.isClosed {
 		h.browserRuns.mu.Unlock()
-		writePlaygroundError(writer, 503, "server_stopping")
+		writeRunError(writer, 503, "server_stopping")
 		return nil
 	}
 	if existing := h.browserRuns.latest[kind]; existing != nil && existing.id != id {
@@ -164,7 +143,7 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 		existing.mu.Unlock()
 		if isActive {
 			h.browserRuns.mu.Unlock()
-			writePlaygroundError(writer, 409, kind+"_busy")
+			writeRunError(writer, 409, kind+"_busy")
 			return nil
 		}
 	}
@@ -177,29 +156,25 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 		h.browserRuns.mu.Unlock()
 	default:
 		h.browserRuns.mu.Unlock()
-		writePlaygroundError(writer, 429, kind+"_busy")
+		writeRunError(writer, 429, kind+"_busy")
 		return nil
 	}
 	// The permit covers reading, validation and handoff, never a long-lived subscription.
 	defer func() { <-bodySlots }()
-	limit := int64(gateway.MaxRequestBytes)
-	if kind == "agent" {
-		limit = MAX_AGENT_RUN_BYTES
-	}
-	body, err := io.ReadAll(http.MaxBytesReader(writer, request.Body, limit))
+	body, err := io.ReadAll(http.MaxBytesReader(writer, request.Body, MAX_AGENT_RUN_BYTES))
 	if err != nil {
-		writePlaygroundError(writer, 413, "request_too_large")
+		writeRunError(writer, 413, "request_too_large")
 		return nil
 	}
 	if !json.Valid(body) {
-		writePlaygroundError(writer, 400, "invalid_request")
+		writeRunError(writer, 400, "invalid_request")
 		return nil
 	}
 	digest := sha256.Sum256(body)
 	h.browserRuns.mu.Lock()
 	if h.browserRuns.isClosed {
 		h.browserRuns.mu.Unlock()
-		writePlaygroundError(writer, 503, "server_stopping")
+		writeRunError(writer, 503, "server_stopping")
 		return nil
 	}
 	if h.browserRuns.latest == nil {
@@ -222,7 +197,7 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 	}
 	if _, isRetired := h.browserRuns.retired[kind+":"+id]; isRetired {
 		h.browserRuns.mu.Unlock()
-		writePlaygroundError(writer, 409, "run_expired")
+		writeRunError(writer, 409, "run_expired")
 		return nil
 	}
 	existing := h.browserRuns.latest[kind]
@@ -233,14 +208,14 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 		if existing.id == id {
 			h.browserRuns.mu.Unlock()
 			if existing.digest != digest {
-				writePlaygroundError(writer, 409, "run_id_conflict")
+				writeRunError(writer, 409, "run_id_conflict")
 				return nil
 			}
 			return existing
 		}
 		if isActive {
 			h.browserRuns.mu.Unlock()
-			writePlaygroundError(writer, 409, kind+"_busy")
+			writeRunError(writer, 409, kind+"_busy")
 			return nil
 		}
 	}
@@ -248,21 +223,14 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 	// Refuse admission at the bound instead of evicting that promise to make room for new work.
 	if len(h.browserRuns.retired)+len(h.browserRuns.latest) >= 1024 {
 		h.browserRuns.mu.Unlock()
-		writePlaygroundError(writer, 429, "run_history_full")
+		writeRunError(writer, 429, "run_history_full")
 		return nil
 	}
 	if existing != nil {
 		h.browserRuns.retired[kind+":"+existing.id] = time.Now()
 	}
 	ctx, cancel := context.WithCancel(context.WithoutCancel(request.Context()))
-	if kind != "agent" {
-		cancel()
-		ctx, cancel = context.WithTimeout(context.WithoutCancel(request.Context()), 30*time.Minute)
-	}
 	run := &browserRun{kind: kind, header: http.Header{}, changed: make(chan struct{}), cancel: cancel, id: id, startedAt: time.Now().UnixMilli(), digest: digest, finished: make(chan struct{})}
-	if kind == "playground" {
-		run.input = playgroundRecoveryTurn(body, id, run.startedAt)
-	}
 	h.browserRuns.latest[kind] = run
 	h.browserRuns.workers.Add(1)
 	h.browserRuns.mu.Unlock()
@@ -281,12 +249,9 @@ func (h *Handler) prepareBrowserRun(kind, id string, next http.HandlerFunc, writ
 				status, isStream := run.status, strings.HasPrefix(run.frozenHeader.Get("Content-Type"), "text/event-stream")
 				run.mu.Unlock()
 				if status == 0 {
-					writePlaygroundError(run, 500, "gateway_unavailable")
+					writeRunError(run, 500, "gateway_unavailable")
 				} else if isStream {
-					terminal := "event: error\ndata: {\"code\":\"gateway_unavailable\"}\n\n"
-					if kind == "agent" {
-						terminal = "data: {\"type\":\"RUN_ERROR\",\"code\":\"gateway_unavailable\",\"message\":\"gateway_unavailable\"}\n\n"
-					}
+					terminal := "data: {\"type\":\"RUN_ERROR\",\"code\":\"gateway_unavailable\",\"message\":\"gateway_unavailable\"}\n\n"
 					_, _ = io.WriteString(run, terminal)
 				}
 				if h.logger != nil {
@@ -360,15 +325,7 @@ func (run *browserRun) serve(writer http.ResponseWriter, request *http.Request) 
 func (h *Handler) startAgentRun(writer http.ResponseWriter, request *http.Request) {
 	h.startBrowserRun("agent", h.runAgent, writer, request)
 }
-func (h *Handler) startPlaygroundRun(writer http.ResponseWriter, request *http.Request) {
-	h.startBrowserRun("playground", h.chatPlayground, writer, request)
-}
-func (h *Handler) browserRunKind(request *http.Request) string {
-	if chi.URLParam(request, "workspace") == "playground" {
-		return "playground"
-	}
-	return "agent"
-}
+func (h *Handler) browserRunKind(*http.Request) string { return "agent" }
 func (h *Handler) currentBrowserRun(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Cache-Control", "no-store")
 	run := h.browserRuns.find(h.browserRunKind(request), "")
@@ -378,17 +335,13 @@ func (h *Handler) currentBrowserRun(writer http.ResponseWriter, request *http.Re
 	}
 	run.mu.Lock()
 	isRunning := !run.isDone
-	input := run.input
-	if run.isDone && (run.status >= 400 || !strings.HasPrefix(run.frozenHeader.Get("Content-Type"), "text/event-stream")) {
-		input = nil
-	}
 	run.mu.Unlock()
-	writeJSON(writer, 200, map[string]any{"run": map[string]any{"id": run.id, "started_at_ms": run.startedAt, "is_running": isRunning, "request": input}})
+	writeJSON(writer, 200, map[string]any{"run": map[string]any{"id": run.id, "started_at_ms": run.startedAt, "is_running": isRunning}})
 }
 func (h *Handler) subscribeBrowserRun(writer http.ResponseWriter, request *http.Request) {
 	run := h.browserRuns.find(h.browserRunKind(request), chi.URLParam(request, "id"))
 	if run == nil {
-		writePlaygroundError(writer, 404, "run_not_found")
+		writeRunError(writer, 404, "run_not_found")
 		return
 	}
 	run.serve(writer, request)
@@ -396,7 +349,7 @@ func (h *Handler) subscribeBrowserRun(writer http.ResponseWriter, request *http.
 func (h *Handler) cancelBrowserRun(writer http.ResponseWriter, request *http.Request) {
 	run := h.browserRuns.find(h.browserRunKind(request), chi.URLParam(request, "id"))
 	if run == nil {
-		writePlaygroundError(writer, 404, "run_not_found")
+		writeRunError(writer, 404, "run_not_found")
 		return
 	}
 	run.mu.Lock()

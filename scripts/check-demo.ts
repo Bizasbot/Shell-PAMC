@@ -43,7 +43,6 @@ const INPUTS = demoInputs;
 export const CONSOLE_ROUTES = [
   '/dashboard',
   '/model-square',
-  '/playground',
   '/agent',
   '/ai-providers',
   '/api-keys',
@@ -67,7 +66,6 @@ export const CONSOLE_ROUTES = [
 export const ROUTE_READS: Record<string, string[]> = {
   '/dashboard': ['overview', 'pricing-attention', 'dashboard-24h', 'dashboard-tail-24h', 'dashboard-models-call-24h', 'dashboard-models-model-24h', 'dashboard-token-heatmap-utc', 'usage-routing', 'usage-live'],
   '/model-square': ['model-square', 'pricing', 'usage-facets'],
-  '/playground': ['api-keys', 'playground-models', 'playground-run-active'],
   '/agent': ['api-keys', 'capabilities', 'agent-session'],
   '/ai-providers': ['providers', 'dashboard-providers-24h'],
   '/api-keys': ['api-keys', 'client-key-aliases'],
@@ -78,7 +76,7 @@ export const ROUTE_READS: Record<string, string[]> = {
   '/pricing': ['pricing', 'pricing-attention', 'pricing-catalog', 'pricing-model-claude-opus-5.5'],
   '/config': ['config', 'config-source'],
   '/omc-settings': ['preferences', 'system', 'fonts'],
-  '/plugins': ['plugins', 'plugin-store', 'plugins-settings', 'plugin-config-usage-exporter'],
+  '/plugins': ['plugins', 'plugins-settings', 'plugin-config-usage-exporter'],
   '/system': ['system', 'system-releases', 'system-maintenance'],
 };
 
@@ -97,7 +95,7 @@ const FORBIDDEN = [
 ];
 
 /** The recordings the console replays in demonstration mode. */
-const RECORDINGS = ['web/src/demo/agentRecording.json', 'web/src/demo/playgroundRecording.json'];
+const RECORDINGS = ['web/src/demo/agentRecording.json'];
 
 /** What a recording taken from a real conversation must have had removed. */
 const RECORDING_FORBIDDEN = [

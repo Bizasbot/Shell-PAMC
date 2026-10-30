@@ -51,9 +51,8 @@ export function dashboardPresetOf(url) {
 const FIXED_ROUTES = new Map([
   ['/api/v1/agent/session', 'agent-session'],
   ['/api/v1/agent/runs/active', 'agent-run-active'],
-  ['/api/v1/playground/runs/active', 'playground-run-active'],
   ['/api/v1/capabilities', 'capabilities'],
-  ['/api/v1/playground/models', 'playground-models'],
+  ['/api/v1/agent/models', 'agent-models'],
   ['/api/v1/resources', 'resources'],
   ['/api/v1/preferences', 'preferences'],
   ['/api/v1/custom-icons', 'custom-icons'],
@@ -78,7 +77,6 @@ const FIXED_ROUTES = new Map([
   ['/api/v1/management/client-key-aliases', 'client-key-aliases'],
   ['/api/v1/management/plugins', 'plugins'],
   ['/api/v1/management/plugins/settings', 'plugins-settings'],
-  ['/api/v1/management/plugin-store', 'plugin-store'],
   ['/api/v1/management/auth-files', 'auth-files'],
   ['/api/v1/management/auth-files/model-aliases', 'auth-files-model-aliases'],
   ['/api/v1/management/auth-files/excluded-models', 'auth-files-excluded-models'],

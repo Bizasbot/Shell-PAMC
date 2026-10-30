@@ -1,4 +1,4 @@
-/* The conversation workspace shared by the Playground and the Agent (design §5, "Conversation
+/* The conversation workspace used by the Agent (design §5, "Conversation
    workspaces"). Every colour is a palette token and every duration a motion token; nothing here
    adds a shadow or a decorative gradient. Shape follows the thread scale of ADR 0081: printed
    matter, controls, floating surfaces and the composer each take their own radius. */
@@ -229,22 +229,6 @@
 }
 
 /* ── turn anatomy ──────────────────────────────────────────────────────────── */
-
-.message-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
-.message-model {
-  color: var(--fg-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .pip {
   width: 7px;
@@ -1866,7 +1850,7 @@
 }
 
 /* A question offered as a place to start: on the Agent's empty page, and for the one message
-   the demonstration's Playground has a recorded answer to. */
+   the demonstration has a recorded answer to. */
 .example {
   display: flex;
   align-items: center;

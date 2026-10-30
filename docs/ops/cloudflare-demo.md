@@ -328,15 +328,15 @@ Because the catalogue is part of the dataset's coverage, adding, renaming or re-
 a capability changes a served response: regenerate and inspect the dataset whenever the
 registry or its safety metadata changes.
 
-## Playground data and replay
+## Agent model directory
 
-The playground's model directory is generated from the loopback CPA fixture through the
+The Agent's model directory is generated from the loopback CPA fixture through the
 real OMC facade. The export derives its client-key fingerprint from the already-captured
 masked key list; no literal fingerprint is maintained in the generator. The Worker maps
-`/api/v1/playground/models` to the generated `playground-models` response. The console
-route `/playground` is included in both demo coverage and browser acceptance.
+`/api/v1/agent/models` (formerly `/api/v1/playground/models`) to the generated model-directory
+response. The console route `/agent` is included in both demo coverage and browser acceptance.
 
-`POST /api/v1/playground/chat` is refused by the Go route policy and the Worker's existing
+Inference is refused by the Go route policy and the Worker's existing
 non-read refusal. The UI offers one browser-local recorded example in demo mode. It does not claim durable preference storage: the Worker
 still refuses non-read API calls, so a selected key and call point last only for that page session. No sample
 answer is represented as a real model call, and no new outbound destination or console
@@ -350,8 +350,8 @@ The generated pricing response includes the same non-secret provider membership 
 
 The generated preferences response includes `time_zone` with the deployment, override and effective timezone names. Dataset generation fixes `TZ=UTC` so the captured metadata cannot depend on the generating developer's machine. The console reads that metadata before calendar displays; the public Worker retains its existing read-only preference-write policy. Regenerate the dataset when the timezone response or console reads change.
 
-Run recovery descriptors (`GET /agent/runs/active`, `GET /playground/runs/active`) are generated
-empty reads in the demo dataset. Live journal subscriptions and cancellation remain refused,
+Run recovery descriptors (`GET /agent/runs/active`) is a generated
+empty read in the demo dataset. Live journal subscriptions and cancellation remain refused,
 alongside inference: the public demonstration never starts a background model/workflow task.
 
 ### Custom icon reads
@@ -422,11 +422,10 @@ must not expose configuration through either Worker or Go demonstration mode.
 
 ## Recorded example conversations and annual activity
 
-`web/src/demo/agentRecording.json` and `playgroundRecording.json` ship as browser assets,
+`web/src/demo/agentRecording.json` ships as a browser asset,
 not Worker mutation endpoints. The Agent recording uses relative-date placeholders and
 localized prose; replay emits AG-UI frames, reasoning, capability receipts, streamed UI
-arguments and the final conversation. The Playground example emits its normal stream event
-contract. Only the offered example question is accepted. No model, CPA request or provider
+arguments and the final conversation. Only the offered example question is accepted. No model, CPA request or provider
 credential is needed. The Agent keeps the settled session across read refetches for the
 page lifetime; reload/reset clears it. Public writes remain refused. ADR 0092 is the decision.
 
@@ -435,9 +434,8 @@ traffic, quieter weekends and occasional idle days. The recent-traffic protectio
 calendar dates, so every hour of the same date stays active through seven days of age; older
 dates may be idle regardless of the reference time of day. `pnpm demo:generate` captures the real
 handler responses; review and commit the responses/provenance diff. Recordings also pass
-`pnpm check:demo` privacy checks. `pnpm verify:demo` sends both examples in the built console:
-the Agent must settle its generated interface, while the Playground must settle its answer
-content. Agent acceptance uses English copy and locale-independent action selectors; the
+`pnpm check:demo` privacy checks. `pnpm verify:demo` sends the example in the built console:
+the Agent must settle its generated interface. Agent acceptance uses English copy and locale-independent action selectors; the
 remaining route headings use Chinese. Entry information is a global arrival toast, with contextual replay instructions on the conversation pages. Theme
 choices remain browser-local, so a returning visitor never pushes them to the shared Worker.
 

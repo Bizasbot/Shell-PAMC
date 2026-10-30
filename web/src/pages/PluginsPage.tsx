@@ -10,26 +10,23 @@ import type { PluginItem } from '../types/plugin';
 import { PageHeader } from '../components/common/PageHeader';
 import { RefreshButton } from '../components/common/RefreshButton';
 import { InstalledPluginsPanel } from '../components/plugins/InstalledPluginsPanel';
-import { PluginStorePanel } from '../components/plugins/PluginStorePanel';
 import { PluginSettingsPanel } from '../components/plugins/PluginSettingsPanel';
 import { PluginConfigDrawer } from '../components/plugins/PluginConfigDrawer';
-import { storeListingsByPluginId } from '../components/plugins/pluginStoreLogic';
 import styles from '../components/plugins/Plugins.module.css';
 import { LoadFailure, Notice } from '../components/feedback';
 import { Panel } from '../components/common/Panel';
 
-const PLUGIN_TABS = ['installed', 'store', 'settings'] as const;
+const PLUGIN_TABS = ['installed', 'settings'] as const;
 type PluginTab = (typeof PLUGIN_TABS)[number];
 
 const TAB_PATHS: Record<PluginTab, string> = {
   installed: '/plugins',
-  store: '/plugins/store',
   settings: '/plugins/settings',
 };
 
 function tabOfPath(pathname: string): PluginTab {
   const segment = pathname.replace(/\/+$/, '').split('/').pop();
-  return segment === 'store' || segment === 'settings' ? segment : 'installed';
+  return segment === 'settings' ? segment : 'installed';
 }
 
 function isPluginTab(value: string | null): value is PluginTab {
@@ -37,18 +34,11 @@ function isPluginTab(value: string | null): value is PluginTab {
 }
 
 /**
- * Plugin management: what is installed, what the store offers, and how the plugin system
- * itself is configured, on one page.
+ * Plugin management: what is installed, and how the plugin system itself is configured,
+ * on one page.
  *
- * The three are one surface because they are one workflow - find a plugin, install it,
- * configure it, switch the system on - and the operator should not have to cross to the
- * configuration page for the last step. Each tab has its own address (`/plugins/store`,
- * `/plugins/settings`), so the navigation can list the store beside the installed plugins
- * and either can be linked to; `?plugin=<id>` opens that plugin's settings.
- *
- * The store is only read once its tab is opened: reading it makes CPA fetch every
- * registry, which is slow and rate limited, and the installed list must not wait on it.
- * Once read, it also supplies the descriptions and links the installed list shows.
+ * The two tabs have their own address (`/plugins`, `/plugins/settings`), so the navigation
+ * can list both and either can be linked to; `?plugin=<id>` opens that plugin's settings.
  */
 export const PluginsPage: React.FC = () => {
   const t = useT();
@@ -69,7 +59,6 @@ export const PluginsPage: React.FC = () => {
     navigate(`${TAB_PATHS[isPluginTab(legacyTab) ? legacyTab : 'installed']}${query ? `?${query}` : ''}`, { replace: true });
   }, [legacyTab, navigate, searchParams]);
 
-  const [hasVisitedStore, setHasVisitedStore] = React.useState(tab === 'store');
   const [configuring, setConfiguring] = React.useState<PluginItem | null>(null);
 
   const pluginsQuery = useQuery({
@@ -78,19 +67,7 @@ export const PluginsPage: React.FC = () => {
     staleTime: 15000,
   });
 
-  React.useEffect(() => {
-    if (tab === 'store') setHasVisitedStore(true);
-  }, [tab]);
-
-  const storeQuery = useQuery({
-    queryKey: ['management-plugin-store'],
-    queryFn: api.getPluginStore,
-    enabled: hasVisitedStore,
-    staleTime: 5 * 60_000,
-  });
-
   const plugins = React.useMemo(() => pluginsQuery.data?.plugins ?? [], [pluginsQuery.data]);
-  const catalog = React.useMemo(() => storeListingsByPluginId(storeQuery.data?.plugins), [storeQuery.data]);
   const isSystemEnabled = pluginsQuery.data?.plugins_enabled ?? true;
 
   const updateParams = (mutate: (params: URLSearchParams) => void) => {
@@ -114,18 +91,13 @@ export const PluginsPage: React.FC = () => {
     // every render and is deliberately not a trigger.
   }, [requestedPlugin, pluginsQuery.data]);
 
-  const manage = (pluginId: string) => navigate(`${TAB_PATHS.installed}?plugin=${encodeURIComponent(pluginId)}`);
-
   const refresh = () => {
     void pluginsQuery.refetch();
-    if (tab === 'store' || storeQuery.data) void storeQuery.refetch();
     if (tab === 'settings') void queryClient.invalidateQueries({ queryKey: ['management-plugin-settings'] });
   };
-  const isRefreshing = pluginsQuery.isFetching || (tab === 'store' && storeQuery.isFetching);
+  const isRefreshing = pluginsQuery.isFetching;
 
   const effectiveCount = plugins.filter((plugin) => plugin.effective_enabled).length;
-  const activeError = tab === 'store' ? storeQuery.error : pluginsQuery.error;
-  const isActiveError = tab === 'store' ? storeQuery.isError : pluginsQuery.isError;
 
   return (
     <div className="terminal-page terminal-page-stack plugins-page">
@@ -135,7 +107,7 @@ export const PluginsPage: React.FC = () => {
           <>
             <Segmented className="plugins-tabs" value={tab} onChange={(value) => selectTab(value as PluginTab)} options={[
               { value: 'installed', label: t('plugin.tab_installed', { n: plugins.length }) },
-              { value: 'store', label: t('plugin.tab_store') }, { value: 'settings', label: t('plugin.tab_settings') },
+              { value: 'settings', label: t('plugin.tab_settings') },
             ]} />
             <ActionMenu><RefreshButton onRefresh={refresh} isRefreshing={isRefreshing} /></ActionMenu>
           </>
@@ -148,7 +120,6 @@ export const PluginsPage: React.FC = () => {
               onChange={(value) => selectTab(value as PluginTab)}
               options={[
                 { value: 'installed', label: t('plugin.tab_installed', { n: plugins.length }) },
-                { value: 'store', label: t('plugin.tab_store') },
                 { value: 'settings', label: t('plugin.tab_settings') },
               ]}
             />
@@ -185,11 +156,11 @@ export const PluginsPage: React.FC = () => {
         />
       )}
 
-      {isActiveError && (
+      {pluginsQuery.isError && (
         <LoadFailure
           title={t('common.load_failed_title')}
-          error={activeError}
-          onRetry={() => void (tab === 'store' ? storeQuery.refetch() : pluginsQuery.refetch())}
+          error={pluginsQuery.error}
+          onRetry={() => void pluginsQuery.refetch()}
         />
       )}
 
@@ -199,21 +170,10 @@ export const PluginsPage: React.FC = () => {
             plugins={plugins}
             isLoading={pluginsQuery.isLoading}
             isPluginSystemEnabled={isSystemEnabled}
-            catalog={catalog}
             isDemo={isDemo}
             onConfigure={setConfiguring}
-            onBrowseStore={() => selectTab('store')}
           />
         </Panel>
-      )}
-      {tab === 'store' && (
-        <PluginStorePanel
-          store={storeQuery.data}
-          isLoading={storeQuery.isLoading}
-          isDemo={isDemo}
-          onManage={manage}
-          onOpenSettings={() => selectTab('settings')}
-        />
       )}
       {tab === 'settings' && <PluginSettingsPanel isDemo={isDemo} />}
 

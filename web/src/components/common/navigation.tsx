@@ -1,9 +1,7 @@
 import {
   PuzzleOutlined,
-  ShopOutlined,
   AuditOutlined,
   CloudServerOutlined,
-  CodeSandboxOutlined,
   ControlOutlined,
   DashboardOutlined,
   DollarOutlined,
@@ -37,7 +35,6 @@ export const STATIC_NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { key: '/dashboard', labelKey: 'nav.dashboard', icon: <DashboardOutlined /> },
       { key: '/agent', labelKey: 'nav.agent', icon: <RobotOutlined /> },
-      { key: '/playground', labelKey: 'nav.playground', icon: <CodeSandboxOutlined /> },
       { key: '/model-square', labelKey: 'nav.model_square', icon: <BlockOutlined /> },
     ],
   },
@@ -78,7 +75,7 @@ export const STATIC_NAV_GROUPS: readonly NavGroup[] = [
 /**
  * The full rail model: the console's own groups plus the plugins group.
  *
- * Plugins are a group of their own: what is installed, the store, and then every page a
+ * Plugins are a group of their own: what is installed, its settings, and then every page a
  * running plugin registered. A plugin's page is a destination in its own right, so it sits
  * in the navigation beside the console's pages rather than behind the plugin's row. The
  * plugins group sits before Control, so the console's own control surfaces stay last.
@@ -89,7 +86,6 @@ export function buildNavGroups(pluginPages: readonly PluginPageEntry[]): NavGrou
     labelKey: 'nav.group.plugins',
     items: [
       { key: '/plugins', labelKey: 'nav.plugins', icon: <PuzzleOutlined /> },
-      { key: '/plugins/store', labelKey: 'nav.plugin_store', icon: <ShopOutlined /> },
       ...pluginPages.map((page): NavEntry => ({
         key: page.route,
         labelKey: page.navLabel,

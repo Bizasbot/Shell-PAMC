@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,7 +14,7 @@ import (
 
 /**
  * The plugin management facade: the installed list, each plugin's switch and
- * settings document, removal, the store catalog and installation.
+ * settings document, removal, and removal.
  *
  * Every route maps to one fixed CPA plugin route. Responses are projected into this
  * package's DTOs, and the one value rewritten on the way out is a logo, because the
@@ -306,136 +305,5 @@ func (h *Handler) deletePlugin(writer http.ResponseWriter, request *http.Request
 		"file_deleted":       result.FileDeleted,
 		"configured_removed": result.ConfiguredRemoved,
 		"restart_required":   result.RestartRequired,
-	})
-}
-
-// listPluginStore is the catalog every configured registry offers, joined by CPA
-// with what is installed. A registry that failed is reported beside the entries the
-// others returned rather than failing the page.
-func (h *Handler) listPluginStore(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Set("Cache-Control", "no-store")
-	client, ok := h.managementClientOrError(writer, request)
-	if !ok {
-		return
-	}
-
-	// Oh My CPA's own registry is part of what this console ships, so the source is
-	// put in place before CPA is asked: a source CPA does not list is a source whose
-	// entries cannot be installed.
-	isOMCSourceEnabled, err := h.reconcileOMCPluginSource(request.Context(), request, client)
-	if err != nil {
-		writePluginSourceError(writer, err, false)
-		return
-	}
-
-	store, err := client.PluginStore(request.Context())
-	if err != nil {
-		writePluginFacadeError(writer, err)
-		return
-	}
-	if !isOMCSourceEnabled {
-		// A demonstration cannot write its fixture, so its fixed catalogue still
-		// lists the registry after the switch is turned off; the response withholds it
-		// instead. A deployment does not reach this with entries to drop: the
-		// reconciliation either removed the source before CPA was read or failed the
-		// read.
-		dropOMCPluginSource(&store)
-	}
-
-	h.pluginIdentities.remember(store.Plugins)
-	h.pluginLogos.inlineStore(request.Context(), store.Plugins)
-
-	projected := projectStorePlugins(store.Plugins)
-	writeJSON(writer, http.StatusOK, map[string]any{
-		"plugins_enabled": store.PluginsEnabled,
-		"plugins_dir":     boundedText(store.PluginsDir, pluginTextLimit),
-		"sources":         projectPluginStoreSources(store.Sources),
-		"source_errors":   projectPluginStoreSourceErrors(store.SourceErrors),
-		"plugins":         projected,
-		"total":           len(projected),
-	})
-}
-
-type installPluginRequest struct {
-	SourceID string `json:"source_id"`
-	Version  string `json:"version"`
-}
-
-// installPlugin installs a store plugin, or updates an installed one to the newest
-// (or a named) release. The body is optional: without it the newest release from the
-// only registry listing the id is installed.
-func (h *Handler) installPlugin(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Set("Cache-Control", "no-store")
-	pluginID, ok := pluginIDFromRequest(writer, request)
-	if !ok {
-		return
-	}
-
-	var req installPluginRequest
-	if request.Body != nil && request.ContentLength != 0 {
-		request.Body = http.MaxBytesReader(writer, request.Body, 4*1024)
-		raw, err := io.ReadAll(request.Body)
-		if err != nil {
-			writeError(writer, http.StatusBadRequest, "invalid request body")
-			return
-		}
-		if strings.TrimSpace(string(raw)) != "" {
-			decoder := json.NewDecoder(strings.NewReader(string(raw)))
-			decoder.DisallowUnknownFields()
-			if err := decoder.Decode(&req); err != nil {
-				writeError(writer, http.StatusBadRequest, "invalid request body")
-				return
-			}
-		}
-	}
-	req.SourceID = strings.TrimSpace(req.SourceID)
-	req.Version = strings.TrimSpace(req.Version)
-	if len(req.SourceID) > 128 || len(req.Version) > 128 {
-		writeError(writer, http.StatusBadRequest, "source_id and version must be at most 128 characters")
-		return
-	}
-
-	client, ok := h.managementClientOrError(writer, request)
-	if !ok {
-		return
-	}
-
-	// An install names a source, so the managed registry has to be in CPA's list
-	// before the request reaches it - including after a configuration edit that
-	// removed it.
-	if _, err := h.reconcileOMCPluginSource(request.Context(), request, client); err != nil {
-		writePluginSourceError(writer, err, false)
-		return
-	}
-
-	target := security.RedactText(pluginID)
-	details := map[string]any{}
-	if req.SourceID != "" {
-		details["source_id"] = req.SourceID
-	}
-	if req.Version != "" {
-		details["version"] = req.Version
-	}
-	if auditErr := h.recordAudit(request, "plugin.install", "plugin_store", target, "attempt", details); auditErr != nil {
-		writeError(writer, http.StatusInternalServerError, "audit failure; install aborted")
-		return
-	}
-
-	result, err := client.InstallPlugin(request.Context(), pluginID, req.SourceID, req.Version)
-	if err != nil {
-		_ = h.recordAudit(request, "plugin.install", "plugin_store", target, "failure", map[string]any{"error": err.Error()})
-		writePluginFacadeError(writer, err)
-		return
-	}
-
-	_ = h.recordAudit(request, "plugin.install", "plugin_store", target, "success", map[string]any{"version": boundedText(result.Version, 128)})
-
-	writeJSON(writer, http.StatusOK, map[string]any{
-		"status":           "ok",
-		"id":               pluginID,
-		"version":          boundedText(result.Version, pluginTextLimit),
-		"source_name":      boundedText(result.SourceName, pluginTextLimit),
-		"plugins_enabled":  result.PluginsEnabled,
-		"restart_required": result.RestartRequired,
 	})
 }

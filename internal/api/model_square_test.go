@@ -54,7 +54,7 @@ func TestModelSquareHTTPUsesDefaultKeyAndSafeProvenance(t *testing.T) {
 		}
 	}))
 	defer upstream.Close()
-	pointPlaygroundAt(t, fixture.handler, upstream.URL)
+	pointGatewayAt(t, fixture.handler, upstream.URL)
 	path := fixture.baseURL + "/omc/api/v1/management/model-square"
 	response, body := getJSON(t, fixture.client, path)
 	if response.StatusCode != 200 {
@@ -115,7 +115,7 @@ func TestModelSquareLiveDirectorySurvivesEnrichmentFailure(t *testing.T) {
 		}
 	}))
 	defer upstream.Close()
-	pointPlaygroundAt(t, fixture.handler, upstream.URL)
+	pointGatewayAt(t, fixture.handler, upstream.URL)
 	response, body := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/model-square")
 	var directory operations.ModelSquareDirectory
 	if err := json.Unmarshal(body, &directory); err != nil {
@@ -154,7 +154,7 @@ func TestModelSquareNativeDefaultsRespectPrefixAndExclusions(t *testing.T) {
 		}
 	}))
 	defer upstream.Close()
-	pointPlaygroundAt(t, fixture.handler, upstream.URL)
+	pointGatewayAt(t, fixture.handler, upstream.URL)
 	response, body := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/model-square")
 	var directory operations.ModelSquareDirectory
 	if err := json.Unmarshal(body, &directory); err != nil {

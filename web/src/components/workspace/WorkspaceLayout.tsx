@@ -40,7 +40,7 @@ export interface WorkspaceLayoutProps {
 }
 
 /**
- * The Playground's frame: a head carrying the title and the page actions; a main column the page fills with its conversation; and a resizable, tabbed side
+ * The workspace frame: a head carrying the title and the page actions; a main column the page fills with its conversation; and a resizable, tabbed side
  * panel - the extension slot for views beside the conversation (a directory, call details,
  * parameters), each registered as a tab rather than wired into the page.
  *

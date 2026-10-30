@@ -86,14 +86,13 @@ func TestDemoPolicyRefusesTheDangerousSurface(t *testing.T) {
 		{http.MethodGet, "/api/v1/usage/events/41/request-log"},
 		{http.MethodDelete, "/api/v1/management/logs"},
 		{http.MethodGet, "/api/v1/management/system/diagnostics"},
-		{http.MethodPost, "/api/v1/management/plugin-store/otel-bridge/install"},
 		{http.MethodPatch, "/api/v1/management/plugins/usage-exporter/enabled"},
 		{http.MethodPut, "/api/v1/management/plugins/settings"},
 		{http.MethodDelete, "/api/v1/management/plugins/usage-exporter"},
 		{http.MethodPut, "/api/v1/management/plugins/usage-exporter/config"},
 		{http.MethodPut, "/api/v1/management/config/source"},
 		{http.MethodPut, "/api/v1/management/config/debug"},
-		{http.MethodPost, "/api/v1/playground/chat"},
+		{http.MethodPost, "/api/v1/agent/run"},
 		{http.MethodPost, "/api/v1/management/api-keys"},
 		{http.MethodDelete, "/api/v1/management/api-keys/0"},
 		{http.MethodPost, "/api/v1/management/quota/reset"},
@@ -149,7 +148,6 @@ func TestDemoPolicyKeepsTheReadingSurface(t *testing.T) {
 		{http.MethodGet, "/api/v1/management/plugins"},
 		{http.MethodGet, "/api/v1/management/plugins/settings"},
 		{http.MethodGet, "/api/v1/management/plugins/usage-exporter/config"},
-		{http.MethodGet, "/api/v1/management/plugin-store"},
 		{http.MethodGet, "/api/v1/management/oauth/providers"},
 		{http.MethodGet, "/api/v1/management/quota"},
 		{http.MethodGet, "/api/v1/management/quota/auth-codex-01"},
@@ -160,7 +158,7 @@ func TestDemoPolicyKeepsTheReadingSurface(t *testing.T) {
 		{http.MethodGet, "/api/v1/pricing/catalog"},
 		{http.MethodGet, "/api/v1/pricing/models/gpt-5"},
 		{http.MethodGet, "/api/v1/resources"},
-		{http.MethodGet, "/api/v1/playground/models"},
+		{http.MethodGet, "/api/v1/agent/models"},
 		// Writes the demonstration can perform on its own fixture or on Oh My CPA's
 		// own metadata.
 		{http.MethodPatch, "/api/v1/management/auth-files/status"},
@@ -271,7 +269,7 @@ func TestDemoGuardRefusesOverHTTP(t *testing.T) {
 	for _, call := range []struct {
 		method, path, body string
 	}{
-		{http.MethodPost, "/omc/api/v1/playground/chat", `{}`},
+		{http.MethodPost, "/omc/api/v1/agent/run", `{}`},
 		{http.MethodPost, "/omc/api/v1/management/oauth/start", `{"provider":"codex"}`},
 		{http.MethodPost, "/omc/api/v1/management/auth-files", `{"type":"codex"}`},
 		{http.MethodGet, "/omc/api/v1/management/auth-files/download?name=x.json", ""},
@@ -279,7 +277,6 @@ func TestDemoGuardRefusesOverHTTP(t *testing.T) {
 		{http.MethodGet, "/omc/api/v1/management/request-error-logs/x.log", ""},
 		{http.MethodGet, "/omc/api/v1/management/request-logs/41dbb9ee", ""},
 		{http.MethodGet, "/omc/api/v1/usage/events/1/request-log", ""},
-		{http.MethodPost, "/omc/api/v1/management/plugin-store/x/install", `{}`},
 		{http.MethodPut, "/omc/api/v1/management/config/source", `{"source":"debug: true"}`},
 		{http.MethodPost, "/omc/api/v1/management/quota/redeem-credit", `{"auth_index":"a"}`},
 		{http.MethodPost, "/omc/api/v1/management/providers/pull-models", `{}`},

@@ -12,7 +12,7 @@ import { INPUTS } from './demo-inputs.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DATASET = 'deploy/cloudflare/data/responses.json';
 const PROVENANCE = 'deploy/cloudflare/data/provenance.json';
-const RECORDINGS = ['web/src/demo/agentRecording.json', 'web/src/demo/playgroundRecording.json'];
+const RECORDINGS = ['web/src/demo/agentRecording.json'];
 const execute = promisify(execFile);
 
 // Negative controls must own their inputs. Restoring a shared file in finally cannot

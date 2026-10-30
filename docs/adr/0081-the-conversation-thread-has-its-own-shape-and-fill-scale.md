@@ -1,6 +1,7 @@
 # ADR 0081: The conversation thread has its own shape and fill scale
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-10-08
 - Amends: design.md §4's single 4px radius, for the conversation workspaces and the approval card
   only. Colour, type, the zero-shadow rule and §7's motion budget are unchanged.

@@ -3,90 +3,28 @@ import type {
   PluginStoreAuthRule,
   PluginStoreAuthTarget,
   PluginStoreAuthType,
-  StorePluginItem,
 } from '../../types/plugin';
-
-export type PluginStoreFilter = 'all' | 'installed' | 'available' | 'updates';
-
-export const PLUGIN_STORE_FILTERS: readonly PluginStoreFilter[] = ['all', 'installed', 'available', 'updates'];
 
 function matchesQuery(haystack: Array<string | undefined>, query: string): boolean {
   if (!query) return true;
   return haystack.some((value) => (value ?? '').toLowerCase().includes(query));
 }
 
-/** The store entries a search and a filter chip leave, in the registry's own order. */
-export function filterStorePlugins(
-  entries: readonly StorePluginItem[],
-  query: string,
-  filter: PluginStoreFilter,
-): StorePluginItem[] {
-  const needle = query.trim().toLowerCase();
-  return entries.filter((entry) => {
-    if (filter === 'installed' && !entry.installed) return false;
-    if (filter === 'available' && entry.installed) return false;
-    if (filter === 'updates' && !(entry.installed && entry.update_available)) return false;
-    return matchesQuery(
-      [entry.id, entry.name, entry.description, entry.author, entry.source_name, ...entry.tags],
-      needle,
-    );
-  });
-}
-
-export function storeFilterCounts(entries: readonly StorePluginItem[]): Record<PluginStoreFilter, number> {
-  return {
-    all: entries.length,
-    installed: entries.filter((entry) => entry.installed).length,
-    available: entries.filter((entry) => !entry.installed).length,
-    updates: entries.filter((entry) => entry.installed && entry.update_available).length,
-  };
-}
-
 /** The installed plugins a search leaves, matched on what the card shows. */
 export function filterInstalledPlugins(
   plugins: readonly PluginItem[],
   query: string,
-  catalog: ReadonlyMap<string, StorePluginItem>,
 ): PluginItem[] {
   const needle = query.trim().toLowerCase();
   return plugins.filter((plugin) => {
-    const listing = catalog.get(plugin.id);
     return matchesQuery(
       [
-        plugin.id, plugin.metadata?.name, plugin.metadata?.author, plugin.oauth_provider, listing?.description,
-        ...(listing?.tags ?? []), ...(plugin.pages ?? []).map((page) => page.label),
+        plugin.id, plugin.metadata?.name, plugin.metadata?.author, plugin.oauth_provider,
+        ...(plugin.pages ?? []).map((page) => page.label),
       ],
       needle,
     );
   });
-}
-
-/**
- * The store listing that describes each installed plugin, by plugin id.
- *
- * CPA's installed list carries what the plugin registered - name, version, author - but
- * not the description, tags or homepage a registry publishes, so an installed card
- * borrows them from the store when the store has been read. When two registries list
- * the same id, the one the plugin was installed from wins, then the official one.
- */
-export function storeListingsByPluginId(entries: readonly StorePluginItem[] | undefined): Map<string, StorePluginItem> {
-  const listings = new Map<string, StorePluginItem>();
-  const rank = (entry: StorePluginItem) => (entry.install_source_status === 'matched' ? 2 : 0) + (entry.is_official ? 1 : 0);
-  for (const entry of entries ?? []) {
-    const existing = listings.get(entry.id);
-    if (!existing || rank(entry) > rank(existing)) listings.set(entry.id, entry);
-  }
-  return listings;
-}
-
-/** Whether the store's installed/update state for an entry can be acted on. */
-export function isStoreInstallBlocked(entry: StorePluginItem): 'auth' | undefined {
-  return entry.auth_required && !entry.auth_configured ? 'auth' : undefined;
-}
-
-/** The text an operator retypes to confirm a third-party install: the plugin id. */
-export function storeInstallConfirmToken(entry: StorePluginItem): string {
-  return entry.id;
 }
 
 // ── store settings ──────────────────────────────────────────────────────────

@@ -286,57 +286,19 @@ responses and run snapshots, and query receipts have no raw-result preview; the 
 model still receives the rows and may use them in its answer or an explicit
 `render_ui` display. See `docs/agent-capabilities.md`.
 
-## Model playground
-
-Open **Operate → Playground** under the configured base path. Select an existing client
-key and a call point from the live `/v1/models` directory; if no key exists, create one
-in Key management first. The page reads `GET <base>/api/v1/playground/models` and sends
-explicit turns through `POST <base>/api/v1/playground/chat`; both require the normal
-administrator session. No additional environment variable or database migration is
-required.
-
-Real requests consume quota under the selected key. Stop cancels the connection but does
-not guarantee a refund. The single latest conversation, its parameters and its attached
-images are stored as a server-side preference so a reload resumes where you left off;
-starting a new conversation discards the stored turns, and image payloads too large to
-store are redacted rather than saved. The stored target is the key's usage fingerprint,
-never the key itself, and a key or call point that no longer exists is not reselected.
-CPA and upstream logging policies still apply. PNG/JPEG/WebP inputs allow four images
-per turn, 5 MiB and 40 megapixels per image, and a 32 MiB request including history.
-Capability is not guessed from the model name.
-
-The parameter panel takes a system prompt, reasoning effort, temperature, top-p, maximum
-output tokens, a User-Agent, and a custom JSON request body. The User-Agent defaults to
-this build's own version and is sent as a header, so an upstream sees which build called
-it. The custom request body has the highest priority: its keys override the panel's
-parameters and any parameter the panel does not model passes through unchanged, but the
-resulting request is validated before it is sent, so an override cannot bypass the image
-and parameter limits. A non-streaming body is rejected, as this page reads a streamed
-answer.
-
-Keep reverse-proxy streaming unbuffered and its read timeout above the 15-second
-heartbeat interval. The dedicated stream can last ten minutes, with a 120-second
-upstream first-response or idle timeout. Ordinary API timeouts are unchanged. Request
-diagnostics never return credentials; copied cURL needs CPA_BASE_URL, CPA_API_KEY and
-replacement image data URLs. The public demonstration shows the page and model directory
-and offers one browser-local recorded example without inference (ADR 0092).
-
-## Recovering Agent and Playground runs
+## Recovering Agent runs
 
 Weak connections and page refreshes reattach to the original server task rather than
 resend a model call or workflow. Stop explicitly cancels that task; closing the page
 does not. The latest completed replay journal is retained for 15 minutes, until another
-run replaces it or OMC restarts. Agent keeps its authoritative transcript; Playground
-saves the recovered result into its existing latest-session preference. Results never
-recovered before journal expiry may be unavailable. Agent replay journals grow with output and
-have no byte ceiling or execution deadline; Playground retains its bounded journal and
-30-minute wrapper deadline (the Playground handler's 10-minute deadline still applies).
-An active Agent run therefore consumes memory until it finishes
+run replaces it or OMC restarts. Agent keeps its authoritative transcript. Agent replay journals grow with output and
+have no byte ceiling or execution deadline. An active Agent run therefore consumes memory until it finishes
 or is stopped, and its completed journal remains subject to the retention window above.
 
 Console-authenticated recovery endpoints under the configured API base are
-`GET /agent/runs/active`, `GET /agent/runs/{id}`, `POST /agent/runs/{id}/cancel` and
-their `/playground/runs/` counterparts. Generation POSTs carry `X-OMC-Run-ID`; clients
+`GET /agent/runs/active`, `GET /agent/runs/{id}` and `POST /agent/runs/{id}/cancel`
+(the former `/playground/runs/` counterparts are removed; the Agent's model list is
+`GET /agent/models`, formerly `/playground/models`). Generation POSTs carry `X-OMC-Run-ID`; clients
 without that header keep direct-stream semantics. Recovery does not grant extra
 capability permissions.
 
@@ -360,26 +322,24 @@ responses.
 
 ## TPS calculation mode
 
-OMC Settings → Display chooses whether request-record and Playground TPS includes
+OMC Settings → Display chooses whether request-record TPS includes
 first-token latency. The default excludes it when the remaining window is at least
 50 ms; otherwise it falls back to total latency. Including it always uses total latency.
 The server-stored `omc_tps_calculation_mode` preference (`exclude_ttft` /
 `include_ttft`) also supports Agent/MCP reads and writes; historical timing and usage
 remain unchanged.
 
-## Plugin store
+## Oh My CPA plugin registry
 
-The plugin store reads CPA's built-in `official` registry plus the registries in
-`plugins.store-sources`. Oh My CPA's own registry
+CPA reads its built-in `official` registry plus the registries in
+`plugins.store-sources`; the console no longer has a plugin store page, so the registry
+setting is what remains of it. Oh My CPA's own registry
 (`https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json`)
 is a managed entry: the server adds it when the source is on (the default) and restores
 it after a configuration save that removed it, so the switch is **OMC Settings →
-Plugin store** (`omc_plugin_source_enabled`, ADR 0104), not the configuration editor
+Oh My CPA plugin registry** (`omc_plugin_source_enabled`, ADR 0104), not the configuration editor
 and not the source list on the plugin settings tab. Turning it off removes the
-address on the next plugin read, install or plugin-settings save. Its entries are
-marked Oh My CPA and listed first; like every entry outside CPA's built-in registry,
-installing one requires typing the plugin id, because the confirmation is about
-running code inside the gateway.
+address on the next plugin-settings or configuration save.
 
 ## Plugin pages
 
@@ -517,6 +477,26 @@ absolute usage a share cannot, and a pool states no counts of its own. A pool ke
 naming no known period keeps its own name as an unclassified window rather than
 being filed under a period it does not describe (ADR 0071).
 
+## Antigravity Gemini quota observations
+
+After a successful Antigravity quota summary read, OMC supplements missing Gemini
+scope with a read-only POST to the single allowlisted daily-host endpoint
+`https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels`.
+The request carries the credential's project ID and CPA's server-injected bearer
+marker; OMC does not download the OAuth token. A summary with a recognized Gemini
+group already supplies that scope, so no additional model query is made.
+
+Gemini entries with `quotaInfo` become model-scoped observations under their raw
+upstream model IDs. Numeric `remainingFraction` values from 0 through 1 are
+converted to percentages; zero is exhausted, missing/null is unknown, and invalid
+fractions are omitted rather than clamped. Valid RFC3339 `resetTime` values retain
+their exact instant; absent or invalid resets stay unknown. No five-hour or weekly
+period is inferred. Equal model readings are not independent additive account
+pools, and a tiered model ID is not evidence that a requested high alias shares
+its quota. Auxiliary failures or empty/malformed responses leave valid primary
+Claude/GPT windows intact. These observations do not implement model routing or
+subscription cascade scheduling.
+
 ## Automatic quota refresh
 
 OMC Settings → Quota holds the deployment-wide automatic quota refresh policy (the
@@ -597,8 +577,7 @@ failure is logged without tokens or uploaded key material.
 
 ## Public demonstration conversations
 
-The public demonstration's Agent and Playground offer one browser-local recorded example
-each. Send/retry/cancel do not invoke a provider or write the Worker. Other questions are
+The public demonstration's Agent offers one browser-local recorded example. Send/retry/cancel do not invoke a provider or write the Worker. Other questions are
 refused. The server-side demo security classification is unchanged; ADR 0092 documents replay.
 
 ## Credential window warmup

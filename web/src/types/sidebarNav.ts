@@ -5,7 +5,7 @@ import type { TFunc } from '../i18n';
  * The console rail as data, and the operator's choice of which entries it shows.
  *
  * The rail is a fixed model - groups of destinations - but which of those destinations a
- * deployment cares about is not: an operator who never opens the Agent, the Playground or the
+ * deployment cares about is not: an operator who never opens the Agent or the
  * audit trail should be able to take them out of the rail without losing the pages themselves.
  * The model lives here rather than in the layout so the settings page can render the same
  * entries the rail draws, and so the rule deciding what is visible is a pure function that the

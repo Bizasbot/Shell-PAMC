@@ -4,7 +4,7 @@ import { until } from '../harness.mjs';
  * The rail visibility setting: the console hides the entries an operator does not use, and every
  * page stays reachable.
  *
- * The console ships one fixed rail, and a deployment that never opens the Agent, the Playground or
+ * The console ships one fixed rail, and a deployment that never opens the Agent, the Model Square or
  * the audit trail still sees all of them. Turning them off is a setting on the OMC settings page -
  * one row there, and the panel that row opens lists the rail - and what makes it worth a browser is
  * that four separate things have to agree about it: the panel the settings row opens, the rail that
@@ -96,7 +96,7 @@ export async function sidebarNavCustomization({ base, page, check }) {
   await rowToggle('/agent').click();
   await until(async () => (await railEntry('/agent').count()) === 0, { label: 'the Agent entry to leave the rail' });
   check('hiding an entry takes it out of the rail and leaves the rest',
-    await railEntry('/agent').count() === 0 && await railEntry('/playground').count() === 1);
+    await railEntry('/agent').count() === 0 && await railEntry('/model-square').count() === 1);
   await until(() => hiddenWrites().length === 1, { label: 'the hidden set write' });
   check('the choice is stored as the set of hidden routes',
     bodyOf(hiddenWrites()[0]) === JSON.stringify(['/agent']), bodyOf(hiddenWrites()[0]));

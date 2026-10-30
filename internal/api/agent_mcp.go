@@ -81,7 +81,7 @@ func (h *Handler) serveMCP(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Cache-Control", "no-store")
 	if request.Header.Get("Authorization") == "" {
 		writer.Header().Set("WWW-Authenticate", `Bearer realm="oh-my-cpa"`)
-		writePlaygroundError(writer, 401, "authentication_required")
+		writeRunError(writer, 401, "authentication_required")
 		return
 	}
 	if !h.authenticateBearer(writer, request) {
@@ -89,7 +89,7 @@ func (h *Handler) serveMCP(writer http.ResponseWriter, request *http.Request) {
 	}
 	handler, err := h.mcpHandler()
 	if err != nil {
-		writePlaygroundError(writer, 503, "capability_unavailable")
+		writeRunError(writer, 503, "capability_unavailable")
 		return
 	}
 	request.Header.Set(MCP_CONSOLE_URL_HEADER, h.consoleURL(request))

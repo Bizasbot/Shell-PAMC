@@ -13,12 +13,8 @@ import type { AgentRunRequest } from '../web/src/agent/protocol.ts';
 import { DEMO_REPLAY_ONLY, replayAgentRun } from '../web/src/demo/agentReplay.ts';
 import agentRecording from '../web/src/demo/agentRecording.json' with { type: 'json' };
 import { chunkText, recordingLanguage } from '../web/src/demo/pacing.ts';
-import { replayPlaygroundChat } from '../web/src/demo/playgroundReplay.ts';
-import playgroundRecording from '../web/src/demo/playgroundRecording.json' with { type: 'json' };
 import { resolveRecording } from '../web/src/demo/recordingTemplate.ts';
 import { readDemoConversation, resetDemoConversation, writeDemoQuestion } from '../web/src/demo/session.ts';
-import { applyEvent } from '../web/src/pages/playground/state.ts';
-import type { ChatRequest, StreamEvent, Turn } from '../web/src/pages/playground/state.ts';
 
 const instant = async () => {};
 const QUESTION = agentRecording.turn.user;
@@ -157,23 +153,4 @@ test('text is cut on whole characters', () => {
   assert.equal(recordingLanguage('zh-Hant'), 'zh');
   assert.equal(recordingLanguage('ms'), 'en');
   assert.equal(recordingLanguage(undefined), 'en');
-});
-
-test('a replayed Playground answer folds into a finished turn', async () => {
-  const request = { model: 'demo-model', client_key_fingerprint: 'hmac:demo', messages: [] } as unknown as ChatRequest;
-  for (const language of ['zh', 'en'] as const) {
-    let turn = { id: 'turn-1', request, keyLabel: '', user: { role: 'user', content: [] }, reply: '', status: 'running', startedAt: Date.now(), events: [], eventBytes: 0, isTruncated: false } as unknown as Turn;
-    const events: StreamEvent[] = [];
-    await replayPlaygroundChat(request, new AbortController().signal, event => {
-      events.push(event);
-      turn = applyEvent(turn, event);
-    }, language, instant);
-    assert.equal(turn.status, 'success');
-    assert.equal(turn.reply, playgroundRecording.reply[language]);
-    assert.equal(turn.thought, playgroundRecording.thought);
-    assert.deepEqual(turn.usage, playgroundRecording.usage);
-    assert.equal(events[0].type, 'meta');
-    assert.equal(events[0].model, 'demo-model');
-    assert.equal(events.at(-1)?.type, 'done');
-  }
 });

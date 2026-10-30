@@ -1,6 +1,7 @@
 # ADR 0036: Agents may run read-only SQL over a classified schema
 
 - Status: Accepted
+- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
 - Date: 2026-09-28
 
 ## Context

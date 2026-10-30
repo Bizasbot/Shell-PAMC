@@ -59,9 +59,9 @@ it('retains runtime base paths, UTF-8 keepalive admission and error classificati
     return new Response('{}', { headers: { 'Content-Type': 'application/json' } });
   }));
   const values = ['a'.repeat(8190), 'a'.repeat(8191), '汉'.repeat(2730), '汉'.repeat(2731)];
-  for (const value of values) await api.putPreference('playground_session', value);
+  for (const value of values) await api.putPreference('provider_websites', value);
   expect(requests.map(request => request.options.keepalive)).toEqual([true, false, true, false]);
-  expect(requests.every(request => request.path === '/console/nested/api/v1/preferences/playground_session')).toBe(true);
+  expect(requests.every(request => request.path === '/console/nested/api/v1/preferences/provider_websites')).toBe(true);
   expect(requests.map(request => JSON.parse(String(request.options.body)))).toEqual(values);
   const unauthorizedHandler = vi.fn();
   setUnauthorizedHandler(unauthorizedHandler);

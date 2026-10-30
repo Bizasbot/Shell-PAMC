@@ -70,7 +70,7 @@ const ROLE_LABEL_KEYS: Record<ContrastRole, string> = {
 };
 
 /**
- * OmcSettingsPage aggregates Oh My CPA's own console settings, separate from
+ * OmcSettingsPage aggregates Shell-PAMC's own console settings, separate from
  * CPA's gateway configuration.
  *
  * The page owns the preferences that used to live only in scattered shortcuts: the theme mode and
@@ -218,7 +218,7 @@ export const OmcSettingsPage: React.FC = () => {
           )}
           control={
             <Segmented
-              value={modePreference}
+              value={themeMode}
               options={THEME_MODE_PREFERENCES.map((value) => ({ value, label: t(MODE_LABEL_KEYS[value]) }))}
               onChange={(next) => setModePreference(next as ThemeModePreference)}
               aria-label={t('omc.theme_mode')}
@@ -286,12 +286,12 @@ export const OmcSettingsPage: React.FC = () => {
 };
 
 /**
- * PluginSourceGroup is the one switch for Oh My CPA's own plugin registry.
+ * PluginSourceGroup is the one switch for Shell-PAMC's own plugin registry.
  *
  * The registry's address is compiled in and the server's store and configuration reads keep it
  * in place; this preference is what the server consults, so switching it off removes the address
- * from `plugins.store-sources` on the next plugin read. The two plugin queries are invalidated
- * here because the store they cached was read under the previous answer.
+ * from `plugins.store-sources` on the next plugin read. The plugin settings query is invalidated
+ * here because it was read under the previous answer.
  */
 const PLUGIN_SOURCE_PREFERENCE = 'omc_plugin_source_enabled';
 const parsePluginSourceEnabled = (raw: unknown) => (typeof raw === 'boolean' ? raw : undefined);
@@ -303,7 +303,6 @@ const PluginSourceGroup: React.FC = () => {
   const setEnabled = (enabled: boolean) => {
     void preference.set(enabled).then((outcome) => {
       if (!outcome.ok) return;
-      void queryClient.invalidateQueries({ queryKey: ['management-plugin-store'] });
       void queryClient.invalidateQueries({ queryKey: ['management-plugin-settings'] });
     });
   };

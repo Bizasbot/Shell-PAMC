@@ -27,9 +27,6 @@ export const AgentPage = React.lazy(loadAgentPage);
 export const loadAuthorizePage = createPageLoader(() => import('./pages/agent/AuthorizePage'), 'AuthorizePage');
 export const AuthorizePage = React.lazy(loadAuthorizePage);
 
-export const loadPlaygroundPage = createPageLoader(() => import('./pages/playground/PlaygroundPage'), 'PlaygroundPage');
-export const PlaygroundPage = React.lazy(loadPlaygroundPage);
-
 export const loadModelSquarePage = createPageLoader(() => import('./pages/ModelSquarePage'), 'ModelSquarePage');
 export const ModelSquarePage = React.lazy(loadModelSquarePage);
 
@@ -59,3 +56,4 @@ export const PluginsPage = React.lazy(loadPluginsPage);
 
 export const loadOmcSettingsPage = createPageLoader(() => import('./pages/OmcSettingsPage'), 'OmcSettingsPage');
 export const OmcSettingsPage = React.lazy(loadOmcSettingsPage);
+

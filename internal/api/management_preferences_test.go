@@ -72,13 +72,13 @@ func TestPreferencesRoundTripThroughTheDatabase(t *testing.T) {
 		t.Fatalf("OAuth management view status = %d body %s", response.StatusCode, payload)
 	}
 
-	// The playground keeps one document: the latest session, with the target named by the key's
-	// usage fingerprint rather than the key text.
+	// The Agent keeps one selector document, with the target named by the key's usage
+	// fingerprint rather than the key text.
 	if response, payload = doJSON(t, client, http.MethodPut, base+"/agent_target", `{"client_key_fingerprint":"hmac:agent","model":"gpt-5","reasoning_effort":"high"}`); response.StatusCode != http.StatusOK {
 		t.Fatalf("agent target status = %d body %s", response.StatusCode, payload)
 	}
-	if response, payload = doJSON(t, client, http.MethodPut, base+"/playground_session", `{"client_key_fingerprint":"hmac:playground","model":"gpt-5","turns":[]}`); response.StatusCode != http.StatusOK {
-		t.Fatalf("playground session status = %d body %s", response.StatusCode, payload)
+	if response, payload = doJSON(t, client, http.MethodPut, base+"/playground_session", `{"model":"gpt-5","turns":[]}`); response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("retired playground_session key status = %d body %s, want 400", response.StatusCode, payload)
 	}
 
 	// The theme is stored as one document: the mode, the palette each mode uses, and any palette
@@ -104,7 +104,6 @@ func TestPreferencesRoundTripThroughTheDatabase(t *testing.T) {
 		!strings.Contains(string(payload), `"usage_events_view":{"preset":"24h","result":"failed","grouping":"provider","advanced":true}`) ||
 		!strings.Contains(string(payload), `"usage_events_columns":{"time":120,"provider":220,"tps":90}`) ||
 		!strings.Contains(string(payload), `"oauth_management_view_v1":{"density":"compact","pageSize":24}`) ||
-		!strings.Contains(string(payload), `"playground_session":{"client_key_fingerprint":"hmac:playground","model":"gpt-5","turns":[]}`) ||
 		!strings.Contains(string(payload), `"agent_target":{"client_key_fingerprint":"hmac:agent","model":"gpt-5","reasoning_effort":"high"}`) ||
 		!strings.Contains(string(payload), `"omc_scroll_smoothing":"system"`) ||
 		!strings.Contains(string(payload), `"omc_theme":`+themeDocument) {
@@ -125,9 +124,6 @@ func TestPreferencesRoundTripThroughTheDatabase(t *testing.T) {
 	}
 	if _, found, err = repo.GetPreference(context.Background(), repository.PreferenceUsageEventsView); err != nil || !found {
 		t.Fatalf("usage events view not persisted: found=%v err=%v", found, err)
-	}
-	if _, found, err = repo.GetPreference(context.Background(), repository.PreferencePlaygroundSession); err != nil || !found {
-		t.Fatalf("playground session not persisted: found=%v err=%v", found, err)
 	}
 	if _, found, err = repo.GetPreference(context.Background(), repository.PreferenceUsageEventsColumns); err != nil || !found {
 		t.Fatalf("usage events columns not persisted: found=%v err=%v", found, err)

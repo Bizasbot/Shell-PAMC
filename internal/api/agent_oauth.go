@@ -16,7 +16,7 @@ import (
 
 func (h *Handler) startAgentOAuth(writer http.ResponseWriter, request *http.Request) {
 	if request.Header.Get("Origin") == "" || !sameOrigin(request) || request.Header.Get("Authorization") != "" {
-		writePlaygroundError(writer, 403, "capability_forbidden")
+		writeRunError(writer, 403, "capability_forbidden")
 		return
 	}
 	if !h.readyAgent(writer) {
@@ -25,14 +25,14 @@ func (h *Handler) startAgentOAuth(writer http.ResponseWriter, request *http.Requ
 	id := chi.URLParam(request, "id")
 	operation, err := h.agent.executor.Get(request.Context(), agent.PRINCIPAL, id)
 	if err != nil || operation.Status != "pending" || operation.HumanInput != "oauth" {
-		writePlaygroundError(writer, 409, "resource_conflict")
+		writeRunError(writer, 409, "resource_conflict")
 		return
 	}
 	var input struct {
 		Provider string `json:"provider"`
 	}
 	if json.Unmarshal(operation.Arguments, &input) != nil {
-		writePlaygroundError(writer, 400, "invalid_parameters")
+		writeRunError(writer, 400, "invalid_parameters")
 		return
 	}
 	h.agent.oauthMu.Lock()
@@ -41,18 +41,18 @@ func (h *Handler) startAgentOAuth(writer http.ResponseWriter, request *http.Requ
 	flow, exists := h.agent.oauth[id]
 	if !exists {
 		if _, err := h.repo.RecordAuditEvent(request.Context(), repository.AuditEvent{Action: "capability.oauth_start", TargetType: "capability_operation", TargetID: id, Result: "attempt", SourceSummary: "agent"}); err != nil {
-			writePlaygroundError(writer, 500, "audit_write_failed")
+			writeRunError(writer, 500, "audit_write_failed")
 			return
 		}
 		client, err := h.capabilityClient(request.Context())
 		if err != nil {
-			writePlaygroundError(writer, 503, "capability_unavailable")
+			writeRunError(writer, 503, "capability_unavailable")
 			return
 		}
 		flow, err = client.OAuthAuthURL(request.Context(), input.Provider)
 		parsed, parseErr := url.Parse(flow.URL)
 		if err != nil || parseErr != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil || flow.State == "" {
-			writePlaygroundError(writer, 502, "operation_failed")
+			writeRunError(writer, 502, "operation_failed")
 			return
 		}
 		h.agent.oauth[id] = flow

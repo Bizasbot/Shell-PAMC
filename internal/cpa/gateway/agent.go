@@ -47,7 +47,7 @@ type AgentImage struct {
 const IMAGE_UNAVAILABLE = "[An image the operator attached here is no longer in view. Ask for it again if it is needed.]"
 
 // ValidateImage reports whether a data URL is an image a model may be sent: an allowed type whose
-// bytes are that type, within the size and pixel limits the Playground applies.
+// bytes are that type, within the size and pixel limits the Agent applies.
 func ValidateImage(dataURL string) error { return validateImage(dataURL) }
 
 // agentWireMessages is the messages as the gateway takes them, and the bytes of image data among
@@ -96,7 +96,7 @@ type AgentReply struct {
 }
 
 // ValidReasoningEffort reports whether an effort level may be forwarded upstream: the same rule
-// the playground applies, so both surfaces accept exactly the same values.
+// the Agent applies, so every surface accepts exactly the same values.
 func ValidReasoningEffort(value string) bool {
 	trimmed := strings.TrimSpace(value)
 	return trimmed != "" && len(trimmed) <= 64 && isPrintableASCII(trimmed)

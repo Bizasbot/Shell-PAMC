@@ -1,13 +1,21 @@
 import { checkConversationExport } from './conversation-export.mjs';
 import { fulfillFixture, abortFixture } from '../browser-guard.mjs';
 import { settleLayout, until } from '../harness.mjs';
-import { playgroundFixtures } from './playground.mjs';
 
 const THREAD = 'agent-test-session';
-const initial = () => ({ id: THREAD, revision: 1, model: 'vision-alias', client_key_fingerprint: 'playground-identity', turns: [], omitted: 0 });
+const initial = () => ({ id: THREAD, revision: 1, model: 'vision-alias', client_key_fingerprint: 'agent-identity', turns: [], omitted: 0 });
+function agentBaseFixtures() {
+  return [
+    [(url, method) => method === 'GET' && url.pathname.endsWith('/usage/ingest-status'), () => ({ enabled:true, healthy:true, collector:{mode:'http_pull',captured:0,coverage_gaps:0},stats:{pending:0} })],
+    [(url, method) => method === 'GET' && url.pathname.endsWith('/usage/facets'), () => ({window:{from:0,to:Date.now(),bucket_ms:60_000}, facets:[]})],
+    [url => url.pathname.endsWith('/runs/active'), () => ({ run: null })],
+    [url => url.pathname.endsWith('/management/api-keys'), () => ({ keys: [{ index: 0, key: 'fixture…mask', usage_fingerprint: 'agent-identity', alias: 'Test key', alias_version: 1, length: 20, fingerprint: 'legacy-identity' }], total: 1 })],
+    [url => url.pathname.endsWith('/agent/models'), () => ({ models: [{ id: 'vision-alias', call_point: 'vision-alias', vision: 'unknown' }, { id: 'text-only', call_point: 'text-only', vision: 'unknown' }] })],
+  ];
+}
 export function agentFixtures() {
   return [
-    ...playgroundFixtures(),
+    ...agentBaseFixtures(),
     [url => url.pathname.endsWith('/agent/session'), initial],
     [url => url.pathname.endsWith('/management/model-square'), () => ({ models: [], providers: [], routes: [], partial: [], metadata_updated_at: '', model_info: { 'vision-alias': { id: 'vision-alias', name: 'Vision', limit: { context: 4000 }, modalities: {} } } })],
     [url => url.pathname.endsWith('/capabilities'), () => ({ capabilities: [
@@ -249,7 +257,7 @@ export async function agentWorkspace({ base, page, check }) {
   check('the message carries the presentation the command asked for, once', request.forwardedProps.present === 'ui' && await page.locator('[data-testid="agent-present"]').count() === 0, JSON.stringify(request.forwardedProps));
   check('agent submits a message with Enter as one AG-UI user message', runs.length === 1 && request.protocolVersion === '1.0' && request.messages.length === 1
     && request.messages[0].role === 'user' && request.messages[0].content === 'Disable this provider', JSON.stringify(runs));
-  check('agent sends its target and effort as forwarded props and no consent flag', request.forwardedProps.model === 'vision-alias' && request.forwardedProps.client_key_fingerprint === 'playground-identity'
+  check('agent sends its target and effort as forwarded props and no consent flag', request.forwardedProps.model === 'vision-alias' && request.forwardedProps.client_key_fingerprint === 'agent-identity'
     && request.forwardedProps.reasoning_effort === 'high' && request.forwardedProps.endpoint === undefined && !JSON.stringify(request).includes('has_consent'), JSON.stringify(request.forwardedProps));
   check('agent declares only the display tools it can draw and the follow-up note, and never supplies state', JSON.stringify(request.tools.map(tool => tool.name).sort()) === JSON.stringify(['render_ui', 'suggest_next'])
     && (request.state === undefined || Object.keys(request.state).length === 0), JSON.stringify(request.tools));
