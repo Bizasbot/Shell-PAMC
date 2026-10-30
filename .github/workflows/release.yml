@@ -184,7 +184,7 @@ jobs:
         run: pnpm verify:demo
       - name: Upload bundle report
         if: always() && steps.prepare.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-bundle-report
           path: |
@@ -194,7 +194,7 @@ jobs:
           retention-days: 30
       - name: Upload browser failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: browser-acceptance-failure
           path: |
@@ -249,7 +249,7 @@ jobs:
         run: pnpm verify:probes --shard ${{ matrix.shard }}/3
       - name: Upload probe timings
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: probe-timings-${{ matrix.shard }}
           path: tmp/probe-timings/
@@ -257,7 +257,7 @@ jobs:
           retention-days: 30
       - name: Upload probe failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: probe-failure-${{ matrix.shard }}
           path: tmp/probe-failure/
@@ -406,7 +406,7 @@ jobs:
         run: node scripts/native-release-smoke.mjs
       - name: Require clean generated state
         run: test -z "$(git status --porcelain)"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: native-release
           path: tmp/native-release/*
