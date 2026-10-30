@@ -346,6 +346,11 @@
   color: var(--fg-2);
   font-size: var(--text-xs);
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-self: center;
+  text-align: center;
 }
 
 .gateway-meta {

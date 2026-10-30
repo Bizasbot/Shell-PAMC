@@ -97,6 +97,13 @@ function formatRefill(targetMS: number | undefined, nowMS: number): string {
   return `${days} d ${hours % 24} h`;
 }
 
+function formatTokens(n: number): string {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return String(Math.round(n));
+}
+
 const QuotaWindowMeter: React.FC<{ window: QuotaWindow; nowMS: number }> = ({ window, nowMS }) => {
   const t = useT();
   const refill = formatRefill(window.reset_at_ms, nowMS);
@@ -123,6 +130,13 @@ const QuotaWindowMeter: React.FC<{ window: QuotaWindow; nowMS: number }> = ({ wi
       <span className="quota-window-refill" title={refill ? t('dash.quota.refill_title') : undefined}>
         {refill && (<><ClockCircleOutlined aria-hidden="true" /> {refillApprox}{refill}</>)}
       </span>
+      {window.usage && (
+        <span className="quota-window-tokens" title="Tokens consumidos / capacidad estimada">
+          {window.capacity?.tokens
+            ? `${formatTokens(window.usage.tokens)} / ${formatTokens(window.capacity.tokens)} tokens · quedan ~${formatTokens(Math.max(0, window.capacity.tokens - window.usage.tokens))}`
+            : `${formatTokens(window.usage.tokens)} tokens usados`}
+        </span>
+      )}
     </span>
   );
 };

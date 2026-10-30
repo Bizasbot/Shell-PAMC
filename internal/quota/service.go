@@ -28,6 +28,7 @@ const (
 	AntigravityQuotaURLSandbox = "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:retrieveUserQuotaSummary"
 	AntigravityQuotaURLCloud   = "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary"
 	AntigravitySubscriptionURL = "https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist"
+	AntigravityModelsURL       = "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels"
 	MetaUsageURL               = "https://api.meta.ai/muse-code/key"
 	XaiSubscriptionURL         = "https://cli-chat-proxy.grok.com/v1/user?include=subscription"
 	XaiSettingsURL             = "https://cli-chat-proxy.grok.com/v1/settings"
@@ -75,6 +76,7 @@ var AllowedURLPrefixes = []string{
 	DevinSeatStatusURL,
 	MetaUsageURL,
 	AntigravitySubscriptionURL,
+	AntigravityModelsURL,
 	"https://cli-chat-proxy.grok.com/v1/user",
 	XaiSettingsURL,
 }
@@ -711,7 +713,21 @@ func (s *Service) fetchAntigravityQuota(ctx context.Context, file management.Aut
 			continue
 		}
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return ParseAntigravityUsage(normBody, nowMS, 0)
+			windows, err := ParseAntigravityUsage(normBody, nowMS, 0)
+			if err != nil {
+				return nil, err
+			}
+			// The model directory fills a missing scope, never replaces the
+			// primary reading or turns an auxiliary failure into a refresh failure.
+			if !hasAntigravityGeminiScope(windows) {
+				models, err := s.SafeApiCall(ctx, file.AuthIndex, http.MethodPost, AntigravityModelsURL, headers, reqData)
+				if err == nil && models.StatusCode >= 200 && models.StatusCode < 300 {
+					if body, err := models.NormalizedBody(); err == nil {
+						windows = append(windows, parseAntigravityModels(body, nowMS)...)
+					}
+				}
+			}
+			return windows, nil
 		}
 		lastErr = errors.New(sanitizeError(resp.StatusCode, normBody))
 	}

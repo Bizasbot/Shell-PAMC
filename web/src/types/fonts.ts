@@ -67,7 +67,8 @@ export const BUILT_IN_FONTS: readonly BuiltInFont[] = [
 ];
 
 export const DEFAULT_FONT_REF: FontRef = 'builtin:sarasa-mono';
-export const DEFAULT_FONT_ROLES: FontRoles = { ui: DEFAULT_FONT_REF, mono: DEFAULT_FONT_REF };
+export const DEFAULT_UI_FONT_REF: FontRef = 'builtin:system-sans';
+export const DEFAULT_FONT_ROLES: FontRoles = { ui: DEFAULT_UI_FONT_REF, mono: DEFAULT_FONT_REF };
 
 const REF_FORM = /^(builtin:[a-z0-9-]{1,32}|font:[0-9a-f]{32})$/;
 
@@ -87,7 +88,7 @@ export function parseFontRoles(raw: unknown): FontRoles | undefined {
 export function serializeFontRoles(roles: FontRoles): Partial<FontRoles> {
   const stored: Partial<FontRoles> = {};
   for (const role of FONT_ROLES) {
-    if (roles[role] !== DEFAULT_FONT_REF) stored[role] = roles[role];
+    if (roles[role] !== DEFAULT_FONT_ROLES[role]) stored[role] = roles[role];
   }
   return stored;
 }

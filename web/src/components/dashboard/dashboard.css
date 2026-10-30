@@ -773,3 +773,5 @@
   .dashboard-grid { gap: 12px; margin-bottom: 12px; }
   .dashboard-key-filter { min-width: 0; width: 100%; max-width: none; }
 }
+
+.quota-window-tokens { grid-column: 1 / -1; color: var(--muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }

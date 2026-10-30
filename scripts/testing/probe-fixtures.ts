@@ -19,6 +19,21 @@ export const test = base.extend<{ probe: Probe }>({
   probe: async ({ context, page, baseURL }, use, testInfo) => {
     if (!baseURL) throw new Error('A probe must own its server URL');
     const ledger = await guardBrowserContext(context, [baseURL]);
+    // The dashboard reads this sidecar directly. Fulfill only its declared GET;
+    // every other loopback URL and method must still fail the outbound guard.
+    await context.route('http://127.0.0.1:18081/models', async route => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      ledger.expect({
+        kind: 'outbound',
+        url: /^http:\/\/127\.0\.0\.1:18081\/models$/,
+        method: 'GET',
+        count: 1,
+      });
+      return route.fulfill({
+        headers: { 'Access-Control-Allow-Origin': new URL(baseURL).origin },
+        json: { models: [] },
+      });
+    });
     const errors: string[] = [];
     const trail: string[] = [];
     await context.addInitScript(() => {

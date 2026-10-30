@@ -68,10 +68,20 @@ function pickRowWindows(windows: QuotaWindow[]): QuotaWindow[] {
     if (remaining == null) continue;
     familyRoom.set(key, Math.min(familyRoom.get(key) ?? 100, remaining));
   }
+  // Families that publish both a short and a long period (5h + weekly) win over single-window
+  // families, so the weekly meter is never dropped in favour of a lone per-model window.
+  const periodSets = new Map<string, Set<string>>();
+  for (const window of windows) {
+    const period = quotaWindowPeriod(window);
+    if (!period) continue;
+    const key = familyOf(window);
+    periodSets.set(key, (periodSets.get(key) ?? new Set()).add(period));
+  }
+  const rank = (key: string) => ((periodSets.get(key)?.size ?? 0) >= 2 ? 1 : 0);
   let chosen = familyOf(first);
   let best = familyRoom.get(chosen) ?? -1;
   for (const [key, room] of familyRoom) {
-    if (room > best) { best = room; chosen = key; }
+    if (rank(key) > rank(chosen) || (rank(key) === rank(chosen) && room > best)) { best = room; chosen = key; }
   }
   const seenIds = new Set<string>();
   return windows

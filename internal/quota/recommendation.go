@@ -153,6 +153,10 @@ func EvaluateStatusAndRecommendation(q *NormalizedQuota, nowMS int64) {
 	}
 }
 
+func LooksLikeAuthFailure(text string) bool {
+	return looksLikeAuthFailure(text)
+}
+
 func looksLikeAuthFailure(text string) bool {
 	for _, marker := range []string{
 		"unauthorized",
