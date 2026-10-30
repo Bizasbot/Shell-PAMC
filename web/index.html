@@ -12,7 +12,7 @@
          internal/api/pwa.go) because a fallback to index.html is not a manifest. -->
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <meta name="application-name" content="Oh My CPA" />
+    <meta name="application-name" content="Shell-PAMC" />
     <!-- Current browsers take standalone display from the manifest. These two meta tags are
          the legacy declarations: Chrome on Android read `mobile-web-app-capable` before it
          honored `display`, and iOS before 16.4 reads only the prefixed form to launch without
@@ -32,15 +32,15 @@
          canvases in sandboxed frames (ADR 0072); the sandbox removes their origin and network, and
          this is what stops one from navigating itself to another host with the data it was given. -->
     <meta http-equiv="Content-Security-Policy" content="frame-src 'self' blob:" />
-    <title>Oh My CPA</title>
-    <!-- Injected at runtime by Oh My CPA Go server if present -->
+    <title>Shell-PAMC</title>
+    <!-- Injected at runtime by Shell-PAMC Go server if present -->
     <script>
       if (!window.__OMCPA_CONFIG__) {
         window.__OMCPA_CONFIG__ = {
           basePath: "/omc",
           apiBaseUrl: "/omc/api/v1",
           mediaBaseUrl: "/omc/media",
-          appName: "Oh My CPA"
+          appName: "Shell-PAMC"
         };
       }
     </script>

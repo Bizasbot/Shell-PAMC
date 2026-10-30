@@ -1,0 +1,169 @@
+/* Gentleman skin: a presentation-only layer loaded after index.css.
+   It restyles typography, depth, banners and popups; it changes no structure or behavior. */
+
+:root {
+  --font-ui: "Inter", "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --gm-rose: #ff76c3;
+  --gm-rose-soft: #ffb1dd;
+  --gm-ease: cubic-bezier(.4, 0, .2, 1);
+  --gm-radius: 14px;
+  --gm-glow: color-mix(in srgb, var(--accent) 38%, transparent);
+  --gm-shadow: 0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset, 0 10px 30px -12px rgba(0, 0, 0, .55);
+}
+html[data-theme="light"], :root:not([data-theme="dark"]) { --gm-shadow: 0 1px 0 #fff inset, 0 10px 28px -14px rgba(60, 20, 50, .28); }
+
+body, .ant-typography, .ant-btn, .ant-input, .ant-select, .ant-menu, .ant-table, .ant-tag { font-family: var(--font-ui); letter-spacing: -0.005em; }
+h1, h2, h3, .ant-typography h1, .ant-typography h2 { font-weight: 700; letter-spacing: -0.02em; }
+
+/* Mono only for labels, eyebrows and code */
+code, kbd, pre, .ant-table-thead > tr > th, .app-menu-group-title { font-family: var(--font-mono); }
+.ant-table-thead > tr > th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+
+/* Shell: soft ambient glow behind the content */
+.app-body { position: relative; }
+.app-content {
+  background:
+    radial-gradient(900px 420px at 85% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(700px 380px at -5% 110%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
+    var(--bg);
+}
+.app-header {
+  background: color-mix(in srgb, var(--bg) 78%, transparent) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* Sidebar: pill items with a lit active state */
+.app-menu .ant-menu-item { border-radius: 10px; transition: background .2s var(--gm-ease), transform .2s var(--gm-ease), color .2s; }
+.app-menu .ant-menu-item:hover { transform: translateX(2px); }
+.app-menu .ant-menu-item-selected {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)) !important;
+  box-shadow: inset 2px 0 0 var(--accent), 0 0 18px -6px var(--gm-glow);
+  font-weight: 600;
+}
+
+/* Cards: raised panels with hover lift */
+.ant-card {
+  border-radius: var(--gm-radius) !important;
+  box-shadow: var(--gm-shadow);
+  transition: transform .25s var(--gm-ease), box-shadow .25s var(--gm-ease), border-color .25s;
+}
+.ant-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border)) !important;
+  box-shadow: var(--gm-shadow), 0 16px 40px -18px var(--gm-glow);
+}
+.ant-card-head { border-bottom: 1px solid var(--border-soft); }
+.ant-card-head-title { font-weight: 650; letter-spacing: -0.01em; }
+
+/* Actions: tactile 3D buttons */
+.ant-btn { border-radius: 10px; transition: transform .12s var(--gm-ease), box-shadow .2s var(--gm-ease), filter .2s; }
+.ant-btn-primary:not(:disabled) {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 100%, #fff 14%), var(--accent)) !important;
+  color: var(--accent-on) !important;
+  border: 0 !important;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .35) inset, 0 -3px 0 rgba(0, 0, 0, .22) inset, 0 8px 20px -8px var(--gm-glow);
+}
+.ant-btn-primary:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
+.ant-btn-primary:not(:disabled):active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(0, 0, 0, .25) inset; }
+.ant-btn-default:not(:disabled) { box-shadow: 0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset, 0 -2px 0 rgba(0, 0, 0, .18) inset; }
+.ant-btn-default:not(:disabled):hover { transform: translateY(-1px); border-color: var(--accent); color: var(--accent); }
+.ant-btn-default:not(:disabled):active { transform: translateY(1px); }
+
+/* Inputs */
+.ant-input, .ant-input-affix-wrapper, .ant-select-selector { border-radius: 10px !important; }
+.ant-input:focus, .ant-input-affix-wrapper-focused, .ant-select-focused .ant-select-selector {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent) !important;
+}
+
+/* Tags and segmented controls as pills */
+.ant-tag { border-radius: 999px; padding-inline: 10px; }
+.ant-segmented { border-radius: 999px; padding: 3px; }
+.ant-segmented .ant-segmented-item, .ant-segmented .ant-segmented-thumb { border-radius: 999px; }
+
+/* Banners: ant Alert becomes a glowing banner with a rose edge */
+.ant-alert {
+  border-radius: var(--gm-radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: linear-gradient(100deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%);
+  box-shadow: var(--gm-shadow);
+  position: relative;
+  overflow: hidden;
+}
+.ant-alert::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(180deg, var(--gm-rose), var(--accent)); }
+.ant-alert-error::before { background: var(--danger); }
+.ant-alert-warning::before { background: var(--warn); }
+.ant-alert-success::before { background: var(--success); }
+.ant-alert-message { font-weight: 650; }
+
+/* Popups: modals, drawers, popovers, dropdowns, toasts */
+.ant-modal .ant-modal-content, .ant-drawer .ant-drawer-content {
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .7), 0 0 60px -30px var(--gm-glow);
+  overflow: hidden;
+}
+.ant-modal .ant-modal-header { border-bottom: 1px solid var(--border-soft); padding-bottom: 12px; }
+.ant-modal .ant-modal-title { font-weight: 700; letter-spacing: -0.01em; }
+.ant-modal-root .ant-modal-wrap { backdrop-filter: blur(6px); }
+.ant-modal-mask, .ant-drawer-mask { background: rgba(10, 5, 9, .62) !important; backdrop-filter: blur(4px); }
+.ant-modal.ant-zoom-enter-active .ant-modal-content, .ant-modal-content { animation: gm-pop .28s var(--gm-ease); }
+.ant-popover-inner, .ant-dropdown-menu, .ant-select-dropdown {
+  border-radius: 12px !important;
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 44px -16px rgba(0, 0, 0, .6) !important;
+}
+.ant-notification-notice, .ant-message-notice-content {
+  border-radius: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, .6) !important;
+  animation: gm-slide .3s var(--gm-ease);
+}
+
+/* Tables */
+.ant-table-wrapper .ant-table { border-radius: var(--gm-radius); overflow: hidden; }
+.ant-table-tbody > tr { transition: background .15s; }
+.ant-table-tbody > tr:hover > td { background: color-mix(in srgb, var(--accent) 7%, transparent) !important; }
+
+/* Login: brand gradient on the primary action */
+.auth-card { box-shadow: var(--gm-shadow), 0 30px 80px -30px var(--gm-glow); }
+
+/* Scrollbars */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 35%, var(--border)) transparent; }
+
+@keyframes gm-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes gm-slide { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ant-card, .ant-btn, .app-menu .ant-menu-item, .ant-modal-content, .ant-notification-notice { transition: none !important; animation: none !important; transform: none !important; }
+}
+
+/* ---- Structural pass: typography, headers, tiles, nav ---- */
+:root { --gm-display: "Inter", system-ui, "Segoe UI", sans-serif; }
+body, .ant-btn, .ant-input, .ant-select, .ant-menu, .ant-card, .ant-table, .ant-tag, .ant-modal { font-family: var(--font-ui) !important; }
+.terminal-page-head {
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background:
+    radial-gradient(520px 160px at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface));
+  box-shadow: var(--gm-shadow);
+}
+.terminal-title { font-family: var(--gm-display) !important; font-size: 26px !important; font-weight: 750 !important; letter-spacing: -0.02em; }
+.terminal-subtitle { font-size: 14px; max-width: 70ch; }
+.dashboard-tile {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 5%, var(--surface)), var(--surface)) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border)) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--gm-shadow), 0 1px 0 rgba(255,255,255,.05) inset !important;
+  transition: transform .25s var(--gm-ease), box-shadow .25s var(--gm-ease);
+}
+.dashboard-tile:hover { transform: translateY(-3px); box-shadow: var(--gm-shadow), 0 20px 44px -20px var(--gm-glow) !important; }
+.tile-label { font-weight: 650; letter-spacing: .01em; }
+.tile-caption b, .rolling-number { font-family: var(--gm-display); font-weight: 700; }
+.app-menu-group-title { font-family: var(--font-ui) !important; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gm-rose-soft); }
+.app-menu .ant-menu-item { height: 40px; line-height: 40px; font-size: 14px; }
+.panel-title-text { font-weight: 650; }

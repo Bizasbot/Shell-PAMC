@@ -51,7 +51,7 @@ interface ConfigBackupsButtonProps {
 }
 
 /**
- * The configuration file as it was before each write. Oh My CPA keeps one
+ * The configuration file as it was before each write. Shell-PAMC keeps one
  * encrypted copy before every operation that rewrites CPA's file, so any of them
  * can be undone: a restore writes the chosen copy back on the server, after
  * keeping the file it replaces like any other write.

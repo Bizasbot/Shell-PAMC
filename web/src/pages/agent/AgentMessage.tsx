@@ -160,7 +160,7 @@ function TurnFooter({ turn }: { turn: Turn }) {
   useTimeZone();
   const { t, lang } = useI18n();
   const { style: tokenStyle } = useTokenDisplayStyle();
-  const { isExporting, exportSnapshot } = useConversationExport('agent');
+  const { isExporting, exportSnapshot } = useConversationExport();
   const duration = turnDuration(turn);
   const clock = formatClock(turn.started_at_ms, lang);
   const calls = turn.traces.length;

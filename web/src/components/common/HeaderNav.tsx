@@ -68,7 +68,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   const isDemo = isDemoMode();
   const isPhone = useIsPhoneViewport();
   const { lang, setLang } = useI18n();
-  const { modePreference, setModePreference } = useTheme();
+  const { themeMode, setModePreference } = useTheme();
   // A failed read is not retried or reported: the count is decoration on a link that
   // works without it.
   const { data: repository } = useQuery({
@@ -92,8 +92,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         <Button type="text" icon={<ReloadOutlined />} loading={isDiscovering} onClick={onDiscover} aria-label={t('header.refresh_all')} />
         <ActionMenu label={t('header.tools')}>
           <span className="action-menu-label">{t('header.theme')}</span>
-          {(['light', 'dark', 'system'] as const).map((mode) => (
-            <Button key={mode} type="text" aria-pressed={modePreference === mode} onClick={() => setModePreference(mode)}>
+          {(['light', 'dark'] as const).map((mode) => (
+            <Button key={mode} type="text" aria-pressed={themeMode === mode} onClick={() => setModePreference(mode)}>
               {t(`omc.theme_mode_${mode}`)}
             </Button>
           ))}

@@ -68,11 +68,12 @@ const requestRowMinHeight = Number(requestRowRule.match(/min-height:\s*(\d+)px/)
 
 // ── the registry ─────────────────────────────────────────────────────────────
 
-assert.equal(BUILT_IN_PALETTES.length, 6, 'the registry keeps three palettes per mode');
+assert.equal(BUILT_IN_PALETTES.length, 10, 'the registry keeps built-in palettes');
 assert.equal(new Set(BUILT_IN_PALETTE_IDS).size, BUILT_IN_PALETTE_IDS.length, 'palette ids must be unique');
 assert.equal(new Set(BUILT_IN_PALETTES.map((definition) => definition.id)).size, BUILT_IN_PALETTES.length);
+assert.equal(builtInPalettesForMode('light').length, 3, 'light mode offers three palettes');
+assert.equal(builtInPalettesForMode('dark').length, 7, 'dark mode offers seven palettes');
 for (const mode of ['dark', 'light'] as const) {
-  assert.equal(builtInPalettesForMode(mode).length, 3, `${mode} mode offers exactly three palettes`);
   for (const definition of builtInPalettesForMode(mode)) {
     assert.equal(definition.mode, mode, `${definition.id} belongs to ${mode}`);
   }
@@ -305,7 +306,7 @@ assert.ok(!sameThemePreferences(parsed, DEFAULT_THEME_PREFERENCES), 'a real diff
 
 // The header's cycle and the system follow.
 assert.equal(nextModePreference('light'), 'dark');
-assert.equal(nextModePreference('dark'), 'system');
+assert.equal(nextModePreference('dark'), 'light');
 assert.equal(nextModePreference('system'), 'light', 'the cycle closes');
 assert.equal(resolveModePreference('system', 'light'), 'light', 'following the system resolves to it');
 assert.equal(resolveModePreference('system', 'dark'), 'dark');

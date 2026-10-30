@@ -61,7 +61,7 @@ const ServiceLogLine: React.FC<{ record: ServiceLogRecord; isOpen: boolean }> = 
 };
 
 /**
- * ServiceLogPanel is Oh My CPA's own log - the records it writes to stderr - read from the
+ * ServiceLogPanel is Shell-PAMC's own log - the records it writes to stderr - read from the
  * bounded copy the server keeps, so an operator can see what the console's backend did
  * without shell access to its container.
  */

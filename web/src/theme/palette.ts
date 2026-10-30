@@ -36,11 +36,25 @@ export type ThemeMode = 'dark' | 'light';
 
 export const THEME_MODES: readonly ThemeMode[] = ['dark', 'light'];
 
-export type BuiltInPaletteId = 'omc-dark' | 'omc-light' | 'midnight' | 'porcelain' | 'forest' | 'sandstone';
+export type BuiltInPaletteId =
+  | 'omc-dark'
+  | 'omc-light'
+  | 'gentleman'
+  | 'djromoro'
+  | 'arch-electric'
+  | 'minimalist-ninja'
+  | 'midnight'
+  | 'porcelain'
+  | 'forest'
+  | 'sandstone';
 
 export const BUILT_IN_PALETTE_IDS: readonly BuiltInPaletteId[] = [
   'omc-dark',
   'omc-light',
+  'gentleman',
+  'djromoro',
+  'arch-electric',
+  'minimalist-ninja',
   'midnight',
   'porcelain',
   'forest',
@@ -452,6 +466,74 @@ export const BUILT_IN_PALETTES: readonly BuiltInPalette[] = [
       meta: '#52525b',
       border: '#2c2c30',
       accent: '#00a2fb',
+    },
+  },
+  {
+    id: 'gentleman',
+    mode: 'dark',
+    nameKey: 'theme.gentleman',
+    descriptionKey: 'theme.gentleman_desc',
+    core: {
+      bg: '#1a1218',
+      surface: '#20161e',
+      elevated: '#241822',
+      fg: '#f6eff3',
+      fg2: '#a78e9b',
+      muted: '#76616b',
+      meta: '#5a4651',
+      border: '#342230',
+      accent: '#ff76c3',
+    },
+  },
+  {
+    id: 'djromoro',
+    mode: 'dark',
+    nameKey: 'theme.djromoro',
+    descriptionKey: 'theme.djromoro_desc',
+    core: {
+      bg: '#05080d',
+      surface: '#07131d',
+      elevated: '#0c1d2c',
+      fg: '#e6f7ff',
+      fg2: '#91caff',
+      muted: '#4096ff',
+      meta: '#245066',
+      border: '#245066',
+      accent: '#00e5ff',
+    },
+  },
+  {
+    id: 'arch-electric',
+    mode: 'dark',
+    nameKey: 'theme.arch_electric',
+    descriptionKey: 'theme.arch_electric_desc',
+    core: {
+      bg: '#05080d',
+      surface: '#07131d',
+      elevated: '#0c1d2c',
+      fg: '#e6f7ff',
+      fg2: '#80c8f0',
+      muted: '#3a7294',
+      meta: '#245066',
+      border: '#245066',
+      accent: '#1793d1',
+    },
+  },
+  {
+    id: 'minimalist-ninja',
+    mode: 'dark',
+    nameKey: 'theme.minimalist_ninja',
+    descriptionKey: 'theme.minimalist_ninja_desc',
+    core: {
+      bg: '#000000',
+      surface: '#0a0a0a',
+      elevated: '#141414',
+      fg: '#ececec',
+      fg2: '#b0b0b0',
+      muted: '#707070',
+      meta: '#404040',
+      border: '#1f1f1f',
+      accent: '#10b981',
     },
   },
   {

@@ -45,7 +45,7 @@ export const RouteErrorPage: React.FC = () => {
     <main className={styles['error-page']} aria-labelledby="route-error-title">
       <div className={styles['error-content']}>
         <header className={styles['brand-header']}>
-          <BrandArtwork shape="wordmark" height={22} label="Oh My CPA" />
+          <BrandArtwork shape="wordmark" height={22} label="Shell-PAMC" />
           <StatusLabel tone="danger">{t('route_error.status')}</StatusLabel>
         </header>
         <Panel className={styles['recovery-panel']}>

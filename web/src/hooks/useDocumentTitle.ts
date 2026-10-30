@@ -1,7 +1,7 @@
 import React from 'react';
 
 /** The product name every tab title starts with; it is a brand, so it is not translated. */
-export const DOCUMENT_TITLE_PRODUCT = 'Oh My CPA';
+export const DOCUMENT_TITLE_PRODUCT = 'Shell-PAMC';
 
 /** The tab title for a page: the product, then the page in the reader's language. */
 export function formatDocumentTitle(pageTitle: string): string {

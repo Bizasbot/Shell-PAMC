@@ -88,11 +88,11 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <PreferenceMenus />
       </header>
       <main className="auth-main">
-        <section className="auth-card" aria-labelledby={isLoading ? undefined : 'auth-title'} aria-busy={isLoading || undefined}>
+        <section className="auth-card" aria-busy={isLoading || undefined}>
           {/* The page's only drawing of the brand. The title below names the product too, so
               the wordmark is decorative here rather than announced twice. */}
           <div className="auth-brand">
-            <BrandArtwork shape="wordmark" height={28} className="app-brand-logo" />
+            <BrandArtwork shape="wordmark" height={40} className="app-brand-logo" />
           </div>
           {isLoading ? (
             // The column's own outline at its signed-out geometry, so the form lands in place.
@@ -101,7 +101,6 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
             </div>
           ) : (
             <>
-              <h1 id="auth-title" className="terminal-title auth-title">{t('auth.title')}</h1>
               {error && <Notice tone="error" description={error} className="auth-alert" />}
               {/* The demonstration signs in anyone who asks, so the field is filled in for
                   them. It is still the ordinary form: what it protects is the deployment's

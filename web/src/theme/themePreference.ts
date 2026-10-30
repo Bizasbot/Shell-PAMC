@@ -31,7 +31,8 @@ import { isHexColor, normalizeHex } from './colorMath';
 /** The mode the operator asked for, which may be "whatever the operating system says". */
 export type ThemeModePreference = ThemeMode | 'system';
 
-export const THEME_MODE_PREFERENCES: readonly ThemeModePreference[] = ['light', 'dark', 'system'];
+// Keep reading legacy system preferences, but only offer explicit modes for new choices.
+export const THEME_MODE_PREFERENCES: readonly ThemeModePreference[] = ['light', 'dark'];
 
 /** The server-stored preference key, mirrored in `internal/repository/preferences.go`. */
 export const THEME_PREFERENCE_KEY = 'omc_theme';
@@ -55,7 +56,7 @@ export interface ThemePreferences {
  */
 export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
   mode: 'dark',
-  palettes: { dark: 'omc-dark', light: 'omc-light' },
+  palettes: { dark: 'gentleman', light: 'omc-light' },
   custom: {},
 };
 
@@ -243,11 +244,8 @@ export function resolveModePreference(preference: ThemeModePreference, systemMod
 /**
  * The mode one step on from the current preference, for the header's single control.
  *
- * The order is light, dark, system. Light and dark lead because they are the two states an operator
- * reaches for daily and the first click should answer the common case; system is the considered
- * choice and costs the extra click. `docs/design.md` §5 records why a cycling control is acceptable
- * here when the language control is a menu - the mode has three states and one visible consequence,
- * so the cycle is readable from the icon, where a list of six palettes was not.
+ * Only light and dark are selectable. A legacy system preference enters the explicit
+ * cycle at light; persisted documents remain readable without changing their format.
  */
 export function nextModePreference(preference: ThemeModePreference): ThemeModePreference {
   const index = THEME_MODE_PREFERENCES.indexOf(preference);

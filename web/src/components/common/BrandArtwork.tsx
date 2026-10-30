@@ -1,69 +1,115 @@
 import React from 'react';
-import { brandDrawing, brandMarkup, type BrandShape } from '../../assets/brand/markup';
+import hackerCatImg from '../../assets/brand/hacker-cat.jpg';
 import { useTheme } from '../../theme/ThemeContext';
 
-/**
- * The two drawings the brand is available in.
- *
- * `wordmark` spells "Oh-My-CPA" and is used wherever there is width for it. It is drawn on an
- * 875x148 canvas (about 5.9:1), so the collapsed rail cannot hold it at a legible size: at 58px
- * wide the letters would be about 5px tall. `mark` is the square drawing for exactly that case, and
- * the one the favicon is written from: a ring on the wordmark's letter grid whose trailing corner is
- * the accent.
- *
- * Neither drawing carries a background, border or shadow, which is what lets both sit directly on
- * the shell's surfaces.
- */
-export type { BrandShape };
+export type BrandShape = 'wordmark' | 'mark';
 
 export interface BrandArtworkProps {
   shape: BrandShape;
   /** Rendered height in pixels; the width follows the artwork's own ratio. */
   height: number;
   className?: string;
-  /**
-   * Accessible name. Omit it where surrounding text already names the product, so the letterforms
-   * are not announced twice; pass it where the drawing is the only name the surface carries.
-   */
   label?: string;
 }
 
-/**
- * Draws the brand artwork inline, in the active theme's own colours.
- *
- * Inline rather than `<img src>` because the accent inside the wordmark is a theme token, and an
- * `<img>`-loaded SVG cannot see the page's custom properties - its blue would be whatever the file
- * happened to contain. That is not hypothetical: the shipped files carried a hand-picked `#00A3FD`
- * next to an accent of `#007AFF`, so the logo's blue and the rest of the console's blue were already
- * two different colours.
- *
- * The colours come from the same `palette` the theme config mirrors, and the theme comes from the
- * console's own state rather than from `prefers-color-scheme`, because that setting is an explicit
- * user choice that may contradict the operating system. The favicon is the one case that cannot work
- * this way - the browser fetches it outside the app - so it carries the default palettes behind a
- * media query of its own.
- */
-export const BrandArtwork: React.FC<BrandArtworkProps> = ({ shape, height, className, label }) => {
+export const BrandArtwork: React.FC<BrandArtworkProps> = ({ shape, height, className, label = 'Shell-PAMC' }) => {
   const { theme } = useTheme();
   const colors = theme.palette;
-  const { viewBox, width, height: canvasHeight } = brandDrawing(shape);
-  const markup = brandMarkup(shape, { ink: colors.fg, accent: colors.accent });
 
+  if (shape === 'mark') {
+    return (
+      <span
+        className={className}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: height,
+          height: height,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          boxShadow: '0 0 10px rgba(236, 72, 153, 0.45)',
+          border: '1.5px solid #ec4899',
+          background: '#0d1117',
+          flexShrink: 0,
+        }}
+        role={label ? 'img' : 'presentation'}
+        aria-label={label}
+        aria-hidden={label ? undefined : true}
+      >
+        <img
+          src={hackerCatImg}
+          alt={label || 'Shell-PAMC Mark'}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      </span>
+    );
+  }
+
+  // Wordmark: Pink hacker cat badge + Shell-PAMC bold typography
   return (
-    <svg
+    <span
       className={className}
-      viewBox={viewBox}
-      height={height}
-      // The width follows the artwork's own ratio, so a caller only ever picks the height and the
-      // drawing never stretches.
-      width={Math.round((height * width) / canvasHeight)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: Math.max(8, Math.round(height * 0.35)),
+        height: height,
+        verticalAlign: 'middle',
+        userSelect: 'none',
+        flexShrink: 0,
+      }}
       role={label ? 'img' : 'presentation'}
       aria-label={label}
       aria-hidden={label ? undefined : true}
-      focusable="false"
-      // The markup is generated from a fixed, local drawing and two palette values - never from user
-      // input - so there is nothing here that could carry a script.
-      dangerouslySetInnerHTML={{ __html: markup }}
-    />
+    >
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: height,
+          height: height,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          boxShadow: '0 0 10px rgba(236, 72, 153, 0.45)',
+          border: '1.5px solid #ec4899',
+          background: '#0d1117',
+          flexShrink: 0,
+        }}
+      >
+        <img
+          src={hackerCatImg}
+          alt="Shell-PAMC Mark"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      </span>
+      <span
+        style={{
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+          fontWeight: 800,
+          fontSize: Math.round(height * 0.72),
+          letterSpacing: '-0.03em',
+          lineHeight: 1,
+          color: colors.fg,
+          display: 'inline-flex',
+          alignItems: 'center',
+        }}
+      >
+        <span>Shell</span>
+        <span style={{ color: '#ec4899', margin: '0 1px' }}>-</span>
+        <span style={{ color: '#f43f5e' }}>PAMC</span>
+      </span>
+    </span>
   );
 };
