@@ -228,7 +228,7 @@ export const AppLayout: React.FC = () => {
       {/* The wordmark spells the product name, so the text that used to sit beside the
           mark is gone: it would say the same thing twice. 20px keeps its cap height in
           step with the navigation text rather than dominating it. */}
-      <BrandArtwork shape="wordmark" height={20} className="app-brand-logo" />
+      <BrandArtwork shape="wordmark" height={30} className="app-brand-logo" />
     </div>
   );
 
