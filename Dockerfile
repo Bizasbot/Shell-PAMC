@@ -25,13 +25,13 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Certificates, timezone data and account files are architecture-independent. Preparing
 # them natively keeps cross-platform builds from needing privileged QEMU registration.
-FROM --platform=$BUILDPLATFORM alpine:3.21 AS runtime-data
+FROM --platform=$BUILDPLATFORM alpine:3.24 AS runtime-data
 RUN apk add --no-cache ca-certificates tzdata \
     && addgroup -g 10001 -S omc \
     && adduser -u 10001 -S omc -G omc \
     && mkdir -p /data && chown omc:omc /data && chmod 700 /data
 
-FROM alpine:3.21
+FROM alpine:3.24
 ARG VERSION=v0.1.0-dev
 ARG REVISION=unknown
 LABEL org.opencontainers.image.title="Shell-PAMC" \
