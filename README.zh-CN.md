@@ -17,12 +17,11 @@ MCP · 可视化 · 管理
 [![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
 [![Container image](https://img.shields.io/badge/ghcr.io-bizasbot%2Fshell--pamc-2496ED?style=flat&logo=docker&logoColor=white)](https://github.com/Bizasbot/Shell-PAMC/pkgs/container/shell-pamc)
-[![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
+![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
 <br />
 
-**[Live Demo](https://omc-demo.junze.dev)** ·
 [安装](#安装) ·
 [功能特性](#功能特性) ·
 [智能体与 MCP](#智能体与-mcp) ·
@@ -31,18 +30,15 @@ MCP · 可视化 · 管理
 
 <br />
 
-<a href="https://omc-demo.junze.dev">
+
   <img src="docs/images/readme/hero-split.zh.webp" alt="Shell-PAMC 仪表盘，左半为浅色主题，右半为深色主题" width="100%">
-</a>
+
 
 </div>
 
-[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)（CPA）是一个 API 网关，负责协议适配、凭据管理与请求代理。
+CLIProxyAPI（CPA）是一个 API 网关，负责协议适配、凭据管理与请求代理。
 **Shell-PAMC** 是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
 Shell-PAMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本地 SQLite，可离线运行，登录使用 CPA 的管理密钥。
-
-> [!TIP]
-> **[立即体验 Live Demo](https://omc-demo.junze.dev)**
 
 ## 界面截图
 
@@ -472,7 +468,7 @@ pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/shell-pa
 
 ## 致谢
 
-Shell-PAMC 基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 构建，协议适配、凭据管理与请求代理均由后者完成。
+Shell-PAMC 基于 CLIProxyAPI 构建，协议适配、凭据管理与请求代理均由后者完成。
 
 也感谢 [Linux.do 社区](https://linux.do)。
 

@@ -1,6 +1,6 @@
 # CPAMC parity matrix
 
-This document links the feature inventory of the official [Cli-Proxy-API-Management-Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) (CPAMC) to the implementation boundary of Shell-PAMC.
+This document links the feature inventory of the official Cli-Proxy-API-Management-Center (CPAMC) to the implementation boundary of Shell-PAMC.
 
 ## Goals and Compatibility Baseline
 

@@ -1389,8 +1389,8 @@ how serious it is:
 
 #### Auto-dismiss rationale
 
-There is no universal duration shared by established design systems. [Ant Design's message
-implementation](https://github.com/ant-design/ant-design/blob/master/components/message/useMessage.tsx)
+There is no universal duration shared by established design systems. Ant Design's message
+implementation
 uses 3 seconds for brief feedback; [Fluent's toast guidance](https://fluent2.microsoft.design/components/web/react/core/toast/usage)
 uses 7 seconds for no-action notifications; [React Spectrum](https://react-spectrum.adobe.com/Toast.html)
 uses a minimum of 5 seconds and keeps actionable toasts until dismissed. These are different

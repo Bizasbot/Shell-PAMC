@@ -6,6 +6,3 @@ contact_links:
   - name: Installation and settings
     url: https://github.com/Bizasbot/Shell-PAMC/blob/main/docs/install.md
     about: Install methods, required settings, reverse proxy and sub-path configuration.
-  - name: CLIProxyAPI
-    url: https://github.com/router-for-me/CLIProxyAPI/issues
-    about: Protocol adaptation, upstream provider behavior and request proxying are handled by CLIProxyAPI.

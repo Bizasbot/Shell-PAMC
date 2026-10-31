@@ -92,12 +92,12 @@ without offering a second mutation. Cancellation preserves `cancelled:false`.
 Uncompleted attempts expire after five minutes. Shell-PAMC retains local records for
 ten minutes for terminal reconciliation, without retaining callback values.
 
-Source: [CPA v8.0.35 management contract](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.35/docs/management-api-v8.md).
+Source: CPA v8.0.35 management contract.
 
 ## OAuth model-exclusion precedence
 
 CPA v8.0.33 is the first release containing
-[the credential exclusion priority change](https://github.com/router-for-me/CLIProxyAPI/commit/69d0ff8e295aea349966b16f20e2966421bfeb18).
+the credential exclusion priority change.
 A non-empty credential `excluded_models` list replaces provider
 `oauth.excluded-models`; missing, empty or null inherits current provider rules.
 The v8.0.33 helper stores only credential rules, and the runtime resolves the
@@ -148,8 +148,8 @@ verified again after each restart. The isolated configurations used
 `oauth.auth-dir`, temporary credential directories and independent loopback ports.
 Source references:
 
-- [v8.0.16 configuration paths](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/internal/config/config_v8.go)
-- [v8.0.16 management alias normalization](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/internal/config/config_v8_api.go)
+- v8.0.16 configuration paths
+- v8.0.16 management alias normalization
 
 The following measurements and mapping tables retain their CPA v8.0.2 baseline;
 the canonical `upstream.*` / `client.codex.*` paths above supersede the
@@ -178,23 +178,23 @@ panel is still downloaded on first access.
 
 Sources at tag `v8.0.16`:
 
-- [Runtime configuration defaults](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/internal/config/config.go)
-- [Retry rounds and credential selection](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/sdk/cliproxy/auth/conductor_execution.go)
-- [Model-prefix registration](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/sdk/cliproxy/service_models.go)
-- [Response header filtering](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/sdk/api/handlers/header_filter.go)
-- [Claude executor headers](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/internal/runtime/executor/claude_executor.go)
-- [Claude signature validation](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/internal/translator/antigravity/claude/signature_validation.go)
-- [Management panel updates](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.16/internal/managementasset/updater.go)
+- Runtime configuration defaults
+- Retry rounds and credential selection
+- Model-prefix registration
+- Response header filtering
+- Claude executor headers
+- Claude signature validation
+- Management panel updates
 
 Upstream sources, all at tag `v8.0.2` (commit `4a2c818`):
 
-- [management-api-v8.md](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.2/docs/management-api-v8.md) — the v8 Management API.
-- [config.example.yaml](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.2/config.example.yaml) — the v8 template; its closing
+- management-api-v8.md — the v8 Management API.
+- config.example.yaml — the v8 template; its closing
   "Legacy compatibility reference" lists only the most common relocations.
-- [config_v8.go](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.2/internal/config/config_v8.go) — the complete relocation table
+- config_v8.go — the complete relocation table
   (`buildV8Paths`, `v8KeyFamilies`) and the precedence and migration code. **This file,
   not the template, is authoritative**: the template reference omits most entries.
-- [server_management_v8.go](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.2/internal/api/server_management_v8.go) — the v8 routes
+- server_management_v8.go — the v8 routes
   and the handler each is registered on.
 
 `v7.3.20 → v8.0.2` is seven commits, all in configuration structure and the Management

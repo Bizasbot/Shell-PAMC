@@ -28,7 +28,7 @@ const PLUGINS = {
       effective_enabled: true,
       supports_oauth: true,
       logo: LOGO,
-      repository_url: 'https://github.com/router-for-me/request-logger',
+      repository_url: 'https://github.com/Bizasbot/shell-pamc-plugin-request-logger',
       pages: [{ path: '/v0/resource/plugins/request-logger/console', label: 'Logger Console', description: 'Recent requests.' }],
       config_fields: [
         { name: 'level', type: 'enum', enum_values: ['debug', 'info', 'warn'], description: 'Minimum level written.' },
@@ -148,7 +148,7 @@ export async function pluginManagement({ base, page, check, writes }) {
   const menu = page.locator('.ant-dropdown:visible');
   await menu.waitFor();
   check('the overflow keeps the safe repository link reachable',
-    (await menu.locator('a[href="https://github.com/router-for-me/request-logger"][target="_blank"][rel="noreferrer noopener"]').count()) === 1);
+    (await menu.locator('a[href="https://github.com/Bizasbot/shell-pamc-plugin-request-logger"][target="_blank"][rel="noreferrer noopener"]').count()) === 1);
   await menu.getByRole('menuitem', { name: /卸载|Uninstall/ }).click();
   const removal = page.locator('.ant-popconfirm:visible');
   await removal.waitFor();
@@ -189,7 +189,7 @@ export async function pluginManagement({ base, page, check, writes }) {
   const record = drawer.locator('[data-plugin-install-record]');
   check('the install record reads as where the plugin came from, not as a raw key',
     (await record.innerText()).includes('Installed from the official registry.')
-      && (await record.locator('a[href="https://github.com/router-for-me/request-logger"]').count()) === 1
+      && (await record.locator('a[href="https://github.com/Bizasbot/shell-pamc-plugin-request-logger"]').count()) === 1
       && (await drawer.locator('[class*="extra-key"]').getByText('store', { exact: true }).count()) === 0);
   check('the drawer offers the plugin\'s own page', (await drawer.locator('[data-plugin-config-pages] button').count()) === 1);
 

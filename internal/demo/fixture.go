@@ -480,7 +480,7 @@ func pluginCatalog() []pluginEntry {
 	return []pluginEntry{
 		{
 			id: "usage-exporter", name: "Usage exporter", version: "1.4.2", author: "router-for-me",
-			repository: "router-for-me/cpa-plugin-usage-exporter", logo: fixtureLogo("UE", "#0F766E"),
+			repository: "Bizasbot/shell-pamc-plugin-usage-exporter", logo: fixtureLogo("UE", "#0F766E"),
 			isEnabled: true, isConfigured: true, isRegistered: true,
 			configFields: []map[string]any{
 				configField("bucket", "string", "Destination bucket name."),
@@ -496,7 +496,7 @@ func pluginCatalog() []pluginEntry {
 		},
 		{
 			id: "prompt-redactor", name: "Prompt redactor", version: "0.9.0", author: "community",
-			repository: "cpa-community/prompt-redactor",
+			repository: "Bizasbot/shell-pamc-plugin-prompt-redactor",
 			isEnabled:  true, isConfigured: false, isRegistered: true,
 			configFields: []map[string]any{
 				configField("mode", "enum", "What happens to a matched span.", "mask", "drop"),
@@ -507,7 +507,7 @@ func pluginCatalog() []pluginEntry {
 		},
 		{
 			id: "quota-notifier", name: "Quota notifier", version: "2.1.0", author: "community",
-			repository: "cpa-community/quota-notifier", logo: fixtureLogo("QN", "#B45309"),
+			repository: "Bizasbot/shell-pamc-plugin-quota-notifier", logo: fixtureLogo("QN", "#B45309"),
 			isEnabled: false, isConfigured: true, isRegistered: true,
 			configFields: []map[string]any{
 				configField("webhook-url", "string", "Where the notification is posted."),
@@ -526,31 +526,31 @@ func pluginStoreCatalog() []storePluginEntry {
 	return []storePluginEntry{
 		{id: "usage-exporter", name: "Usage exporter", version: "1.5.0", author: "router-for-me",
 			description: "Streams every captured request record to an S3-compatible bucket.",
-			repository:  "router-for-me/cpa-plugin-usage-exporter", license: "MIT",
+			repository:  "Bizasbot/shell-pamc-plugin-usage-exporter", license: "MIT",
 			tags: []string{"observability", "export"}, logo: fixtureLogo("UE", "#0F766E"),
 			sourceID: "official", installedVersion: "1.4.2"},
 		{id: "otel-bridge", name: "OpenTelemetry bridge", version: "1.0.3", author: "router-for-me",
 			description: "Exports request traces to an OTLP collector, one span per upstream attempt, with the model, credential index and latency as attributes.",
-			repository:  "router-for-me/cpa-plugin-otel-bridge", license: "Apache-2.0",
+			repository:  "Bizasbot/shell-pamc-plugin-otel-bridge", license: "Apache-2.0",
 			tags: []string{"observability", "tracing"}, logo: fixtureLogo("OT", "#4F46E5"), sourceID: "official"},
 		{id: "cost-anomaly", name: "Cost anomaly detector", version: "0.4.1", author: "router-for-me",
 			description: "Flags a model whose spend leaves its trailing baseline.",
-			repository:  "router-for-me/cpa-plugin-cost-anomaly", license: "MIT",
+			repository:  "Bizasbot/shell-pamc-plugin-cost-anomaly", license: "MIT",
 			tags: []string{"cost", "alerting"}, sourceID: "official"},
 		{id: "quota-notifier", name: "Quota notifier", version: "2.1.0", author: "community",
 			description: "Posts a webhook when a credential's quota window crosses a threshold.",
-			repository:  "cpa-community/quota-notifier", license: "MIT",
+			repository:  "Bizasbot/shell-pamc-plugin-quota-notifier", license: "MIT",
 			tags: []string{"quota", "alerting"}, logo: fixtureLogo("QN", "#B45309"),
 			sourceID: "community", installedVersion: "2.1.0"},
 		{id: "team-router", name: "Team router", version: "1.2.0", author: "community",
 			description: "Routes a caller key to a credential pool by team.",
-			repository:  "cpa-community/team-router", license: "BSD-3-Clause",
+			repository:  "Bizasbot/shell-pamc-plugin-team-router", license: "BSD-3-Clause",
 			tags: []string{"routing"}, logo: fixtureLogo("TR", "#BE185D"), sourceID: "community"},
 		// Shell-PAMC's own registry: the source the console manages itself, and the one
 		// whose entries it pins above every other registry's.
 		{id: "usage-digest", name: "Usage digest", version: "0.3.0", author: "shell-pamc",
 			description: "Posts a daily spend and request summary for this console to a webhook.",
-			repository:  "WizisCool/omc-plugin-usage-digest", license: "MIT",
+			repository:  "Bizasbot/shell-pamc-plugin-usage-digest", license: "MIT",
 			tags: []string{"observability", "digest"}, logo: fixtureLogo("UD", "#0369A1"),
 			sourceID: pluginregistry.SourceID(pluginregistry.OMCSourceURL)},
 	}

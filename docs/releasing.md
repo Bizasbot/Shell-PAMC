@@ -26,7 +26,7 @@ attachments; it does not hash itself.
 The matrix is pinned in `scripts/native-release.mjs`, not downloaded during builds.
 It was checked on October 6, 2026 against CPA's official release workflow at commit
 `a2976eb8a303f11b4ea5177bce9f9ff752634dfc` and the v8.0.16 assets. CPA's current source
-uses its [release workflow](https://github.com/router-for-me/CLIProxyAPI/blob/a2976eb8a303f11b4ea5177bce9f9ff752634dfc/.github/workflows/release.yaml) rather than GoReleaser. Its `aarch64` asset label
+uses its release workflow rather than GoReleaser. Its `aarch64` asset label
 means Go `arm64`; its additional Linux plugin variants are not Shell-PAMC targets. All Shell-PAMC
 builds use `CGO_ENABLED=0` with modernc SQLite and embed the IANA time-zone database
 through `-tags timetzdata`. OS certificate roots are still required for HTTPS.

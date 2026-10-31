@@ -419,7 +419,7 @@ export const ALL_CONFIG_FIELDS: ConfigFieldDefinition[] = [
     descKey: 'cfg.f_rm_panel_repo_desc',
     yamlPath: ['management', 'panel-github-repository'],
     type: 'string',
-    placeholderKey: 'https://github.com/router-for-me/Cli-Proxy-API-Management-Center',
+    placeholderKey: 'https://github.com/owner/repository',
     keywords: ['repo', 'github'],
   },
   {
