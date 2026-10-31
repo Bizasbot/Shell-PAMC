@@ -13,9 +13,9 @@ MCP · 可视化 · 管理
 
 <br />
 
-[![Release](https://img.shields.io/github/v/release/WizisCool/oh-my-cpa?label=release)](https://github.com/WizisCool/oh-my-cpa/releases)
-[![CI](https://github.com/WizisCool/oh-my-cpa/actions/workflows/ci.yml/badge.svg)](https://github.com/WizisCool/oh-my-cpa/actions/workflows/ci.yml)
-[![Stars](https://img.shields.io/github/stars/WizisCool/oh-my-cpa?style=flat&label=stars)](https://github.com/WizisCool/oh-my-cpa/stargazers)
+[![Release](https://img.shields.io/github/v/release/Bizasbot/Shell-PAMC?label=release)](https://github.com/Bizasbot/Shell-PAMC/releases)
+[![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
 [![Docker Pulls](https://img.shields.io/docker/pulls/wiziscool/oh-my-cpa?style=flat&logo=docker&logoColor=white)](https://hub.docker.com/r/wiziscool/oh-my-cpa)
 [![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
@@ -82,7 +82,7 @@ OMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本�
 
 ```text
 按照这份指南帮我安装 Oh My CPA：
-https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/docs/install-for-agents.md
+https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/docs/install-for-agents.md
 ```
 
 ### 通过 Docker Compose 安装
@@ -147,7 +147,7 @@ volumes:
 在该目录下载 CPA 的初始配置，生成两个密钥，并启动两个服务：
 
 ```bash
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o config.yaml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
 printf 'CPA_MANAGEMENT_KEY=%s\nOMCPA_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
 chmod 600 .env
 docker compose up -d
@@ -261,7 +261,7 @@ docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock 
 
 ### 安装原生可执行文件
 
-[标签发布](https://github.com/WizisCool/oh-my-cpa/releases)提供 macOS（Darwin）、Windows、
+[标签发布](https://github.com/Bizasbot/Shell-PAMC/releases)提供 macOS（Darwin）、Windows、
 Linux 和 FreeBSD 的 amd64、arm64 可执行文件。每个压缩包内嵌控制台，并附环境变量模板；
 下载后请按该发布的 `checksums.txt` 校验 SHA-256。无需 Go、Node 或 Docker，CPA 需单独安装。
 配置、权限及升级步骤见[原生安装指南](docs/install.md#native-executable)。

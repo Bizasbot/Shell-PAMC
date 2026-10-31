@@ -15,7 +15,7 @@ import (
 
 const (
 	// OMCSourceURL is where CPA reads Oh My CPA's plugin registry.
-	OMCSourceURL = "https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json"
+	OMCSourceURL = "https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json"
 	// OMCSourceName is what the console calls the registry. CPA derives a source's
 	// name from the URL's host, which for a raw GitHub address says nothing about
 	// who publishes it.

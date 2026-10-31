@@ -70,7 +70,7 @@ a message naming the variable.
 | --- | --- | --- |
 | `OMCPA_UPDATE_CHECK_ENABLED` | `true` | The six-hourly release sweep |
 | `OMCPA_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | The check the System Information page makes when opened |
-| `OMCPA_OMC_REPO` / `OMCPA_CPA_REPO` | `WizisCool/oh-my-cpa` / `router-for-me/CLIProxyAPI` | `owner/name` the checks read, for a fork |
+| `OMCPA_OMC_REPO` / `OMCPA_CPA_REPO` | `Bizasbot/Shell-PAMC` / `router-for-me/CLIProxyAPI` | `owner/name` the checks read, for a fork |
 | `OMCPA_DEMO_MODE` | `false` | Serve the console from the built-in fixture; see [Demo mode](#demo-mode) |
 | `OMCPA_UPDATER_ENABLED` | `true` | `false` makes the console ignore an updater and offer no update action; see [Console updates](#console-updates) |
 | `OMCPA_UPDATER_URL` | `http://oh-my-cpa-updater:8090` | Where the console looks for the updater. The default is the service and container name every install method uses |
@@ -334,7 +334,7 @@ remain unchanged.
 CPA reads its built-in `official` registry plus the registries in
 `plugins.store-sources`; the console no longer has a plugin store page, so the registry
 setting is what remains of it. Oh My CPA's own registry
-(`https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json`)
+(`https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json`)
 is a managed entry: the server adds it when the source is on (the default) and restores
 it after a configuration save that removed it, so the switch is **OMC Settings →
 Oh My CPA plugin registry** (`omc_plugin_source_enabled`, ADR 0104), not the configuration editor

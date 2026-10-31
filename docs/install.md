@@ -73,7 +73,7 @@ Deploys CPA and OMC together.
 2. In the same directory, download the starter configuration for CPA:
 
    ```bash
-   curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o config.yaml
+   curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
    ```
 
    The file must exist before the first start: Docker creates a directory in place of a
@@ -312,8 +312,8 @@ CPA and OMC together:
 
 ```bash
 mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data,cpa/auths,cpa/logs,cpa/plugins} && cd oh-my-cpa
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
 sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
@@ -329,7 +329,7 @@ OMC beside an existing CPA:
 
 ```bash
 mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data} && cd oh-my-cpa
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
 sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
@@ -483,7 +483,7 @@ which is what keeps this working behind a proxy that preserves the prefix.
 
 ## Native executable
 
-[GitHub Releases](https://github.com/WizisCool/oh-my-cpa/releases) publish OMC for
+[GitHub Releases](https://github.com/Bizasbot/Shell-PAMC/releases) publish OMC for
 Darwin (macOS), Windows, Linux and FreeBSD, each on **amd64** and **arm64**. `x86_64`
 is amd64; `aarch64` and Apple Silicon are arm64. Unix archives are `.tar.gz`; Windows
 archives are `.zip`. CPA must already be installed separately (v8.0.0 or later).
@@ -501,8 +501,8 @@ OS=linux
 ARCH=amd64
 ASSET="oh-my-cpa_${VERSION}_${OS}_${ARCH}.tar.gz"
 mkdir -p oh-my-cpa && cd oh-my-cpa
-curl -fLO "https://github.com/WizisCool/oh-my-cpa/releases/download/v${VERSION}/${ASSET}"
-curl -fLO "https://github.com/WizisCool/oh-my-cpa/releases/download/v${VERSION}/checksums.txt"
+curl -fLO "https://github.com/Bizasbot/Shell-PAMC/releases/download/v${VERSION}/${ASSET}"
+curl -fLO "https://github.com/Bizasbot/Shell-PAMC/releases/download/v${VERSION}/checksums.txt"
 ```
 
 Verify **only the downloaded archive's entry** (the manifest also lists the other
@@ -548,7 +548,7 @@ older executable requires restoring the corresponding data backup.
 Needs Go 1.26+, Node.js 22+, pnpm 11+ and a running CPA.
 
 ```bash
-git clone https://github.com/WizisCool/oh-my-cpa.git
+git clone https://github.com/Bizasbot/Shell-PAMC.git
 cd oh-my-cpa
 pnpm install --frozen-lockfile
 cp .env.example .env

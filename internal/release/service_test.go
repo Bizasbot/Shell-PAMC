@@ -38,7 +38,7 @@ func newTestService(t *testing.T, handler http.HandlerFunc) (*Service, *stubGitH
 
 	service, err := New(Options{
 		Repository:    repository.New(db),
-		OMCRepository: "WizisCool/oh-my-cpa",
+		OMCRepository: "Bizasbot/Shell-PAMC",
 		CPARepository: "router-for-me/CLIProxyAPI",
 		Client:        NewClientWithTransport(server.Client().Transport, server.URL),
 	})
@@ -406,7 +406,7 @@ func TestConditionalRequestAvoidsSpendingQuotaButOnlyWhileBodiesAreHeld(t *testi
 	// would claim "unchanged" about content this process cannot render.
 	fresh, err := New(Options{
 		Repository:    service.repository,
-		OMCRepository: "WizisCool/oh-my-cpa",
+		OMCRepository: "Bizasbot/Shell-PAMC",
 		CPARepository: "router-for-me/CLIProxyAPI",
 		Client:        NewClientWithTransport(stub.serverTransport(), stub.serverURL()),
 	})

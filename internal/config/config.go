@@ -101,7 +101,7 @@ type ReleaseConfig struct {
 // against; the console default is this project's own repository. A deployment that
 // runs a fork overrides them rather than editing code.
 const (
-	DefaultOMCRepository = "WizisCool/oh-my-cpa"
+	DefaultOMCRepository = "Bizasbot/Shell-PAMC"
 	DefaultCPARepository = "router-for-me/CLIProxyAPI"
 	// DefaultReleaseInterval is six hours: often enough to notice a release the same
 	// day, rare enough that the unauthenticated GitHub budget of sixty requests per

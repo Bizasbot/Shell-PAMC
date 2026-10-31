@@ -5,7 +5,7 @@ configured as a plugin-store source. CPA reads it over HTTPS from the `master`
 branch:
 
 ```
-https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json
+https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json
 ```
 
 The address is compiled into the binary (`internal/pluginregistry`), not configured

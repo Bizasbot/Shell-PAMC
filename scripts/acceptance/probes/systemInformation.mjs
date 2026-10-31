@@ -44,8 +44,8 @@ export function systemFixtures() {
           latest_version: 'v0.2.0',
           state: 'indeterminate',
           reason: 'running_version_not_comparable',
-          repository: 'WizisCool/oh-my-cpa',
-          repository_url: 'https://github.com/WizisCool/oh-my-cpa',
+          repository: 'Bizasbot/Shell-PAMC',
+          repository_url: 'https://github.com/Bizasbot/Shell-PAMC',
           checked_at_ms: 1790017000000,
           attempted_at_ms: 1790017000000,
           check_error: '',
@@ -1316,7 +1316,7 @@ async function verifyVersionCheckFeedback({ page, base, check }) {
       !/Release notes unavailable|未获取到更新日志/.test(await emptyProduct.innerText()) && await emptyProduct.getByRole('button').count() === 0);
     check('each product offers its repository as the single external link',
       await emptyProduct.getByRole('link').count() === 1 &&
-      await emptyProduct.getByRole('link').getAttribute('href') === 'https://github.com/WizisCool/oh-my-cpa' &&
+      await emptyProduct.getByRole('link').getAttribute('href') === 'https://github.com/Bizasbot/Shell-PAMC' &&
       await page.locator('[data-testid="sys-product-cpa"]').getByRole('link').count() === 1);
     const gatewayText = await page.locator('[data-testid="sys-product-cpa"]').innerText();
     check('a failed feed preserves both versions and identifies the age of the stored result',

@@ -235,7 +235,7 @@ During implementation use `pnpm test:fast` and relevant `pnpm check:ui`; at logi
 
 ## 8. Reproducible evidence index
 
-Retrieve an indexed run with `gh run view RUN_ID --log` or its job metadata with `gh api repos/WizisCool/oh-my-cpa/actions/runs/RUN_ID/jobs`. Use the exact recorded IDs rather than a moving recent-run query. Logs require the appropriate GitHub access and can expire.
+Retrieve an indexed run with `gh run view RUN_ID --log` or its job metadata with `gh api repos/Bizasbot/Shell-PAMC/actions/runs/RUN_ID/jobs`. Use the exact recorded IDs rather than a moving recent-run query. Logs require the appropriate GitHub access and can expire.
 
 - Successful PR CI: 37559381074, 37557589110, 37555642799, 37555218133, 37554284749, 37501151296, 37497317956, 37494044935, 37488084828, 37482086782, 37470752799, 37463702778, 37462794386, 37447338834, 37443031839, 37441398628, 37432300541, 37416651852, 37412952480, 37410263615, 37406163745, 37404223561, 37402195110, 37375759489.
 - Successful master CI: 37559718806, 37558132503, 37556010231, 37555584201, 37503503350, 37494673327, 37483921354, 37473733393, 37447871276, 37441462948, 37438416753, 37432369821, 37430614429, 37430095428, 37428887708, 37417017523, 37413351390, 37406796851, 37404581103, 37376295510, 37344076794.

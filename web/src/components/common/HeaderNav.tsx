@@ -13,7 +13,7 @@ import { useT } from '../../i18n';
 import { isDemoMode } from '../../types/demoMode';
 import { formatStarCount } from '../../utils/format';
 
-const REPOSITORY_URL = 'https://github.com/WizisCool/oh-my-cpa';
+const REPOSITORY_URL = 'https://github.com/Bizasbot/Shell-PAMC';
 /** The server reads the count at most hourly, so asking more often learns nothing. */
 const STAR_COUNT_STALE_MS = 60 * 60 * 1000;
 

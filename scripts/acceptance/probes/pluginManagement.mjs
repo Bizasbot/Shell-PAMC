@@ -58,7 +58,7 @@ const SETTINGS = {
   enabled: true,
   dir: 'plugins',
   store_sources: ['https://mirror.example/registry.json'],
-  omc_source_url: 'https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json',
+  omc_source_url: 'https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json',
   omc_source_enabled: true,
   store_auth: [
     { match: 'https://mirror.example/', apply_to: ['registry', 'artifact'], type: 'bearer', token_env: 'MIRROR_TOKEN', allow_insecure: false },

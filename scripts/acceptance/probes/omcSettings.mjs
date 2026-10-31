@@ -174,7 +174,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   check('every header action names itself on hover', unnamedActions.length === 0, unnamedActions.join(' | '));
 
   const repositoryLink = page.locator('.app-header-actions').getByRole('link', { name: 'Open project on GitHub', exact: true });
-  const repositoryURL = 'https://github.com/WizisCool/oh-my-cpa';
+  const repositoryURL = 'https://github.com/Bizasbot/Shell-PAMC';
   check(
     'the GitHub mark links to the project with isolated external navigation',
     await repositoryLink.getAttribute('href') === repositoryURL

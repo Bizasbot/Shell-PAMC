@@ -74,8 +74,8 @@ Use a new directory. If any target file already exists, stop and ask.
 
 ```bash
 mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data,cpa/auths,cpa/logs,cpa/plugins} && cd oh-my-cpa
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
 sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
@@ -151,7 +151,7 @@ time are unchanged. The data lives in a Docker volume, so no `chown` is needed.
 
 ```bash
 mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data} && cd oh-my-cpa
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
 sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
@@ -214,7 +214,7 @@ requested, retaining the working directory and data path.
 Needs Go 1.26+, Node.js 22+ and pnpm 11+.
 
 ```bash
-git clone https://github.com/WizisCool/oh-my-cpa.git && cd oh-my-cpa
+git clone https://github.com/Bizasbot/Shell-PAMC.git && cd oh-my-cpa
 pnpm install --frozen-lockfile
 cp -n .env.example .env
 ```

@@ -1,7 +1,7 @@
 # Publishing a release
 
 The stable distribution is **`wiziscool/oh-my-cpa`** on Docker Hub, for
-`linux/amd64` and `linux/arm64`. GitHub Releases in `WizisCool/oh-my-cpa` are the
+`linux/amd64` and `linux/arm64`. GitHub Releases in `Bizasbot/Shell-PAMC` are the
 console's version/update source and carry native executables and installation assets. A Git tag
 alone is not a published release and is not discovered by update checks.
 
@@ -62,7 +62,7 @@ and put it in the GitHub repository's Actions secret **`DOCKERHUB_TOKEN`**. Neve
 commit or paste the value into an issue, run log or chat:
 
 ```bash
-gh secret set DOCKERHUB_TOKEN --repo WizisCool/oh-my-cpa
+gh secret set DOCKERHUB_TOKEN --repo Bizasbot/Shell-PAMC
 ```
 
 The workflow uses the repository-scoped `GITHUB_TOKEN` to create the release; only its
@@ -76,7 +76,7 @@ pair once, on a trusted machine:
 
 ```bash
 node scripts/sign-release-manifest.mjs --generate-key release-signing-key.txt
-gh secret set RELEASE_SIGNING_KEY --repo WizisCool/oh-my-cpa < release-signing-key.txt
+gh secret set RELEASE_SIGNING_KEY --repo Bizasbot/Shell-PAMC < release-signing-key.txt
 ```
 
 The command writes the private key to the named file and the public key to
@@ -171,9 +171,9 @@ the native packaged-image smoke complements the product's built-browser acceptan
 ## Verification and recovery
 
 ```bash
-gh run list --workflow release.yml --repo WizisCool/oh-my-cpa
+gh run list --workflow release.yml --repo Bizasbot/Shell-PAMC
 docker buildx imagetools inspect wiziscool/oh-my-cpa:v0.3.9
-gh release view v0.3.9 --repo WizisCool/oh-my-cpa
+gh release view v0.3.9 --repo Bizasbot/Shell-PAMC
 ```
 
 Workflows use a serialized `queue: max` concurrency group: pending releases queue

@@ -86,7 +86,7 @@ func startReleaseTestServer(t *testing.T) (*http.Client, string, *repository.Rep
 	feed := &stubFeedSource{}
 	releaseService, err := release.New(release.Options{
 		Repository:    repo,
-		OMCRepository: "WizisCool/oh-my-cpa",
+		OMCRepository: "Bizasbot/Shell-PAMC",
 		CPARepository: "router-for-me/CLIProxyAPI",
 		Client:        feed,
 	})
@@ -140,7 +140,7 @@ func (s *stubFeedSource) FetchReleases(_ context.Context, repositoryName, _ stri
 func newStubFeed() *stubFeedSource {
 	return &stubFeedSource{
 		releases: map[string][]release.Release{
-			"WizisCool/oh-my-cpa": {
+			"Bizasbot/Shell-PAMC": {
 				{Tag: "v0.2.0", Name: "v0.2.0", Body: "## Highlights\n\n- Console work.\n", PublishedAt: "2026-09-20T10:00:00Z"},
 			},
 			"router-for-me/CLIProxyAPI": {
