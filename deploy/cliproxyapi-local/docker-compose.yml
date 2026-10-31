@@ -1,0 +1,79 @@
+services:
+  cli-proxy-api:
+    image: eceasy/cli-proxy-api:latest
+    container_name: cli-proxy-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18317:8317"
+    volumes:
+      - ./config.yaml:/CLIProxyAPI/config.yaml
+      - ./auths:/root/.cli-proxy-api
+      - ./logs:/CLIProxyAPI/logs
+      - ./plugins:/CLIProxyAPI/plugins
+
+  oh-my-cpa:
+    image: oh-my-cpa:removal-20261030
+    container_name: oh-my-cpa
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18080:8080"
+    environment:
+      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
+      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
+      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
+      OMCPA_DATA_DIR: /data
+    volumes:
+      - oh-my-cpa-data:/data
+
+  profile-models:
+    image: node:22-alpine
+    container_name: profile-models
+    restart: unless-stopped
+    working_dir: /app
+    command: ["node","server.mjs"]
+    user: "node"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    pids_limit: 32
+    ports:
+      - "127.0.0.1:18081:8081"
+    environment:
+      PROFILES_DIR: /profiles
+      ALLOWED_ORIGINS: http://127.0.0.1:18080,http://localhost:18080
+      SESSIONS_DIRS: /sessions,/sessions-gs,/sessions-pi
+    volumes:
+      - ./profile-models/server.mjs:/app/server.mjs:ro
+      - C:/Users/ROG/.gentle-shell/agent/profiles:/profiles:ro
+      - C:/Users/ROG/.gentle-shell/agent/sessions:/sessions:ro
+      - C:/Users/ROG/AppData/Local/gentle-shell/install/agent/sessions:/sessions-gs:ro
+      - C:/Users/ROG/.pi/agent/sessions:/sessions-pi:ro
+      - C:/Users/ROG/.pi-viewer:/viewer:ro
+
+  quota-ledger:
+    image: node:22-alpine
+    container_name: quota-ledger
+    restart: unless-stopped
+    working_dir: /app
+    command: ["node","service.mjs","loop"]
+    user: "node"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 96m
+    pids_limit: 32
+    depends_on: [cli-proxy-api, oh-my-cpa]
+    environment:
+      CPA_BASE: http://cli-proxy-api:8317/v0/management
+      CPA_KEY: ${OMCPA_CPA_MANAGEMENT_KEY}
+      OMC_BASE: http://oh-my-cpa:8080/omc
+      INTERVAL_S: "180"
+      MIN_FIVE_HOUR: "0.10"
+      APPLY: "1"
+    volumes:
+      # Read-only: create ./quota-ledger/DISABLED on the host to stop all writes.
+      - ./quota-ledger:/app:ro
+
+volumes:
+  oh-my-cpa-data:
