@@ -1,6 +1,6 @@
-# Oh My CPA plugin registry
+# Shell-PAMC plugin registry
 
-This directory publishes Oh My CPA's own plugin registry, which the console keeps
+This directory publishes Shell-PAMC's own plugin registry, which the console keeps
 configured as a plugin-store source. CPA reads it over HTTPS from the `master`
 branch:
 
@@ -32,7 +32,7 @@ declares the fields CPA validates:
 An empty `plugins` list is valid: the registry is published before the first plugin
 exists, so the store has a working source rather than a failing one. One malformed
 entry is not: CPA refuses the whole document, so every installation shows an empty
-Oh My CPA registry and only the gateway's error line. The Go tests in
+Shell-PAMC registry and only the gateway's error line. The Go tests in
 `internal/pluginregistry` validate the published file (`pnpm test:fast` runs them when
 the registry changes) for that reason.
 
