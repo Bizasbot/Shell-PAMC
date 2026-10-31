@@ -2,12 +2,11 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "shell-pamc-demo",
   "main": "worker.mjs",
-  // No route is declared: add `"routes": [{ "pattern": "<your domain>", "custom_domain": true }]` before deploying. The `workers.dev` route is off
-  // because that subdomain is account-level and is derived from the operator's account
-  // identity, so leaving it on would publish the demonstration at an address carrying
-  // personal information. Stating both here rather than configuring them once in the
-  // console is what makes a deploy from a fresh clone reproduce the deployed state
-  // instead of quietly re-enabling the address that was turned off on purpose.
+  // No se declara ninguna ruta: añada `"routes": [{ "pattern": "<su dominio>", "custom_domain": true }]` antes de desplegar. La ruta `workers.dev` está desactivada
+  // porque ese subdominio es a nivel de cuenta y se deriva de la identidad de la cuenta del operador,
+  // por lo que dejarlo activo publicaría la demostración en una dirección que contiene información
+  // personal. Indicar ambos aquí en lugar de configurarlos manualmente en la consola garantiza que un despliegue
+  // desde una copia limpia reproduzca el estado previsto en vez de reactivar silenciosamente la dirección deshabilitada.
   "workers_dev": false,
   "compatibility_date": "2026-09-01",
   "assets": {
