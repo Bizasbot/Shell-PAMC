@@ -367,7 +367,7 @@ func (db *DB) createMigrationBackup(ctx context.Context, migrationVersion int) e
 		return fmt.Errorf("encrypt migration backup: %w", err)
 	}
 	envelope := encryptedBackup{
-		Format:     "oh-my-cpa/sqlite-backup-v1",
+		Format:     backupFormat,
 		Nonce:      base64.RawStdEncoding.EncodeToString(nonce),
 		Ciphertext: base64.RawStdEncoding.EncodeToString(ciphertext),
 	}
@@ -425,6 +425,13 @@ type BackupArtifact struct {
 	CreatedAt time.Time
 }
 
+const (
+	backupFormat = "shell-pamc/sqlite-backup-v1"
+	// legacyBackupFormat names the product before it was renamed. Backups an operator kept
+	// before the rename still restore; nothing writes this format any more.
+	legacyBackupFormat = "oh-my-cpa/sqlite-backup-v1"
+)
+
 // RestoreBackupSmoke decrypts a backup into a temporary SQLite file, opens it,
 // and verifies that SQLite can read its schema before the source database is
 // changed.
@@ -451,7 +458,7 @@ func RestoreBackupSmoke(ctx context.Context, backupPath string, cipher *appcrypt
 		}
 	}
 	var envelope encryptedBackup
-	if err := json.Unmarshal(encoded, &envelope); err != nil || envelope.Format != "oh-my-cpa/sqlite-backup-v1" {
+	if err := json.Unmarshal(encoded, &envelope); err != nil || (envelope.Format != backupFormat && envelope.Format != legacyBackupFormat) {
 		return errors.New("backup envelope is invalid")
 	}
 	nonce, err := base64.RawStdEncoding.DecodeString(envelope.Nonce)
