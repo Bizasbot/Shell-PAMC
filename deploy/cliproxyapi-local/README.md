@@ -33,3 +33,5 @@ Kill switch: create `quota-ledger/DISABLED` next to `service.mjs` and the loop s
 
 Required environment: `CPA_BASE`, `CPA_KEY` (CPA management key), `OMC_BASE`, optional `OMC_KEY`,
 `INTERVAL_S`, `MIN_FIVE_HOUR`, `APPLY=1`.
+
+Sync: run `./sync-to-repo.sh "message"` from the CLIProxyAPI folder to publish changes to this branch.
