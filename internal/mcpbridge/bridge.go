@@ -77,7 +77,7 @@ func NewServer(ctx context.Context, backend Backend, options Options) (*mcp.Serv
 	if err != nil {
 		return nil, err
 	}
-	server := mcp.NewServer(&mcp.Implementation{Name: "oh-my-cpa", Title: "Shell-PAMC", Version: options.Version}, &mcp.ServerOptions{Instructions: SERVER_INSTRUCTIONS})
+	server := mcp.NewServer(&mcp.Implementation{Name: "shell-pamc", Title: "Shell-PAMC", Version: options.Version}, &mcp.ServerOptions{Instructions: SERVER_INSTRUCTIONS})
 	approvalLink := func(request *mcp.CallToolRequest, operationID string) string {
 		if options.ConsoleURL == nil {
 			return ""

@@ -460,9 +460,9 @@ check('the connection guide names this deployment\'s endpoint under any base pat
     assert.ok(code.includes(client === 'stdio' ? '"SHELLPAMC_SERVER_URL": "https://shell-pamc.example.com/shell-pamc"' : 'https://shell-pamc.example.com/shell-pamc/api/mcp'), client);
     if (lang === 'json') assert.doesNotThrow(() => JSON.parse(code), client);
   }
-  assert.match(connectSnippet('claude', 'https://shell-pamc.example.com', '/shell-pamc', 'KEY').code, /--transport http oh-my-cpa \S+ \\\n {2}--header "Authorization: Bearer \$SHELLPAMC_CPA_MANAGEMENT_KEY"$/);
+  assert.match(connectSnippet('claude', 'https://shell-pamc.example.com', '/shell-pamc', 'KEY').code, /--transport http shell-pamc \S+ \\\n {2}--header "Authorization: Bearer \$SHELLPAMC_CPA_MANAGEMENT_KEY"$/);
   assert.match(connectSnippet('codex', 'https://shell-pamc.example.com', '/shell-pamc', 'KEY').code, /^bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"$/m);
-  assert.equal(JSON.parse(connectSnippet('other', 'https://shell-pamc.example.com', '/shell-pamc', 'KEY').code).mcpServers['oh-my-cpa'].headers.Authorization, 'Bearer <KEY>');
+  assert.equal(JSON.parse(connectSnippet('other', 'https://shell-pamc.example.com', '/shell-pamc', 'KEY').code).mcpServers['shell-pamc'].headers.Authorization, 'Bearer <KEY>');
 });
 
 check('plain HTTP is flagged only where the key would leave the machine', () => {

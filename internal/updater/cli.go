@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const USAGE = `Usage: oh-my-cpa updater <command>
+const USAGE = `Usage: shell-pamc updater <command>
 
 Applies updates the console asks for by replacing this deployment's containers.
 It needs the Docker socket, which the console itself never has.
@@ -66,7 +66,7 @@ func connect(ctx context.Context, stderr io.Writer) (*Engine, bool) {
 	return nil, false
 }
 
-// Run executes an `oh-my-cpa updater` command and returns the process exit code.
+// Run executes a `shell-pamc updater` command and returns the process exit code.
 func Run(ctx context.Context, arguments []string, version string, stdout, stderr io.Writer) int {
 	if len(arguments) == 0 {
 		fmt.Fprint(stderr, USAGE)

@@ -230,7 +230,7 @@ const DICT: Record<string, [string, string]> = {
   'omc.timezone_desc': ["应用于时间显示和自然日统计。", "Used for timestamps and calendar-day totals."],
   'omc.timezone_server': ["服务器时区", "Server time zone"],
   // ── app / shell ──────────────────────────────────────────────────────────
-  'app.name': ['oh-my-cpa', 'oh-my-cpa'],
+  'app.name': ['shell-pamc', 'shell-pamc'],
   // The demo markers are the one place copy is deliberately not translated: they
   // label a deployment rather than the product, and a badge that changes width with
   // the interface language moves the controls beside it.
@@ -406,7 +406,7 @@ const DICT: Record<string, [string, string]> = {
   'agent.connect.client.claude.note': ["在终端运行。管理密钥从环境变量 SHELLPAMC_CPA_MANAGEMENT_KEY 读取。", "Run in a terminal. The management key is read from the SHELLPAMC_CPA_MANAGEMENT_KEY environment variable."],
   'agent.connect.client.codex.note': ["写入 ~/.codex/config.toml，并在环境变量 SHELLPAMC_CPA_MANAGEMENT_KEY 中提供管理密钥。", "Add to ~/.codex/config.toml, and provide the management key in the SHELLPAMC_CPA_MANAGEMENT_KEY environment variable."],
   'agent.connect.client.other.note': ["适用于以 JSON 配置远程 MCP 服务的客户端，例如 Cursor。字段名以客户端文档为准。", "For clients that configure a remote MCP server in JSON, such as Cursor. Field names follow the client's own documentation."],
-  'agent.connect.client.stdio.note': ["只支持 stdio 的客户端运行 oh-my-cpa 二进制自带的桥接进程，由它转发到本控制台。", "A client that only speaks stdio runs the bridge built into the oh-my-cpa binary, which forwards to this console."],
+  'agent.connect.client.stdio.note': ["只支持 stdio 的客户端运行 shell-pamc 二进制自带的桥接进程，由它转发到本控制台。", "A client that only speaks stdio runs the bridge built into the shell-pamc binary, which forwards to this console."],
   'agent.connect.key_placeholder': ["CPA 管理密钥", "CPA management key"],
   'agent.connect.notes': ["接入须知", "Before connecting"],
   'agent.connect.notes.key': ["凭据是 CPA 管理密钥，等同管理员权限。只接入可信的 Agent 与主机，信任变化时轮换密钥。", "The credential is the CPA management key, which is administrator-equivalent. Connect only trusted agents and hosts, and rotate the key when that trust changes."],

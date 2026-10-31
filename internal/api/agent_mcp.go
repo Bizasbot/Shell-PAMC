@@ -80,7 +80,7 @@ func (h *Handler) mcpHandler() (http.Handler, error) {
 func (h *Handler) serveMCP(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Cache-Control", "no-store")
 	if request.Header.Get("Authorization") == "" {
-		writer.Header().Set("WWW-Authenticate", `Bearer realm="oh-my-cpa"`)
+		writer.Header().Set("WWW-Authenticate", `Bearer realm="shell-pamc"`)
 		writeRunError(writer, 401, "authentication_required")
 		return
 	}
