@@ -164,7 +164,7 @@ accent fill is light cannot carry a white label. It is **computed, never authore
 whichever of white and near-black reads better on the fill, and the fill is deepened until one of them
 clears **4.5:1**. Every palette's label clears it, and the registry check fails a palette that does not.
 
-The OMC Settings page presents two groups of named cards with a four-swatch preview, one per mode, and
+The Shell-PAMC Settings page presents two groups of named cards with a four-swatch preview, one per mode, and
 each group's last card is the operator's own. The header's control presents the mode alone. The appearance
 controls must not introduce a second palette source: both read the registry, so new palettes extend
 `web/src/theme/palette.ts`, and the derivation, contrast and mirror checks in
@@ -1169,12 +1169,12 @@ and corner and becomes the screen.
   accent fill never marks the selection, because the rail is chrome and colour belongs to data.
 - The rail is the operator's: which of its entries a deployment shows is a stored preference
   (`omc_nav_hidden`, holding the *hidden* routes, so an entry a later release adds arrives
-  already visible), set from the OMC settings page - one row that opens the rail's own panel,
+  already visible), set from the Shell-PAMC Settings page - one row that opens the rail's own panel,
   rather than sixteen rows grown onto a page of one-line settings - and applied to the expanded
   rail, the collapsed rail and the phone sheet from one filtered model. The panel lists the model
   the rail draws, including the pages a running plugin registered, so the two cannot disagree
   about which destinations exist. A group whose every entry is hidden goes with
-  them, the OMC settings entry itself is shown switched on and inert - a preference that could
+  them, the Shell-PAMC Settings entry itself is shown switched on and inert - a preference that could
   hide its own surface would leave the console unable to undo it - and everything else on the
   shell reads the unfiltered model, so a page opened by URL still names itself in the breadcrumb
   and the document title.
@@ -1205,7 +1205,7 @@ Shell-PAMC draws from OpenCode's minimalist, high-density, engineer-first consol
    - Avoid marketing boilerplate or lengthy guides inside UI cards.
 7. **Top Context Slot**
    - The left side hosts the navigation toggle and the current group/page breadcrumb; product artwork belongs to the side rail or the phone navigation sheet;
-   - The right side houses five fixed-width actions: the project GitHub link, refresh, the theme mode control, the language menu, and sign out. **The mode control cycles and the language control is a menu**, and that asymmetry is deliberate. The theme was a menu while the console carried six palettes and a toggle could only answer "the other one"; the palettes now belong to the modes and are chosen on the OMC Settings page, where each candidate repaints the whole console as it is picked, so the header's remaining question is light or dark - with follow-the-system as the third state, one icon per state (a sun, a moon, a desktop). The control's tooltip is its own name and deliberately not a sentence about its state; the states are named in words on the settings page's own row. The language stays a menu because four languages, one of which the reader may not read, is exactly the case a list answers: it names every choice by its **endonym** - its own name in its own script, never a translation. The settings page's language picker lists the same endonyms.
+   - The right side houses five fixed-width actions: the project GitHub link, refresh, the theme mode control, the language menu, and sign out. **The mode control cycles and the language control is a menu**, and that asymmetry is deliberate. The theme was a menu while the console carried six palettes and a toggle could only answer "the other one"; the palettes now belong to the modes and are chosen on the Shell-PAMC Settings page, where each candidate repaints the whole console as it is picked, so the header's remaining question is light or dark - with follow-the-system as the third state, one icon per state (a sun, a moon, a desktop). The control's tooltip is its own name and deliberately not a sentence about its state; the states are named in words on the settings page's own row. The language stays a menu because four languages, one of which the reader may not read, is exactly the case a list answers: it names every choice by its **endonym** - its own name in its own script, never a translation. The settings page's language picker lists the same endonyms.
    - The project GitHub link uses the existing local Octicons mark and opens `https://github.com/Bizasbot/Shell-PAMC` in a new tab with `noopener noreferrer`; it shows no tooltip — the mark names it and the unfolding count answers the hover — while its accessible name follows the reading language, and it remains available in the demonstration. At rest the link is the mark alone; pointed at or focused, it unfolds the project's star count before the mark over `base` — a star glyph and the count, exact below a thousand and truncated thousands with two decimals above (`1.23k`) — once the server has read one, and under reduced motion it still waits for the pointer or focus but appears at once, without the transition. It is the first control of a right-aligned row and the label leads, so unfolding widens it away from the others and the mark stays under the pointer; a device with no hover shows the count throughout. A hairline separates the link from the console's own actions. All five actions are one component, `web/src/components/common/HeaderAction.tsx`: 32px high, borderless at rest, the same hover and the same label treatment for the star count and the language code. **Every header action keeps one width in every reading language.** Labels are the one thing whose length changes with the language, so sign out is an icon button named by its tooltip, and the language trigger holds its code in a fixed slot. A control that resizes moves the actions beside it, which is a real defect rather than a cosmetic one: the pointer is already on one of them.
    - On phones the action cluster keeps its full control widths with a 4px gap and 12px safe-area-aware edge padding; the navigation toggle does not shrink, and the current breadcrumb truncates with an ellipsis rather than overlapping actions. Connection status and version are the System Information page's, not the header's: this slot carries actions. Never display fabricated avatars, dummy balances, or mock workspace selectors before real capabilities exist.
 8. **Form Workbench & Setting Group Panels**
@@ -2135,7 +2135,7 @@ on close.
 returns on release, so a click is felt before what it starts has answered; a field never does,
 which is why the time window, drawn as a field, is exempt. A side sheet decelerates into place on
 `--ease-out` and accelerates away, instead of antd's symmetric `ease`. A palette change - the
-header's mode button, a mode or palette choice in OMC Settings - cross-fades the whole page over
+header's mode button, a mode or palette choice in Shell-PAMC Settings - cross-fades the whole page over
 `slow` through the View Transitions API, one composited layer rather than every element easing its
 own colours; for the two frames the repaint takes, `data-theme-switching` on the root holds every
 element's own transition off, so nothing smears behind the fade. Under reduced motion, or without the
@@ -2448,7 +2448,7 @@ first notch — says so with `consumeWheel`, since `preventDefault` from a React
 The glide is on by default and is **not** switched off by `prefers-reduced-motion`: it is the
 reader's own input following their hand, as inertial scrolling stays on under Reduce Motion on
 macOS and iOS, and on Windows the reduced-motion signal is the same switch that removed the
-browser's glide. The OMC settings page's **Smooth scrolling** row (`On` / `Follow system` / `Off`,
+browser's glide. The Shell-PAMC Settings page's **Smooth scrolling** row (`On` / `Follow system` / `Off`,
 the `omc_scroll_smoothing` preference) hands the decision to that signal or turns the glide off.
 The return-to-top gesture above is page-initiated travel and keeps honouring reduced motion.
 

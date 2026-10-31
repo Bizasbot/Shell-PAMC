@@ -38,7 +38,7 @@ export const DEFAULT_HIDDEN_NAV: readonly string[] = Object.freeze([]);
 /**
  * Entries that cannot be hidden.
  *
- * The OMC Settings page is where the rail is customized, so a preference that hid it would leave
+ * The Shell-PAMC Settings page is where the rail is customized, so a preference that hid it would leave
  * the operator no way back to the choice from the console itself - a state not worth being able to
  * reach. The page stays listed with a disabled control that says why, rather than quietly omitted.
  */

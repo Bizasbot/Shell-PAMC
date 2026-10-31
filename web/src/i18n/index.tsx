@@ -816,7 +816,7 @@ const DICT: Record<string, [string, string]> = {
   'nav.usage_events': ['请求记录', 'Request Events'],
   'nav.pricing': ['费用与用量', 'Cost & Usage'],
   'nav.config': ['配置面板', 'Config'],
-  'nav.omc_settings': ['OMC 设置', 'OMC Settings'],
+  'nav.omc_settings': ['Shell-PAMC 设置', 'Shell-PAMC Settings'],
   'nav.plugins': ['插件管理', 'Plugin management'],
   'nav.system': ['系统信息', 'System Information'],
   'nav.update_available': ['有可用更新', 'Update available'],
@@ -853,7 +853,7 @@ const DICT: Record<string, [string, string]> = {
   // §3 allows a subtitle only when it carries live data, and a sentence
   // explaining why a switch exists is documentation pasted into the interface.
   // A row description survives only when it states something the label cannot.
-  'omc.title': ['OMC 设置', 'OMC Settings'],
+  'omc.title': ['Shell-PAMC 设置', 'Shell-PAMC Settings'],
   'omc.tps_calculation_mode': ["TPS 计算方式", "TPS calculation mode"],
   'omc.tps_calculation_desc': ["输出 Token ÷ 总耗时；排除首字延迟时先从总耗时中扣除，无法扣除时使用总耗时。", "Output tokens ÷ total latency; excluding first-token latency subtracts it when measurable, otherwise total latency is used."],
   'omc.tps_exclude_ttft': ["排除首字延迟", "Exclude first-token latency"],
@@ -1100,7 +1100,7 @@ const DICT: Record<string, [string, string]> = {
   'logs.viewer_too_large': ['文件超过 {limit}，下载后查看', 'The file is larger than {limit}; download it to read it'],
   'logs.viewer_empty': ['文件为空', 'The file is empty'],
   'logs.source_cpa': ['CPA 网关', 'CPA gateway'],
-  'logs.source_service': ['OMC 服务', 'OMC service'],
+  'logs.source_service': ['Shell-PAMC 服务', 'Shell-PAMC service'],
   'logs.service_counts': ['显示 {shown} / 共 {total} 条', '{shown} of {total} records'],
   'logs.service_retention': ['内存保留最近 {capacity} 条，自 {since} 起', 'Latest {capacity} kept in memory since {since}'],
   'logs.service_gap': ['部分较早的记录在读取前已被覆盖', 'Some earlier records were overwritten before they were read'],
@@ -3364,7 +3364,7 @@ const DICT: Record<string, [string, string]> = {
   'plugin.settings_sources_desc': ['在官方源之外追加插件 registry 地址（plugins.store-sources）。', 'Plugin registries read in addition to the official one (plugins.store-sources).'],
   'plugin.settings_official_source': ['CLIProxyAPI 官方源（始终启用）', 'CLIProxyAPI official registry (always included)'],
   'plugin.settings_omc_source': ['Shell-PAMC 插件源', 'Shell-PAMC registry'],
-  'plugin.settings_omc_source_open': ['在 OMC 设置中管理', 'Manage in OMC settings'],
+  'plugin.settings_omc_source_open': ['在 Shell-PAMC 设置中管理', 'Manage in Shell-PAMC settings'],
   'plugin.settings_add_source': ['添加源', 'Add source'],
   'plugin.settings_source_label': ['插件源 {n}', 'Source {n}'],
   'plugin.settings_remove_source': ['移除插件源 {n}', 'Remove source {n}'],

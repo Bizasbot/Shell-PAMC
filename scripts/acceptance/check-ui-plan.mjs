@@ -327,7 +327,7 @@ const SCENARIO_PATHS = [
     prefix: 'web/src/types/tokenHeatmap',
     scenarios: ['dashboard-heatmap', 'dashboard-heatmap-mobile', 'dashboard-heatmap-pruned', 'dashboard-heatmap-error', 'mobile-console'],
   },
-  // The OMC settings page and the preference layer behind it. The page is what the scenario loads,
+  // The Shell-PAMC settings page and the preference layer behind it. The page is what the scenario loads,
   // so a change to the page, its controls or the shared token-display layer reaches it; the token
   // layer and the preference hook also govern the dashboard's own readouts, which is why the
   // dashboard's model panels and the OMC page move together.
@@ -387,7 +387,7 @@ const SCENARIO_PATHS = [
   },
   {
     // The animated shape of a reading: the contract every readout on the dashboard's KPI tiles is
-    // built from. Only those tiles construct one, so the dashboard scenarios and the OMC settings
+    // built from. Only those tiles construct one, so the dashboard scenarios and the Shell-PAMC settings
     // scenario - which reads the same tiles back when it asserts the unit style they print in - are
     // what a change here can reach.
     prefix: 'web/src/types/rollingNumber',

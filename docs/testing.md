@@ -163,7 +163,7 @@ record grouping, auto-refresh and advanced-filter restoration from bare and
 explicit entry routes. The OAuth management and request interaction probes retain
 the real control wiring, reload and rendered collection-order claims.
 
-This layer owns rendered state, not engine facts. The OMC settings probe still owns
+This layer owns rendered state, not engine facts. The Shell-PAMC settings probe still owns
 its actual radio wiring, reload and phone geometry; context readout geometry and
 real navigation/keepalive remain browser claims. No assertion is removed merely
 because a component test passes. ADR 0089 and the phase-two ledger in

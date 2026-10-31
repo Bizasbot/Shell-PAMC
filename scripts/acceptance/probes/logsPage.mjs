@@ -202,7 +202,7 @@ export async function logsSources({ base, page, check }) {
     async () => (await textOf(page, '.log-list')).includes('HTTP server listening'),
     { label: 'the service log rows' },
   ).then(() => true).catch(() => false);
-  check('the OMC service source renders the service records', serviceShown, await textOf(page, '.log-list'));
+  check('the Shell-PAMC service source renders the service records', serviceShown, await textOf(page, '.log-list'));
   check('switching source is linkable', new URL(page.url()).searchParams.get('source') === 'service', page.url());
   const gatewayLeaked = (await textOf(page, '.log-list')).includes('/v1/chat/completions');
   check('the service source does not show gateway lines', !gatewayLeaked);

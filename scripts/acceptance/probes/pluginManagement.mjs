@@ -350,9 +350,9 @@ export async function pluginManagement({ base, page, check, writes }) {
       && settingsWrite.body.store_auth[0].token_env === 'MIRROR_TOKEN',
     JSON.stringify(settingsWrite),
   );
-  await omcRow.getByRole('button', { name: /在 OMC 设置中管理|Manage in OMC settings/ }).click();
-  check('the managed source row links to the OMC settings switch',
-    await isTrue(async () => new URL(page.url()).pathname.endsWith('/omc-settings'), 'the OMC settings page'));
+  await omcRow.getByRole('button', { name: /在 Shell-PAMC 设置中管理|Manage in Shell-PAMC settings/ }).click();
+  check('the managed source row links to the Shell-PAMC settings switch',
+    await isTrue(async () => new URL(page.url()).pathname.endsWith('/omc-settings'), 'the Shell-PAMC settings page'));
 
   await page.goto(`${base}/plugins`, { waitUntil: 'domcontentloaded' });
   const removable = page.locator('article[data-plugin-id="quota-notifier"]');

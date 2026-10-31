@@ -1117,7 +1117,7 @@ eager so sign-in and recovery do not wait for authenticated code. Brand/provider
 as SVG URLs. The small catalog used for lookup and grouping is vendored in
 `web/src/generated/lobeIconCatalog.json`; the React icon package is not a
 dependency, because importing it would pull hundreds of components into the
-eager bundle; the OMC Settings page is lazy for the same reason, because the palette editor it carries
+eager bundle; the Shell-PAMC Settings page is lazy for the same reason, because the palette editor it carries
 pulls in Ant Design's colour picker. Dashboard KPI cards use `@ant-design/charts` in a dedicated
 `vendor-charts` chunk, lazily loaded so the entry bundle stays small. Their
 numbers animate through `@number-flow/react`, which the dashboard page imports
@@ -2005,7 +2005,7 @@ its whole payload in one chunk. `eventTokensPerSecond` in
   the subtraction is not a measurement of pure generation time.
 
 `TokenDisplayProvider` owns the setting through the existing optimistic, per-key
-serialized preference hook. OMC Settings and request rows share
+serialized preference hook. Shell-PAMC Settings and request rows share
 one value; changing it recalculates historical readouts without touching stored observations.
 The calculation result exposes `basis` (`exclude_ttft`, `include_ttft`, `fallback_total`,
 or `null`) so both surfaces select the same accurate formula tooltip. The closed preference

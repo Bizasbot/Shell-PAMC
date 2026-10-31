@@ -3,7 +3,7 @@ import { until, settleLayout } from '../harness.mjs';
 import { LANGUAGES } from '../../../web/src/i18n/language.ts';
 
 /**
- * The OMC settings page: the console's own preferences, and the promise that changing one
+ * The Shell-PAMC settings page: the console's own preferences, and the promise that changing one
  * actually governs the console.
  *
  * The probe context is English (`omc-lang = 'en'`), which is the reading this page has to be
@@ -827,7 +827,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   await languageMenuItems.filter({ hasText: /English/ }).click();
   let becameEnglish = false;
   await until(async () => {
-    becameEnglish = /OMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText());
+    becameEnglish = /Shell-PAMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText());
     return becameEnglish;
   }, { label: 'the header menu to switch the console to English' }).catch(() => {});
   check(
@@ -867,7 +867,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
 
   await languageMenuButton().click();
   await page.locator('.ant-dropdown:visible .language-menu-item').filter({ hasText: /English/ }).click();
-  await until(async () => /OMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText()), {
+  await until(async () => /Shell-PAMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText()), {
     label: 'the header menu to return the console to English',
   });
   await page.keyboard.press('Escape');
@@ -944,7 +944,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   // Assert painted copy as well as attributes: a blank page must not pass.
   const fellBack = await until(async () => {
     const state = await languageState();
-    return /OMC Settings/.test(state.title) ? state : false;
+    return /Shell-PAMC Settings/.test(state.title) ? state : false;
   }, { label: 'the console to render base English copy while the Spanish catalog is unreachable' }).catch(() => null);
   check(
     'an unavailable stored Spanish catalog renders base English copy without replacing the preference',

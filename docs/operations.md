@@ -132,7 +132,7 @@ choose the server calendar. The supplied Compose files pass `TZ` to both OMC and
 default to `UTC`. For a standalone container, pass `-e TZ=Asia/Kuala_Lumpur`. Native
 deployments otherwise use the operating system timezone.
 
-In **OMC Settings → Time zone**, the server zone is selected automatically and marked
+In **Shell-PAMC Settings → Time zone**, the server zone is selected automatically and marked
 **Server time zone**. Every option includes its current UTC offset. A manual choice is
 persisted for the deployment; selecting the server zone restores the deployment default.
 Timestamp displays, calendar selections, daily totals and OMC service logs use this
@@ -324,7 +324,7 @@ responses.
 
 ## TPS calculation mode
 
-OMC Settings → Display chooses whether request-record TPS includes
+Shell-PAMC Settings → Display chooses whether request-record TPS includes
 first-token latency. The default excludes it when the remaining window is at least
 50 ms; otherwise it falls back to total latency. Including it always uses total latency.
 The server-stored `omc_tps_calculation_mode` preference (`exclude_ttft` /
@@ -338,7 +338,7 @@ CPA reads its built-in `official` registry plus the registries in
 setting is what remains of it. Shell-PAMC's own registry
 (`https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json`)
 is a managed entry: the server adds it when the source is on (the default) and restores
-it after a configuration save that removed it, so the switch is **OMC Settings →
+it after a configuration save that removed it, so the switch is **Shell-PAMC Settings →
 Shell-PAMC plugin registry** (`omc_plugin_source_enabled`, ADR 0104), not the configuration editor
 and not the source list on the plugin settings tab. Turning it off removes the
 address on the next plugin-settings or configuration save.
@@ -501,7 +501,7 @@ subscription cascade scheduling.
 
 ## Automatic quota refresh
 
-OMC Settings → Quota holds the deployment-wide automatic quota refresh policy (the
+Shell-PAMC Settings → Quota holds the deployment-wide automatic quota refresh policy (the
 `omc_quota_auto_refresh` preference, ADR 0094). **Refresh after a quota resets** is on
 by default: about a minute after a window a stored reading reported has reset, that
 credential is read again once. **Scheduled quota refresh** reads every enabled credential whose reading is

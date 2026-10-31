@@ -41,7 +41,7 @@ Shell-PAMC adds a user-owned identity and organization layer above CLIProxyAPI (
 - **Plugin Page**: A page a running plugin registers with CPA (`menus`): an HTML resource the plugin serves under `/v0/resource/plugins/<id>/`, listed in the console's navigation under the label the plugin gave it and shown in a frame. The page is the plugin's own document and calls the plugin's own management routes. Only a running plugin has pages.
 - **Plugin Host**: The authenticated route tree (`/api/v1/plugin-host/`) through which trusted Plugin Pages use CPA-native `/v0/management/*`, `/v8/management/*`, and the fixed `GET /v1/models` directory. Resources carry no credentials; management calls always reach CPA with the stored server key: a page that sends no credential acts with the session, and a page that sends Authorization or X-Management-Key has that credential compared with the stored key inside OMC, a mismatch answered `401` without contacting CPA so a mistyped key cannot spend CPA's failed-attempt ban on the console's shared address (ADR 0069); models use only the page's client Authorization. Native responses can contain upstream/client secrets, so every API read and write is audited and uncached. The host never exposes the stored management key itself. Installing a plugin is the trust decision: its page shares the operator's session authority. Arbitrary outbound `api-call` bridges remain refused (ADR 0067).
 - **Plugin System Settings**: The three host-owned keys of the `plugins` section - `enabled` (whether CPA loads plugins at all), `store-sources` (registries read in addition to the built-in official one) and `store-auth` (authentication rules for registry, metadata and artifact requests, matched by URL prefix). One entry of `store-sources` is managed rather than configured: the **Shell-PAMC Plugin Source** (ADR 0104). A rule names environment variables; the credential itself never appears in the file or the console. They are edited on the plugin page, not the configuration page, and saved against the loaded revision (ADR 0029).
-- **Shell-PAMC Plugin Source**: The plugin registry this project publishes (`plugins/registry.json`, served from the repository's `master` branch) and keeps in `plugins.store-sources`. Its address is compiled in, not configured: the server writes it when the `omc_plugin_source_enabled` preference is on (the default), repairs a configuration save that removed it, and removes it when the preference is off. It is one fixed row on the plugin settings tab, switched on OMC Settings.
+- **Shell-PAMC Plugin Source**: The plugin registry this project publishes (`plugins/registry.json`, served from the repository's `master` branch) and keeps in `plugins.store-sources`. Its address is compiled in, not configured: the server writes it when the `omc_plugin_source_enabled` preference is on (the default), repairs a configuration save that removed it, and removes it when the preference is off. It is one fixed row on the plugin settings tab, switched on Shell-PAMC Settings.
 
 - **Gateway Log**: CPA's own log file and its request error files, read through the Management API. It is CPA's record, not Shell-PAMC's: the console only tails it, and truncating it acts on CPA.
 - **Service Log**: Shell-PAMC's own process log. The process writes every record to stderr, which remains the durable log a deployment collects; the console reads a bounded, redacted in-memory copy of the latest 2,000 records that starts empty on every restart. Field values are scrubbed with the same redaction as audit rows, and any field whose name marks a credential (including every `*key` name) is replaced outright.
@@ -430,7 +430,7 @@ and the places it deliberately differs from the hand-tuned values it replaced.
   nobody has data about the cycle that began. It outlives the toast that announced it,
   which is the point.
 - **Quota Auto Refresh**: The background re-reading of stored quota observations,
-  under the deployment-wide `omc_quota_auto_refresh` policy edited on OMC Settings
+  under the deployment-wide `omc_quota_auto_refresh` policy edited on Shell-PAMC Settings
   (ADR 0094). It has two independent triggers. A **reset-driven read** (on by default)
   reads a credential once, about a minute after a window its latest reading reported
   has reset, so an exhausted credential reads as recovered without anyone asking; a
@@ -493,13 +493,13 @@ and the places it deliberately differs from the hand-tuned values it replaced.
 - **Sidebar Visibility**: Which of the rail's entries this console shows, stored as the
   `omc_nav_hidden` preference - the set of *hidden* route keys, so a destination a later release
   adds arrives already visible rather than waiting to be re-enabled. The entries are turned off
-  in a panel that a single row on OMC Settings opens - the panel lists the same model the rail
+  in a panel that a single row on Shell-PAMC Settings opens - the panel lists the same model the rail
   draws, so a plugin's page or a later release's destination appears there without a second list
   to maintain - and the row states how many entries are out of the rail, so the page reads without
   opening it. It is console state rather
   than a deployment capability: it changes nothing about what the gateway serves, the pages it
   hides stay reachable by URL, the filter applies to the expanded rail, the collapsed rail and
-  the phone sheet from one model, and OMC Settings - the page that owns the choice - cannot be
+  the phone sheet from one model, and Shell-PAMC Settings - the page that owns the choice - cannot be
   hidden. See [[Preference]].
 - **Font Library**: The deployment's installed typefaces, from which the two
   **Font Roles** are chosen: `ui` (the interface) and `mono` (code, identifiers and
@@ -734,7 +734,7 @@ A deployment may connect Shell-PAMC to a CLIProxyAPI (CPA) instance that was alr
 ## Time zone
 
 - **Deployment Time Zone**: The server's local calendar, resolved from `TZ` when configured or the operating system's timezone otherwise. Container deployments pass an IANA name through `TZ`; the supplied Compose stacks default to UTC and give CPA and OMC the same value.
-- **OMC Time Zone**: The deployment-wide calendar chosen in OMC Settings. An unset choice uses the Deployment Time Zone. A manual IANA choice takes precedence until the operator selects the server's zone again. Browser timezone does not override this choice. UTC offsets are evaluated at each instant, including daylight-saving changes.
+- **OMC Time Zone**: The deployment-wide calendar chosen in Shell-PAMC Settings. An unset choice uses the Deployment Time Zone. A manual IANA choice takes precedence until the operator selects the server's zone again. Browser timezone does not override this choice. UTC offsets are evaluated at each instant, including daylight-saving changes.
 - The OMC Time Zone governs console timestamps, audit day grouping, calendar selections, daily token totals and OMC service-log timestamps. Stored epoch timestamps, durations, rolling windows and wire-format instants remain absolute. Switching zones never moves or rewrites historical events. Raw upstream logs remain evidence in their original form; offset-free CPA log timestamps are interpreted in the shared Deployment Time Zone before display. Price Tier time-of-day windows use each tier's billing time zone, defaulting to UTC when none is specified. The price editor saves entered hours unchanged; the OMC Time Zone only governs the console-clock display.
 
 ## Custom icon library

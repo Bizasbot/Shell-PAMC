@@ -101,9 +101,9 @@ describe('sidebar visibility panel', () => {
       'AI providers', 'OAuth management', 'Key management',
       'Request Events', 'Cost & Usage', 'Logs', 'Audit trail',
       'Plugin management',
-      'Config', 'OMC Settings', 'System Information',
+      'Config', 'Shell-PAMC Settings', 'System Information',
     ]);
-    const settingsToggle = screen.getByRole('switch', { name: 'OMC Settings' });
+    const settingsToggle = screen.getByRole('switch', { name: 'Shell-PAMC Settings' });
     expect(settingsToggle.hasAttribute('disabled')).toBe(true);
     expect(settingsToggle.getAttribute('aria-checked')).toBe('true');
     expect(dialog.querySelector('.settings-toggle-desc')?.textContent).toBe('This entry manages the sidebar, so it always shows.');
@@ -136,7 +136,7 @@ describe('sidebar visibility panel', () => {
     await openPanel();
     const agent = await readySwitch('Agent');
     expect(agent.getAttribute('aria-checked')).toBe('false');
-    const settingsToggle = screen.getByRole('switch', { name: 'OMC Settings' });
+    const settingsToggle = screen.getByRole('switch', { name: 'Shell-PAMC Settings' });
     expect(settingsToggle.getAttribute('aria-checked')).toBe('true');
     expect(settingsToggle.hasAttribute('disabled')).toBe(true);
     expect(LOCKED_NAV_KEYS.has('/omc-settings')).toBe(true);

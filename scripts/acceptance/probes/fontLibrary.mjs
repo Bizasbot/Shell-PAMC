@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { settleLayout, until } from '../harness.mjs';
 
 /**
- * The typeface roles on the OMC settings page and the font library dialog behind them
+ * The typeface roles on the Shell-PAMC settings page and the font library dialog behind them
  * (`web/src/components/settings/FontSettings.tsx`).
  *
  * The logic suite resolves references to `font-family` values; only a browser shows the claims
