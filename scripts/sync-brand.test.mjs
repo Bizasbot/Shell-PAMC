@@ -70,8 +70,8 @@ test('the artifacts the READMEs reference are the files that exist', () => {
   for (const file of files) {
     assert.ok(fs.existsSync(path.join(root, file)), `${file} exists`);
   }
-  // And both READMEs point at exactly these, so a rename cannot leave a broken image behind.
-  for (const readme of ['README.md', 'README.zh-CN.md']) {
+  // And the README points at exactly these, so a rename cannot leave a broken image behind.
+  for (const readme of ['README.md']) {
     const text = fs.readFileSync(path.join(root, readme), 'utf8');
     for (const file of files) {
       assert.ok(text.includes(file), `${readme} references ${file}`);

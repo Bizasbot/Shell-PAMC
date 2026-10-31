@@ -11,7 +11,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const RELEASE_TARGETS = ['darwin', 'windows', 'linux', 'freebsd'].flatMap(goos =>
   ['amd64', 'arm64'].map(goarch => ({ goos, goarch })));
 const INSTALLATION_FILES = ['compose.full.yml', 'compose.omc.yml', 'cpa.config.example.yaml'];
-const ARCHIVE_FILES = ['LICENSE', 'README.md', 'README.zh-CN.md', '.env.example',
+const ARCHIVE_FILES = ['LICENSE', 'README.md', '.env.example',
   'docs/install.md', 'docs/install-for-agents.md', 'docs/operations.md', 'docs/ops/sqlite-operations.md'];
 export const RELEASE_DIRECTORY = path.join(ROOT, 'tmp/native-release');
 

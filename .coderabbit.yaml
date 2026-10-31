@@ -62,8 +62,8 @@ reviews:
           prose did not. Describe the adopted state rather than alternatives
           that were considered and rejected during the session. Do not invent
           line numbers and do not reference files that no longer exist.
-          Technical prose stays in English, except README.zh-CN.md and
-          localized UI copy.
+          Technical prose is written in Spanish; only localized UI copy
+          is exempt.
   pre_merge_checks:
     # A coverage percentage is not a meaningful target for a codebase whose
     # comments are reserved for design intent.
@@ -173,8 +173,8 @@ reviews:
         prefer a symbol or file reference over an absolute line number. Flag
         references to retired pages, prototypes, or removed files, and flag a
         `DESIGN.md`/`docs/design.md` pair that has drifted apart. Technical
-        prose is English; `README.zh-CN.md` and localized UI copy are the
-        intended exceptions.
+        prose is Spanish; only localized UI copy is the
+        intended exception.
     - path: 'docs/adr/**'
       instructions: >-
         Decision records. An ADR documents a consequential, hard-to-reverse

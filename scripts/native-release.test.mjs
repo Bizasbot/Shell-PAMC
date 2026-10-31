@@ -6,7 +6,7 @@ import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { buildNativeRelease, createNativePlan, packageNativeArchive, runRequiredTool, validateEmbeddedConsole, writeReleaseChecksums, verifyReleaseAssets } from './native-release.mjs';
 
-const ARCHIVE_DOCUMENTS = ['LICENSE', 'README.md', 'README.zh-CN.md', 'docs/install.md',
+const ARCHIVE_DOCUMENTS = ['LICENSE', 'README.md', 'docs/install.md',
   'docs/install-for-agents.md', 'docs/operations.md', 'docs/ops/sqlite-operations.md'];
 const PLAN = createNativePlan('v0.1.2', '0.1.2', '0.1.2');
 function runWithDirectory(run) {
