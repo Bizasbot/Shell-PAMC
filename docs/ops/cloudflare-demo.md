@@ -1,448 +1,310 @@
-# The public demonstration (Cloudflare Workers)
+# La demostración pública (Cloudflare Workers)
 
-The demonstration at the top of the README is the ordinary console served as static
-assets, with its API answered by a Worker from a dataset generated out of the real Go
-handlers. It is not a second frontend: the bundle is the one the Go binary embeds, and
-what differs is where its answers come from.
+La demostración al inicio del README es la consola ordinaria servida como recursos
+estáticos, cuya API es respondida por un Worker a partir de un conjunto de datos generado
+desde los controladores reales de Go. No es un segundo frontend: el paquete es el que
+el binario de Go incrusta, y lo único que difiere es el origen de sus respuestas.
 
-It exists to show the console. It does not run the product - there is no gateway, no
-database, no capture pipeline and no authentication behind it - and
+Existe para mostrar la consola. No ejecuta el producto — no hay pasarela, no hay base
+de datos, no hay canal de captura ni autenticación detrás — y
 [ADR 0021](../adr/0021-the-public-demonstration-is-generated-data-behind-the-real-console.md)
-records why that trade was taken and what it costs.
+registra por qué se adoptó esa decisión y qué implica.
 
-## What is deployed
+## Qué está desplegado
 
-| Piece | Where | What it is |
+| Pieza | Dónde | Qué es |
 | --- | --- | --- |
-| Console | Cloudflare Static Assets, from `tmp/cloudflare-demo/assets` | The built SPA, with the demonstration's runtime configuration injected and its asset URLs made root-relative |
-| API | `deploy/cloudflare/worker.mjs` | Reads the dataset, re-bases its timestamps and answers; refuses everything that would leave the demonstration |
-| Data | `deploy/cloudflare/data/responses.json` | Captured responses generated from the real handlers |
-| Routing | `deploy/cloudflare/routes.mjs` | Which request is answered by which captured response |
-| Time | `deploy/cloudflare/time.mjs` | Moves the captured history onto the viewer's clock |
-| Live traffic | `deploy/cloudflare/liveRouting.mjs` | Simulated gateway traffic that answers the live routing read and drives the live usage stream |
-| Filters | `deploy/cloudflare/filters.mjs` | Applies the audit trail's category, outcome, search and folding rules, and the service log's `after` position, to the one captured page, so those filters work in the demonstration |
+| Consola | Cloudflare Static Assets, desde `tmp/cloudflare-demo/assets` | La SPA compilada, con la configuración de tiempo de ejecución de la demostración inyectada y sus URLs de recursos relativas a la raíz |
+| API | `deploy/cloudflare/worker.mjs` | Lee el conjunto de datos, reubica sus marcas temporales y responde; rechaza todo lo que saldría de la demostración |
+| Datos | `deploy/cloudflare/data/responses.json` | Respuestas capturadas generadas a partir de los controladores reales |
+| Enrutamiento | `deploy/cloudflare/routes.mjs` | Qué solicitud es respondida por cuál respuesta capturada |
+| Tiempo | `deploy/cloudflare/time.mjs` | Traslada el historial capturado al reloj del espectador |
+| Tráfico en vivo | `deploy/cloudflare/liveRouting.mjs` | Tráfico simulado de pasarela que responde a la lectura de enrutamiento en vivo y alimenta el stream de uso en vivo |
+| Filtros | `deploy/cloudflare/filters.mjs` | Aplica reglas de categoría, resultado, búsqueda y plegado de la pista de auditoría, y la posición `after` del registro de servicio a la única página capturada, permitiendo que esos filtros funcionen en la demo |
 
-Requests to a static asset never invoke the Worker; requests under `/api` always do.
-`wrangler.jsonc` configures both, and `run_worker_first` names `/api` explicitly rather
-than relying on a pattern that could also match a console route.
+Las solicitudes a un recurso estático nunca invocan al Worker; las solicitudes bajo `/api` siempre lo hacen.
+`wrangler.jsonc` configura ambos, y `run_worker_first` nombra `/api` explícitamente en lugar
+de depender de un patrón que pudiera coincidir también con una ruta de la consola.
 
-## The dataset is generated, never hand-written
+## El conjunto de datos es generado, nunca escrito a mano
 
-```
-pnpm demo:generate          # regenerate, then review the diff
-pnpm demo:generate --check  # fail when the committed copy is stale
-pnpm check:demo             # coverage, freshness and privacy
-```
-
-`internal/api/demo_export_test.go` starts the real handler over a seeded repository and
-the demo fixture, drives every read the console makes, and writes what comes back. The
-value of generating rather than authoring is that every response has been through the
-same DTO projection a self-hosted install produces, so the demonstration cannot show a
-shape the product never emits. The Model Square response captures CPA-advertised IDs, safe routing provenance and
-bundled models.dev reference facts. Its Worker route maps to the generated `model-square`
-dataset entry; `scripts/demo-inputs.mjs` includes the metadata snapshot so updates invalidate
-the capture. External model lookup links are explicit navigation, not Worker forwarding.
-The captured Agent session is the same console DTO: it
-excludes private model history, queued model calls and raw database-query results.
-
-The export is reproducible: two runs over unchanged code are byte-identical, on any
-machine and at any time. That is what makes `--check` meaningful: the following
-invariants must hold rather than approximately hold.
-
-- **The window is closed, on a fixed instant in the past.** A `preset` resolves against
-  the wall clock, so two exports a minute apart disagree; and the server clamps a
-  requested end to the clock, so an instant in the future is not fixed either.
-- **Only the instants the handler stamps while answering are moved.** The seeded history
-  is anchored at the reference and is already deterministic. An earlier version displaced
-  everything by a run-dependent delta, which made two exports of identical history differ
-  by exactly a minute.
-- **Values measured from the process are stated as constants.** Latency, heap,
-  goroutines, the fixture's ephemeral port and an error-log file name stamped when the
-  listing was asked for describe the machine, not the demonstration. A public page should
-  not present them as though they described the service a visitor is looking at.
-- **Host facts are pinned, and an unset instant stays unset.** The runtime's Go version
-  and platform describe whichever machine ran the export, so the dataset states the
-  pinned toolchain from `scripts/tools-versions.json` and the release image's platform
-  instead. A zero instant means "never" and is not shifted, by the export or by the Worker.
-  `TestDemoExportRebaseIsIndependentOfTheExportClock` exports the same body at two
-  different clocks and requires identical output.
-- **Process starts share a fixed synthetic age.** Nonzero `started_at_ms` readings in
-  system runtime and service logs use the instant two hours before the reference.
-  The Worker preserves that age when rebasing, so both pages agree and never show a
-  future start. Unstarted maintenance jobs keep zero. `TestDemoExportStartTimesUseReferenceClock`
-  covers different export clocks, both JSON numeric decoding modes, and schema properties.
-
-## Why it does not go stale
-
-The console asks for a window by name - `preset=24h` - and the captured answer describes
-a window that ended when the dataset was generated. Served unchanged, the newest chart
-would be flat within a day. Every response is therefore re-based onto the viewer's clock
-as it is served, by one delta per response, so a window's bounds, its buckets, its tail's
-`as_of_ms` and the event rows inside it keep describing a single span.
-
-Instants are recognised by field name - `*_at_ms`, the convention this repository already
-uses - and text instants only when the whole string is an RFC 3339 instant. That second
-rule is not pedantry: `Date.parse` reads `claude-haiku-4-5` as the 4th of May and `gpt-5`
-as a date in 2001, so a lenient parser rewrote the model catalogue into models named after
-dates.
-
-The two shifts compose, so the export has to leave the dataset in **one** frame first: the
-seed's. It therefore moves only the instants that were stamped from the wall clock while it
-was answering, and leaves the ones the seed already anchors - window bounds, bucket
-timestamps, the heatmap's day grid - where they are. A field whose name alone cannot decide
-that needs the export to look at the response's shape instead, and one does: a dashboard
-tail's `live.as_of_ms` is the window's own end rather than a stamp, so it is written from
-`window.to` after the shift. Shifting it as a stamp instead moves it a whole wall-clock delta
-away from the window it belongs to, and since the console treats a mark that precedes its
-window as a stale answer (`applyTail`), every tail in the served demonstration was being
-discarded. `internal/api/demo_export_test.go` asserts that pair on the exported dataset,
-because the console simply keeps its full response when a tail is dropped - nothing visible
-fails.
-
-## The live routing panel runs on simulated traffic
-
-Re-basing keeps a report current, but the dashboard's live routing panel is not a report:
-it plays a request when a read returns a record newer than the last one it holds, and a
-capture re-based on every read never has one. So `GET /usage/routing` and
-`GET /usage/live` are the two reads the Worker composes instead of serving from the
-dataset.
-
-`liveRouting.mjs` is a small gateway that is always busy. Its traffic is a pure function
-of the wall clock - each 500 ms slot's request comes from a generator seeded with the
-slot's number - so every read of an instant agrees, and the console's `after` cursor and
-rolling minute work against it as they do against CPA. It calls `claude-opus-5.5`,
-`gpt-6-astra` and `deepseek-v4.1-flash` through five credentials the rest of the dataset
-already lists (`auth-claude-01`, `auth-codex-01`/`02`, `auth-ds-01`/`02`), at roughly one
-request a second with a handful in flight. Now and then an upstream error moves a request
-to the sibling credential, and every two and a half minutes a credential meets a rate
-limit and rests for 28 seconds while its sibling carries the traffic. Record ids lead with
-the instant an attempt finished, which is the order CPA stores them in; the callers' key
-identities are taken from the captured routing read so they match the key table.
-
-The live stream frames its signals as the gateway does - `ready`, then `usage` when an
-attempt is recorded, at most one per 250 ms - and ends after two minutes, when the browser
-reconnects. The captured `usage-live` entry stays the gateway's own demonstration-mode
-answer (204); the Worker does not serve it.
-
-## Keeping it current is a gate, not a habit
-
-The dataset describes the API, so a changed response shape leaves the served copy behind
-in a way nobody notices: the page renders, showing what the API said last month.
-
-`pnpm check:demo` fails when any of these is true, and `pnpm test:self` runs it:
-
-- a console route has no declared reads, so a new page cannot be added without a dataset
-  entry;
-- a declared read has no captured response;
-- a file the dataset is derived from has changed since it was generated;
-- the dataset contains an operator identifier, a credential shape or a deployment
-  hostname. The dataset is downloadable by anyone, so this is a leak rather than a defect.
-
-`scripts/check-demo.test.ts` covers the gate itself, because a check that cannot fail is
-worse than no check.
-
-**When you change a console page or its API shape:** regenerate with
-`pnpm demo:generate`, read the diff - it is where a changed shape shows up - and commit
-the data with the change. `pnpm verify:demo` then drives every route in a real browser.
-
-## Verification
-
-```
-pnpm test:demo              # the Worker's routing, re-basing and privacy, in Node
-pnpm check:demo             # the dataset is current and complete
-pnpm verify:demo            # every console route renders, no API errors, no console errors
-SHELLPAMC_DEMO_URL=https://<host> pnpm verify:demo   # the same against a deployment
-pnpm verify:demo:go         # the Go binary's own demonstration mode, still supported
+```bash
+pnpm demo:generate          # regenerar y revisar el diff
+pnpm demo:generate --check  # falla cuando la copia comprometida está desactualizada
+pnpm check:demo             # cobertura, frescura y privacidad
 ```
 
-`verify:demo` is deliberately a browser check rather than a set of unit tests. Three
-defects in this Worker were invisible to unit tests and obvious in one browser run: the
-session endpoint sitting outside `/api/v1`, which put every page on the sign-in card; the
-model-name corruption above; and an event list captured without a window, which rendered
-as "no request records". Without a remote URL, the check stages the existing production build and serves the
-real Worker handler in-process. Each navigation registers its required initial reads
-before loading, waits for successful response-body completion, then checks the actual
-page heading and visible content (including the agent capability directory). Visible
-loading states, missing reads, API/transport failures and console errors fail the run.
-There is no fixed per-page sleep or global network-idle wait; ongoing polls do not
-block completion. Per-route timings are printed, and browser/server cleanup runs on
-failure as well as success.
+`internal/api/demo_export_test.go` inicia el controlador real sobre un repositorio poblado con datos de prueba
+y el fixture de la demo, ejecuta cada lectura que la consola realiza y escribe lo que se devuelve. El
+valor de generar en lugar de escribir a mano es que cada respuesta pasa por la misma proyección
+de DTO que produce una instalación autoalojada, evitando que la demostración muestre una estructura
+que el producto nunca emite. La respuesta de Model Square captura IDs anunciados por CPA, procedencia de enrutamiento segura y
+hechos de referencia de models.dev empaquetados. Su ruta de Worker mapea a la entrada generada
+`model-square` del dataset; `scripts/demo-inputs.mjs` incluye la instantánea de metadatos para que las actualizaciones invaliden
+la captura. Los enlaces externos de consulta de modelos son navegación explícita, no reenvío del Worker.
+La sesión del Agente capturada es el mismo DTO de la consola:
+excluye historial privado del modelo, llamadas en cola del modelo y resultados sin procesar de consultas a bases de datos.
 
-## Deploying
+La exportación es reproducible: dos ejecuciones sobre código sin cambios son idénticas byte a byte, en cualquier
+máquina y en cualquier momento. Eso es lo que hace que `--check` sea significativo: los siguientes
+invariantes deben cumplirse estrictamente y no de forma aproximada.
 
-Shell-PAMC has no public demonstration yet. `wrangler.jsonc` declares no route, so a deploy publishes nothing on any domain until the operator adds a custom domain under `routes`.
-The `workers.dev` route is off in `wrangler.jsonc`, on purpose: that subdomain is
-account-level and derived from the account's identity, so leaving it on would publish the
-demonstration at an address carrying personal information. Both settings are stated in the
-config rather than configured once in the console, which means a deploy from a fresh clone
-reproduces the deployed state instead of quietly re-enabling the address that was turned
-off deliberately.
+- **La ventana es cerrada, sobre un instante fijo en el pasado.** Un `preset` se resuelve contra
+  el reloj de pared, por lo que dos exportaciones con un minuto de diferencia no coincidirían; y el servidor limita un
+  final solicitado al reloj, por lo que un instante en el futuro tampoco sería fijo.
+- **Solo se desplazan los instantes que el controlador estampa al responder.** El historial inicial
+  está anclado en la referencia y ya es determinista. Una versión anterior desplazaba
+  todo según un delta dependiente de la ejecución, lo que hacía que dos exportaciones de historial idéntico difirieran
+  por exactamente un minuto.
+- **Los valores medidos desde el proceso se declaran como constantes.** Latencia, memoria de montón (heap),
+  goroutines, el puerto efímero del fixture y el nombre de un archivo de registro de errores estampado al
+  solicitar el listado describen la máquina, no la demostración. Una página pública no debe
+  presentarlos como si describieran el servicio que el visitante está observando.
+- **Los datos del host están fijados, y un instante no establecido permanece sin establecer.** La versión de Go y la
+  plataforma del entorno de ejecución describen la máquina en la que se ejecutó la exportación, por lo que el conjunto de datos declara en su lugar
+  la cadena de herramientas fijada en `scripts/tools-versions.json` y la plataforma de la imagen de versión.
+  Un instante cero significa "nunca" y no se desplaza, ni por la exportación ni por el Worker.
+  `TestDemoExportRebaseIsIndependentOfTheExportClock` exporta el mismo cuerpo en dos
+  momentos de reloj diferentes y exige una salida idéntica.
+- **Los inicios de procesos comparten una antigüedad sintética fija.** Lecturas `started_at_ms` no nulas en
+  el tiempo de ejecución del sistema y registros de servicio utilizan el instante dos horas anterior a la referencia.
+  El Worker preserva esa antigüedad al reubicar en el tiempo, de modo que ambas páginas coinciden y nunca muestran un
+  inicio futuro. Tareas de mantenimiento no iniciadas conservan cero. `TestDemoExportStartTimesUseReferenceClock`
+  cubre diferentes relojes de exportación, ambos modos de decodificación numérica de JSON y propiedades de esquema.
 
-The demonstration deploys from `master` through Cloudflare's Git integration (Workers
-Builds), which builds and deploys on push. **No repository secret is needed**: Cloudflare
-generates and manages the build's API token, which is what made this preferable to a
-GitHub Actions deployment holding a long-lived credential.
+## Por qué no se desactualiza
 
-One-time setup, in the Cloudflare console:
+La consola solicita una ventana por su nombre — `preset=24h` — y la respuesta capturada describe
+una ventana que terminó cuando se generó el conjunto de datos. Servida sin cambios, el gráfico más reciente
+quedaría plano en un día. Cada respuesta se reubica temporalmente sobre el reloj del espectador
+al ser servida, mediante un único delta por respuesta, de modo que los límites de una ventana, sus cubos, el
+`as_of_ms` de su cola y las filas de eventos dentro de ella sigan describiendo un período coherente.
 
-1. Install the Cloudflare GitHub integration and grant it access to this repository only.
-2. Create the Worker `shell-pamc-demo`, connect it to this repository, and set the
-   production branch to `master`.
-3. **Turn off preview builds**, so a pull request deploys nothing. Uncheck **Enable
-   Preview Builds** under Settings → Build → Branch control.
+Los instantes se reconocen por su nombre de campo — `*_at_ms`, la convención que este repositorio ya
+utiliza — y los instantes de texto solo cuando la cadena completa es un instante RFC 3339. Esa segunda
+regla no es un capricho: `Date.parse` interpreta `claude-haiku-4-5` como el 4 de mayo y `gpt-5`
+como una fecha en 2001, por lo que un analizador permisivo reescribía el catálogo de modelos asignando nombres de fechas.
 
-   The **Preview command** field is required by the form even with that box unchecked, and
-   the documentation is clear that the command only runs when the box is on ("When
-   enabled, every push to a branch that is not your production branch triggers a preview
-   build. Workers Builds runs the build command, followed by the Preview command"). The
-   value is therefore inert; use something self-describing rather than the default, so a
-   reader who later wonders why no preview appears finds the reason rather than a
-   `wrangler versions upload` that looks like it should have produced one:
+Los dos desplazamientos se componen, por lo que la exportación debe dejar el conjunto de datos en **un solo** marco temporal primero:
+el del origen de datos. Por lo tanto, solo mueve los instantes que fueron estampados desde el reloj de pared mientras
+respondía, y deja intactos los que ya están anclados — límites de ventana, marcas de tiempo de cubos,
+la cuadrícula de días del mapa de calor. Un campo cuyo nombre por sí solo no pueda decidirlo
+requiere que la exportación analice la estructura de la respuesta: el `live.as_of_ms` de la cola del
+tablero es el propio fin de la ventana y no una estampa de tiempo, por lo que se escribe desde
+`window.to` tras el desplazamiento. Desplazarlo como una estampa de tiempo lo alejaría un delta completo
+de reloj de la ventana a la que pertenece, y dado que la consola trata una marca anterior a su
+ventana como una respuesta desactualizada (`applyTail`), cada cola en la demostración servida era
+descartada. `internal/api/demo_export_test.go` asegura ese par en el conjunto de datos exportado,
+evitando fallos silenciosos.
+
+## El panel de enrutamiento en vivo opera con tráfico simulado
+
+El rebasado temporal mantiene un informe al día, pero el panel de enrutamiento en vivo del tablero no es un informe:
+reproduce una solicitud cuando una lectura devuelve un registro más nuevo que el último que contiene, y una
+captura rebasada temporalmente en cada lectura nunca tiene uno. Por lo tanto, `GET /usage/routing` y
+`GET /usage/live` son las dos lecturas que el Worker compone en lugar de servir desde el conjunto de datos.
+
+`liveRouting.mjs` es una pequeña pasarela siempre ocupada. Su tráfico es una función pura
+del reloj de pared — la solicitud de cada intervalo de 500 ms proviene de un generador inicializado con el
+número del intervalo — de modo que cada lectura de un instante coincide, y el cursor `after` de la consola y su
+minuto móvil funcionan contra él igual que contra CPA. Invoca `claude-opus-5.5`,
+`gpt-6-astra` y `deepseek-v4.1-flash` mediante cinco credenciales que el resto del conjunto de datos
+ya lista (`auth-claude-01`, `auth-codex-01`/`02`, `auth-ds-01`/`02`), a aproximadamente una
+solicitud por segundo con varias en vuelo. Ocasionalmente, un error de upstream traslada una solicitud
+a la credencial hermana, y cada dos minutos y medio una credencial alcanza un límite de tasa
+y reposa durante 28 segundos mientras su hermana asume el tráfico. Los IDs de registro comienzan con
+el instante en que finalizó un intento, que es el orden en que CPA los almacena; las identidades de claves
+de los invocadores se toman de la lectura de enrutamiento capturada para que coincidan con la tabla de claves.
+
+El stream en vivo estructura sus señales como lo hace la pasarela — `ready`, luego `usage` cuando se
+registra un intento, como máximo uno cada 250 ms — y finaliza tras dos minutos, cuando el navegador
+se reconecta. La entrada `usage-live` capturada permanece como la respuesta propia en modo demostración
+de la pasarela (204); el Worker no la sirve.
+
+## Mantenerlo actualizado es una barrera, no un hábito
+
+El conjunto de datos describe la API, por lo que una estructura de respuesta modificada deja desfasada la copia servida
+sin que nadie lo note: la página se renderiza mostrando lo que la API devolvía el mes anterior.
+
+`pnpm check:demo` falla si ocurre cualquiera de las siguientes situaciones (y `pnpm test:self` lo ejecuta):
+
+- una ruta de consola no tiene lecturas declaradas, evitando que se añada una página nueva sin una entrada en el dataset;
+- una lectura declarada no tiene respuesta capturada;
+- un archivo del que se deriva el conjunto de datos ha cambiado desde que se generó;
+- el conjunto de datos contiene un identificador de operador, un formato de credencial o un nombre de host de despliegue.
+  El conjunto de datos es descargable públicamente, por lo que esto constituiría una filtración y no un defecto menor.
+
+`scripts/check-demo.test.ts` cubre la barrera misma, asegurando su capacidad de fallo ante discrepancias.
+
+**Al modificar una página de la consola o la estructura de su API:** regenere con
+`pnpm demo:generate`, revise el diff — es donde se aprecian los cambios estructurales — y confirme
+los datos con el cambio. `pnpm verify:demo` luego ejecuta cada ruta en un navegador real.
+
+## Verificación
+
+```bash
+pnpm test:demo              # enrutamiento, rebasado temporal y privacidad del Worker, en Node
+pnpm check:demo             # el conjunto de datos está actualizado y completo
+pnpm verify:demo            # cada ruta de la consola se renderiza sin errores de API ni de consola
+SHELLPAMC_DEMO_URL=https://<host> pnpm verify:demo   # lo mismo contra un despliegue real
+pnpm verify:demo:go         # el modo de demostración propio del binario Go, aún admitido
+```
+
+`verify:demo` es deliberadamente una comprobación de navegador en lugar de una serie de pruebas unitarias. Tres
+defectos en este Worker eran invisibles a pruebas unitarias y evidentes en una ejecución de navegador: el
+endpoint de sesión ubicado fuera de `/api/v1`, que enviaba cada página a la tarjeta de login; la
+corrupción de nombres de modelos explicada anteriormente; y una lista de eventos capturada sin ventana, que se renderizaba
+como "sin registros de solicitudes". Sin una URL remota, la comprobación monta la compilación de producción existente y sirve el
+controlador real del Worker en el proceso. Cada navegación registra sus lecturas iniciales requeridas
+antes de cargar, espera la finalización exitosa del cuerpo de respuesta y comprueba el encabezado real
+de la página y el contenido visible (incluido el directorio de capacidades del agente).
+Estados de carga visibles, lecturas faltantes, fallos de API/transporte y errores de consola fallan la ejecución.
+No hay esperas fijas por página ni espera global de red inactiva; sondeos continuos no
+bloquean la finalización. Se imprimen los tiempos por ruta y la limpieza de navegador/servidor se ejecuta tanto
+en caso de fallo como de éxito.
+
+## Despliegue
+
+Shell-PAMC no tiene una demostración pública activa todavía. `wrangler.jsonc` no declara rutas, por lo que un despliegue no publica nada en ningún dominio hasta que el operador agregue un dominio personalizado bajo `routes`.
+La ruta `workers.dev` está desactivada en `wrangler.jsonc` a propósito: ese subdominio es
+a nivel de cuenta y se deriva de la identidad de la cuenta, por lo que dejarlo activo publicaría la
+demostración en una dirección que contiene información personal. Ambos ajustes se declaran en la
+configuración en lugar de configurarse manualmente en la consola, lo que garantiza que un despliegue desde una copia limpia
+reproduzca el estado previsto sin reactivar silenciosamente la dirección deshabilitada.
+
+La demostración se despliega desde `master` mediante la integración Git de Cloudflare (Workers
+Builds), que compila y despliega en cada push. **No se requiere ningún secreto en el repositorio**: Cloudflare
+genera y gestiona el token de API de la compilación, lo que resultó preferible a un despliegue en
+GitHub Actions con credenciales de larga duración.
+
+Configuración inicial única en la consola de Cloudflare:
+
+1. Instale la integración de GitHub de Cloudflare y otorgue acceso exclusivamente a este repositorio.
+2. Cree el Worker `shell-pamc-demo`, conéctelo a este repositorio y configure la rama de
+   producción en `master`.
+3. **Desactive las compilaciones de vista previa (preview builds)**, de modo que un pull request no despliegue nada. Desmarque **Enable
+   Preview Builds** en Settings → Build → Branch control.
+
+   El campo **Preview command** es exigido por el formulario incluso con la casilla desmarcada, y
+   la documentación aclara que el comando solo se ejecuta cuando la casilla está activa.
+   Por lo tanto, el valor queda inerte; utilice un texto descriptivo en lugar del predeterminado:
 
    ```
    echo "Preview builds are disabled for this Worker; it deploys from master only."
    ```
 
-   Preview URLs are separately guarded by `workers_dev: false`, which disables them by
-   default. Verified on the deployed Worker: a preview URL of the form
-   `<version-prefix>-shell-pamc-demo.<account-subdomain>.workers.dev` answers 404, so even a
-   preview command that ran could not publish the demonstration under the account-level
-   subdomain. The two settings guard the same thing from different sides, and the checkbox
-   is the one that decides whether the command runs at all.
-4. Set the build command to `pnpm build && pnpm check:demo && pnpm build:demo`, and the deploy
-   command to `pnpm exec wrangler deploy --config deploy/cloudflare/wrangler.jsonc`.
+   Las URLs de vista previa están protegidas adicionalmente por `workers_dev: false`, que las deshabilita por
+   defecto. Verificado en el Worker desplegado: una URL de vista previa con el formato
+   `<prefijo-version>-shell-pamc-demo.<subdominio-cuenta>.workers.dev` responde 404.
+4. Establezca el comando de compilación en `pnpm build && pnpm check:demo && pnpm build:demo`, y el comando de despliegue
+   en `pnpm exec wrangler deploy --config deploy/cloudflare/wrangler.jsonc`.
 
-   `pnpm build` is the part that is easy to leave out and cannot be: the built console is
-   gitignored, so a fresh clone's `internal/web/dist/` holds only its `.gitkeep`.
-   `build:demo` stages what `pnpm build` produced rather than building it, and without the
-   first command it stops with "no built console". Verified in a fresh clone: `pnpm build`
-   takes about 37s there.
+   `pnpm build` es la parte fundamental que no debe omitirse: la consola compilada está
+   en el gitignore, por lo que en una copia limpia `internal/web/dist/` contiene únicamente su `.gitkeep`.
+   `build:demo` prepara lo que produjo `pnpm build` en lugar de compilarlo, y sin el
+   primer comando se detiene indicando "no built console".
 
-   The web build states its own Node heap (`--max-old-space-size=4096` in
-   `web/package.json`) because Node sizes the default from the machine's memory. On the
-   build image that default is about 2 GB, and `vite build` peaks near 2.7 GB while
-   rendering chunks, so it aborted with "JavaScript heap out of memory" on some builds
-   and not others. Setting it in the script rather than as a build variable keeps the
-   Cloudflare build, CI and a local build on the same limit.
+   La compilación web define su propia memoria de montón de Node (`--max-old-space-size=4096` en
+   `web/package.json`) debido a que Node calcula el valor predeterminado según la memoria de la máquina.
+   Fijarlo en el script garantiza límites homogéneos entre Cloudflare, CI y compilaciones locales.
 
-   `pnpm install` is not part of it because Workers Builds installs dependencies itself,
-   using the `packageManager` field and `.nvmrc` this repository already pins. No build
-   variables are needed for the same reason.
+   `pnpm install` no forma parte del comando porque Workers Builds instala dependencias automáticamente,
+   utilizando el campo `packageManager` y el `.nvmrc` fijados por el repositorio.
 
-The build runs on Node only. The dataset is committed, so Cloudflare never needs Go, a
-browser or a database; generation and browser verification happen in development and in
-GitHub's checks.
+La compilación se ejecuta exclusivamente en Node. El conjunto de datos está confirmado en Git, por lo que Cloudflare nunca necesita Go,
+navegadores ni bases de datos; la generación y verificación ocurren en desarrollo y en
+las comprobaciones de GitHub.
 
-Verified with `pnpm exec wrangler deploy --config deploy/cloudflare/wrangler.jsonc --dry-run`:
-597 asset files, 444 KiB total and 50 KiB gzipped. That is well inside the Workers free
-plan, whose bundle limit is 64 MiB uncompressed, and it is why the dataset being
-committed costs nothing to serve.
+**Rollback:** Cloudflare conserva versiones anteriores, y revertir restaura el Worker y
+sus recursos juntos. El cambio correspondiente debe revertirse también en `master`,
+o el siguiente push volverá a desplegarlo. No hay base de datos que revertir.
 
-**Rollback:** Cloudflare keeps previous versions, and rolling back restores the Worker and
-its assets together. The corresponding source change should be reverted on `master` too,
-or the next push will deploy it again. There is no database to roll back, because there
-is none.
+## Qué rechaza la demostración
 
-## What the demonstration refuses
+Todo lo que saldría de ella: flujos de inicio de sesión, movimiento de credenciales, ejecución de plugins,
+escrituras de configuración en la pasarela y consumo de cuotas. `worker.mjs` rechaza directamente cualquier petición
+que no sea de lectura bajo `/api`, y las cuatro lecturas sensibles por ruta — descarga de credenciales, registro de
+solicitudes y paquete de diagnósticos — antes de consultar el conjunto de datos.
 
-Everything that would leave it: sign-in flows, credential movement, plugin execution,
-gateway configuration writes and quota spending. `worker.mjs` refuses a non-read under
-`/api` outright, and the four dangerous reads by path - a credential download, a request
-log and a diagnostic bundle - before the dataset is consulted, so a write cannot be
-answered by a coincidence of path matching.
+Rutas de API desconocidas responden un 404 estructurado en lugar de un éxito vacío, evitando que una ruta
+no contemplada renderice una página mostrando cifras pertenecientes a otra sección.
 
-Unknown API paths answer a shaped 404 rather than an empty success, because a route that
-fell through to a default would render a page carrying another page's numbers.
+## La presencia de un script de terceros en la página es esperada
 
-## A third-party script on the page is expected
+Cloudflare inyecta su baliza de Real User Measurement (`static.cloudflareinsights.com`)
+en el HTML de este plan, por lo que un navegador que abre la demostración solicita ese origen.
+No reside en este repositorio ni en la salida de compilación — el origen devuelve HTML
+sin ella y el borde de red la añade.
 
-Cloudflare injects its Real User Measurement beacon (`static.cloudflareinsights.com`)
-into the HTML of this plan, so a browser opening the demonstration requests that origin.
-It is not in this repository and not in the build output - the origin returns HTML
-without it and the edge adds it - which makes it easy to mistake for a defect when a
-network panel shows an unfamiliar host.
+Fue aceptado con conocimiento de causa. La garantía requerida concierne al código propio, y
+sigue cumpliéndose: el Worker responde desde el conjunto de datos y no reenvía nada, por lo que ningún proveedor es
+contactado jamás. Suprimir la baliza es posible mediante encabezados, pero se decidió no hacerlo. ADR 0021 registra la decisión.
 
-It was accepted knowingly. The claim this project needs is about its own code, and it
-still holds: the Worker answers from the dataset and forwards nothing, so no provider is
-ever contacted. Suppressing the beacon is possible - `Cache-Control: no-transform` on the
-documents stops it, measured - and is deliberately not done, because the beacon was
-judged acceptable and a suppression the project does not want would be a claim the
-repository does not mean. ADR 0021 records the decision.
+## Resolución de problemas
 
-## The demonstration used to run on Vercel
+**Una página se renderiza pero su panel aparece vacío.** Su lectura no tiene entrada en el conjunto de datos o la entrada
+se capturó sin la ventana solicitada. `pnpm check:demo` indica la ruta; la solución consiste en agregar un caso de exportación en
+`internal/api/demo_export_test.go` y regenerar.
 
-It no longer does, and the retirement is complete rather than pending: the project, its
-deployments, its aliases and its container-registry repository are deleted, and
-`shell-pamc-demo.vercel.app` answers 404. Nothing in the repository refers to it except
-this section and the ADR that records why the move happened.
+**Las fechas se ven desactualizadas.** El rebasado temporal no está alcanzando un campo. Añada el nombre a las
+reglas de instantes en `time.mjs` respetando la convención `*_at_ms`.
 
-Two things are worth knowing if you find traces of it.
+**`pnpm demo:generate --check` falla inmediatamente tras una fusión.** Alguien modificó un archivo
+del cual se deriva el dataset. Regenere, revise el diff y confirme los datos con el cambio.
 
-The **GitHub deployments panel no longer carries the retired integration's records**.
-Its 47 entries created by `vercel[bot]` - 34 Preview and 13 Production, all in terminal
-states, from 2026-09-19 to 2026-09-22 - and the `Preview` and `Production` environments
-the first deployments created were removed on 2026-09-28. The Vercel period remains
-recorded in this section, in commit `9630b9b` and in the ADR that records why the move
-happened.
+**El servidor local no inicia.** Elimine `deploy/cloudflare/.wrangler` y ejecute `pnpm install` nuevamente.
 
-The **credential the CLI stored had expired**, and re-authenticating needed one
-interactive step. That is why this section exists: a future cleanup that reports "the
-API says the project is gone" may be reporting an expired token rather than an absent
-project, and the two look identical from an empty response.
+## Datos y reproducción de capacidades del agente
 
-## Troubleshooting
+La ruta `/agent` se distribuye en la demostración como la página real sobre datos generados: el
+catálogo de capacidades y la sesión vacía del Agente se exportan desde los controladores reales
+(`/api/v1/capabilities`, `/api/v1/agent/session`), permitiendo al visitante ver las capacidades
+declaradas, sus permisos y descripciones. El Worker rechaza invocaciones de capacidades, reinicio de sesión,
+ejecuciones del Agente, decisiones de operaciones, envío de secretos e inicio de OAuth.
+El navegador ofrece un ejemplo grabado curado (ADR 0092), procesado a través de los reductores
+de producción sin realizar solicitudes al modelo ni ejecutar capacidades.
 
-**A page renders but its panel is empty.** Its read has no dataset entry, or the entry
-was captured without the window the page asks for. `pnpm check:demo` names the route; the
-fix is an export case in `internal/api/demo_export_test.go` and a regeneration.
+## Directorio de modelos del agente
 
-**The dates look old.** The re-basing is not reaching a field. Add the name to the
-instant rules in `time.mjs` rather than extending the list of captured fields: the
-convention is `*_at_ms`, and a field that does not follow it is worth renaming.
+El directorio de modelos del Agente se genera desde el fixture de CPA en loopback a través de la
+fachada real de Shell-PAMC. El Worker mapea `/api/v1/agent/models` a la respuesta generada del directorio de modelos.
+La ruta de consola `/agent` está incluida tanto en la cobertura de demo como en la aceptación del navegador.
 
-**`pnpm demo:generate --check` fails immediately after a merge.** Someone changed a source
-file the dataset derives from. Regenerate, read the diff, and commit the data with the
-change - which is exactly what the gate is for. A diff that touches only timestamps or
-runtime facts is not a source change: it means a new field escaped the export's
-determinism rules, and the fix is a rule in `internal/api/demo_export_test.go`, not a
-regenerated copy.
+Las inferencias son rechazadas por la política de rutas en Go y la barrera de no-lectura del Worker.
+La interfaz ofrece un ejemplo grabado localmente en el navegador en modo demo.
 
-**The local server will not start.** Delete `deploy/cloudflare/.wrangler` (it is ignored
-per-machine state) and run `pnpm install` again, which fetches the runtime binary the
-local server needs.
+### Fixture de proveedores de precios
 
-## Agent-capability data and replay
+La respuesta generada de precios incluye la misma instantánea no confidencial de membresía de proveedores que la aplicación Go: IDs de proveedores de claves API configurados, proveedores OAuth activos agrupados, etiquetas de canales, prioridades y membresías exactas de modelos. `internal/demo/seed.go` la deriva de los catálogos del fixture.
 
-The `/agent` route ships in the demonstration as the real page over generated data: the
-capability catalogue and the empty Agent session are exported from the real handlers
-(`/api/v1/capabilities`, `/api/v1/agent/session`), so a visitor sees the declared
-capabilities, their permissions and their descriptions. The Worker refuses capability
-invocation, session reset, Agent runs, operation decisions, secret submission and OAuth start.
-The browser offers one curated recorded example (ADR 0092), folded through the production
-reducers without making a model request or executing a capability. Replay remains available
-when the key or model catalogue is empty; pending approval still blocks sending. Its recorded
-receipts and local generated UI demonstrate the workspace; they are not current service observations or
-approvals of live operations.
+### Metadatos de zona horaria
 
-Because the catalogue is part of the dataset's coverage, adding, renaming or re-describing
-a capability changes a served response: regenerate and inspect the dataset whenever the
-registry or its safety metadata changes.
+La respuesta generada de preferencias incluye `time_zone` con los nombres de zona horaria del despliegue, anulación y efectiva. La generación del dataset fija `TZ=UTC` para que los metadatos capturados no dependan de la máquina del desarrollador.
 
-## Agent model directory
+### Ejemplos de capacidad de cuota
 
-The Agent's model directory is generated from the loopback CPA fixture through the
-real Shell-PAMC facade. The export derives its client-key fingerprint from the already-captured
-masked key list; no literal fingerprint is maintained in the generator. The Worker maps
-`/api/v1/agent/models` (formerly `/api/v1/playground/models`) to the generated model-directory
-response. The console route `/agent` is included in both demo coverage and browser acceptance.
+El conjunto de datos generado incluye observaciones normalizadas reales para Codex, Claude y un grupo permitido de Antigravity Gemini mediante `internal/demo/quota.go`. Una segunda credencial de Codex cuenta con una lectura baja de 5 horas y una observación del ciclo previo adyacente, permitiendo que los controladores reales muestren una referencia histórica de capacidad.
 
-Inference is refused by the Go route policy and the Worker's existing
-non-read refusal. The UI offers one browser-local recorded example in demo mode. It does not claim durable preference storage: the Worker
-still refuses non-read API calls, so a selected key and call point last only for that page session. No sample
-answer is represented as a real model call, and no new outbound destination or console
-configuration is needed. Regenerate and inspect the dataset whenever this surface changes.
+### Dataset de reglas de modelos OAuth
 
-### Pricing provider fixture
+La tarea Reglas de modelos del espacio de trabajo OAuth lee mapas de alias y exclusiones para todo el proveedor más un catálogo estático de modelos por proveedor. El dataset exporta estos elementos como `auth-files-model-aliases`, `auth-files-excluded-models` y entradas del catálogo de proveedores; las rutas del Worker resuelven solo los catálogos exportados y rechazan escrituras de reglas duraderas.
 
-The generated pricing response includes the same non-secret provider membership snapshot as the Go application: configured API-key provider ids, grouped active OAuth providers, channel labels, priorities and exact model memberships. `internal/demo/seed.go` derives it from the existing fixture catalogs. Provider identity changes or pricing response changes require regenerating and reviewing the dataset with `pnpm demo:generate`; the Worker serves that generated response without live CPA discovery.
+### Cobertura de proyecciones de administración de CPAMC
 
-### Timezone metadata
+Las respuestas generadas incluyen políticas en tiempo de ejecución de proveedores y opciones avanzadas de modelos, la declaración del proveedor de inicio de sesión `kimi-ai`, metadatos de capacidad de renovación de credenciales y muestras de registros de pasarela con métodos y rutas HTTP.
 
-The generated preferences response includes `time_zone` with the deployment, override and effective timezone names. Dataset generation fixes `TZ=UTC` so the captured metadata cannot depend on the generating developer's machine. The console reads that metadata before calendar displays; the public Worker retains its existing read-only preference-write policy. Regenerate the dataset when the timezone response or console reads change.
+### Fixtures de observación de suscripciones
 
-Run recovery descriptors (`GET /agent/runs/active`) is a generated
-empty read in the demo dataset. Live journal subscriptions and cancellation remain refused,
-alongside inference: the public demonstration never starts a background model/workflow task.
+El fixture en proceso responde a los endpoints fijos de usuario/ajustes, créditos y libro mayor de xAI y Code Assist de Antigravity junto con sus endpoints de uso.
 
-### Custom icon reads
+### Rutas nativas del host de plugins
 
-The generated dataset includes custom-icon metadata and one deterministic SVG content response from the real validated import path. The Worker serves the same-origin content route directly from that capture; query revision parameters do not change the artwork identity. The selector can browse this fixture without contacting an external asset host. Upload, preview-import, edit and delete requests are refused in both the Go demo policy and the Worker's non-read boundary, and their controls are disabled in demo mode. Regenerate the dataset after changing these responses or the picker reads.
+La política de la demo rechaza por completo el host de plugins autenticado, incluyendo lecturas/escrituras de administración nativas v0/v8, HEAD de administración y la lectura fija del directorio de modelos (ADR 0067).
 
+## Conversaciones grabadas de ejemplo y actividad anual
 
-### Quota capacity examples
-
-The generated dataset seeds real normalized observations for Codex, Claude and an
-allowlisted Antigravity Gemini group through `internal/demo/quota.go`. A second Codex
-credential has a low current five-hour reading and an adjacent prior-cycle observation,
-so the real handlers can show a historical capacity reference from seeded request costs.
-Claude family windows select only their own models; amounts are never hand-authored.
-The freshness digest covers quota parsing, scope/history rules and repository joins.
-The Worker rebases `from_ms`, `to_ms`, `observed_at_ms` and `reset_at_ms` together for
-current usage and previous-cycle references, leaving their amounts and `basis` unchanged.
-
-Quota handlers use the export's injected reference clock, so seeded future resets
-remain live while generating the dataset. The exporter preserves those observations
-and usage bounds instead of shifting them twice or treating them as incomplete
-calendar days. Export assertions require current, scoped and previous-cycle estimates
-with their original provenance, not merely successful quota responses.
-
-Runtime numeric measurements are pinned with either JSON decoder mode, using the
-owner shape to preserve seeded request latency and source-file sizes. Runtime text
-stamps use the same minute precision as rebased millisecond stamps; quota observations
-and creation/update metadata on the seeded clock retain their original precision.
-A second generation must match the committed dataset byte for byte (`pnpm demo:generate --check`).
-
-### OAuth model rules dataset
-
-The OAuth workspace's Model rules task reads provider-wide alias and exclusion
-maps plus a provider-scoped static model catalog. The dataset exports these as
-`auth-files-model-aliases`, `auth-files-excluded-models` and provider catalog entries;
-Worker routes resolve only the exported catalogs and refuse durable rule writes.
-They are separate from individual credentials' safe fields. Regenerate the dataset
-when the facade, its normalization or console reads change.
-
-### CPAMC management projection coverage
-
-The generated responses include provider runtime policies and advanced model
-options, the `kimi-ai` login-provider declaration, credential-refresh capability
-metadata, and gateway log samples with HTTP methods and paths. They remain
-projections of synthetic fixture state, never uploaded service-account keys or
-refreshed OAuth tokens. Vertex import and credential refresh are refused in demo
-mode; their interactive checks use isolated browser fixtures instead. Regenerate
-with `pnpm demo:generate` and verify `pnpm check:demo` when these projections
-change, alongside the pictured credential/provider page screenshots.
-
-### Subscription observation fixtures
-
-The in-process fixture answers the fixed xAI user/settings, credits and ledger and
-Antigravity Code Assist endpoints alongside their usage endpoints. The xAI credits
-document shares the ledger's path and is told apart by its query, which is why the
-catalogue may name an endpoint with one and the fixture resolves the exact URL
-before falling back to the path alone. It also owns a projected
-Meta usage sample with no token or minted key. These are catalogue lookups, not
-outbound HTTP requests; their paths are checked against the compiled quota
-allowlist. Regenerate the Worker dataset when the normalized subscription output
-changes, so the served plan labels match the Go facade (ADR 0065, ADR 0071).
-
-### Native plugin-host routes
-
-Demo policy refuses the entire authenticated plugin host, including v0/v8 native management
-reads/writes, management HEAD and the fixed model-directory read (ADR 0067). These routes
-must not expose configuration through either Worker or Go demonstration mode.
-
-## Recorded example conversations and annual activity
-
-`web/src/demo/agentRecording.json` ships as a browser asset,
-not Worker mutation endpoints. The Agent recording uses relative-date placeholders and
-localized prose; replay emits AG-UI frames, reasoning, capability receipts, streamed UI
-arguments and the final conversation. Only the offered example question is accepted. No model, CPA request or provider
-credential is needed. The Agent keeps the settled session across read refetches for the
-page lifetime; reload/reset clears it. Public writes remain refused. ADR 0092 is the decision.
-
-`internal/demo/seed.go` seeds the full heatmap year with deterministic normally varied daily
-traffic, quieter weekends and occasional idle days. The recent-traffic protection compares UTC
-calendar dates, so every hour of the same date stays active through seven days of age; older
-dates may be idle regardless of the reference time of day. `pnpm demo:generate` captures the real
-handler responses; review and commit the responses/provenance diff. Recordings also pass
-`pnpm check:demo` privacy checks. `pnpm verify:demo` sends the example in the built console:
-the Agent must settle its generated interface. Agent acceptance uses English copy and locale-independent action selectors; the
-remaining route headings use Chinese. Entry information is a global arrival toast, with contextual replay instructions on the conversation pages. Theme
-choices remain browser-local, so a returning visitor never pushes them to the shared Worker.
-
-### Warmup settings
-
-The dataset includes `/management/quota/warmup/settings` and representative credential
-warmup state. Policy writes and consuming manual requests are refused, and demo servers
-never start the scheduler. The OAuth toolbar and Quota tab render read-only settings and neutral activation observations;
-missing activation history is not a manual prerequisite. Billing evidence and current-window
-pause reasons remain visible. Regenerate the dataset whenever their reads or projections change.
+`web/src/demo/agentRecording.json` se distribuye como un recurso del navegador,
+no como endpoints de mutación del Worker. La grabación del Agente utiliza marcadores de posición de fechas relativas y
+prosa localizada; la reproducción emite tramas AG-UI, razonamiento, recibos de capacidades, argumentos de interfaz transmitidos
+y la conversación final. Se acepta únicamente la pregunta de ejemplo provista. No se requiere modelo, petición a CPA ni
+credencial de proveedor.

@@ -1,41 +1,40 @@
-# Shell-PAMC plugin registry
+# Registro de plugins de Shell-PAMC
 
-This directory publishes Shell-PAMC's own plugin registry, which the console keeps
-configured as a plugin-store source. CPA reads it over HTTPS from the `master`
-branch:
+Este directorio publica el registro de plugins propio de Shell-PAMC, que la consola mantiene
+configurado como origen de la tienda de plugins. CPA lo consulta mediante HTTPS desde la rama
+`master`:
 
 ```
 https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json
 ```
 
-The address is compiled into the binary (`internal/pluginregistry`), not configured
-in `config.yaml`; the console adds it to `plugins.store-sources` and restores it if
-it is removed there. The source can be switched off under **Settings → Plugin
-store**, which removes the address again.
+La dirección está compilada dentro del binario (`internal/pluginregistry`), no configurada
+en `config.yaml`; la consola la añade a `plugins.store-sources` y la restaura si
+se elimina allí. El origen se puede desactivar en **Ajustes → Tienda de plugins**,
+lo que vuelve a quitar la dirección.
 
-## Format
+## Formato
 
-The file is CPA's plugin registry document. `schema_version` is `1` or `2`; version
-2 additionally allows `install.type: direct` with per-version artifacts. Every entry
-declares the fields CPA validates:
+El archivo es el documento de registro de plugins de CPA. `schema_version` es `1` o `2`; la versión
+2 permite adicionalmente `install.type: direct` con artefactos por versión. Cada entrada
+declara los campos validados por CPA:
 
-| Field | Required | Notes |
+| Campo | Obligatorio | Notas |
 | --- | --- | --- |
-| `id` | yes | `[A-Za-z0-9][A-Za-z0-9._-]{0,127}`, unique in the file |
-| `name` | yes | Shown on the store card |
-| `description` | yes | One sentence is enough |
-| `author` | yes | |
-| `repository` | yes for `github-release` | `https://github.com/{owner}/{repo}` exactly: the store builds release URLs from it and refuses an `owner/repo` shorthand, a `.git` suffix, or any other host |
-| `version` | optional | Display fallback; the latest release is authoritative. No leading `v` (that belongs to the tag) |
-| `homepage`, `license`, `tags`, `logo` | optional | `logo` is a URL the console inlines |
+| `id` | sí | `[A-Za-z0-9][A-Za-z0-9._-]{0,127}`, único en el archivo |
+| `name` | sí | Mostrado en la tarjeta de la tienda |
+| `description` | sí | Una sola oración es suficiente |
+| `author` | sí | |
+| `repository` | sí para `github-release` | `https://github.com/{owner}/{repo}` exactamente: la tienda construye las URLs de releases a partir de él y rechaza la abreviatura `owner/repo`, el sufijo `.git` o cualquier otro host |
+| `version` | opcional | Valor de visualización de respaldo; la release más reciente es autoritativa. Sin `v` inicial (pertenece al tag) |
+| `homepage`, `license`, `tags`, `logo` | opcional | `logo` es una URL que la consola incrusta |
 
-An empty `plugins` list is valid: the registry is published before the first plugin
-exists, so the store has a working source rather than a failing one. One malformed
-entry is not: CPA refuses the whole document, so every installation shows an empty
-Shell-PAMC registry and only the gateway's error line. The Go tests in
-`internal/pluginregistry` validate the published file (`pnpm test:fast` runs them when
-the registry changes) for that reason.
+Una lista `plugins` vacía es válida: el registro se publica antes de que exista el primer plugin,
+de modo que la tienda tenga un origen funcional en lugar de uno con fallos. Una sola entrada
+malformada no lo es: CPA rechaza el documento completo, haciendo que cada instalación muestre un
+registro de Shell-PAMC vacío y únicamente la línea de error de la pasarela. Las pruebas en Go en
+`internal/pluginregistry` validan el archivo publicado (`pnpm test:fast` las ejecuta cuando el registro cambia) por esa razón.
 
-Entries are curated here, not discovered. A plugin installed from this registry
-still needs its id typed in the install dialog: the confirmation is about running
-code inside the gateway, not about which registry supplied it.
+Las entradas se seleccionan manualmente aquí, no se descubren automáticamente. Un plugin instalado desde este registro
+sigue requiriendo que se escriba su ID en el diálogo de instalación: la confirmación trata sobre ejecutar
+código dentro de la pasarela, no sobre qué registro lo suministró.

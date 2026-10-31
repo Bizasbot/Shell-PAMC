@@ -1,131 +1,118 @@
-# Typed, isolated CI and test execution
+# Ejecución tipada y aislada de CI y pruebas
 
-## Scope
+## Alcance
 
-Modernize verification execution without changing application behavior, API/schema
-contracts, publication gates or the required check names `static`, `browser` and `probes`.
-Routine development keeps affected static/UI selection; hosted CI retains the complete
-static, built-browser, probe and demonstration coverage. This change neither publishes
-nor changes repository branch protection.
+Modernizar la ejecución de verificaciones sin modificar el comportamiento de la aplicación, los contratos
+de API/esquema, las barreras de publicación ni los nombres de comprobación requeridos `static`, `browser` y `probes`.
+El desarrollo rutinario mantiene la selección afectada de estáticos/UI; el CI alojado retiene la cobertura
+completa de estáticos, navegador compilado, sondeos y demostración. Este cambio ni publica
+ni altera la protección de ramas del repositorio.
 
-## Failure evidence
+## Evidencia de fallos
 
-The audit inspected the latest 60 CI workflow records on October 20, 2026 at
-03:36 MYT (UTC+08:00), corresponding to October 19, 2026 at 19:36 UTC. The records
-cover October 17, 2026 at 08:56:45 UTC through October 19 at 19:23:40 UTC.
-Their final conclusions were 48 successful, nine failed and three cancelled. Two of the
-successful records had a second attempt, so those final conclusions do not measure
-first-attempt reliability. Attempt-one job records and failure logs were inspected for
-the failed/rerun subset.
+La auditoría inspeccionó los últimos 60 registros de flujos de trabajo de CI el 20 de octubre de 2026 a las
+03:36 MYT (UTC+08:00), correspondiente al 19 de octubre de 2026 a las 19:36 UTC. Los registros
+cubren desde el 17 de octubre de 2026 a las 08:56:45 UTC hasta el 19 de octubre a las 19:23:40 UTC.
+Sus conclusiones finales fueron 48 exitosos, nueve fallidos y tres cancelados. Dos de los
+registros exitosos tuvieron un segundo intento, por lo que esas conclusiones finales no miden
+la fiabilidad en el primer intento. Se inspeccionaron los registros de tareas y los registros de fallos del primer intento para
+el subconjunto fallido/reejecutado.
 
-| Evidence | Interpretation |
+| Evidencia | Interpretación |
 | --- | --- |
-| Master run `39310607590`, PR runs `39286380321` and `39164421549`: request-list `By client` stops at `req_interaction_0090`, then the back-to-top locator times out | A real readiness defect in the test: both groupings have the same first request. That predicate can observe the outgoing holder before React replaces it. Wait for the target group's rendered title before scrolling. |
-| PR static runs `39283973329` and `39286168669`: unused React import | A genuine TypeScript failure. A runner migration must not turn this into an ignored failure. |
-| PR run `39041111704`: missing fixture type member | A genuine fixture/type contract failure. |
-| Demo freshness negative controls edit live responses, provenance, source, recording and checker files while freshness/type checks run concurrently | A structural shared-worktree race. Temporary per-test input trees remove it; it does not establish that every historical stale-demo failure was flaky. |
-| Run `39131339847`: auto-refresh switch assertions; run `39031891843`: sidebar control click | Additional browser state/interaction evidence to retain and diagnose, not proof that rerunning fixes the underlying behavior. |
+| Ejecución de Master `39310607590`, ejecuciones de PR `39286380321` y `39164421549`: lista de solicitudes `By client` se detiene en `req_interaction_0090`, luego el localizador back-to-top agota el tiempo de espera | Un defecto real de preparación en la prueba: ambas agrupaciones tienen la misma primera solicitud. Ese predicado puede observar el contenedor saliente antes de que React lo reemplace. Espere al título renderizado del grupo objetivo antes de desplazarse. |
+| Ejecuciones estáticas de PR `39283973329` y `39286168669`: importación de React no utilizada | Un fallo genuino de TypeScript. Una migración del ejecutor no debe convertir esto en un fallo ignorado. |
+| Ejecución de PR `39041111704`: miembro de tipo de fixture faltante | Un fallo genuino de contrato de fixture/tipo. |
+| Los controles negativos de frescura de demo editan respuestas en vivo, procedencia, código fuente, grabación y verificadores mientras las comprobaciones de frescura/tipos se ejecutan concurrentemente | Una condición de carrera estructural por árbol de trabajo compartido. Árboles de entrada temporales por prueba la eliminan; no establece que cada fallo histórico de demo desactualizada fuera intermitente. |
+| Ejecución `39131339847`: aserciones del interruptor de actualización automática; ejecución `39031891843`: clic en control de barra lateral | Evidencia adicional de estado/interacción del navegador a retener y diagnosticar, no una prueba de que reejecutar solucione el comportamiento subyacente. |
 
-A successful local run and a rerun after a changed commit are not proof of hosted
-stability. In particular, cancelled runs and deterministic type failures must not be
-counted as flake fixes.
+Una ejecución local exitosa y una reejecución tras un commit modificado no son prueba de estabilidad
+alojada. En particular, ejecuciones canceladas y fallos de tipos deterministas no deben
+contabilizarse como correcciones de intermitencias.
 
-## Execution architecture
+## Arquitectura de ejecución
 
-- **Hosted static isolation:** independent Go, frontend and repository matrix lanes,
-  `fail-fast: false`, followed by an always-running, fail-closed `static` aggregate.
-  Full-history/worktree secret scans, pinned tools/actions and clean-tree checks remain.
-- **Browser probes:** pinned Playwright Test matching the existing Chromium/core version;
-  the full registry and reviewed weighted shards remain. Native workers, contexts,
-  deadlines, steps, assertions and reporting replace the handwritten
-  queue, batches and watchdog. Shared and exclusive frame scenarios have separate native
-  invocations; a failed shared test does not omit exclusive claims. Complete local
-  catalogs retain the same three sequential CI partitions and per-partition deadline,
-  rather than applying one partition's deadline to the entire catalog. Shared and
-  exclusive phases consume one partition budget; restarting the native runner does
-  not reset that deadline.
-- **Domain fixtures:** API allowlists, synthetic local state, bounded fault expectations
-  and a post-context-close ledger remain project-owned. A Vite readiness nonce emitted through the owned child pipe after a strict
-  port bind prevents tests silently attaching to another worktree. Vite prepares the
-  common entry and selected conversation modules before emitting readiness, so cold
-  source transformation is owned by server startup rather than a page locator budget.
-- **Logic:** Node's test runner owns isolated files and bounded execution. `tsx` replaces
-  the custom ESM extension/JSON loader. The affected import-graph planner remains.
-- **Components/contracts:** keep the existing Vitest, jsdom and Testing Library stack.
-  There is no benefit in replacing an already appropriate tool for uniform branding.
-- **Typed tooling:** migrated orchestration, configuration, fixtures, reporters and new
-  self-tests run through `tsx` and a strict tooling TypeScript project. Existing `.mjs`
-  domain fixtures, distribution gates and cross-stack acceptance are not mechanically
-  renamed; remaining migration is incremental, with the same behavioral claim owners.
-- **Demo:** per-test complete input copies make positive/negative controls independent.
-  Source-text editing and restore retries are replaced with semantic coverage inputs and
-  real subprocess exit-code checks. Only the declared provenance digest changes; the
-  generated response corpus remains the same.
+- **Aislamiento estático alojado:** líneas independientes de matriz para Go, frontend y repositorio,
+  `fail-fast: false`, seguidas de un agregado `static` que siempre se ejecuta y falla de forma estricta (fail-closed).
+  Escaneos de secretos de historial completo/árbol de trabajo, herramientas/acciones fijadas y comprobaciones de árbol limpio se conservan.
+- **Sondeos de navegador:** Playwright Test fijado coincidiendo con la versión de Chromium/núcleo existente;
+  el catálogo completo y los fragmentos ponderados revisados se conservan. Workers nativos, contextos,
+  tiempos límite, pasos, aserciones e informes reemplazan la cola manual, lotes y el temporizador de vigilancia (watchdog).
+  Los escenarios de marcos compartidos y exclusivos tienen invocaciones nativas separadas; una prueba compartida fallida no omite aserciones exclusivas. Los catálogos
+  locales completos conservan las mismas tres particiones secuenciales de CI y el límite por partición,
+  en lugar de aplicar el límite de una partición a todo el catálogo. Fases compartidas y
+  exclusivas consumen un presupuesto de partición; reiniciar el ejecutor nativo
+  no reinicia ese tiempo límite.
+- **Fixtures de dominio:** Listas de permitidos de API, estado local sintético, expectativas de fallos acotadas
+  y un registro posterior al cierre del contexto siguen siendo propiedad del proyecto. Un nonce de preparación de Vite emitido a través del pipe hijo propio tras un enlace estricto
+  a puerto evita que las pruebas se conecten silenciosamente a otro árbol de trabajo. Vite prepara la
+  entrada común y los módulos seleccionados de conversación antes de emitir la señal de preparación, de modo que la transformación de código fuente
+  en frío es asumida por el inicio del servidor y no por el presupuesto de localizadores de la página.
+- **Lógica:** El ejecutor de pruebas de Node gobierna los archivos aislados y la ejecución acotada. `tsx` reemplaza
+  el cargador personalizado de extensiones ESM/JSON. El planificador de grafos de importación afectados se conserva.
+- **Componentes/contratos:** se mantiene la pila existente de Vitest, jsdom y Testing Library.
+  No existe beneficio en reemplazar una herramienta adecuada únicamente por uniformidad de marca.
+- **Herramientas tipadas:** orquestación migrada, configuración, fixtures, generadores de informes y nuevas
+  autopruebas se ejecutan a través de `tsx` y un proyecto estricto de TypeScript para herramientas. Fixtures de dominio `.mjs`
+  existentes, barreras de distribución y aceptación entre pilas no se renembran mecánicamente; la migración restante es incremental, con los mismos responsables de aserciones de comportamiento.
+- **Demo:** copias completas de entrada por prueba hacen que los controles positivos/negativos sean independientes.
+  La edición de texto de origen y los reintentos de restauración se reemplazan con entradas semánticas de cobertura y
+  comprobaciones reales de códigos de salida de subprocesos. Solo cambia el resumen de procedencia declarado; el
+  corpus de respuestas generado permanece idéntico.
 
-## Coverage ownership after deletion
+## Propiedad de cobertura tras la eliminación
 
-| Removed implementation/test mechanism | Claim owner |
+| Mecanismo de implementación/prueba eliminado | Responsable de la aserción |
 | --- | --- |
-| Handwritten logic worker queue and custom ESM resolver | Node test runner + tsx; CLI/planner tests, unchanged logic files |
-| Probe queue/batch implementation tests | Native Playwright collection checked against every registry ID; fault harness and exact timing-evidence validation |
-| Handwritten probe scenario watchdog/cleanup/report orchestration | Playwright Test deadlines/lifecycle/reports; domain faults are checked after context closure |
-| In-place demo source/dataset mutation and retry-based restoration | Isolated input trees, positive/negative controls, subprocess exit status and concurrent byte-preservation test |
-| Request grouping's first-row-only readiness and fixed bottom-scroll delay | Target group title and actual final request rendered, using Playwright web-first assertions |
+| Cola de workers de lógica manual y solucionador ESM personalizado | Ejecutor de pruebas de Node + tsx; pruebas de CLI/planificador, archivos de lógica sin cambios |
+| Pruebas de implementación de cola/lote de sondeos | Recolección nativa de Playwright contrastada contra cada ID del registro; entorno de fallos y validación exacta de evidencia temporal |
+| Orquestación manual de watchdog/limpieza/informes de escenarios de sondeo | Tiempos límite/ciclo de vida/informes de Playwright Test; fallos de dominio se verifican tras el cierre del contexto |
+| Mutación in situ de origen/dataset de demo y restauración basada en reintentos | Árboles de entrada aislados, controles positivos/negativos, estado de salida de subprocesos y prueba concurrente de preservación de bytes |
+| Preparación solo de primera fila en agrupación de solicitudes y retraso fijo de desplazamiento inferior | Título del grupo objetivo y solicitud final real renderizados, utilizando aserciones web-first de Playwright |
 
-## Performance and rollout evidence
+## Rendimiento y evidencia de despliegue
 
-Measure matched commands on the same revision/toolchain and idle machine; distinguish
-cold/warm setup and the full catalog from a single scenario. Hosted comparison must
-include first-attempt pass rate, workflow p50/p95, slowest job and summed runner time.
-The new static matrix spends additional setup/runner capacity to isolate resources;
-its hosted critical-path benefit is unverified until pushed and observed.
+Mida comandos equiparables en la misma revisión/cadena de herramientas y máquina inactiva; distinga
+configuración en frío/caliente y el catálogo completo de un escenario individual. La comparación alojada debe
+incluir tasa de aprobación en el primer intento, p50/p95 del flujo de trabajo, trabajo más lento y suma de tiempo de ejecutores.
+La nueva matriz estática consume capacidad adicional de configuración/ejecutor para aislar recursos;
+su beneficio en la ruta crítica alojada permanece sin verificar hasta que se envíe y se observe.
 
-Browser diagnostics use failure-only final DOM/PNG, native error reports, timing
-records and the post-close fault ledger. Continuous tracing of the source-heavy dev
-server is excluded from timing measurements. No scenario is skipped, retried, given
-a larger wait or reduced in assertion strength to meet a speed target.
+Los diagnósticos del navegador utilizan capturas DOM/PNG finales únicamente en fallos, informes nativos de errores, registros
+de tiempos y el registro de fallos posterior al cierre. El rastreo continuo del servidor dev con alta carga de código fuente
+se excluye de las mediciones de tiempo. Ningún escenario se omite, se reintenta, recibe
+una espera mayor o reduce el rigor de sus aserciones para alcanzar un objetivo de velocidad.
 
-Hosted speedup, long-term flake-rate reduction and complete `.mjs` migration are
-not established by local verification.
+## Mediciones locales
 
-The built acceptance pass also exposed a pricing timing defect: the old three-second
-check measured the driver around `goto`'s full load event and only observed a page
-container, not the table. It now samples a visible row action in the renderer against
-the browser's monotonic navigation clock, retaining the same three-second threshold.
-The Payload rule journey waits for expanded disclosure geometry; real draft/editor/
-dirty-bar integration is additionally covered in the component suite.
+Observaciones de ejecución única en el mismo host y cadena de herramientas fijada, con cachés calientes:
 
-## Local measurements
-
-Single-run observations on the same host and pinned toolchain, with warm caches:
-
-| Matched operation | Previous entrypoint | Native entrypoint |
+| Operación equiparable | Punto de entrada previo | Punto de entrada nativo |
 | --- | ---: | ---: |
-| All 86 logic files, process wall time | 21.1 s | 23.3 s |
+| Los 86 archivos de lógica, tiempo de pared del proceso | 21.1 s | 23.3 s |
 
-These are not idle-host benchmarks: later inspection found unrelated persistent CPU
-load on the shared host. Neither the table nor the new static matrix establishes a
-hosted speedup. The logic path has about two seconds of additional observed startup/
-runner cost in this sample; it is recorded rather than described as an optimization.
+Estos no son puntos de referencia en hosts inactivos: inspecciones posteriores encontraron carga persistente de CPU
+no relacionada en el host compartido. Ni la tabla ni la nueva matriz estática establecen una
+aceleración alojada. La ruta lógica tiene aproximadamente dos segundos de costo adicional observado de inicio/
+ejecutor en esta muestra; queda registrado en lugar de describirse como una optimización.
 
+## Verificación local
 
-## Local verification
+La evidencia final a nivel de línea en la cadena de herramientas fijada es:
 
-The final lane-level evidence on the pinned toolchain is:
-
-| Gate | Result |
+| Barrera | Resultado |
 | --- | --- |
-| `pnpm verify` plus affected self-test rerun | Go tests/vet, strict frontend/tooling types, 86 logic files, 140 component/contract tests, 449 repository tests, static policy gates and worktree secret scan passed |
-| `pnpm verify:probes` | All 72 unique scenarios passed, two shared workers and one exclusive frame worker, zero retries |
-| `pnpm verify:browser:harness` | All nine negative and four positive controls produced the expected native verdicts with both one and two workers |
-| `pnpm verify:browser` | All 381 deterministic built-SPA checks passed; pricing table readiness was measured in the renderer under the unchanged three-second budget |
-| `pnpm verify:demo` | All 18 public-demo routes passed; the 129-response corpus remained fresh |
-| Build, bundle and history scan | Production build, loading boundaries/anomaly ceilings and full-history secret scanning passed |
-| `pnpm verify:workflow:lint` | Pinned actionlint accepted all three workflows |
+| `pnpm verify` más reejecución de autopruebas afectadas | Pruebas/vet de Go, tipos estrictos de frontend/herramientas, 86 archivos de lógica, 140 pruebas de componentes/contratos, 449 pruebas de repositorio, barreras estáticas de políticas y escaneo de secretos del árbol de trabajo aprobados |
+| `pnpm verify:probes` | Los 72 escenarios únicos pasaron, dos workers compartidos y un worker de marco exclusivo, cero reintentos |
+| `pnpm verify:browser:harness` | Los nueve controles negativos y cuatro positivos produjeron los veredictos nativos esperados tanto con uno como con dos workers |
+| `pnpm verify:browser` | Todas las 381 comprobaciones deterministas de la SPA compilada pasaron; la preparación de la tabla de precios se midió en el renderizador bajo el presupuesto sin cambios de tres segundos |
+| `pnpm verify:demo` | Todas las 18 rutas de la demo pública pasaron; el corpus de 129 respuestas permaneció actualizado |
+| Compilación, paquete y escaneo de historial | Compilación de producción, límites de carga/topes de anomalías y escaneo de secretos de historial completo aprobados |
+| `pnpm verify:workflow:lint` | actionlint fijado aceptó los tres flujos de trabajo |
 
-The composed full-verification command was exercised during implementation. After
-repairing failures, affected or failed lanes were rerun individually as required by
-the repository's verification policy; the table is final lane-level evidence, not a
-claim of a separate all-green final composed invocation. Exact-base bundle growth
-comparison and clean-runner timing remain hosted-CI checks. First-attempt hosted
-reliability and p50/p95 cost require observations after publication of the branch.
+El comando compuesto de verificación completa se ejercitó durante la implementación. Tras
+reparar fallos, las líneas afectadas o fallidas se reejecutaron individualmente según lo requerido por
+la política de verificación del repositorio; la tabla representa evidencia final a nivel de línea, no una
+afirmación de una invocación final compuesta totalmente verde. La comparación exacta de crecimiento del paquete respecto a la base
+y los tiempos en ejecutores limpios permanecen como comprobaciones de CI alojado. La fiabilidad
+en el primer intento alojado y el costo p50/p95 requieren observaciones tras la publicación de la rama.

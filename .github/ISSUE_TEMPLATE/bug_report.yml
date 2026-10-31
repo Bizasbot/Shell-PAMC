@@ -1,82 +1,82 @@
-name: Bug report
-description: Something in Shell-PAMC behaves incorrectly or differently from its documentation.
+name: Reporte de error
+description: Algo en Shell-PAMC se comporta de forma incorrecta o diferente a su documentación.
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Reports in English or 中文 are both welcome.
+        Los reportes en español son bienvenidos.
 
-        A security vulnerability must not be filed here: follow [SECURITY.md](https://github.com/Bizasbot/Shell-PAMC/blob/main/SECURITY.md) and report it privately.
+        Una vulnerabilidad de seguridad no debe enviarse aquí: siga [SECURITY.md](https://github.com/Bizasbot/Shell-PAMC/blob/main/SECURITY.md) e infórmela de forma privada.
   - type: checkboxes
     id: preflight
     attributes:
-      label: Before submitting
+      label: Antes de enviar
       options:
-        - label: I searched the existing issues and found no report of this problem.
+        - label: Busqué en los issues existentes y no encontré ningún reporte de este problema.
           required: true
-        - label: I removed every API key, management key, token, auth file and private hostname from the text, logs and screenshots below.
+        - label: Eliminé cada clave API, clave de administración, token, archivo de autenticación y nombre de host privado del texto, registros y capturas de pantalla a continuación.
           required: true
   - type: textarea
     id: description
     attributes:
-      label: What happened
-      description: The observed behavior, and the page or area of the console where it appears.
+      label: Qué ocurrió
+      description: El comportamiento observado y la página o área de la consola donde aparece.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: What was expected
+      label: Qué se esperaba
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
-      label: Steps to reproduce
-      description: The shortest sequence that triggers the problem.
+      label: Pasos para reproducir
+      description: La secuencia más corta que desencadena el problema.
       placeholder: |
-        1. Open …
-        2. Click …
-        3. Observe …
+        1. Abrir …
+        2. Hacer clic en …
+        3. Observar …
     validations:
       required: true
   - type: input
     id: omc-version
     attributes:
-      label: Shell-PAMC version
-      description: Shown on the System Information page, or the image tag in use.
+      label: Versión de Shell-PAMC
+      description: Mostrada en la página de Información del Sistema, o el tag de imagen en uso.
       placeholder: v0.1.2
     validations:
       required: true
   - type: input
     id: cpa-version
     attributes:
-      label: CLIProxyAPI version
-      description: Shown on the System Information page. Shell-PAMC requires CPA v8.0.0 or later.
+      label: Versión de CLIProxyAPI
+      description: Mostrada en la página de Información del Sistema. Shell-PAMC requiere CPA v8.0.0 o posterior.
       placeholder: v8.0.0
     validations:
       required: true
   - type: dropdown
     id: install-method
     attributes:
-      label: Install method
-      description: The sections of docs/install.md.
+      label: Método de instalación
+      description: Las secciones de docs/install.md.
       options:
-        - New install (CPA and Shell-PAMC in one Compose file)
-        - Added to an existing CPA Compose file
-        - Standalone container
-        - Built from source
-        - Other (describe below)
+        - Nueva instalación (CPA y Shell-PAMC en un archivo Compose)
+        - Añadido a un archivo Compose de CPA existente
+        - Contenedor independiente (Standalone)
+        - Compilado desde código fuente
+        - Otro (describir abajo)
     validations:
       required: true
   - type: textarea
     id: environment
     attributes:
-      label: Environment
-      description: Whatever applies — host OS and architecture, reverse proxy and sub-path, browser and version, device or viewport width, console language and theme.
+      label: Entorno
+      description: Lo que aplique — SO y arquitectura del host, proxy inverso y subruta, navegador y versión, dispositivo o ancho de viewport, idioma y tema de la consola.
   - type: textarea
     id: evidence
     attributes:
-      label: Logs and screenshots
-      description: Container logs (`docker compose logs shell-pamc`), browser console errors, failed network responses, or screenshots. Redact secrets first.
+      label: Registros y capturas de pantalla
+      description: Registros del contenedor (`docker compose logs shell-pamc`), errores de la consola del navegador, respuestas de red fallidas o capturas de pantalla. Redacte secretos primero.

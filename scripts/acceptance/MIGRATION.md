@@ -1,227 +1,112 @@
-# Browser acceptance migration ledger
+# Registro de migración de aceptación del navegador
 
-Every assertion in the browser acceptance suite is classified once, and every
-assertion that leaves the browser names the test that replaced it. The point of
-the ledger is that no claim is dropped without a replacement: an assertion may
-move, but it may not disappear.
+Cada aserción en la suite de aceptación del navegador está clasificada una vez, y cada
+aserción que abandona el navegador nombra la prueba que la reemplazó. El propósito de
+este registro es que ninguna afirmación se descarte sin un reemplazo: una aserción puede
+trasladarse, pero no puede desaparecer.
 
-## The probe files that were removed
+## Archivos de sondeo que fueron eliminados
 
-Beyond the acceptance suite, six standalone probe entry points were deleted:
+Más allá de la suite de aceptación, se eliminaron seis puntos de entrada de sondeo independientes:
 `browser-usage-events.mjs`, `browser-refresh-sync.mjs`, `browser-icon-picker.mjs`,
-`browser-dashboard-charts.mjs`, `browser-column-alignment.mjs` and
-`browser-performance.mjs`. Every claim worth keeping now lives in
-the probe catalog (`scripts/acceptance/scenarios.mjs`). Playwright Test executes
-`scripts/acceptance/tests/catalog.spec.ts` against an invocation-owned dev server
-and worker-owned browsers:
+`browser-dashboard-charts.mjs`, `browser-column-alignment.mjs` y
+`browser-performance.mjs`. Cada comprobación digna de conservarse reside ahora en
+el catálogo de sondeos (`scripts/acceptance/scenarios.mjs`). Playwright Test ejecuta
+`scripts/acceptance/tests/catalog.spec.ts` contra un servidor dev propio de la invocación
+y navegadores propiedad del worker:
 
-| Former file | Where its claims live now |
+| Archivo anterior | Dónde residen sus aserciones ahora |
 | --- | --- |
-| `browser-column-alignment.mjs` | the `column alignment` scenario, unchanged in strength |
-| `browser-icon-picker.mjs` | the `icon picker stacking` scenario, unchanged in strength |
-| `browser-dashboard-charts.mjs` | the `dashboard chart marks` scenario, unchanged in strength |
-| `browser-refresh-sync.mjs` | the `refresh sequencing` scenario, including the held-response ordering proof |
-| `browser-usage-events.mjs` | the `request list interactions` scenario for the virtualization bound, the column resize and its persistence, keyboard access to the detail drawer, and the request-log download gate |
-| `browser-performance.mjs` | nothing - see below |
+| `browser-column-alignment.mjs` | el escenario `column alignment`, sin cambios en rigor |
+| `browser-icon-picker.mjs` | el escenario `icon picker stacking`, sin cambios en rigor |
+| `browser-dashboard-charts.mjs` | el escenario `dashboard chart marks`, sin cambios en rigor |
+| `browser-refresh-sync.mjs` | el escenario `refresh sequencing`, incluida la prueba de ordenamiento con respuestas retenidas |
+| `browser-usage-events.mjs` | el escenario `request list interactions` para el límite de virtualización, el redimensionamiento de columnas y su persistencia, acceso por teclado al panel de detalles y la barrera de descarga de registros de solicitud |
+| `browser-performance.mjs` | nada — ver abajo |
 
-Claims that are deliberately not restored, listed so the loss is a decision rather
-than an oversight:
+Aserciones que deliberadamente no se restauraron, enumeradas para que la baja sea una decisión explícita
+y no un descuido:
 
-- **The collapse gesture choreography** (`first wheel down collapses the header`,
-  `row 1 remains visible after entering full-screen mode`, the wheel-up bounce, and
-  the scroll-to-last-record tour) from `browser-usage-events.mjs`. The probe keeps
-  the bounded-window claim, which is the part that makes a long list usable. The
-  scroll *schedule* is unit-tested in `scripts/test-scroll-intent.ts`; what no test
-  now catches is the header failing to collapse on a wheel gesture.
-- **The forced-minimum-width token measurement** (`token column reached its 130px
-  minimum`, `token cell holds the largest real numbers at its minimum width`).
-  `column alignment` covers track geometry, truncation and the responsive override;
-  this was a second measurement of the same layout at one specific width.
-- **The 320px interactive sweep.** Redundant with the 390px and 768px overflow and
-  drawer checks in the acceptance suite. 320px itself is still a supported width -
-  the settings picker and the auth-files viewport check both assert it - so what was
-  dropped is the sweep, not the viewport.
-- **`browser-performance.mjs` in full.** It asserted page-load timings against a dev
-  server, which measures the mock and the machine rather than the product. It ran in
-  no gate and its numbers were never a budget. The one timing claim that is a real
-  budget - the pricing page opening under 3s - lives in the acceptance suite.
+- **La coreografía de gestos de colapso** (`first wheel down collapses the header`,
+  `row 1 remains visible after entering full-screen mode`, el rebote al girar la rueda hacia arriba y
+  el recorrido de desplazamiento hasta el último registro) de `browser-usage-events.mjs`. El sondeo conserva
+  la aserción de ventana acotada, que es la parte que hace utilizable una lista larga. El *cronograma* de desplazamiento
+  está probado por unidad en `scripts/test-scroll-intent.ts`; lo que ninguna prueba detecta ahora es que el encabezado no se colapse ante un gesto de rueda.
+- **La medición de ancho mínimo forzado de tokens** (`token column reached its 130px minimum`,
+  `token cell holds the largest real numbers at its minimum width`). `column alignment` cubre la geometría de pistas, truncamiento y anulación responsiva; esta era una segunda medición del mismo diseño en un ancho específico.
+- **El barrido interactivo de 320px.** Redundante con las comprobaciones de desbordamiento y paneles en 390px y 768px de la suite de aceptación. 320px sigue siendo un ancho admitido — el selector de ajustes y la comprobación de viewport de archivos de autenticación lo verifican —, por lo que se descartó el barrido, no el soporte de viewport.
+- **`browser-performance.mjs` en su totalidad.** Verificaba tiempos de carga de página contra un servidor dev, lo cual mide la simulación y la máquina en lugar del producto. No formaba parte de ninguna barrera y sus cifras nunca fueron un presupuesto contractual. La única aserción de tiempos que constituye un presupuesto real — que la página de precios abra en menos de 3s — reside en la suite de aceptación.
 
-## Go demonstration page assertions
+## Aserciones de páginas de demostración en Go
 
-`scripts/demo-smoke.mjs` checks that Model Square renders connected model entries. Legacy credential, OAuth and quota URLs remain exercised:
-they must reach the unified OAuth workspace and render credential records, connect
-choices and matched quota records respectively. Direct workspace, agent-directory
-and audit-entry reads are also covered. Server-side refusal, masked-key and
-non-durable-write assertions remain unchanged.
+`scripts/demo-smoke.mjs` comprueba que Model Square renderice las entradas de modelos conectados. URLs heredadas de credenciales, OAuth y cuotas siguen probándose:
+deben alcanzar el espacio de trabajo unificado de OAuth y renderizar registros de credenciales, opciones de conexión y registros de cuota coincidentes respectivamente. Lecturas directas de espacio de trabajo, directorio de agentes y entradas de auditoría también están cubiertas. Las aserciones de rechazo en servidor, claves enmascaradas y escrituras no duraderas se mantienen sin cambios.
 
-## Production loading and size verification
+## Verificación de carga y tamaño en producción
 
-`scripts/check-bundle-budget.mjs` owns the production artifact policy through
-`pnpm check:bundle` (ADR 0053). It validates Rollup ownership and static/dynamic
-edges against chunk hashes, enforcing deferred page/shell/chart/Markdown modules
-and the on-demand editor boundary. Raw/gzip metrics and exact-base growth are
-reported; ordinary growth is advisory and broad anomaly ceilings remain blocking.
-This replaces the entry-only and named-chunk quotas, with graph/ceiling self-tests
-preserving their regression-detection intent.
+`scripts/check-bundle-budget.mjs` gobierna la política de artefactos de producción mediante
+`pnpm check:bundle` (ADR 0053). Valida la propiedad de Rollup y bordes estáticos/dinámicos contra hashes de fragmentos, exigiendo módulos diferidos de página/shell/gráficos/Markdown y el límite del editor bajo demanda. Se reportan métricas sin procesar/gzip y crecimiento exacto respecto a la base; el crecimiento ordinario es informativo y topes amplios de anomalías permanecen bloqueantes.
+Esto reemplaza las cuotas de entrada única y fragmentos con nombre, con autopruebas de gráfico/techo que preservan su intención de detección de regresiones.
 
-CI, `verify:build`, `verify:e2e`, `verify:full` and its serial counterpart use the
-same checker after building. CI/full local verification preserve its failure
-verdict while still collecting production browser/demo evidence; standalone
-browser commands exercise behavior rather than a duplicate size policy.
-Workflow and injected-runner self-tests guard missing checks, skipped or ignored
-verdicts, evidence retention and build/secret prerequisites.
+CI, `verify:build`, `verify:e2e`, `verify:full` y su variante serial utilizan el mismo verificador tras compilar. La verificación local en CI/completa preserva su veredicto de fallo mientras sigue recopilando evidencia de navegador/demo de producción; comandos de navegador independientes prueban comportamiento y no una política de tamaño duplicada.
 
-## Smoke path inside P0
+## Ruta de humo (Smoke) dentro de P0
 
-The two smoke-path checks in `scripts/acceptance/usage-events/requestList.mjs` (no
-console errors and no page errors at the end of the smoke path) run in every mode
-rather than only under `--smoke`. P0 and the full run therefore contain every smoke
-assertion at the same point, while CI runs the full acceptance suite on every event (ADR 0068).
+Las dos comprobaciones de ruta de humo en `scripts/acceptance/usage-events/requestList.mjs` (sin errores de consola ni errores de página al final de la ruta de humo) se ejecutan en todos los modos en lugar de solo bajo `--smoke`. P0 y la ejecución completa contienen por tanto cada aserción de humo en el mismo punto, mientras que CI ejecuta la suite completa de aceptación en cada evento (ADR 0068).
 
-## Classes
+## Clases
 
-| Class | Meaning |
+| Clase | Significado |
 | --- | --- |
-| `PURE` | A decision about the operator's own input. Provable by calling the module the page calls. |
-| `COMPONENT` | Needs a rendered React tree, but not a real browser engine. |
-| `BROWSER` | Needs real Chromium: geometry, stacking, hit-testing, paint, virtualization, focus, lifecycle. |
-| `CROSS-STACK` | Needs the whole stack — SPA + Go binary + SQLite fixture + fake CPA. |
+| `PURE` | Una decisión sobre la entrada propia del operador. Demostrable invocando el módulo que llama la página. |
+| `COMPONENT` | Requiere un árbol React renderizado, pero no un motor de navegador real. |
+| `BROWSER` | Requiere Chromium real: geometría, apilamiento, pruebas de impacto (hit-testing), pintura, virtualización, foco, ciclo de vida. |
+| `CROSS-STACK` | Requiere la pila completa: SPA + binario Go + fixture SQLite + CPA simulado. |
 
-## Migrated out of the browser
+## Migrado fuera del navegador
 
-Granular policy logic and state permutations below had their primary, exhaustive
-verification migrated from timing-sensitive browser steps into deterministic
-Node-based logic tests (such as `scripts/test-usage-events-view-policy.ts`). High-level
-end-to-end user workflows that integrate these capabilities in live browser sessions
-continue to be exercised by `scripts/browser-acceptance.mjs` and its focused
-domain modules under `scripts/acceptance/`.
+La lógica de políticas granular y permutaciones de estado a continuación tuvieron su verificación principal y exhaustiva migrada desde pasos de navegador sensibles a tiempos hacia pruebas deterministas de lógica en Node (como `scripts/test-usage-events-view-policy.ts`). Los flujos de trabajo de usuario integrados de alto nivel de extremo a extremo continúan probándose mediante `scripts/browser-acceptance.mjs` y sus módulos de dominio bajo `scripts/acceptance/`.
 
-| Original claim | Class | Replacement |
+| Aserción original | Clase | Reemplazo |
 | --- | --- | --- |
-| A filter edit commits the dimension it names to the URL | `PURE` | `scripts/test-usage-events-view-policy.ts` — *a filter edit replaces the dimension it names and leaves the window alone* |
-| Removing a chip clears the filter from the URL | `PURE` | *a filter edit can remove a dimension, which a merge could not express*; *setting, widening and clearing one dimension…* |
-| Clear-all removes every filter but keeps the window and page size | `PURE` | *clear-all removes every filter and the verdict but keeps window and page size* |
-| Clear-all keeps an explicitly chosen window | `PURE` | *clear-all leaves an explicitly chosen absolute window in place* |
-| A cleared filter stays cleared after a reload | `PURE` | *the saved view is derived from the navigated URL, not merged from the previous query* — the derivation this replaced is the bug that resurrected it |
-| The saved view restores window and page size on the bare route | `PURE` | *an absolute window is saved as bounds…*; *the saved view carries the layout choices it was given* |
-| A cost filter travels as exactly one parameter | `PURE` | *cost is stored once, as its own field, and never inside the filter map*; `filterParamsToUrl` round trips are already pinned in `test-usage-event-view.ts` |
-| The time menu sets an explicit window | `PURE` | *a preset replaces an absolute range instead of stacking beside it*; *an absolute range replaces a preset…* |
-| A filter and a window coexist in the URL | `PURE` | *a filter edit replaces the dimension it names and leaves the window alone* |
-| A reversed range is explained inline and blocks Apply | `PURE` | *a reversed or equal range is refused*; *the validation outcome maps to the message key* |
-| A range past now is refused | `PURE` | *a range reaching past now is refused* |
-| Every preset appears exactly once, whichever is selected | `PURE` | *every configured preset appears exactly once, whichever one is selected*; *the quick group and the rest partition the presets* |
-| A typed alias marks the draft as changed | `PURE` | `isDraftDirty` in `test-usage-event-view.ts` |
-| A queued search debounce cannot revive a cleared filter | `PURE` | *an invalidation reached through the controller suppresses a queued commit*; *an invalidation suppresses a callback that already fired but has not run* |
-| History navigation discards a pending keystroke | `PURE` | *adopting an external committed value cancels the queued keystroke* |
-| The search box follows the navigated term across two saved views | `PURE` | *a keystroke after an external navigation commits against the new view* |
-| A parameter that cannot be applied is reported, not dropped | `PURE` | `rejectedEventParams` — already pinned in `test-usage-event-view.ts` with 13 references |
-| An over-long or invalid filter value is refused | `PURE` | `readEventQuery` / `parseUsageRangeBound` in `test-usage-event-view.ts` |
-| A poll does not re-read the facets | `PURE` | *every reason to skip a tick is honoured* + `staleTime` policy in `staleTime`/`pollingPolicy` |
-| Auto-refresh starts off and the label states no cadence | `PURE` | *the cadence is not a round-trip afterthought*. The switch's rendered state stays a browser claim. |
-| The result verdict is a filter with no URL parameter of its own | `PURE` | *a result verdict is committed, and "all" removes it rather than storing it* |
-| A filter change drops the pagination cursor | `PURE` | *a filter edit never touches the pagination cursor it is about to invalidate* — the drop is the page's separate decision, pinned by the same test |
-| A refresh that could not drain CPA is reported as incomplete | `PURE` | *a pull that could not drain CPA is reported as incomplete rather than successful* |
-| A disabled collector is information, not an error | `PURE` | *a disabled collector is information, not a failure* |
-| The refresh re-reads list, facets and pipeline status | `PURE` | *a completed refresh re-reads every surface the pull could have changed* |
-| A caller chip shows the alias rather than the fingerprint | `PURE` | *a caller chip prefers the alias, then the mask, then the raw fingerprint* |
-| A credential chip shows the file name | `PURE` | *a credential chip shows the file name rather than the stored fingerprint* |
-| Row ordering is by request time, newest first | — | Already a Go regression: `TestListUsageEventsOrdersByRequestTime` in `internal/repository`. The browser copy cannot fail for the reason its name gives. |
-## Renamed or merged
+| Una edición de filtro confirma la dimensión nombrada en la URL | `PURE` | `scripts/test-usage-events-view-policy.ts` — *una edición de filtro reemplaza la dimensión nombrada y mantiene la ventana* |
+| Eliminar una etiqueta limpia el filtro de la URL | `PURE` | *una edición de filtro puede eliminar una dimensión, lo cual una combinación no podía expresar*; *establecer, ampliar y limpiar una dimensión…* |
+| Limpiar todo elimina cada filtro pero conserva la ventana y el tamaño de página | `PURE` | *limpiar todo elimina cada filtro y el veredicto pero conserva ventana y tamaño de página* |
+| Limpiar todo conserva una ventana elegida explícitamente | `PURE` | *limpiar todo deja una ventana absoluta elegida explícitamente en el lugar* |
+| Un filtro limpio permanece limpio tras recargar | `PURE` | *la vista guardada se deriva de la URL navegada, no se combina de la consulta previa* — la derivación que esto reemplazó era el defecto que lo resucitaba |
+| La vista guardada restaura ventana y tamaño de página en la ruta base | `PURE` | *una ventana absoluta se guarda como límites…*; *la vista guardada porta las opciones de diseño suministradas* |
+| Un filtro de costo viaja como exactamente un parámetro | `PURE` | *el costo se almacena una vez, como campo propio, y nunca dentro del mapa de filtros*; recorridos de `filterParamsToUrl` fijados en `test-usage-event-view.ts` |
+| El menú de tiempo establece una ventana explícita | `PURE` | *un ajuste preestablecido reemplaza un rango absoluto en lugar de apilarse a su lado*; *un rango absoluto reemplaza un preestablecido…* |
+| Un filtro y una ventana coexisten en la URL | `PURE` | *una edición de filtro reemplaza la dimensión nombrada y mantiene la ventana* |
+| Un rango invertido se explica en línea y bloquea Aplicar | `PURE` | *un rango invertido o igual es rechazado*; *el resultado de validación mapea a la clave del mensaje* |
+| Un rango posterior al momento actual se rechaza | `PURE` | *un rango que sobrepase el momento actual se rechaza* |
+| Cada ajuste preestablecido aparece exactamente una vez | `PURE` | *cada ajuste preestablecido configurado aparece exactamente una vez, cualquiera sea el seleccionado*; *el grupo rápido y el resto particionan los preestablecidos* |
+| Un alias escrito marca el borrador como modificado | `PURE` | `isDraftDirty` en `test-usage-event-view.ts` |
+| Un retardo de búsqueda en cola no revive un filtro limpio | `PURE` | *una invalidación a través del controlador suprime una confirmación en cola*; *una invalidación suprime un callback ya disparado pero no ejecutado* |
+| La navegación de historial descarta pulsaciones de teclas pendientes | `PURE` | *adoptar un valor confirmado externo cancela la pulsación en cola* |
+| El cuadro de búsqueda sigue el término navegado entre dos vistas guardadas | `PURE` | *una pulsación tras una navegación externa confirma contra la nueva vista* |
+| Un parámetro que no se puede aplicar se informa, no se descarta | `PURE` | `rejectedEventParams` — fijado en `test-usage-event-view.ts` |
+| Un valor de filtro excesivamente largo o inválido se rechaza | `PURE` | `readEventQuery` / `parseUsageRangeBound` en `test-usage-event-view.ts` |
+| Un sondeo no vuelve a leer las facetas | `PURE` | *cada motivo para omitir un ciclo se respeta* + política `staleTime` en `staleTime`/`pollingPolicy` |
+| La actualización automática inicia apagada y no indica cadencia | `PURE` | *la cadencia no es una ocurrencia tardía de ida y vuelta*. El estado renderizado del interruptor sigue siendo aserción de navegador. |
+| El veredicto de resultado es un filtro sin parámetro de URL propio | `PURE` | *se confirma un veredicto de resultado, y "todos" lo quita en vez de almacenarlo* |
+| Un cambio de filtro descarta el cursor de paginación | `PURE` | *una edición de filtro nunca toca el cursor de paginación que está a punto de invalidar* |
+| Una actualización que no pudo drenar CPA se informa como incompleta | `PURE` | *una extracción que no pudo drenar CPA se informa como incompleta en lugar de exitosa* |
+| Un recolector deshabilitado es información, no un error | `PURE` | *un recolector deshabilitado es información, no un fallo* |
+| La actualización vuelve a leer lista, facetas y estado de canalización | `PURE` | *una actualización completada vuelve a leer cada superficie que la extracción pudo modificar* |
+| Una etiqueta de invocador muestra el alias en vez de la huella | `PURE` | *una etiqueta de invocador prefiere el alias, luego la máscara, luego la huella sin procesar* |
+| Una etiqueta de credencial muestra el nombre del archivo | `PURE` | *una etiqueta de credencial muestra el nombre del archivo en vez de la huella almacenada* |
+| El orden de filas es por hora de solicitud, más reciente primero | — | Regresión en Go: `TestListUsageEventsOrdersByRequestTime` en `internal/repository`. |
 
-These claims still exist under a name that no longer matches the original, because a
-loop became a single case or two checks about one transition were merged. They are
-listed so a reader diffing the two revisions can account for every line rather than
-trusting that a name change was a deletion.
+## Retenido en el navegador
 
-| Before | After |
-| --- | --- |
-| the list is ordered by request time, newest first | the rendered time column is monotonic, newest first |
-| the saved window is restored on the bare route, the saved page size is restored on the bare route | the saved window survives a reload |
-| the cleared filters stay cleared on the bare route | the cleared filters stay cleared after a reload |
-| clear-all keeps the window and the page size | folded into the two reload checks above |
-| a typed alias reaches the URL, the alias is reported as a chip | a typed alias reaches the URL and is reported as a chip |
-| the search box shows the navigated term (alpha-search, beta-search) | the search box shows the navigated term |
-| the navigated term survives the debounce window (alpha-search, beta-search) | the navigated term survives the debounce window |
-| with {selected} selected, {preset} appears exactly once - 14 checks over two loop iterations | the window menu lists every preset and not just the unselected ones, the preset menu is rendered from the same policy the tests assert |
-| the single fixture provider renders exactly one enable switch | every provider in the fixture renders exactly one enable switch |
-| clear-all removes the filter | clear-all removes every filter |
-| a cost filter travels as exactly one parameter | no cost parameter is duplicated in the restored URL; the serializer half is pure |
-
-## Retained in the browser
-
-| Claim | Class | Why it must stay |
+| Aserción | Clase | Por qué debe permanecer |
 | --- | --- | --- |
-| `/shell-pamc` redirects, sign-in rejects a wrong key, a valid key creates a session | `CROSS-STACK` | The auth boundary. Cookie attributes, redirect status and the `Secure` derivation are browser/HTTP facts. |
-| Every route renders with no document overflow | `BROWSER` | Layout, not presence. A route can render and still overflow. |
-| OAuth management overview density, six-window Quota tab completeness, Connect non-start and 320/375px reflow | `BROWSER` | Density and geometry are measured from rendered rows; the old three-page UI claims now have one canonical replacement. |
-| The overview row bars its own family's five-hour and weekly windows, names a kindless window from its period, keeps its secondary actions in the row menu, and reaches the full reading through one Details action | `BROWSER` | Which windows a row can afford, whether it truncates and how many rows the 1440×900 overview shows are measured from the rendered rows. |
-| Legacy OAuth/auth-file/quota URLs preserve only documented intent and consume one-shot actions before the overlay history entry | `BROWSER` | Redirect parameters and Back/Forward behaviour are browser history facts. |
-| A status read that fails before CPA answers leaves the attempt waiting, cancellable and still polled | `BROWSER` | The failure is a real gateway response and the completion depends on a timer that must survive it; only a browser shows the panel state, the surviving timer and the request count together. |
-| The filter drawer is on screen at 768px and 390px, including mid-slide | `BROWSER` | Geometry. The failure mode is an off-screen panel, invisible to any DOM assertion. |
-| The custom time dialog stays on screen at both widths | `BROWSER` | Same, for a second surface that only exists while open. |
-| Request rows ellipsize instead of expanding their column | `BROWSER` | `scrollWidth > clientWidth` is a paint fact. |
-| Header and body column tracks line up | `BROWSER` | Two independent grids agreeing is geometry. |
-| The numeric columns are right-aligned and stay right-aligned | `BROWSER` | …and the responsive override actually wins. A specificity slip is invisible to CSS text. |
-| The provider cell keeps its icon and label vertically centred | `BROWSER` | Cross-axis alignment of rendered boxes. |
-| The icon picker stacks above the open drawer | `BROWSER` | `z-index` + `elementFromPoint()`. Portals are antd's, so only the engine can say. |
-| The virtualized list holds a bounded DOM at the top, middle and bottom | `BROWSER` | Virtualization is a rendering behaviour. |
-| A poll does not scroll the reader or reorder the rows under the cursor | `BROWSER` | Rendered row identity across a real interval, with the reader's scroll offset as the invariant. |
-| The back-to-top pill reports the arrivals and returns to the top | `BROWSER` | Scroll geometry plus a server-counted value. |
-| A rapid burst settles on the last click and coalesces | `CROSS-STACK` | The rendered switch, the gateway's stored value and the write count must agree. |
-| Two overlapping toggles leave both changes on the gateway | `CROSS-STACK` | The operator-visible outcome of a real interleaving. The lost-write regression is the Go test; this is the end-to-end outcome. |
-| The brand mark follows the console's theme, with rendered ink | `BROWSER` | Pixels, and the console theme rather than the OS scheme. |
-| The collapsed rail centres its mark | `BROWSER` | Geometry after a width animation. |
-| The theme persists across a reload and applies during hydration | `BROWSER` | `localStorage` plus a browser lifecycle. |
-| Lighthouse-free dashboard sparkline marks are fill-only | `BROWSER` | A canvas/SVG paint fact. |
-| Quota progress bars have a positive rendered fill | `BROWSER` | Computed width after a live refresh. |
-| Console, page and request errors are empty | `BROWSER` | Runtime health. |
-| Secret material never reaches the DOM, storage or a response body | `CROSS-STACK` | A security predicate over the real stack. |
-| The session expires when the cookie is cleared | `BROWSER` | Cookie lifecycle. |
-
-## OAuth workspace UI acceptance refinement
-
-The OAuth workspace probe pins its desktop viewport to 1440×900 explicitly; the
-probe runner default is 1440×1000 and cannot establish the smaller-viewport density
-contract. The user-approved presentation is an overview list with a tabbed credential
-Drawer. The probe verifies full quota details, model/group labels and ordering,
-dirty drafts across tabs, explicit zero priority and default weight, and phone
-list/Drawer overflow. It also verifies sequential 10/10/3 refreshes for 23 targets
-in a 48-record collection, partial failures and missing results, and two minimized
-provider sessions without concurrent same-session status reads.
-
-## Phase-two preference claim ownership
-
-The component and contract pilots strengthen lower-layer coverage; they remove no
-browser assertion. The detailed case-to-owner/fault ledger is maintained once in
-`docs/plans/architecture-governance.md`.
-
-| Claim | Lowest owner | Browser/cross-stack claim retained |
-| --- | --- | --- |
-| Shared optimistic subscriptions, ordered/refused writes, last-intent rollback and unmount cleanup | rendered preference integration under jsdom | actual settings controls, page reload, feedback geometry and browser keepalive |
-| Method/path/body/auth/error/raw JSON/null/timezone wire behavior | handler-certified preference corpus + real typed client under Node + default fixture dispatcher self-test | production HTTP/SQLite persistence and real navigation |
-| UTF-8 small-write keepalive admission | actual typed client Node contract case | Chromium navigation transport lifetime |
-
-The default preference mock now returns the handler's `{key,value}` write envelope,
-refuses malformed JSON and includes timezone metadata. Its prior `{ok:true}` and
-malformed-JSON-as-null responses were fixture drift, not authorized product behavior.
-Strict unknown/method harness faults, context isolation and existing scenario
-assertions are unchanged.
-
-## Native browser execution ownership
-
-The catalog retains every scenario and its domain assertions. Playwright Test owns
-bounded workers, isolated contexts, test budgets, reports and lifecycle cleanup.
-`scripts/probe-runner.test.ts` checks native collection against the full registry and
-exclusive frame-scenario partition; real injected faults and positive controls in
-`scripts/acceptance/tests/harness.spec.ts` protect the project-specific failure boundary.
-The handwritten queue, batch runner, watchdog and their implementation tests were
-removed: their scheduling claims now belong to the native runner, not another queue.
-The explicit continue-after-shared-failure and exact-evidence policies remain in the
-thin typed catalog adapter. ADR 0095's uncontended frame requirement is unchanged.
-
-Demo negative controls now mutate isolated input trees rather than live repository
-files. `scripts/check-demo.test.ts` retains source freshness, route/read coverage,
-provenance and privacy claims, plus concurrent positive/negative and byte-preservation
-controls. The restore-retry and final-restore tests are obsolete because no test writes
-the live input set. Route/read negative controls pass semantic inputs instead of editing
-JavaScript source strings.
+| `/shell-pamc` redirige, el inicio de sesión rechaza claves incorrectas, una clave válida crea sesión | `CROSS-STACK` | Límite de autenticación. Atributos de cookie, estado de redirección y derivación `Secure` son hechos de navegador/HTTP. |
+| Cada ruta se renderiza sin desbordamiento de documento | `BROWSER` | Diseño visual, no solo presencia. |
+| Densidad general de gestión de OAuth, integridad de 6 ventanas en Cuota, no inicio en Conectar y reflujo en 320/375px | `BROWSER` | Densidad y geometría se miden a partir de filas renderizadas. |
+| La barra de marca sigue el tema de la consola con tinta renderizada | `BROWSER` | Píxeles y tema de la consola en lugar del esquema del SO. |
+| La barra colapsada centra su marca | `BROWSER` | Geometría tras animación de ancho. |
+| El tema persiste tras recargar y se aplica durante la hidratación | `BROWSER` | `localStorage` más ciclo de vida del navegador. |
+| Material secreto nunca llega al DOM, almacenamiento o cuerpo de respuesta | `CROSS-STACK` | Predicado de seguridad sobre la pila real. |
+| La sesión expira cuando se borra la cookie | `BROWSER` | Ciclo de vida de cookies. |

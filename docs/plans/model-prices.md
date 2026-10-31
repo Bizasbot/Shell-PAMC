@@ -1,393 +1,364 @@
-# Model prices
+# Precios de modelos
 
-The price book: how every request the gateway serves is given a cost, which
-rates that cost is locked against, and how an operator changes them. The
-decision record is ADR 0030; the request-time lock it extends is ADR 0003.
+El libro de precios: cómo se asigna un costo a cada solicitud que sirve la pasarela, contra
+qué tarifas queda bloqueado ese costo y cómo un operador puede modificarlas. El
+registro de decisión es ADR 0030; el bloqueo al momento de la solicitud que este extiende es ADR 0003.
 
-## Principles
+## Principios
 
-1. **Zero-config by default.** The pricing service downloads OpenRouter's public
-   model list (`https://openrouter.ai/api/v1/models`, no key) at startup and then
-   on a server-side interval that defaults to daily; the operator can change it
-   (off / 1h / 6h / 12h / 24h) without a restart. Every current CPA model that
-   matches an OpenRouter model is priced automatically, and a model CPA starts
-   serving is priced within the five-minute catalog reconciliation from the
-   stored snapshot, without waiting for the next download.
-2. **One source.** OpenRouter is the only automatic source. The URL is a
-   compile-time constant; no operator-supplied URL is ever fetched.
-3. **Pricing follows the current CPA catalog.** A complete catalog snapshot is
-   persisted separately from usage history; removed models leave the book while
-   their immutable request snapshots remain queryable.
-4. **Three modes, and the operator's always wins.** A model is priced
-   automatically (`auto`), follows an OpenRouter model the operator chose
-   (`linked`), or uses the operator's own rates (`custom`). Syncs refresh auto
-   and linked rows and never touch custom ones; a sync never replaces a pinned
-   model with its own match.
-5. **Unpriced is not zero.** A request with no price version reports `cost_usd`
-   absent, and every total that excludes it says it is partial.
-6. **Request costs are locked once.** The insertion transaction selects the price
-   version and the channel version effective at the request timestamp, applies
-   the tier the request qualifies for, and stores USD nanos, the tier index and
-   both version ids. Later edits cannot rewrite history.
+1. **Cero configuración por defecto.** El servicio de precios descarga la lista pública
+   de modelos de OpenRouter (`https://openrouter.ai/api/v1/models`, sin clave) al inicio y luego
+   en un intervalo del lado del servidor que por defecto es diario; el operador puede cambiarlo
+   (desactivado / 1h / 6h / 12h / 24h) sin reiniciar. Cada modelo actual de CPA que
+   coincida con un modelo de OpenRouter se tarifica automáticamente, y un modelo que CPA comience
+   a servir se tarifica dentro de la conciliación de catálogo de cinco minutos a partir de la
+   instantánea almacenada, sin esperar a la siguiente descarga.
+2. **Fuente única.** OpenRouter es la única fuente automática. La URL es una
+   constante en tiempo de compilación; nunca se consulta ninguna URL provista por el operador.
+3. **La tarificación sigue el catálogo actual de CPA.** Una instantánea completa del catálogo se
+   persiste por separado del historial de uso; los modelos eliminados abandonan el libro mientras
+   sus instantáneas inmutables de solicitudes permanecen consultables.
+4. **Tres modos, y el del operador siempre prevalece.** Un modelo se tarifica
+   automáticamente (`auto`), sigue a un modelo de OpenRouter elegido por el operador
+   (`linked`), o utiliza las tarifas propias del operador (`custom`). Las sincronizaciones actualizan filas auto
+   y linked y nunca tocan las custom; una sincronización nunca reemplaza un modelo
+   fijado con su propia coincidencia.
+5. **Sin precio no significa cero.** Una solicitud sin versión de precio informa `cost_usd`
+   ausente, y cada total que la excluye indica que es parcial.
+6. **Los costos de solicitud se bloquean una sola vez.** La transacción de inserción selecciona la versión de precio
+   y la versión de canal vigentes en la marca de tiempo de la solicitud, aplica
+   el nivel para el que la solicitud califica, y almacena nanos de USD, el índice de nivel y
+   ambos IDs de versión. Ediciones posteriores no pueden reescribir el historial.
 
-## Price structure
+## Estructura de precios
 
-A model's shared price can be overridden with custom rates and tiers for one
-recorded CPA channel (`usage_events.provider`). Migration 043 stores these in
-`channel_model_prices`, keyed by `(channel, model)`, and appends their history to
-`model_price_versions` with a channel discriminator. Requests choose an available
-channel version first, otherwise the shared version, both at request time. Removing
-an override appends a tombstone and restores shared pricing for later requests.
-The existing channel multiplier applies to either price. Shared automatic matching,
-links and custom prices retain their existing semantics; channel overrides are custom.
+El precio compartido de un modelo puede anularse con tarifas y niveles personalizados para un
+canal de CPA registrado (`usage_events.provider`). La migración 043 almacena esto en
+`channel_model_prices`, indexado por `(channel, model)`, y añade su historial a
+`model_price_versions` con un discriminador de canal. Las solicitudes eligen primero una versión
+de canal disponible, o de lo contrario la versión compartida, ambas al momento de la solicitud. Eliminar
+una anulación añade un tombstone y restaura la tarificación compartida para solicitudes posteriores.
+El multiplicador de canal existente aplica a cualquiera de los dos precios. La coincidencia automática compartida,
+los enlaces y precios personalizados conservan su semántica; las anulaciones de canal son personalizadas.
 
-The editor's `GET|PUT|DELETE /v1/pricing/models/{model}` accepts an optional `channel`
-query parameter. A write must name a model in that channel's persisted membership.
-Scoped reads return the effective price and `is_inherited`; the price book includes
-`channel_models` when overrides exist. Model Square maps call names through its
-actual routes and provider membership, keeping prefixes, aliases and upstream
-names separate. Several targets are offered individually instead of selecting one.
+El endpoint `GET|PUT|DELETE /v1/pricing/models/{model}` del editor acepta un parámetro
+opcional de consulta `channel`. Una escritura debe nombrar un modelo en la membresía persistida de ese canal.
+Lecturas con alcance devuelven el precio efectivo e `is_inherited`; el libro de precios incluye
+`channel_models` cuando existen anulaciones. Model Square mapea nombres de llamada a través de sus
+rutas reales y membresía de proveedores, manteniendo prefijos, alias y nombres
+de upstream por separado. Múltiples destinos se ofrecen individualmente en lugar de seleccionar uno solo.
 
-A price is four rates per 1M tokens (prompt, completion, cache read, cache
-write), a model multiplier, and an optional list of **tiers**:
+Un precio consta de cuatro tarifas por cada 1M de tokens (prompt, completado, lectura de caché, escritura
+de caché), un multiplicador de modelo y una lista opcional de **niveles (tiers)**:
 
-- a **long-context tier** (`min_prompt_tokens`) applies when the request's full
-  input, cached tokens included, reaches the threshold;
-- a **time-of-day tier** (`utc_start`/`utc_end`, HHMM) applies when the
-  request's own timestamp falls in the window `[start, end)`, which wraps past
-  midnight when the end is not after the start. The window is read on the
-  tier's **billing time zone** (`time_zone`, an IANA name such as
-  `Asia/Shanghai`) and on UTC when the tier names none, so a vendor that
-  publishes off-peak hours in Beijing time is entered as published. The request
-  is placed on that zone's wall clock at its own instant, so a zone's daylight
-  saving moves the window with the vendor. The zone is unrelated to the OMC
-  Time Zone, which only decides how the console displays time (ADR 0063);
-- a **service-tier tier** (`service_tiers`, such as `["priority","fast"]`)
-  applies when the request was billed on one of the named upstream service
-  tiers. For Codex, the final outbound `effective_service_tier` governs when
-  nonempty; otherwise the client `service_tier` remains the evidence. Its response
-  can report `default` or `auto` even for Fast. Explicit outbound `auto` selects
-  no lane. Other providers prefer a non-`auto`
-  `response_service_tier`, falling back to the request. A missing Codex request
-  field can fall back to the response; an explicit `auto` names no lane and
-  does not fall through. `auto` and empty never match. Names are compared
-  lowercased and trimmed. Which provider spellings share a rate is
-  listed in the price itself: no mapping between `fast` and `priority` is built
-  in;
-- a tier carrying several conditions applies only when all of them hold.
+- un **nivel de contexto largo** (`min_prompt_tokens`) aplica cuando la entrada completa
+  de la solicitud, incluidos tokens en caché, alcanza el umbral;
+- un **nivel horario del día** (`utc_start`/`utc_end`, HHMM) aplica cuando la
+  marca de tiempo propia de la solicitud cae en la ventana `[start, end)`, que envuelve pasada
+  la medianoche cuando el fin no es posterior al inicio. La ventana se interpreta en la
+  **zona horaria de facturación** del nivel (`time_zone`, un nombre IANA como
+  `Asia/Shanghai`) y en UTC cuando el nivel no indica ninguna, de modo que un proveedor que
+  publique horas no pico en hora de Beijing se ingresa tal como se publica. La solicitud
+  se ubica en el reloj de pared de esa zona en su propio instante, permitiendo que el horario
+  de verano de una zona desplace la ventana con el proveedor. La zona es independiente de la
+  Zona Horaria de Shell-PAMC, que solo rige cómo muestra el tiempo la consola (ADR 0063);
+- un **nivel de servicio** (`service_tiers`, como `["priority","fast"]`)
+  aplica cuando la solicitud fue facturada en uno de los niveles de servicio upstream
+  indicados. Para Codex, rige el `effective_service_tier` final saliente cuando
+  no esté vacío; de lo contrario, el `service_tier` del cliente sigue siendo la evidencia. Su respuesta
+  puede reportar `default` o `auto` incluso para Fast. Un `auto` saliente explícito no selecciona
+  ningún carril. Otros proveedores prefieren un `response_service_tier` distinto de `auto`,
+  recurriendo a la solicitud como respaldo. Un campo faltante en la solicitud de Codex puede recurrir
+  a la respuesta; un `auto` explícito no nombra ningún carril y no realiza fallback. `auto` y vacío nunca coinciden. Los nombres se comparan
+  en minúsculas y sin espacios laterales. Las variantes de grafía de proveedores que comparten una tarifa
+  se enumeran en el propio precio: no existe un mapeo integrado entre `fast` y `priority`;
+- un nivel que contiene varias condiciones aplica solo cuando se cumplen todas ellas.
 
-Exactly one tier governs a request: a service-tier tier over one without, then
-the highest applicable threshold, then a windowed tier over an unwindowed one,
-then stored order. Providers publish a priority lane as its own rate card, so a
-priority long-context price is one tier carrying both `service_tiers` and
-`min_prompt_tokens`; without it, a priority request above the threshold pays the
-priority lane's rates, never a stack of both. Rates a tier leaves
-out inherit the base price. `pricing.Quote` is the single implementation; the
-console's editor preview mirrors it in `web/src/types/pricingDisplay.ts` and
-the logic suite pins the two against the same cases.
+Exactamente un nivel rige una solicitud: un nivel de servicio sobre uno que no lo sea, luego
+el umbral aplicable más alto, luego un nivel con ventana temporal sobre uno sin ventana,
+y finalmente el orden almacenado. Los proveedores publican carriles prioritarios como su propia lista de tarifas, por lo que un
+precio prioritario de contexto largo es un nivel que porta tanto `service_tiers` como
+`min_prompt_tokens`; sin él, una solicitud prioritaria por encima del umbral paga las
+tarifas del carril prioritario, nunca una combinación de ambas. Las tarifas que un nivel
+omite heredan el precio base. `pricing.Quote` es la única implementación; la vista
+previa del editor en la consola la replica en `web/src/types/pricingDisplay.ts` y
+la suite lógica asegura ambas contra los mismos casos de prueba.
 
-A **channel multiplier** scales every request one CPA provider answered
-(`usage_events.provider`, e.g. `codex`, `openai-compatible-deepseek`). The
-request cost is:
+Un **multiplicador de canal** escala cada solicitud que un proveedor de CPA respondió
+(`usage_events.provider`, ej. `codex`, `openai-compatible-deepseek`). El
+costo de la solicitud es:
 
 ```
-tiered base cost × model multiplier × channel multiplier
+costo base por nivel × multiplicador de modelo × multiplicador de canal
 ```
 
-Both multipliers are applied as exact fractions before a single half-up
-rounding to nanos, so a request with no tiers and a 1× channel costs exactly
-what the pre-tier formula charged (`FuzzQuoteLegacyParity`).
+Ambos multiplicadores se aplican como fracciones exactas antes de un único
+redondeo hacia arriba (half-up) a nanos de USD, de modo que una solicitud sin niveles y con canal 1× cuesta exactamente
+lo que calculaba la fórmula previa a niveles (`FuzzQuoteLegacyParity`).
 
-The resolved service tier and its outbound/request/response source are saved with new
-request costs (migration 045). Historical records without that selection retain
-the original response-first policy when their locked cost is explained. Neither
-amounts nor price versions are rewritten. Mode indicators and the
-`resolved_service_tier` filter use the current provider-aware interpretation;
-`service_tier` continues to filter the original client request.
+El nivel de servicio resuelto y su origen (outbound/request/response) se almacenan con los nuevos
+costos de solicitud (migración 045). Registros históricos sin esa selección retienen
+la política original centrada en la respuesta cuando se explica su costo bloqueado. Ni los
+importes ni las versiones de precios se reescriben. Indicadores de modo y el
+filtro `resolved_service_tier` utilizan la interpretación actual consciente del proveedor;
+`service_tier` continúa filtrando la solicitud original del cliente.
 
-CPA v8.0.39 adds optional `effective_service_tier` telemetry from the final outbound
-request after translation and payload rules. Codex prefers this evidence, including
-explicit `default` downgrades; outbound `auto` selects no service-tier price and
-never revives the original client priority. Missing or empty outbound evidence
-retains the existing request-aware resolver, without a gateway-version gate.
-Other providers retain response-first pricing. Migration 046 adds the raw field
-and extends the immutable snapshot source with `outbound`, preserving old rows,
-amounts and explanations. CPA omits an empty outbound tier, so an old publisher
-and a payload rule that removed the tier are indistinguishable. OMC does not
-infer missing evidence from current configuration or request latency.
+CPA v8.0.39 añade telemetría opcional `effective_service_tier` procedente de la solicitud saliente
+final tras la traducción y reglas de payload. Codex prefiere esta evidencia, incluyendo
+degradaciones explícitas a `default`; un `auto` saliente no selecciona precio de nivel de servicio
+y nunca revive la prioridad original del cliente. La evidencia de salida faltante o vacía
+retiene el solucionador existente consciente de solicitudes, sin requerir una barrera por versión de pasarela.
+Otros proveedores retienen la tarificación priorizando la respuesta. La migración 046 añade el campo sin procesar
+y extiende el origen de la instantánea inmutable con `outbound`, preservando filas antiguas,
+importes y explicaciones. CPA omite un nivel saliente vacío, por lo que un publicador antiguo
+y una regla de payload que haya eliminado el nivel son indistinguibles. Shell-PAMC no
+infiere evidencia faltante a partir de la configuración actual o de la latencia de la solicitud.
 
-## Decoding OpenRouter
+## Decodificación de OpenRouter
 
-`internal/pricing/openrouter.go` reduces the envelope to list prices:
+`internal/pricing/openrouter.go` reduce el envoltorio a precios de lista:
 
-- per-token decimal strings are scaled to per-1M exactly;
-- variants (`:free`, `:batch`, every `:` flavour), OpenRouter's own routers and
-  any entry whose price is negative or missing are skipped;
-- `~vendor/…-latest` aliases are kept but only ever match as a last resort;
-- overrides with `min_prompt_tokens` or `utc_start`/`utc_end` become tiers,
-  always without a zone, as OpenRouter publishes its windows in UTC; any other
-  override is dropped;
-- **a cache rate OpenRouter omits resolves to the prompt rate**, never to zero:
-  the omission means no cache discount is published, and zero would bill cached
-  tokens as free. A tier inherits its own prompt rate the same way when the base
-  inherited one.
+- cadenas decimales por token se escalan a precios por 1M exactamente;
+- variantes (`:free`, `:batch`, cada variante con `:`), los enrutadores propios de OpenRouter y
+  cualquier entrada cuyo precio sea negativo o faltante se omiten;
+- alias `~vendor/…-latest` se conservan pero solo coinciden como último recurso;
+- anulaciones con `min_prompt_tokens` o `utc_start`/`utc_end` se convierten en niveles,
+  siempre sin zona horaria, dado que OpenRouter publica sus ventanas en UTC; cualquier otra
+  anulación se descarta;
+- **una tarifa de caché que OpenRouter omita resuelve a la tarifa de prompt**, nunca a cero:
+  la omisión indica que no se publica descuento por caché, y cero facturaría los tokens
+  en caché como gratuitos. Un nivel hereda su propia tarifa de prompt de la misma forma cuando la base
+  la heredó.
 
-Tiers are stored in one canonical spelling (`pricing.EncodeTiers`), because the
-version trigger compares the stored text and two spellings of the same tiers
-would mint a version on every sync. A tier without a zone keeps the spelling it
-had before zones existed, and the editor saves a UTC window without one, for the
-same reason.
+Los niveles se almacenan en una única grafía canónica (`pricing.EncodeTiers`), debido a que el
+activador de versión compara el texto almacenado y dos grafías de los mismos niveles
+generarían una versión en cada sincronización. Un nivel sin zona horaria conserva la grafía que
+tenía antes de admitirse zonas, y el editor guarda una ventana UTC sin zona, por la misma razón.
 
-## Matching rule
+## Regla de coincidencia
 
-`Catalog.MatchModel` ranks candidates by match precision, then first-party
-author, then slug length, then id — a total order, so the winner is stable
-across syncs:
+`Catalog.MatchModel` clasifica candidatos por precisión de coincidencia, luego por autor
+de primera parte, luego por longitud de slug y finalmente por ID — un orden total, asegurando que el ganador
+sea estable entre sincronizaciones:
 
-1. `exact` — the OpenRouter id without its author namespace;
-2. `canonical` — the dated canonical slug (`claude-opus-5.5-20260921`);
-3. `normalized` — case and separator normalization (`GLM-5.3 Flash` = `glm-5.3-flash`), preserving numeric component boundaries so `5.1` never equals `51`;
-4. `date_stripped` — after removing one release date (`-YYYYMMDD`,
-   `-YYYY-MM-DD`, `-MM-YYYY`, or `-MMDD` when it reads as a real month and day, so
-   Qwen's YYMM `2507` survives);
-5. `alias` — a floating `~…-latest` alias.
+1. `exact` — el ID de OpenRouter sin su espacio de nombres de autor;
+2. `canonical` — el slug canónico con fecha (`claude-opus-5.5-20260921`);
+3. `normalized` — normalización de mayúsculas/minúsculas y separadores (`GLM-5.3 Flash` = `glm-5.3-flash`), preservando límites de componentes numéricos para que `5.1` nunca equivalga a `51`;
+4. `date_stripped` — tras remover una fecha de lanzamiento (`-YYYYMMDD`,
+   `-YYYY-MM-DD`, `-MM-YYYY` o `-MMDD` cuando se lee como mes y día reales, de modo que
+   el YYMM `2507` de Qwen sobreviva);
+5. `alias` — un alias flotante `~…-latest`.
 
-The first-party author table maps a model family to OpenRouter namespaces
-(`gpt` → `openai`, `glm` → `z-ai`, `kimi` → `moonshotai`, …). A CPA name is
-split with `StripProviderPrefix`; an OpenRouter id is split at its first `/`
-and its `:` variant is never treated as a model.
+La tabla de autores de primera parte mapea familias de modelos a espacios de nombres de OpenRouter
+(`gpt` → `openai`, `glm` → `z-ai`, `kimi` → `moonshotai`, …). Un nombre de CPA se
+divide con `StripProviderPrefix`; un ID de OpenRouter se divide en su primera `/`
+y su variante `:` nunca se trata como un modelo.
 
-A name that only resembles a listed model — typically a reasoning-effort
-decoration such as `gpt-5.4-mini-high` — is not matched. `Catalog.Suggest`
-offers it instead, restricted to the family's first-party authors. A recognized trailing effort or thinking control is removed for suggestion ranking only; a resolved base identity (including canonical or dated names) ranks first. The console lets the operator adopt a suggestion in one click (a link).
+Un nombre que solo se parece a un modelo listado — típicamente una decoración de esfuerzo
+de razonamiento como `gpt-5.4-mini-high` — no se empareja. `Catalog.Suggest`
+lo ofrece en su lugar, restringido a los autores de primera parte de la familia. Un control reconocido de esfuerzo final o thinking se remueve solo para la clasificación de sugerencias; una identidad base resuelta (incluyendo nombres canónicos o fechados) clasifica primero. La consola permite al operador adoptar una sugerencia con un solo clic (un enlace).
 
-A CPA alias with conflicting targets is persisted with an empty `price_model`. It stays visible but does not auto-match; other models continue syncing. A newly ambiguous alias retires its previous automatic price, while custom prices and operator links remain authoritative. Invalid model identities still reject the entire snapshot.
+Un alias de CPA con objetivos en conflicto se persiste con un `price_model` vacío. Permanece visible pero no se empareja automáticamente; otros modelos continúan sincronizándose. Un alias recién vuelto ambiguo retira su precio automático previo, mientras que precios personalizados y enlaces del operador siguen siendo autoritativos. Identidades de modelo inválidas siguen rechazando la instantánea completa.
 
-OAuth discovery combines enabled credentials' registered IDs with their provider's
-sanitized global OAuth alias rules. An alias present in a credential contributes
-both its call point and its resolved upstream to the pricing catalog, including
-when CPA hides the original name (`fork: false`). Alias targets are price-matching
-identities, not implicit links: a reasoning variant without an exact safe match
-still needs an operator link or custom price. Inactive rules and disabled
-credentials contribute nothing. Unreadable alias rules reject the snapshot and
-retain the last complete persisted catalog.
+El descubrimiento de OAuth combina los IDs registrados de credenciales habilitadas con las
+reglas globales sanitizadas de alias OAuth de su proveedor. Un alias presente en una credencial contribuye
+tanto con su punto de llamada como con su upstream resuelto al catálogo de precios, incluso
+cuando CPA oculte el nombre original (`fork: false`). Los destinos de alias son identidades
+para emparejamiento de precios, no enlaces implícitos: una variante de razonamiento sin coincidencia exacta segura
+sigue requiriendo un enlace del operador o un precio personalizado. Reglas inactivas y credenciales
+deshabilitadas no aportan nada. Reglas de alias ilegibles rechazan la instantánea y
+conservan el último catálogo persistido completo.
 
-The management snapshot keeps provider `Models` client-visible for Model Square;
-its OAuth `Routes` retain the upstream separately. The app's pricing adapter uses
-`ListPricingModelIDs` to include both in provider membership, so an upstream can
-be edited in the price book without being advertised as callable. Request locks
-continue using the recorded upstream `usage_events.model`; existing unpriced
-requests are not backfilled when an operator links that upstream.
+La instantánea de administración mantiene `Models` del proveedor visibles para el cliente en Model Square;
+sus `Routes` de OAuth conservan el upstream por separado. El adaptador de precios de la aplicación usa
+`ListPricingModelIDs` para incluir ambos en la membresía de proveedores, permitiendo que un upstream pueda
+editarse en el libro de precios sin publicitarse como invocable. Los bloqueos de solicitudes
+continúan usando el `usage_events.model` de upstream registrado; solicitudes históricas no tarificadas
+no se retroalimentan cuando un operador vincula ese upstream.
 
-## Components
+## Componentes
 
-- `migrations/028_openrouter_pricing.sql`: rebuilds `model_prices` (tiers, upstream
-  id, match kind, the `openrouter` source) and `pricing_sync_state` (source
-  `openrouter`, the schedule carried over), extends `model_price_versions`, and adds
+- `migrations/028_openrouter_pricing.sql`: reconstruye `model_prices` (niveles, ID de
+  upstream, tipo de coincidencia, la fuente `openrouter`) y `pricing_sync_state` (fuente
+  `openrouter`, el cronograma conservado), extiende `model_price_versions`, y añade
   `pricing_model_links`, `pricing_upstream_catalog`, `pricing_channels`,
-  `pricing_channel_versions` and `usage_events.channel_version_id`/`price_tier`.
-  Existing rows are copied with the version triggers dropped, so the upgrade mints
-  no version and reprices nothing.
-- `migrations/031_pricing_match_reviews.sql`: `pricing_match_reviews`, the
-  OpenRouter model an operator last answered for each custom or linked price
-  (see "New matches for custom and linked prices").
-- `migrations/019_request_price_snapshots.sql` and
-  `migrations/020_pricing_model_catalog.sql`: the append-only versions, the request
-  snapshot columns and the CPA catalog projection this builds on.
-- `internal/pricing`: `openrouter.go` (fetch and decode), `match.go` (index,
-  ranking, suggestions), `quote.go` (tier selection, `Quote`, tier encoding),
-  `service.go` (sync, modes, channels), `types.go`. The package defines the
-  `Store` interface; `internal/repository` implements it.
-- `internal/repository/usage_pricing.go`: the request lock (`lockUsagePrice`), the
-  read-time breakdown (`GetUsageEventCostBreakdown`) and price history;
-  `pricing_channels.go`, `pricing_upstream.go`, `pricing_usage.go` (30-day traffic
-  per model and channel, and the median token profile).
+  `pricing_channel_versions` y `usage_events.channel_version_id`/`price_tier`.
+  Las filas existentes se copian sin los activadores de versión, por lo que la actualización no genera
+  versiones ni retasará nada.
+- `migrations/031_pricing_match_reviews.sql`: `pricing_match_reviews`, el
+  modelo de OpenRouter que el operador respondió por última vez para cada precio personalizado o vinculado.
+- `migrations/019_request_price_snapshots.sql` y
+  `migrations/020_pricing_model_catalog.sql`: las versiones append-only, las columnas de instantánea
+  de solicitud y la proyección del catálogo de CPA sobre las que esto se construye.
+- `internal/pricing`: `openrouter.go` (obtención y decodificación), `match.go` (índice,
+  clasificación, sugerencias), `quote.go` (selección de niveles, `Quote`, codificación de niveles),
+  `service.go` (sincronización, modos, canales), `types.go`. El paquete define la
+  interfaz `Store`; `internal/repository` la implementa.
+- `internal/repository/usage_pricing.go`: el bloqueo de solicitudes (`lockUsagePrice`), el
+  desglose en lectura (`GetUsageEventCostBreakdown`) y el historial de precios;
+  `pricing_channels.go`, `pricing_upstream.go`, `pricing_usage.go` (tráfico a 30 días
+  por modelo y canal, y el perfil mediano de tokens).
 - `internal/api/management_pricing.go`: `GET /v1/pricing`,
   `GET /v1/pricing/attention`, `GET /v1/pricing/catalog`,
   `GET|PUT|DELETE /v1/pricing/models/{model}`,
   `POST /v1/pricing/models/{model}/dismiss-candidate`,
-  `PUT|DELETE /v1/pricing/channels/{channel}`, `POST /v1/pricing/sync` (409 while
-  running), `PUT /v1/pricing/sync-schedule`. Path parameters are decoded, so a
-  model named `openai/gpt-5` works. The request detail response carries
+  `PUT|DELETE /v1/pricing/channels/{channel}`, `POST /v1/pricing/sync` (409 durante
+  ejecución), `PUT /v1/pricing/sync-schedule`. Los parámetros de ruta se decodifican, por lo que un
+  modelo nombrado `openai/gpt-5` funciona. La respuesta de detalle de solicitud porta
   `cost_breakdown`.
-- `internal/operations/pricing.go`: the agent capabilities `pricing_overview`,
+- `internal/operations/pricing.go`: las capacidades del agente `pricing_overview`,
   `pricing_list`, `pricing_get`, `pricing_catalog_search`, `pricing_quote`,
-  `pricing_set` (mode, link, rates, tiers), `pricing_delete`, `pricing_sync`,
+  `pricing_set` (modo, enlace, tarifas, niveles), `pricing_delete`, `pricing_sync`,
   `pricing_channel_set`, `pricing_channel_delete`; `requests_cost_breakdown`
-  lives beside the request reads in `internal/operations/usage.go`. See
-  "Pricing through an agent".
-- `web/src/components/pricing/`: the console-wide editor (`PricingEditorProvider`,
-  `PriceEditorDrawer`), the request cost breakdown, and shared parts.
-- `web/src/pages/pricing/`: the price book — coverage and sync status in the head,
-  the provider-grouped model list, and the channel multiplier tab.
+  reside junto a las lecturas de solicitudes en `internal/operations/usage.go`.
+- `web/src/components/pricing/`: el editor general de la consola (`PricingEditorProvider`,
+  `PriceEditorDrawer`), el desglose de costo de solicitudes y partes compartidas.
+- `web/src/pages/pricing/`: el libro de precios — cobertura y estado de sincronización en la cabecera,
+  la lista de modelos agrupada por proveedores y la pestaña de multiplicadores de canal.
 
-## Where a price is set
+## Dónde se establece un precio
 
-The editor opens in place from every surface that shows a cost:
+El editor se abre en el lugar desde cada superficie que muestra un costo:
 
-- the price book's rows (where "Adopt" links a suggestion, and a new match can be
-  followed or ignored, without opening the editor);
-- an unpriced row of the request list, without opening the record;
-- the request drawer's cost breakdown;
-- an unpriced or partially priced group of the dashboard's model ranking, in the
-  model view only — a call point may be an alias priced under the model it
-  resolved to.
+- las filas del libro de precios (donde "Adoptar" vincula una sugerencia, y una nueva coincidencia puede
+  seguirse o ignorarse, sin abrir el editor);
+- una fila sin precio de la lista de solicitudes, sin abrir el registro;
+- el desglose de costos en el panel lateral de solicitudes;
+- un grupo sin precio o parcialmente tasado del ranking de modelos del tablero, únicamente en la
+  vista de modelos — un punto de llamada puede ser un alias tasado bajo el modelo al que
+  resolvió.
 
-The dashboard's cost tile links to the book when its total is partial. The editor
-previews the change on the model's median request of the last seven days, and
-on its largest recent prompt when that reaches a long-context tier; each preview
-row names the tier the new price bills it at, and a calculator prices any input
-and output size the operator types ("300K").
+El mosaico de costos del tablero enlaza al libro cuando su total es parcial. El editor
+previsualiza el cambio sobre la solicitud mediana del modelo en los últimos siete días, y
+sobre su prompt reciente más grande cuando alcanza un nivel de contexto largo; cada fila de vista previa
+nombra el nivel con el que el nuevo precio la facturaría, y una calculadora tasa cualquier tamaño
+de entrada y salida que el operador ingrese ("300K").
 
-## Editing tiers
+## Edición de niveles (tiers)
 
-The wire shape stays one `tiers` list; the editor presents it as the two
-questions operators ask. `web/src/components/pricing/PricingParts.tsx` holds the
-parts and `web/src/types/pricingDisplay.ts` the pure draft logic the logic suite
-pins:
+El formato en transmisión permanece como una lista `tiers`; el editor lo presenta como las dos
+preguntas que formulan los operadores. `web/src/components/pricing/PricingParts.tsx` contiene los
+componentes y `web/src/types/pricingDisplay.ts` la lógica pura de borrador asegurada por la suite lógica:
 
-- **Long-context pricing** lists tiers with a threshold. The threshold is typed
-  as providers publish it (`200K`, `1M`, `272,000`) or picked from presets, and a
-  tier can additionally be limited to a time window, which covers the combined
-  tiers the server accepts.
-- **Time-of-day pricing** lists tiers with only a window. Each window carries its
-  own billing time zone, picked from the IANA list with current offsets; a new
-  window starts on the OMC Time Zone. The hours are saved as typed, never
-  converted, and when the billing zone and the OMC Time Zone differ the editor
-  and the price ladder also show the same window as the console reads it today.
-  If the browser cannot read a stored billing zone, the picker keeps its original
-  name and value without an offset label, so the editor still opens and the zone
-  can be preserved or changed. The local tier preview skips unreadable zones;
-  server-side billing remains authoritative.
-- A tier's rates are entered as **multiples of the base** (the default) or as
-  **fixed prices**; a blank field inherits the base rate in both. Multiples are
-  converted to rates on save, so the server only ever stores rates. A stored tier
-  reopens as multiples only when every rate it sets is a readable multiple
-  (three decimals) of its base, so reopening and saving never rounds a price.
-  Switching the entry mode converts what is typed and keeps the price.
-- Saving writes long-context tiers before time-of-day ones. The server's rule only
-  falls back to list order between tiers with the same threshold and windowing,
-  which always share a section, so the grouping never changes the governing tier.
-  Two tiers with identical conditions are refused, as the second could never apply.
-- **The price ladder** (`priceSchedule`) shows the base and every tier as the four
-  rates a request pays there, with inherited rates muted and changed ones marked
-  with their multiple. It appears for automatic and linked prices that carry tiers
-  as well as under a custom price being edited.
+- **Precios de contexto largo** enumera niveles con un umbral. El umbral se escribe
+  tal como lo publican los proveedores (`200K`, `1M`, `272,000`) o se elige de preajustes, y un
+  nivel puede limitarse adicionalmente a una ventana horaria, cubriendo los niveles
+  combinados aceptados por el servidor.
+- **Precios horarios del día** enumera niveles solo con una ventana. Cada ventana porta su
+  propia zona horaria de facturación, elegida de la lista IANA con diferencias horarias actuales; una nueva
+  ventana comienza en la Zona Horaria de Shell-PAMC. Las horas se guardan como se ingresan, nunca
+  se convierten, y cuando la zona de facturación y la de Shell-PAMC difieren, el editor
+  y la escala de precios también muestran la misma ventana tal como la consola la interpreta hoy.
+  Si el navegador no puede interpretar una zona de facturación almacenada, el selector conserva su nombre
+  y valor originales sin etiqueta de compensación, permitiendo que el editor abra y la zona
+  pueda preservarse o modificarse. La vista previa local omite zonas ilegibles;
+  la facturación en el servidor sigue siendo autoritativa.
+- Las tarifas de un nivel se ingresan como **múltiplos de la base** (predeterminado) o como
+  **precios fijos**; un campo en blanco hereda la tarifa base en ambos. Los múltiplos se
+  convierten a tarifas al guardar, de modo que el servidor solo almacena tarifas. Un nivel almacenado
+  se reabre como múltiplos solo cuando cada tarifa fijada es un múltiplo legible
+  (tres decimales) de su base, evitando redondeos indeseados al reabrir y guardar.
+  Cambiar el modo de entrada convierte lo escrito conservando el precio.
+- Al guardar se escriben los niveles de contexto largo antes que los horarios. La regla del
+  servidor solo recurre al orden de lista entre niveles con el mismo umbral y ventana,
+  que siempre comparten sección, de modo que el agrupamiento nunca altera el nivel determinante.
+  Dos niveles con condiciones idénticas se rechazan, ya que el segundo nunca aplicaría.
+- **La escala de precios** (`priceSchedule`) muestra la base y cada nivel como las cuatro
+  tarifas que paga una solicitud allí, con tarifas heredadas atenuadas y modificadas marcadas
+  con su múltiplo. Aparece para precios automáticos y vinculados que contengan niveles,
+  así como bajo un precio personalizado en edición.
 
-## Pricing through an agent
+## Tarificación a través de un agente
 
-Setting prices is the console's most involved task, so the capability surface is
-shaped for an agent to do it on the operator's behalf (`docs/agent-capabilities.md`):
+Establecer precios es una de las tareas más complejas de la consola, por lo que la superficie de capacidades
+está diseñada para que un agente la ejecute en nombre del operador (`docs/agent-capabilities.md`):
 
-1. `pricing_overview` says where to start: sync state, how many models are priced
-   in each mode, and the unpriced models busiest first with suggestions.
-2. `pricing_get` reads one model in full - price, automatic match, suggestions,
-   candidate, the channels serving it, 30-day traffic and the 7-day median request.
-3. `pricing_catalog_search` finds the OpenRouter id for a link, or published rates
-   and tiers to copy into a custom price.
-4. `pricing_quote` prices a hypothetical request against the stored price or a
-   proposed `pricing_set` input without saving it, through `pricing.Quote` and
-   `Service.PreviewModeChange`, the same resolution the write uses. Varying
-   `timestamp_ms` and `input_tokens` checks a window or a threshold before the
-   operator is asked to approve.
-5. `pricing_set` writes after approval. A refusal carries `invalid_parameters`
-   with a `detail` naming the field to change, and is raised when the call is
-   prepared, so a wrong zone or an unknown OpenRouter id never reaches approval.
+1. `pricing_overview` indica por dónde empezar: estado de sincronización, cuántos modelos están tasados
+   en cada modo y los modelos sin precio más activos primero con sugerencias.
+2. `pricing_get` consulta un modelo completo: precio, coincidencia automática, sugerencias,
+   candidato, canales que lo sirven, tráfico a 30 días y solicitud mediana de 7 días.
+3. `pricing_catalog_search` localiza el ID de OpenRouter para un enlace, o tarifas y niveles
+   publicados para copiar en un precio personalizado.
+4. `pricing_quote` tasa una solicitud hipotética contra el precio almacenado o una entrada
+   propuesta para `pricing_set` sin guardarla, a través de `pricing.Quote` y
+   `Service.PreviewModeChange`, la misma resolución utilizada en la escritura. Variar
+   `timestamp_ms` e `input_tokens` verifica una ventana o umbral antes de solicitar
+   la aprobación del operador.
+5. `pricing_set` escribe tras la aprobación. Un rechazo devuelve `invalid_parameters`
+   con un `detail` que indica el campo a corregir, generándose en la preparación de la llamada,
+   garantizando que una zona errónea o un ID de OpenRouter desconocido nunca lleguen a aprobación.
 
-`requests_cost_breakdown` answers the reverse question for a recorded request.
+`requests_cost_breakdown` responde la pregunta inversa para una solicitud registrada.
 
-## Provider-grouped workbench
+## Banco de trabajo agrupado por proveedores
 
-Model membership is collected during the same complete CPA catalog sweep as alias targets, then persisted atomically in `pricing_catalog_state.providers_json` (migration 029). The price book reads this snapshot locally: opening the page never fans out across credentials. API-key providers retain their provider-page ids; OAuth credentials are combined by provider, using the highest active credential priority. Disabled credentials do not contribute membership. A failed sweep preserves the entire previous snapshot. Deleting a positional API-key provider re-keys stored membership in the same transaction as its display-name, website and icon overlays.
+La membresía de modelos se recopila durante el mismo barrido completo de catálogo de CPA que los destinos de alias, persistiendo atómicamente en `pricing_catalog_state.providers_json` (migración 029). El libro de precios lee esta instantánea localmente: abrir la página nunca consulta credenciales individuales en abanico. Proveedores de claves API conservan sus IDs de la página de proveedores; credenciales OAuth se combinan por proveedor, utilizando la prioridad más alta de credencial activa. Credenciales deshabilitadas no aportan membresía. Un barrido fallido preserva la instantánea anterior completa.
 
-`GET /v1/pricing` includes `providers`, with id, family, display name, channel, priority, OAuth marker, model membership, an optional icon override and a hostname-only endpoint hint for the existing provider icon resolver. URL userinfo, paths and query parameters are excluded. The facade resolves current provider name/icon preferences at read time; the frontend uses the same default provider marks and plugin-owned logos as provider management. Individual model names are text-only; `pricingModelIdentity` is the metadata extension point.
+`GET /v1/pricing` incluye `providers`, con ID, familia, nombre para mostrar, canal, prioridad, marcador OAuth, membresía de modelos, anulación opcional de icono y una sugerencia de endpoint solo con hostname para el solucionador de iconos existente. Información de usuario en URL, rutas y parámetros de consulta quedan excluidos.
 
-Groups sort by descending routing priority, then natural provider name and stable id. Models sort naturally by name, case-insensitively first and uppercase first for case-only ties. Membership uses exact model identities: two names differing only in case remain distinct. Each provider/model membership has one row showing its channel override when configured, otherwise the shared price. Priced rows label channel-specific or inherited shared pricing and retain separate editing actions for both scopes. Coverage and mode counts use these effective membership rows, including models priced only on a channel. Usage beside these rows remains the model's deployment-wide 30-day usage. Models without recorded membership appear in an explicit unconfirmed group rather than a guessed maker group.
+Los grupos se ordenan por prioridad de enrutamiento descendente, luego por nombre natural de proveedor e ID estable. Los modelos se ordenan naturalmente por nombre, primero sin distinguir mayúsculas y minúsculas, y con mayúsculas primero en caso de empate exclusivo. La membresía utiliza identidades exactas de modelo: dos nombres que difieran solo en mayúsculas/minúsculas se mantienen diferenciados. Cada membresía de proveedor/modelo tiene una fila que muestra su anulación de canal cuando esté configurada, o de lo contrario el precio compartido.
 
-Search, price-mode filters and a provider selector operate on the grouped book. One global page renders at most 20 membership rows across all groups on desktop and phones. Unpriced models occupy their normal sorted position and show any suggested link beside their name. The OpenRouter picker searches ids, canonical slugs and display names with separator-tolerant search; it paginates all matches in groups of 12 instead of truncating the catalog. Channel multipliers use 20-row pages and reuse known provider aliases/icons; a channel shared by several configured providers names those providers together.
+La búsqueda, los filtros de modo de precio y el selector de proveedor operan sobre el libro agrupado. Una página global renderiza como máximo 20 filas de membresía a través de todos los grupos tanto en escritorio como en móviles. Modelos sin precio ocupan su posición ordenada normal y muestran cualquier enlace sugerido junto a su nombre. El selector de OpenRouter busca IDs, slugs canónicos y nombres para mostrar con tolerancia a separadores; pagina todas las coincidencias en grupos de 12. Multiplicadores de canal usan páginas de 20 filas y reutilizan alias/iconos conocidos de proveedores.
 
-## New matches for custom and linked prices
+## Nuevas coincidencias para precios personalizados y vinculados
 
-A sync never overwrites a custom or linked price, so a model priced by hand
-because OpenRouter did not list it yet stays on hand-set rates after OpenRouter
-starts listing it. The book announces that as a **candidate** instead:
+Una sincronización nunca sobrescribe un precio personalizado o vinculado, por lo que un modelo tasado
+a mano porque OpenRouter aún no lo listaba permanece con sus tarifas manuales cuando OpenRouter
+comienza a listarlo. El libro anuncia esto como un **candidato** en su lugar:
 
-- a custom price's candidate is the automatic match when one exists, otherwise
-  the first suggestion (`kind` `automatic` or `suggested`);
-- a linked price's candidate is an automatic match that differs from its link;
-  suggestions never second-guess a link;
-- auto prices and unpriced models have no candidate (unpriced rows already carry
-  suggestions).
+- el candidato de un precio personalizado es la coincidencia automática cuando existe, o de lo contrario
+  la primera sugerencia (`kind` `automatic` o `suggested`);
+- el candidato de un precio vinculado es una coincidencia automática que difiere de su enlace;
+  las sugerencias nunca cuestionan un enlace;
+- precios automáticos y modelos sin precio no tienen candidato.
 
-`pricing_match_reviews` (migration 031) records, per model, the OpenRouter model
-the operator last answered. Saving a custom or linked price records the
-candidate visible at that moment, so a price set while a match already existed
-is not announced again; "Ignore" (`POST /v1/pricing/models/{model}/dismiss-candidate`
-with the shown `upstream_id`) records it explicitly. A candidate equal to the
-recorded model is withheld; a different one — a new or renamed OpenRouter entry —
-is announced again. Switching to auto and removing the price clear the record.
-Recording is best-effort after a successful write: a failure is logged and only
-means the candidate is shown once more.
+`pricing_match_reviews` (migración 031) registra, por modelo, el modelo de OpenRouter que el operador
+respondió por última vez. Guardar un precio personalizado o vinculado registra el candidato visible
+en ese momento, evitando que un precio fijado mientras ya existía coincidencia vuelva a anunciarse;
+"Ignorar" (`POST /v1/pricing/models/{model}/dismiss-candidate` con el `upstream_id` mostrado) lo registra
+explícitamente. Cambiar a automático o eliminar el precio limpian el registro.
 
-`GET /v1/pricing` adds `candidate` to each affected model row (a failed lookup
-adds `candidates` to `partial` and leaves the book intact), and
-`GET /v1/pricing/models/{model}` returns it as `candidate`. The book shows it
-under the model name with "Switch to Auto" (automatic, which keeps the model's
-multiplier) or "Adopt" (a link to the suggestion) and "Ignore", and a "New
-matches" filter counts them; the editor shows the same notice and takes the
-match up into its draft. The agent capability `pricing_list` returns them in
-`candidates`, empty when the lookup fails, so the list and the previews that
-read it never fail on an advisory field.
+## Cambios de modo
 
-## Mode changes
+Un cambio de modo es una escritura (`Repository.ApplyModelPrice`) que reemplaza la fila,
+incluyendo personalizadas, y establece o limpia el pin en la misma transacción, generando
+exactamente una versión y nunca un tombstone intermedio. Un cambio a `auto` o
+`linked` se rechaza cuando la instantánea almacenada no contiene datos para tasarlo,
+en lugar de dejar el modelo sin precio. Eliminar un precio retira este y su pin;
+la reconciliación siguiente puede volver a tasar el modelo automáticamente.
 
-A mode change is one write (`Repository.ApplyModelPrice`) that replaces the row,
-custom included, and sets or clears the pin in the same transaction, so it mints
-exactly one version and never a tombstone in between. A switch to `auto` or
-`linked` is refused when the stored snapshot has nothing to price it with,
-rather than leaving the model unpriced. Removing a price retires it and its pin;
-the next reconciliation may price the model automatically again.
+Sincronización y escrituras del operador comparten un bloqueo. La descarga ocurre fuera
+de él, y los precios y pines se releen bajo el bloqueo antes de escribir, respetando
+un pin establecido durante una descarga lenta; la protección de upsert rechaza reemplazar una fila
+fijada con un modelo upstream diferente.
 
-Sync and operator writes share one lock. The download happens outside it, and
-prices and pins are re-read under it before writing, so a pin set during a slow
-download is honoured; the upsert guard refuses to replace a pinned row with a
-different upstream model as a second line.
+## Registro y mantenimiento
 
-## Bookkeeping
+`updated_at_ms` es estampado por el servidor al escribirse una fila; el reloj del navegador
+nunca fecha un cambio de precio. Las columnas de SQLite tienen tipos orientativos, por lo que
+`SavePricingSyncState` mantiene cada cláusula `DO UPDATE SET` sobre `excluded.` o la fila
+destino, la lectura protege `last_success_at_ms` con `typeof()`, y
+`GET /v1/pricing` degrada a `sync.known = false` con el motivo en
+`sync.state.last_error` en lugar de fallar.
 
-`updated_at_ms` is stamped by the server when a row is written; a browser clock
-never dates a price change. SQLite column types are advisory, so
-`SavePricingSyncState` keeps every `DO UPDATE SET` term on `excluded.` or the
-target row, the read guards `last_success_at_ms` with `typeof()`, and
-`GET /v1/pricing` degrades to `sync.known = false` with the reason in
-`sync.state.last_error` rather than failing. Traffic columns degrade the same
-way: a failed usage read leaves them empty and the response names it in
-`partial`.
+Un desglose de solicitud preserva su estado e importe almacenados cuando la instantánea
+de nivel bloqueada es ilegible, informando `invalid_reason`. El historial de precios rechaza
+instantáneas de niveles corruptas en lugar de presentarlas como tarifas exclusivas de base.
 
-A request breakdown preserves its stored status and amount when its locked tier
-snapshot is unreadable, reports `invalid_reason`, and withholds a recomputed quote.
-Price history rejects corrupt tier snapshots rather than presenting them as base-only rates.
+## Límites conocidos
 
-## Known limits
-
-- The first download after boot needs network access to openrouter.ai; a failure
-  keeps the last complete snapshot and good prices, and reconciliation keeps
-  pricing new models from the stored snapshot. Local reconciliation preserves the
-  previous refresh error and schedule; only a successful price refresh clears it.
-- A model OpenRouter does not list stays unpriced until an operator links or
-  prices it; suggestions only help when the name resembles a listed model.
-- An install upgraded to migration 031 has no recorded answers yet, so each
-  custom or linked price that already has a candidate is announced once.
-- Rows priced from models.dev before the switch keep their `modelsdev` source
-  until a sync matches them, and stay priced meanwhile; the book labels them as
-  legacy. A version written under that source still prices late-arriving
-  requests stamped inside its period.
-- A request's cost breakdown is recomputed from the versions it locked. The stored
-  amount is authoritative; `recomputed_matches` flags any disagreement.
-- **Demo mode runs no sync.** The OpenRouter snapshot, the prices, one pin, one
-  channel multiplier and the sync bookkeeping are fixture data seeded by
-  `internal/demo`; the snapshot is a trimmed copy of the real list
-  (`internal/demo/openrouter_snapshot.json`) priced by the same decoder and
-  matcher. The fixture writes the price and channel versions its fabricated
-  history is priced against (`Repository.SeedModelPriceHistoryBackfill`,
-  `Repository.SeedChannelHistoryBackfill`). See `docs/architecture.md` §13.
+- La primera descarga tras iniciar requiere acceso de red a openrouter.ai; un fallo
+  conserva la última instantánea completa y precios válidos, continuando la conciliación
+  tasando nuevos modelos desde la instantánea almacenada.
+- Un modelo que OpenRouter no liste permanece sin precio hasta que un operador lo vincule
+  o lo tase manualmente.
+- Una instalación actualizada a la migración 031 no tiene respuestas registradas aún, por lo que cada
+  precio personalizado o vinculado que ya tenga un candidato se anuncia una vez.
+- Filas tasadas desde models.dev antes de la transición conservan su fuente `modelsdev`
+  hasta que una sincronización las empareje, permaneciendo tasadas mientras tanto.
+- El desglose de costos de una solicitud se recalcula a partir de las versiones que bloqueó. El importe
+  almacenado es autoritativo; `recomputed_matches` señala cualquier discrepancia.
+- **El modo demo no ejecuta sincronizaciones.** La instantánea de OpenRouter, los precios, un pin, un
+  multiplicador de canal y el registro de sincronización son datos de prueba sembrados por
+  `internal/demo`; la instantánea es una copia recortada de la lista real
+  (`internal/demo/openrouter_snapshot.json`). Consulte `docs/architecture.md` §13.

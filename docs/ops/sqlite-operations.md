@@ -1,40 +1,40 @@
-# SQLite Operations & Runbook
+# Operaciones y manual de procedimientos de SQLite
 
-This runbook is intended for system administrators and operators running Shell-PAMC in production environments. It covers daily backups, disaster recovery drills, encryption key governance, migration safety gates, and storage maintenance for a single-replica SQLite database operating in WAL mode.
-
----
-
-## 1. Core Architecture Constraints & Single-Replica Invariants
-
-1. **Exclusive Single-Writer Principle**:
-   - Shell-PAMC's persistence layer uses embedded SQLite with Write-Ahead Logging (`journal_mode=WAL`) and `busy_timeout=5000`;
-   - Sharing the `/data` directory across multiple Shell-PAMC replicas via network filesystems (NFS, SMB/CIFS, GlusterFS) is strictly prohibited;
-   - In container orchestrators (such as Kubernetes or Docker Swarm/Compose), ensure that at most one replica is scheduled at any time (e.g. using `strategy: { type: Recreate }` in Kubernetes deployments).
-
-2. **Upgrading from the old name**: an installation that still has `oh-my-cpa.db` is renamed to `shell-pamc.db`, together with `-wal` and `-shm`, on the first start. If both files exist the process refuses to start rather than choose; remove the one that does not hold your data. Backups written as `shell-pamc/sqlite-backup-v1` still restore; new backups are written as `shell-pamc/sqlite-backup-v1`.
-
-2. **WAL Triad Integrity**:
-   - The data directory contains three tightly-coupled files: `shell-pamc.db` (primary database), `shell-pamc.db-wal` (write-ahead log), and `shell-pamc.db-shm` (shared-memory index);
-   - Copying `shell-pamc.db` alone while the service is actively running can omit transactions that exist only in the `-wal` file, producing an incomplete or inconsistent snapshot.
-
-3. **Single-Connection Design**:
-   - The Go connection pool is fixed to `MaxOpenConns(1)` and `MaxIdleConns(1)`, with `busy_timeout=5000`, `foreign_keys=1`, `journal_mode=WAL`, and `synchronous=NORMAL`;
-   - Concurrent writes are serialized inside the application process rather than relying on SQLite lock retries.
-
-4. **Demo mode is outside every rule above, and the runbook is not about it**:
-   - A deployment with `SHELLPAMC_DEMO_MODE=true` uses its own file, `shell-pamc-demo.db`, in the same data directory, and deletes it plus its WAL siblings on every boot. Nothing in it is worth backing up, restoring or migrating, and the file has its own name so that a demo pointed at a directory holding real data cannot have that data deleted with it (`internal/demo.ResetDatabase`);
-   - The rest of this runbook describes the self-hosted database. Keep `docs/ops/cloudflare-demo.md` for the demo's own operations.
+Este manual de procedimientos está destinado a administradores de sistemas y operadores que ejecutan Shell-PAMC en entornos de producción. Cubre respaldos diarios, simulacros de recuperación ante desastres, gobierno de claves de cifrado, barreras de seguridad en migraciones y mantenimiento de almacenamiento para una base de datos SQLite de réplica única que opera en modo WAL.
 
 ---
 
-## 2. Safe Online & Cold Backup Strategies
+## 1. Restricciones de arquitectura central e invariantes de réplica única
 
-### 2.1 Online Backups via SQLite `VACUUM INTO`
+1. **Principio exclusivo de escritor único**:
+   - La capa de persistencia de Shell-PAMC utiliza SQLite embebido con Write-Ahead Logging (`journal_mode=WAL`) y `busy_timeout=5000`;
+   - Compartir el directorio `/data` entre múltiples réplicas de Shell-PAMC mediante sistemas de archivos de red (NFS, SMB/CIFS, GlusterFS) está estrictamente prohibido;
+   - En orquestadores de contenedores (como Kubernetes o Docker Swarm/Compose), asegúrese de que como máximo se programe una réplica a la vez (por ejemplo, utilizando `strategy: { type: Recreate }` en despliegues de Kubernetes).
 
-While the service continues processing read and write requests, a consistent snapshot can be generated using SQLite's `VACUUM INTO` command. Note that the minimal production Alpine container (`FROM alpine:3.21`) does not include the `sqlite3` CLI; run this command on the host targeting the volume mount directory, or from an administrative sidecar container:
+2. **Actualización desde el nombre anterior**: una instalación que aún contenga `oh-my-cpa.db` se renombra a `shell-pamc.db`, junto con sus archivos `-wal` y `-shm`, en el primer inicio. Si ambos archivos existen, el proceso rechaza iniciar en lugar de elegir; elimine el que no contenga sus datos. Respaldos escritos como `shell-pamc/sqlite-backup-v1` aún se restauran; nuevos respaldos se escriben como `shell-pamc/sqlite-backup-v1`.
+
+3. **Integridad de la tríada WAL**:
+   - El directorio de datos contiene tres archivos estrechamente vinculados: `shell-pamc.db` (base de datos primaria), `shell-pamc.db-wal` (registro write-ahead) y `shell-pamc.db-shm` (índice de memoria compartida);
+   - Copiar únicamente `shell-pamc.db` mientras el servicio está en ejecución puede omitir transacciones que residen solo en el archivo `-wal`, produciendo una instantánea incompleta o inconsistente.
+
+4. **Diseño de conexión única**:
+   - El grupo de conexiones de Go está fijado a `MaxOpenConns(1)` y `MaxIdleConns(1)`, con `busy_timeout=5000`, `foreign_keys=1`, `journal_mode=WAL` y `synchronous=NORMAL`;
+   - Las escrituras concurrentes se serializan dentro del proceso de la aplicación en lugar de depender de reintentos de bloqueo de SQLite.
+
+5. **El modo demo está fuera de todas las reglas anteriores**:
+   - Un despliegue con `SHELLPAMC_DEMO_MODE=true` utiliza su propio archivo, `shell-pamc-demo.db`, en el mismo directorio de datos, y lo elimina junto con sus hermanos WAL en cada inicio. Nada en él requiere respaldo, restauración o migración, y tiene un nombre propio para que una demo dirigida a un directorio con datos reales no los borre (`internal/demo.ResetDatabase`);
+   - El resto de este manual describe la base de datos autoalojada. Consulte `docs/ops/cloudflare-demo.md` para las operaciones propias de la demo.
+
+---
+
+## 2. Estrategias seguras de respaldo en línea y en frío
+
+### 2.1 Respaldos en línea mediante `VACUUM INTO` de SQLite
+
+Mientras el servicio continúa procesando solicitudes de lectura y escritura, se puede generar una instantánea consistente utilizando el comando `VACUUM INTO` de SQLite. Tenga en cuenta que el contenedor Alpine de producción mínimo (`FROM alpine:3.21`) no incluye la CLI de `sqlite3`; ejecute este comando en el host apuntando al directorio montado en volumen o desde un contenedor sidecar administrativo:
 
 ```bash
-# Executed on the host targeting the volume mount directory:
+# Ejecutado en el host apuntando al directorio montado en volumen:
 BACKUP_DIR="/path/to/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p "${BACKUP_DIR}" && chmod 700 "${BACKUP_DIR}"
@@ -43,18 +43,18 @@ sqlite3 /path/to/data/shell-pamc.db "VACUUM INTO '${BACKUP_DIR}/shell-pamc-backu
 chmod 600 "${BACKUP_DIR}/shell-pamc-backup-${TIMESTAMP}.db"
 ```
 
-**Semantics**: `VACUUM INTO` reads committed pages from the main database and WAL, producing a single, self-contained, transactionally consistent snapshot file once the operation finishes successfully. It does not include uncommitted transactions, nor does it checkpoint or truncate the active source `-wal` file.
+**Semántica**: `VACUUM INTO` lee páginas confirmadas de la base de datos principal y del WAL, produciendo un archivo de instantánea único, autónomo y transaccionalmente consistente una vez que la operación finaliza exitosamente. No incluye transacciones no confirmadas, ni realiza puntos de control ni trunca el archivo `-wal` de origen activo.
 
-### 2.2 Cold Backup Procedure (Scheduled Maintenance)
+### 2.2 Procedimiento de respaldo en frío (Mantenimiento programado)
 
-When performing scheduled maintenance during an offline window:
+Al realizar mantenimiento programado durante una ventana fuera de línea:
 
-1. Gracefully stop the Shell-PAMC service container:
+1. Detenga de forma controlada el contenedor del servicio Shell-PAMC:
    ```bash
    docker compose --env-file deploy/.env -f deploy/compose.full.yml stop shell-pamc
    ```
-2. Wait for the process to exit completely. On `SIGTERM`, the Go process stops accepting HTTP traffic and closes the database connection; SQLite checkpoints pending WAL pages and cleans up `-wal` and `-shm` files upon closing the final handle.
-3. Archive the entire data directory to a destination outside the source data directory:
+2. Espere a que el proceso finalice por completo. Con `SIGTERM`, el proceso Go deja de aceptar tráfico HTTP y cierra la conexión de la base de datos; SQLite realiza un punto de control de las páginas WAL pendientes y limpia los archivos `-wal` y `-shm` al cerrar el último manejador.
+3. Archive todo el directorio de datos en un destino fuera del directorio de origen:
    ```bash
    BACKUP_DIR="/path/to/backups"
    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -67,200 +67,173 @@ When performing scheduled maintenance during an offline window:
 
 ---
 
-## 3. Disaster Recovery Drill (Restore Runbook)
+## 3. Simulacro de recuperación ante desastres (Manual de restauración)
 
-When recovering from host failures or database corruption, choose the procedure matching your backup artifact:
+Al recuperarse de fallos del host o corrupción de la base de datos, elija el procedimiento correspondiente a su artefacto de respaldo:
 
-### 3.1 Restoring from a `VACUUM INTO` Snapshot (`.db`)
+### 3.1 Restaurar desde una instantánea de `VACUUM INTO` (`.db`)
 
-1. **Stop the service container**:
+1. **Detener el contenedor del servicio**:
    ```bash
    docker compose --env-file deploy/.env -f deploy/compose.full.yml stop shell-pamc
    ```
 
-2. **Verify snapshot integrity on the host**:
+2. **Verificar la integridad de la instantánea en el host**:
    ```bash
    sqlite3 /path/to/backups/shell-pamc-backup-YYYYMMDD_HHMMSS.db "PRAGMA integrity_check;"
-   # Expected output must be: "ok"
+   # La salida esperada debe ser: "ok"
    ```
 
-3. **Replace the data directory safely**:
-   - Move the damaged data directory aside to ensure no stale `-wal` or `-shm` files attach to the restored database:
+3. **Reemplazar el directorio de datos de forma segura**:
+   - Aparte el directorio de datos dañado para asegurarse de que ningún archivo `-wal` o `-shm` residual se adhiera a la base restaurada:
      ```bash
      mv /path/to/data "/path/to/data_damaged_$(date +%Y%m%d_%H%M%S)"
      mkdir -p /path/to/data
      ```
-   - Copy the verified snapshot as `shell-pamc.db`:
+   - Copie la instantánea verificada como `shell-pamc.db`:
      ```bash
      cp /path/to/backups/shell-pamc-backup-YYYYMMDD_HHMMSS.db /path/to/data/shell-pamc.db
      ```
-   - Set ownership to the container user (`10001:10001` per Dockerfile) and restrict permissions:
+   - Asigne la propiedad al usuario del contenedor (`10001:10001` según el Dockerfile) y restrinja permisos:
      ```bash
      chown -R 10001:10001 /path/to/data
      chmod 700 /path/to/data
      chmod 600 /path/to/data/shell-pamc.db
      ```
 
-### 3.2 Restoring from a Cold Tarball (`.tar.gz`)
+### 3.2 Restaurar desde un archivo comprimido en frío (`.tar.gz`)
 
-1. **Stop the service container**:
+1. **Detener el contenedor del servicio**:
    ```bash
    docker compose --env-file deploy/.env -f deploy/compose.full.yml stop shell-pamc
    ```
 
-2. **Verify archive checksum**:
+2. **Verificar la suma de comprobación del archivo**:
    ```bash
    cd /path/to/backups
    sha256sum -c omc-data-YYYYMMDD_HHMMSS.sha256
    ```
 
-3. **Unpack to a clean directory**:
-   - Move the damaged directory aside:
+3. **Desempaquetar en un directorio limpio**:
+   - Aparte el directorio dañado:
      ```bash
      mv /path/to/data "/path/to/data_damaged_$(date +%Y%m%d_%H%M%S)"
      mkdir -p /path/to/data
      ```
-   - Extract the verified tarball:
+   - Extraiga el archivo verificado:
      ```bash
      tar -xzf /path/to/backups/omc-data-YYYYMMDD_HHMMSS.tar.gz -C /path/to/data
      chown -R 10001:10001 /path/to/data
      chmod 700 /path/to/data
      ```
 
-### 3.3 Understanding Encrypted Migration Backups (`backups/*.db`)
+### 3.3 Comprensión de respaldos cifrados de migración (`backups/*.db`)
 
-Files under `SHELLPAMC_DATA_DIR/backups/` generated by Shell-PAMC before migrations are AES-GCM encrypted backups accompanied by `.sha256` checksums. They are managed internally by the application; they cannot be inspected directly by `sqlite3` without decryption using the configured `SHELLPAMC_MASTER_KEY`.
+Los archivos bajo `SHELLPAMC_DATA_DIR/backups/` generados por Shell-PAMC antes de las migraciones son respaldos cifrados con AES-GCM acompañados de sumas de comprobación `.sha256`. Se gestionan internamente por la aplicación; no pueden inspeccionarse directamente con `sqlite3` sin descifrarlos utilizando la clave `SHELLPAMC_MASTER_KEY` configurada.
 
-### 3.4 Verify Service Readiness After Restoration
+### 3.4 Verificar la operatividad del servicio tras la restauración
 
-Start the container and inspect the health endpoint:
+Inicie el contenedor e inspeccione el endpoint de salud:
 
 ```bash
 docker compose --env-file deploy/.env -f deploy/compose.full.yml start shell-pamc
 ```
 
-- When accessing via an operator-owned HTTPS ingress, where `BASE_PATH` is the normalised `SHELLPAMC_BASE_PATH` (`/shell-pamc` when unset; empty in root mode, which drops the prefix):
+- Al acceder a través de un ingress HTTPS del operador, donde `BASE_PATH` es el `SHELLPAMC_BASE_PATH` normalizado (`/shell-pamc` por defecto):
   ```bash
   BASE_PATH=/shell-pamc
   PUBLIC_ORIGIN=https://console.example.com
   curl -sf "${PUBLIC_ORIGIN}${BASE_PATH}/api/healthz" | jq .
   ```
-- When accessing directly on the host (both Compose files publish loopback ports):
+- Al acceder directamente en el host (ambos archivos Compose publican puertos en loopback):
   ```bash
   BASE_PATH=/shell-pamc
   curl -sf "http://127.0.0.1:8080${BASE_PATH}/api/healthz" | jq .
   ```
-- Or via container exec:
+- O mediante container exec:
   ```bash
   docker compose --env-file deploy/.env -f deploy/compose.full.yml exec shell-pamc wget -q -O - "http://127.0.0.1:8080${BASE_PATH}/api/healthz" | jq .
   ```
 
-Confirm the JSON response reports `"database_status": "ok"` and `"status": "ok"` (or `"degraded"` if CPA is temporarily offline).
+Confirme que la respuesta JSON informe `"database_status": "ok"` y `"status": "ok"` (o `"degraded"` si CPA está temporalmente fuera de línea).
 
 ---
 
-## 4. `SHELLPAMC_MASTER_KEY` Governance & Disaster Prevention
+## 4. Gobierno de `SHELLPAMC_MASTER_KEY` y prevención de desastres
 
-- **Role of the Master Key**:
-  `SHELLPAMC_MASTER_KEY` is a 32-byte high-entropy key (e.g. 64 hexadecimal characters), used to encrypt the CPA Management Key and raw usage inbox payloads at rest via AES-GCM.
-- **Consequences of Loss**:
-  If the master key is lost or corrupted, all encrypted fields in the database become **permanently unrecoverable**. The server will fail to decrypt existing credentials and payloads.
-- **Operational Requirements**:
-  1. Never commit plaintext keys to code repositories or Dockerfiles;
-  2. Inject keys via secure environment variables, secret managers, or orchestration vaults;
-  3. Keep an offline, dual-custody backup in a password vault (such as 1Password, HashiCorp Vault, or a secure physical envelope).
-
----
-
-## 5. Pre-Migration Safety Gates & Forward Rollbacks
-
-When upgrading Shell-PAMC, the application automatically inspects and applies unexecuted immutable SQL migration scripts at startup:
-
-1. **Automated Safety Gates**:
-   - **Disk Space Verification**: Checks available disk space before starting; requires at least `database_size + 4 KiB` free space by default (or configured via `BackupConfig.MinFreeBytes`);
-   - **Pre-Migration Encrypted Backup**: For existing databases with recorded migrations in `schema_migrations`, the application takes a `VACUUM INTO` snapshot (which reads committed WAL frames as well as the main file, so a checkpoint blocked by a reader cannot leave committed rows out of the copy) and writes it as an AES-GCM encrypted backup with a `.sha256` checksum to `SHELLPAMC_DATA_DIR/backups` (permissions `0700/0600`). The check is fail-closed: if the schema state cannot be read at all (the `sqlite_master` lookup fails, or `schema_migrations` exists but cannot be counted), the backup is taken instead of assuming a fresh database;
-   - **Restore Smoke Test**: Decrypts the backup into a temporary database and verifies that schema tables are readable before proceeding; if verification fails, or the `.sha256` sidecar cannot be read, migration aborts with `ErrBackupRestoreFailed`;
-   - **Retention**: Keeps the 5 most recent migration backups by default (configurable via `repository.WithMigrationBackup`).
-2. **Expand / Contract Schema Evolution**:
-   - Schema modifications strictly adhere to expand-first principles, avoiding breaking older query shapes.
-3. **Forward-Only Rollbacks**:
-   - In production, rolling back by manually editing `schema_migrations` or rewinding schema files is strictly prohibited;
-   - If a defect is discovered in a migration, deploy a forward-fixing migration (e.g. `008_fix_xxx.sql`) to correct the schema.
+- **Rol de la clave maestra**:
+  `SHELLPAMC_MASTER_KEY` es una clave de alta entropía de 32 bytes (64 caracteres hexadecimales), utilizada para cifrar en reposo la clave de administración de CPA y las cargas útiles de uso mediante AES-GCM.
+- **Consecuencias de su pérdida**:
+  Si la clave maestra se pierde o se corrompe, todos los campos cifrados en la base de datos se vuelven **permanentemente irrecuperables**. El servidor fallará al descifrar credenciales y cargas útiles existentes.
+- **Requisitos operativos**:
+  1. Nunca confirme claves en texto plano en repositorios de código ni en Dockerfiles;
+  2. Inyecte claves mediante variables de entorno seguras, gestores de secretos o bóvedas de orquestación;
+  3. Conserve una copia de seguridad fuera de línea en una bóveda de contraseñas de custodia compartida (como 1Password, HashiCorp Vault o un sobre físico seguro).
 
 ---
 
-## 6. Data Retention & Periodic Maintenance
+## 5. Barreras de seguridad previas a la migración y rollbacks hacia adelante
 
-1. **Usage data lifecycle**:
-   - Every table declares one lifecycle in `TABLE_LIFECYCLES` (`internal/repository/lifecycle.go`): `permanent`, `rolling`, `owner_bounded` or `replaced`. A migration that adds a table without declaring it fails `TestEveryTableDeclaresItsLifecycle`;
-   - **Permanent**: `usage_facts_15m` and `usage_facts_daily`, which every dashboard panel reads. They grow with distinct model/credential/key combinations per bucket, not with requests, and are never pruned;
-   - **Rolling, `SHELLPAMC_USAGE_RETENTION_DAYS`** (default 90, `0` keeps everything): request records (`usage_events`), `error_events`, `ingest_gaps` and discarded payloads. The cutoff is floored to a whole UTC day;
-   - **Rolling, `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS`** (default 7, `0` follows the request-record horizon): payloads in `usage_inboxes` that were decoded into a request record. They are the largest part of the database;
-   - The pass runs hourly inside `ingest.Maintenance` in batches of 2000 rows, at most 25 full batches at a time; an unfinished pass continues on the next fold tick (`SHELLPAMC_USAGE_AGGREGATE_INTERVAL`, default 15 seconds) so the write gate is never held for a long delete;
-   - A request record is deleted only when its id is at or below the `facts` checkpoint, so nothing leaves before the permanent facts hold it. What each policy has removed, and up to which instant, is recorded in `data_lifecycle_state`;
-   - Deleting rows frees pages for reuse but does not shrink the file (`auto_vacuum` is off). After shortening a horizon, reclaim the space with the compaction under *Space Reclamation & Compaction* below;
-   - **Upgrade note**: the request-record default was 400 days and is now 90, and decoded payloads are now kept 7 days. A deployment that sets neither variable has its older request records and payloads deleted by the passes that follow the upgrade, once the usage facts have absorbed them; dashboard statistics are unaffected. To keep the previous behaviour set `SHELLPAMC_USAGE_RETENTION_DAYS=400` and `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS=0` before upgrading;
-   - On upgrade, migration 035 starts the facts empty and the maintenance loop folds the stored request records into them from the first id. Totals stay exact meanwhile because unfolded records are read directly; statistics for requests already deleted by an earlier retention pass cannot be recovered.
-2. **Price History (`model_price_versions`, `pricing_channel_versions`)**:
-   - Price and channel versions are append-only and are never pruned: every stored request cost references the versions it was locked against, and removing one would leave a cost that can no longer be explained. They grow with price changes, not with traffic, so their size is negligible;
-   - Migration 028 (OpenRouter pricing) rebuilds `model_prices` and `pricing_sync_state` by copying their rows verbatim with the version triggers dropped, so the upgrade mints no version and changes no recorded cost. The auto-sync interval is carried over; the models.dev sync history is not. The pre-migration backup above covers it like any other migration;
-   - Migration 029 adds the provider-membership JSON snapshot to `pricing_catalog_state`; pricing access requires it. The next complete CPA reconciliation populates existing installations. The update is additive and leaves all price versions and request locks unchanged; the normal pre-migration backup applies.
-   - Migration 031 adds `pricing_match_reviews`, the OpenRouter model an operator last answered for each custom or linked price. It is additive, holds no price and locks no cost; restoring an older copy (or losing the table's rows) only means the book announces existing matches once more.
-   - `pricing_upstream_catalog` holds the last complete OpenRouter download and is replaced whole on every successful sync; restoring an older copy only means the model picker shows an older list until the next sync.
-3. **Agent Documents (`agent_documents`, migrations 026 and 036)**:
-   - The encrypted latest Agent session and its capability operations live here; the session ciphertext is written with the same `SHELLPAMC_MASTER_KEY` envelope as other protected payloads, so the key must exist to resume a conversation or read a pending operation;
-   - Sessions retain their history until reset or explicit turn replacement and are exempt from the repository's 8 MiB document bound; long conversations increase database and backup size. A terminal operation is retained for 7 days. Purging is lazy - it happens during Agent requests under a one-minute throttle - so the Agent adds no background loop and there is no separate maintenance job to schedule;
-   - Migration 036 rebuilds the table to admit the `image` kind (ADR 0075), copying every row verbatim; the normal pre-migration backup covers it. An image attached to a message is one encrypted row, at most 5 MiB of content, retained while the conversation references it and deleted on reset. Replacing a turn reuses its images. Failed admission attempts to delete only newly written image rows; this best-effort cleanup can fail if the database is unavailable. Image storage grows with the retained conversation;
-   - Restoring this table from a backup restores conversation and operation history, but approval requires a new decision: an operation that was `executing` when the process stopped is reported as `uncertain` rather than replayed.
-4. **CPA Configuration Backups (`cpa_config_backups`, migration 030; `cpa_config_backup_settings`, migration 033)**:
-   - Before every configuration write, Shell-PAMC stores CPA's `config.yaml` as it was, encrypted with the same `SHELLPAMC_MASTER_KEY` envelope; without the key a copy cannot be read or restored. A write whose copy cannot be stored is refused, so a missing key or an unwritable database blocks configuration writes instead of making them unrecoverable;
-   - Migration 033 adds each copy's `layout` (`v8` or `legacy`) and `reason` (the kind of write it preceded); copies from before it are marked `legacy` / `legacy_conversion`. The upgrade is additive and covered by the normal pre-migration backup;
-   - v8 copies are kept to the retention chosen on the configuration page (default 20, between 5 and 100, the single row of `cpa_config_backup_settings`); pre-v8 copies are kept apart, the ten most recent (`CONFIG_LEGACY_BACKUP_RETENTION`). A copy identical to the gateway's newest one reuses it instead of adding one, so refused attempts cannot push older copies out. Older copies are deleted in the same transaction as the insert, and lowering the retention deletes them at once, so the table needs no maintenance job. A copy is at most 2 MiB, the largest file CPA's management API accepts;
-   - The configuration page lists the copies, takes one on demand, restores a v8 copy onto the gateway (the replaced file is kept first), downloads one and deletes one; restore, download and deletion are audited fail-closed (`config.restore_backup`, `config.reveal_backup`, `config.delete_backup`). `cpa_config_backups` is hidden from the Agent's `database_query`;
-   - Restoring these tables from a database backup restores the copies and the retention. A pre-v8 copy cannot be written back through the v8 API; putting one back on the gateway is an operator action on CPA's own file, outside Shell-PAMC.
-5. **Space Reclamation & Compaction**:
-   - Large-scale historical data deletion leaves free pages inside SQLite. The file does
-     not shrink on its own, and a large `-wal` file is normal rather than a fault: WAL is
-     reused between checkpoints rather than truncated continuously;
-   - Two actions are available, and the System Information page runs both. The console's
-     route is the safer of the two for a running deployment, because it takes the write
-     gate described in `docs/architecture.md` §11 - writers wait rather than fail, and a
-     failed write would stop the usage collector and with it the process:
-     - **WAL checkpoint** (`PRAGMA wal_checkpoint(TRUNCATE)`) moves the log's frames back
-       into the database and truncates the log. It is cheap and safe to run often. SQLite
-       reports a blocked checkpoint in the statement's own result row instead of raising
-       an error, so the page reports that outcome as *incomplete* rather than as success;
-     - **Rebuild** (`VACUUM`) releases free pages. SQLite documents that it needs as much
-       as **twice the database file** in free space while it runs, and the console measures
-       that requirement and shows it in the confirmation before the action starts. The
-       console uses a plain `VACUUM`, not `VACUUM INTO` plus a file swap: the connection
-       pool holds an open handle to the file, so replacing it underneath would need every
-       connection closed and the pool rebuilt while other goroutines still hold references
-       to it. A plain `VACUUM` copies into a temporary file and overwrites the original
-       inside an ordinary transaction, so a rebuild that is interrupted — by cancellation,
-       by its own ten-minute ceiling, or by a restart — leaves the original database intact.
-   - The same actions remain available directly through `sqlite3` when the console is not
-     reachable. Stop the application first, or accept the same waiting behaviour the gate
-     provides:
+Al actualizar Shell-PAMC, la aplicación inspecciona y aplica automáticamente los scripts de migración SQL inmutables no ejecutados durante el arranque:
+
+1. **Barreras de seguridad automatizadas**:
+   - **Verificación de espacio en disco**: Comprueba el espacio disponible en disco antes de iniciar; requiere al menos `database_size + 4 KiB` de espacio libre por defecto (o configurado mediante `BackupConfig.MinFreeBytes`);
+   - **Respaldo cifrado previo a la migración**: Para bases de datos existentes con migraciones registradas en `schema_migrations`, la aplicación toma una instantánea `VACUUM INTO` (que lee marcos WAL confirmados además del archivo principal) y la escribe como un respaldo cifrado con AES-GCM con suma de comprobación `.sha256` en `SHELLPAMC_DATA_DIR/backups` (permisos `0700/0600`). La comprobación es fail-closed: si el estado del esquema no se puede leer, el respaldo se toma en lugar de asumir una base de datos nueva;
+   - **Prueba de humo de restauración**: Descifra el respaldo en una base de datos temporal y verifica que las tablas del esquema sean legibles antes de continuar; si la verificación falla o no se puede leer el archivo `.sha256`, la migración se aborta con `ErrBackupRestoreFailed`;
+   - **Retención**: Mantiene los 5 respaldos de migración más recientes de forma predeterminada (configurable mediante `repository.WithMigrationBackup`).
+2. **Evolución del esquema por expansión / contracción**:
+   - Las modificaciones del esquema se adhieren estrictamente a principios de expansión primero, evitando romper consultas antiguas.
+3. **Rollbacks solo hacia adelante**:
+   - En producción, revertir cambios editando manualmente `schema_migrations` o rebobinando archivos de esquema está estrictamente prohibido;
+   - Si se descubre un defecto en una migración, despliegue una migración correctiva hacia adelante (ej. `008_fix_xxx.sql`) para corregir el esquema.
+
+---
+
+## 6. Retención de datos y mantenimiento periódico
+
+1. **Ciclo de vida de los datos de uso**:
+   - Cada tabla declara un ciclo de vida en `TABLE_LIFECYCLES` (`internal/repository/lifecycle.go`): `permanent`, `rolling`, `owner_bounded` o `replaced`. Una migración que añada una tabla sin declararla falla `TestEveryTableDeclaresItsLifecycle`;
+   - **Permanente**: `usage_facts_15m` y `usage_facts_daily`, leídas por todos los paneles del tablero. Crecen con combinaciones de modelo/credencial/clave por intervalo, no con solicitudes individuales, y nunca se purgan;
+   - **Deslizante (Rolling), `SHELLPAMC_USAGE_RETENTION_DAYS`** (por defecto 90, `0` conserva todo): registros de solicitudes (`usage_events`), `error_events`, `ingest_gaps` y cargas útiles descartadas. El corte se redondea hacia abajo a un día UTC completo;
+   - **Deslizante (Rolling), `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS`** (por defecto 7, `0` sigue el horizonte de registros de solicitudes): cargas útiles en `usage_inboxes` que fueron decodificadas en un registro de solicitud. Constituyen la parte más grande de la base de datos;
+   - La pasada se ejecuta cada hora dentro de `ingest.Maintenance` en lotes de 2000 filas, como máximo 25 lotes completos a la vez; una pasada no finalizada continúa en el siguiente ciclo de agregación (`SHELLPAMC_USAGE_AGGREGATE_INTERVAL`, por defecto 15 segundos) para no retener la barrera de escritura en una eliminación prolongada;
+   - Un registro de solicitud se elimina solo cuando su ID es menor o igual al punto de control de `facts`, garantizando que nada se elimine antes de que los hechos permanentes lo contengan. Lo que cada política ha eliminado y hasta qué instante se registra en `data_lifecycle_state`;
+   - Eliminar filas libera páginas para su reutilización pero no reduce el tamaño del archivo (`auto_vacuum` está desactivado). Tras acortar un horizonte, recupere el espacio con la compactación detallada en *Recuperación de espacio y compactación* a continuación;
+   - **Nota de actualización**: el valor por defecto de registros de solicitudes era de 400 días y ahora es de 90, y las cargas útiles decodificadas se conservan durante 7 días. Un despliegue que no configure ninguna de las dos variables tendrá sus registros y cargas útiles más antiguos eliminados por las pasadas posteriores a la actualización, una vez que los hechos de uso los hayan absorbido; las estadísticas del tablero no se ven afectadas. Para mantener el comportamiento anterior, configure `SHELLPAMC_USAGE_RETENTION_DAYS=400` y `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS=0` antes de actualizar;
+   - Al actualizar, la migración 035 inicia los hechos vacíos y el bucle de mantenimiento pliega los registros almacenados en ellos desde el primer ID. Los totales se mantienen exactos provisionalmente porque los registros no plegados se leen directamente; las estadísticas de solicitudes ya eliminadas por una pasada de retención anterior no pueden recuperarse.
+2. **Historial de precios (`model_price_versions`, `pricing_channel_versions`)**:
+   - Las versiones de precios y canales son append-only y nunca se purgan: cada costo de solicitud registrado referencia las versiones con las que quedó bloqueado, y eliminar una dejaría un costo que ya no se puede explicar. Crecen con los cambios de precio, no con el tráfico, por lo que su tamaño es insignificante;
+   - La migración 028 (precios de OpenRouter) reconstruye `model_prices` y `pricing_sync_state` copiando sus filas exactamente sin los activadores de versión, por lo que la actualización no genera nuevas versiones ni altera costos registrados. El intervalo de sincronización automática se mantiene; el historial de sincronización de models.dev no. El respaldo previo a la migración lo cubre como a cualquier otra migración;
+   - La migración 029 añade la instantánea JSON de membresía de proveedores a `pricing_catalog_state`; el acceso a precios la requiere. La siguiente conciliación completa con CPA puebla las instalaciones existentes. La actualización es aditiva y deja todas las versiones de precios y bloqueos intactos;
+   - La migración 031 añade `pricing_match_reviews`, el modelo de OpenRouter que el operador respondió por última vez para cada precio personalizado o vinculado. Es aditiva, no contiene precios ni bloquea costos; restaurar una copia anterior solo implica que el libro volverá a anunciar coincidencias existentes una vez más;
+   - `pricing_upstream_catalog` contiene la última descarga completa de OpenRouter y se reemplaza íntegramente en cada sincronización exitosa; restaurar una copia anterior solo significa que el selector de modelos mostrará una lista más antigua hasta la próxima sincronización.
+3. **Documentos del agente (`agent_documents`, migraciones 026 y 036)**:
+   - La sesión más reciente cifrada del Agente y sus operaciones de capacidades residen aquí; el texto cifrado de la sesión se escribe con el mismo sobre `SHELLPAMC_MASTER_KEY` que otras cargas útiles protegidas, por lo que la clave debe existir para reanudar conversaciones o leer operaciones pendientes;
+   - Las sesiones conservan su historial hasta reiniciarse o reemplazarse el turno explícitamente y están exentas del límite de 8 MiB de documentos del repositorio; conversaciones largas aumentan el tamaño de la base de datos y de los respaldos. Una operación terminal se conserva durante 7 días. La purga es diferida (lazy) — ocurre durante solicitudes del Agente con un límite de una por minuto —, por lo que el Agente no añade bucles en segundo plano ni requiere tareas de mantenimiento programadas;
+   - La migración 036 reconstruye la tabla para admitir el tipo `image` (ADR 0075), copiando cada fila textualmente; el respaldo normal previo a la migración la cubre. Una imagen adjunta a un mensaje es una fila cifrada, con un contenido máximo de 5 MiB, conservada mientras la conversación la referencie y eliminada al reiniciar. Reemplazar un turno reutiliza sus imágenes. Intentos fallidos de admisión intentan eliminar solo las filas de imágenes recién escritas; esta limpieza de mejor esfuerzo puede fallar si la base de datos no está disponible. El almacenamiento de imágenes crece con la conversación retenida;
+   - Restaurar esta tabla desde un respaldo restaura el historial de conversaciones y operaciones, pero la aprobación requiere una nueva decisión: una operación que estaba en ejecución (`executing`) cuando el proceso se detuvo se reporta como incierta (`uncertain`) en lugar de repetirse.
+4. **Respaldos de configuración de CPA (`cpa_config_backups`, migración 030; `cpa_config_backup_settings`, migración 033)**:
+   - Antes de cada escritura de configuración, Shell-PAMC almacena el `config.yaml` de CPA tal como estaba, cifrado con el sobre de `SHELLPAMC_MASTER_KEY`; sin la clave una copia no puede leerse ni restaurarse. Una escritura cuya copia no pueda almacenarse se rechaza, de modo que una clave faltante o una base de datos no escribible bloquea escrituras de configuración en lugar de hacerlas irrecuperables;
+   - La migración 033 añade a cada copia el `layout` (`v8` o `legacy`) y `reason` (el tipo de escritura que precedió); copias anteriores se marcan como `legacy` / `legacy_conversion`. La actualización es aditiva y está cubierta por el respaldo de migración normal;
+   - Copias v8 se conservan según la retención elegida en la página de configuración (por defecto 20, entre 5 y 100, la única fila de `cpa_config_backup_settings`); copias anteriores a v8 se guardan por separado, las diez más recientes (`CONFIG_LEGACY_BACKUP_RETENTION`). Una copia idéntica a la más nueva de la pasarela la reutiliza en lugar de añadir una nueva, evitando que intentos rechazados expulsen copias antiguas. Copias anteriores se eliminan en la misma transacción que la inserción, y reducir la retención las elimina de inmediato, por lo que la tabla no requiere tareas de mantenimiento. Una copia tiene como máximo 2 MiB, el archivo más grande que acepta la API de administración de CPA;
+   - La página de configuración lista las copias, toma una a demanda, restaura una copia v8 en la pasarela (el archivo reemplazado se conserva primero), descarga y elimina copias; la restauración, descarga y eliminación son auditadas fail-closed (`config.restore_backup`, `config.reveal_backup`, `config.delete_backup`). `cpa_config_backups` permanece oculta para `database_query` del Agente;
+   - Restaurar estas tablas desde un respaldo de base de datos restaura las copias y la retención. Una copia anterior a v8 no puede reescribirse mediante la API v8; colocarla nuevamente en la pasarela es una acción del operador directamente sobre el archivo de CPA, fuera de Shell-PAMC.
+5. **Recuperación de espacio y compactación**:
+   - La eliminación a gran escala de datos históricos deja páginas libres dentro de SQLite. El archivo no reduce su tamaño por sí solo, y un archivo `-wal` grande es normal y no un fallo: el WAL se reutiliza entre puntos de control en lugar de truncarse continuamente;
+   - Existen dos acciones disponibles, y la página de Información del Sistema ejecuta ambas. La vía de la consola es la más segura para un despliegue en ejecución porque utiliza la barrera de escritura descrita en `docs/architecture.md` §11 — los escritores esperan en lugar de fallar, y una escritura fallida detendría el recolector de uso y con él el proceso:
+     - **Punto de control WAL** (`PRAGMA wal_checkpoint(TRUNCATE)`) traslada los marcos del log de vuelta a la base de datos y trunca el log. Es económico y seguro de ejecutar con frecuencia. SQLite informa un punto de control bloqueado en la fila de resultado de la instrucción en lugar de lanzar un error, por lo que la página informa ese resultado como *incompleto* en lugar de como éxito;
+     - **Reconstrucción** (`VACUUM`) libera páginas libres. SQLite documenta que necesita hasta **el doble del archivo de la base de datos** en espacio libre mientras se ejecuta, y la consola mide ese requisito y lo muestra en la confirmación antes de iniciar la acción. La consola usa un `VACUUM` directo, no un `VACUUM INTO` con intercambio de archivos: el grupo de conexiones mantiene un manejador abierto hacia el archivo, por lo que reemplazarlo por debajo requeriría cerrar cada conexión y reconstruir el grupo mientras otras goroutines aún mantienen referencias a él. Un `VACUUM` directo copia hacia un archivo temporal y sobrescribe el original dentro de una transacción ordinaria, por lo que una reconstrucción interrumpida — por cancelación, por su límite de diez minutos o por reinicio — deja la base de datos original intacta.
+   - Las mismas acciones permanecen disponibles directamente a través de `sqlite3` cuando la consola no es accesible. Detenga la aplicación primero o acepte el mismo comportamiento de espera que proporciona la barrera:
      ```bash
      sqlite3 /path/to/data/shell-pamc.db "PRAGMA wal_checkpoint(TRUNCATE);"
      sqlite3 /path/to/data/shell-pamc.db "VACUUM;"
      ```
-   - A maintenance job does not survive a restart: the process running it is gone with it.
-     The console's job status is held in memory for this reason, and the page says so.
+   - Un trabajo de mantenimiento no sobrevive a un reinicio: el proceso que lo ejecuta finaliza con él. El estado de tareas de la consola se conserva en memoria por este motivo, y la página lo advierte expresamente.
 
-### Native plugin writes
+### Escrituras nativas de plugins
 
-Configuration-affecting trusted plugin-page native writes participate in the existing encrypted
-`cpa_config_backups` gate (ADR 0067). A page's explicit credential is checked against the stored key (ADR 0069) before creating a
-snapshot, and snapshot failure prevents mutation. Copies use the existing retention and
-`config_changes` reason, with deduplication; no new table or migration is introduced.
+Las escrituras nativas de páginas de plugins confiables que afectan la configuración participan en la barrera existente de `cpa_config_backups` cifrada (ADR 0067). La credencial explícita de una página se comprueba contra la clave almacenada (ADR 0069) antes de crear una instantánea, y el fallo de esta impide la mutación. Las copias usan la retención existente y el motivo `config_changes`, con deduplicación; no se introduce ninguna tabla ni migración nueva.
 
-### Warmup scheduling records
+### Registros de programación de calentamiento
 
-Migration 041 adds provider/credential policies, per-credential scheduling state and
-bounded request receipts, plus `quota_snapshots.warmup_json` for billing/activation
-observations. Normal full-database backups include these tables. Keep scheduling state
-and receipts together on restore: consumed or uncertain attempts must not be made new
-by selectively deleting one table. Receipts retain the newest 100 per credential; cycle
-and daily suppression live separately in the one scheduling record per credential.
+La migración 041 añade políticas de proveedores/credenciales, estado de programación por credencial y recibos de solicitudes acotados, además de `quota_snapshots.warmup_json` para observaciones de facturación/activación. Los respaldos completos normales de la base de datos incluyen estas tablas. Conserve el estado de programación y los recibos juntos al restaurar: los intentos consumidos o inciertos no deben reinicializarse eliminando selectivamente una tabla. Los recibos conservan los 100 más recientes por credencial; la supresión de ciclo y diaria residen por separado en el único registro de programación por credencial.
