@@ -1,10 +1,11 @@
-# Shell-PAMC architecture
+# Arquitectura de Shell-PAMC
 
-Module map, data flows, and the invariants that hold them together. Domain
-vocabulary lives in `CONTEXT.md`; visual rules live in `docs/design.md`; the
-decisions behind the shape below are recorded in `docs/adr/`.
+Mapa de módulos, flujos de datos e invariantes que los mantienen unidos. El
+vocabulario del dominio está en `CONTEXT.md`; las reglas visuales están en
+`docs/design.md`; las decisiones detrás de la forma descrita abajo se registran
+en `docs/adr/`.
 
-## 1. Runtime shape
+## 1. Forma en tiempo de ejecución
 
 ```text
 browser ──▶ direct listener, existing HTTPS ingress or Vite ──▶ Go process (one binary)
@@ -18,81 +19,98 @@ Go process ──▶ CPA management API (/v8/management; CPA v8+) ──▶ upst
 Go process ──▶ CPA RESP usage channel
 ```
 
-One process, one SQLite file, one Shell-PAMC replica. The Go process owns the
-base path contract: the SPA is served at `<base>/`, the API at `<base>/api/v1`,
-media at `<base>/media`. The embedded bundle's hashed assets are served from
-`<base>/assets/` and provider SVGs from `<base>/lobe-icons/`; unknown non-API
-paths fall back to the SPA shell. The proxy must preserve the prefix rather than
-strip it (ADR 0001).
+Un proceso, un archivo SQLite, una réplica de Shell-PAMC. El proceso de Go es
+dueño del contrato de la ruta base: la SPA se sirve en `<base>/`, la API en
+`<base>/api/v1` y los medios en `<base>/media`. Los recursos con hash del bundle
+embebido se sirven desde `<base>/assets/` y los SVG de proveedores desde
+`<base>/lobe-icons/`; las rutas desconocidas que no son de la API vuelven a la
+carcasa de la SPA. El proxy debe preservar el prefijo en lugar de eliminarlo
+(ADR 0001).
 
-The React bundle is built into `internal/web/dist` and embedded with
-`go:embed`, so a deployment has no CDN or static-file dependency. Everything the
-browser can reach is a handwritten JSON endpoint; there is no generic pass
-through to CPA.
+El bundle de React se compila en `internal/web/dist` y se embebe con
+`go:embed`, por lo que un despliegue no depende de ningún CDN ni de archivos
+estáticos externos. Todo lo que el navegador puede alcanzar es un endpoint JSON
+escrito a mano; no existe un paso directo genérico hacia CPA.
 
-The console is installable as a web app. The hand-written
-`web/public/manifest.webmanifest` is served at `<base>/manifest.webmanifest` as
-`application/manifest+json`, and the icons it names are served from `<base>/icons/`;
-those icons are renders of the brand mark in `web/public/favicon.svg`; re-render them
-from that drawing when it changes. Every URL inside
-the manifest is relative, and `start_url`, `scope` and the icon sources resolve against
-the manifest URL, so one committed file is correct at the site root, under `/shell-pamc` and
-under a nested base path, with no per-deployment generation. The manifest carries no
-`id`: a relative id resolves against `start_url`'s origin rather than the manifest URL,
-so `"./"` would give every mount point the same installed identity; omitted, the identity
-is the resolved `start_url`, which is mount-specific. The manifest and icons are served
-with `Cache-Control: no-cache` because their names are stable rather than content-hashed
-(see `internal/api/pwa.go`). No service worker is registered: the app adds no offline
-cache of API responses or user content, so a new bundle is never held behind an old one
-and the existing HTTP caching and session rules are unchanged. Installation therefore
-needs the deployment to be reachable, over HTTPS or localhost as the browser requires;
-`docs/install.md` covers the per-browser steps.
+La consola es instalable como aplicación web. El archivo
+`web/public/manifest.webmanifest`, escrito a mano, se sirve en
+`<base>/manifest.webmanifest` como `application/manifest+json`, y los íconos que
+nombra se sirven desde `<base>/icons/`; esos íconos son renderizados de la marca
+en `web/public/favicon.svg`; hay que volver a renderizarlos desde ese dibujo
+cuando cambie. Toda URL dentro del manifiesto es relativa, y `start_url`, `scope`
+y las fuentes de los íconos se resuelven contra la URL del manifiesto, de modo
+que un único archivo versionado es correcto en la raíz del sitio, bajo
+`/shell-pamc` y bajo una ruta base anidada, sin generación por despliegue. El
+manifiesto no lleva `id`: un id relativo se resuelve contra el origen de
+`start_url` y no contra la URL del manifiesto, así que `"./"` daría a cada punto
+de montaje la misma identidad instalada; al omitirlo, la identidad es el
+`start_url` resuelto, que es específico de cada montaje. El manifiesto y los
+íconos se sirven con `Cache-Control: no-cache` porque sus nombres son estables y
+no llevan hash de contenido (véase `internal/api/pwa.go`). No se registra ningún
+service worker: la aplicación no añade caché sin conexión de respuestas de la API
+ni de contenido del usuario, así que un bundle nuevo nunca queda retenido detrás
+de uno antiguo y las reglas existentes de caché HTTP y de sesión no cambian. Por
+tanto, la instalación requiere que el despliegue sea accesible, por HTTPS o
+localhost según exija el navegador; `docs/install.md` cubre los pasos por
+navegador.
 
-### Binary/image distribution and release flow
+### Distribución de binarios/imágenes y flujo de publicación
 
-`Dockerfile` builds the embedded frontend on the builder platform, cross-compiles Go
-for the target architecture and injects `internal/config.BuildVersion` from the release
-tag. The final Alpine image runs as uid/gid `10001:10001` with `/data` as its only
-persistent writable directory. Its own `deploy/healthcheck.sh` normalizes the prefix
-through `deploy/base-path.sh`; `degraded` is process readiness, not gateway connectivity.
-The same image is the updater when its command is `updater serve` (ADR 0099): the probe
-then asks the updater instead, so that role needs no health check of its own, and both
-release Compose files declare it as a second service that alone mounts the Docker socket.
+`Dockerfile` compila el frontend embebido en la plataforma del constructor,
+compila Go de forma cruzada para la arquitectura de destino e inyecta
+`internal/config.BuildVersion` a partir de la etiqueta de la versión. La imagen
+final de Alpine se ejecuta como uid/gid `10001:10001` con `/data` como único
+directorio persistente con escritura. Su propio `deploy/healthcheck.sh`
+normaliza el prefijo mediante `deploy/base-path.sh`; `degraded` indica
+disponibilidad del proceso, no conectividad con el gateway. La misma imagen es el
+actualizador cuando su comando es `updater serve` (ADR 0099): entonces la sonda
+consulta al actualizador, de modo que ese rol no necesita su propia comprobación
+de salud, y ambos archivos Compose de publicación lo declaran como un segundo
+servicio que es el único que monta el socket de Docker.
 
-GitHub Container Registry distributes `ghcr.io/bizasbot/shell-pamc` for amd64 and arm64. The full Compose
-file pulls CPA and Shell-PAMC with loopback host ports; Shell-PAMC-only Compose attaches to a fresh
-or explicitly selected external network. Neither builds locally or installs a proxy.
-`deploy/cpa.config.example.yaml` is solely for fresh gateways; existing installations
-retain their configuration, panels and collection ownership. See `docs/install.md`.
+GitHub Container Registry distribuye `ghcr.io/bizasbot/shell-pamc` para amd64 y
+arm64. El archivo Compose completo descarga CPA y Shell-PAMC con puertos de host
+en loopback; el Compose solo de Shell-PAMC se conecta a una red externa nueva o
+seleccionada explícitamente. Ninguno compila localmente ni instala un proxy.
+`deploy/cpa.config.example.yaml` es exclusivamente para gateways nuevos; las
+instalaciones existentes conservan su configuración, paneles y propiedad de la
+recolección. Véase `docs/install.md`.
 
-`.github/workflows/release.yml` validates a stable version tag against both package
-versions, clears the full verification and packaged-image smoke gates, pushes images,
-and builds/smoke-tests native packages in a separate read-only job. GitHub publication
-requires both the Docker push and complete native assets, whose SHA-256 hashes are
-rechecked after artifact transfer. It then publishes notes, archives and installation
-assets in a draft that becomes visible only after uploads finish, before promoting
-Docker latest to the immutable digest. Publication and promotion recheck the stable index
-so retrying an old run cannot regress either latest pointer. Only the release job has
-repository write permission. `scripts/release-plan.mjs` prevents backports from moving
-latest backwards. GitHub Releases remain the source of version observations; Docker
-Hub distributes images and GitHub distributes native executables. Native builds
-match CPA's Darwin/Windows/Linux/FreeBSD amd64/arm64 coverage. They build the SPA once,
-then cross-compile CGO-free Go with the same version injection and embedded IANA zone
-data. The extracted host Linux package is smoke-tested; foreign targets are build
-coverage, not claims of target-native execution. ADR 0066 records the asset contract.
-The release job also signs `release-manifest.json` (version, image repository and the
-pushed multi-platform digest) with the Ed25519 key in its `RELEASE_SIGNING_KEY` secret,
-after the native assets are verified and before anything is uploaded; the job fails when
-the key is absent or does not match `internal/updater/release_public_key.txt`, which is
-the key compiled into the binary. `scripts/release-workflow.mjs` holds that ordering and
-the secret's confinement to the release job as workflow invariants.
-`docs/releasing.md` records the maintainer workflow
-and ADR 0056 the publication ordering and immutable version identity.
+`.github/workflows/release.yml` valida una etiqueta de versión estable contra
+ambas versiones de paquete, supera las compuertas de verificación completa y de
+prueba de humo de la imagen empaquetada, publica las imágenes y compila y prueba
+paquetes nativos en un trabajo separado de solo lectura. La publicación en GitHub
+exige tanto el push de Docker como los activos nativos completos, cuyos hashes
+SHA-256 se vuelven a comprobar tras la transferencia de artefactos. Luego publica
+notas, archivos e instaladores en un borrador que solo se hace visible cuando
+terminan las subidas, antes de promover Docker latest al digest inmutable. La
+publicación y la promoción vuelven a comprobar el índice estable para que
+reintentar una ejecución antigua no haga retroceder ninguno de los punteros
+latest. Solo el trabajo de publicación tiene permiso de escritura en el
+repositorio. `scripts/release-plan.mjs` impide que los backports hagan retroceder
+latest. GitHub Releases sigue siendo la fuente de observaciones de versión;
+Docker Hub distribuye imágenes y GitHub distribuye ejecutables nativos. Las
+compilaciones nativas igualan la cobertura de CPA para Darwin/Windows/Linux/FreeBSD
+amd64/arm64. Compilan la SPA una sola vez y después compilan de forma cruzada Go
+sin CGO con la misma inyección de versión y con los datos de zonas IANA embebidos.
+El paquete Linux del host, una vez extraído, se prueba con una prueba de humo; los
+destinos foráneos son cobertura de compilación, no afirmaciones de ejecución
+nativa en el destino. El ADR 0066 registra el contrato de los activos. El trabajo
+de publicación también firma `release-manifest.json` (versión, repositorio de la
+imagen y el digest multiplataforma enviado) con la clave Ed25519 de su secreto
+`RELEASE_SIGNING_KEY`, después de verificar los activos nativos y antes de subir
+nada; el trabajo falla cuando falta la clave o no coincide con
+`internal/updater/release_public_key.txt`, que es la clave compilada en el
+binario. `scripts/release-workflow.mjs` mantiene ese orden y el confinamiento del
+secreto al trabajo de publicación como invariantes del flujo de trabajo.
+`docs/releasing.md` registra el flujo de trabajo del mantenedor y el ADR 0056 el
+orden de publicación y la identidad inmutable de la versión.
 
-### Demo mode is the same process with the gateway replaced
+### El modo demo es el mismo proceso con el gateway reemplazado
 
-`SHELLPAMC_DEMO_MODE=true` runs this binary against its own fixture; see §13. The shape
-above still describes it, with two edges replaced and one added:
+`SHELLPAMC_DEMO_MODE=true` ejecuta este binario contra su propio fixture; véase
+el §13. La forma anterior lo sigue describiendo, con dos bordes reemplazados y
+uno añadido:
 
 ```text
 browser ──▶ Go process (one binary, demo mode)
@@ -103,1276 +121,1340 @@ browser ──▶ Go process (one binary, demo mode)
               └─ usage collector: not started; pricing sync: not started
 ```
 
-There is no arrow to openrouter.ai and none to a provider, because the demo starts
-neither the pricing sync nor any capture loop, and the fixture answers the quota
-reads from its own catalogue instead of forwarding them. It does listen: the console
-is served on the port the platform routes to. What it never does is connect anywhere
-but its own fixture.
+No hay flecha hacia openrouter.ai ni hacia ningún proveedor, porque la demo no
+inicia ni la sincronización de precios ni ningún bucle de captura, y el fixture
+responde las lecturas de cuota desde su propio catálogo en lugar de reenviarlas.
+Sí escucha: la consola se sirve en el puerto al que enruta la plataforma. Lo que
+nunca hace es conectarse a algo que no sea su propio fixture.
 
-## 2. Go package map
+## 2. Mapa de paquetes de Go
 
-Dependency direction is acyclic at package level. `internal/usage` (payload
-decoding) and `internal/usage/ingest` (the capture loop) are separate packages,
-so `repository → usage` and `usage/ingest → repository` do not form an import
-cycle even though the `internal/usage` directory appears in both directions.
+La dirección de dependencias es acíclica a nivel de paquete. `internal/usage`
+(decodificación de payloads) e `internal/usage/ingest` (el bucle de captura) son
+paquetes separados, de modo que `repository → usage` y `usage/ingest → repository`
+no forman un ciclo de importación aunque el directorio `internal/usage` aparezca
+en ambas direcciones.
 
-| Package | Responsibility | Depends on |
+| Paquete | Responsabilidad | Depende de |
 | --- | --- | --- |
-| `internal/config` | Environment parsing and defaults; `.env` loading | — |
-| `internal/domain` | Durable entities (`CPAInstance`, resources) | — |
-| `internal/crypto` | AES-GCM envelope for secrets at rest | — |
-| `internal/iconasset` | Static image validation, bounded decoding, MIME verification and XML-allowlisted SVG reconstruction | — |
-| `internal/fontasset` | Font container recognition by signature, weight/style/family description from `OS/2`, `fvar` and `name`, and the Google Fonts installer (stylesheet parsing, host-confined slice download) | — |
-| `internal/security` | Redaction, keyed-HMAC fingerprints, display masks | — |
-| `internal/applog` | The Shell-PAMC service log: an `slog` handler that tees every record the stderr handler accepts into a bounded, redacted in-memory ring the console reads | `security` |
-| `internal/auth` | Admin session cookie: sign, verify, rotate | — |
-| `internal/usage` | Decode CPA usage/error payloads into typed events | `security` |
-| `internal/usage/resp` | Minimal RESP client for CPA's subscribe/LPOP subset | — |
-| `internal/pricing` | OpenRouter fetch and decode, model matching, tiered quotes (windows read on each tier's billing time zone), sync service, modes and channel multipliers | — |
-| `internal/modelcatalog` | Bundled models.dev canonical reference facts, exact source aliases and safe weight/resource links for Model Square | — |
-| `internal/cpa/management` | Typed CPA Management API client (`/v8/management`, behind the v8 gate; the ordinary `/v0/management` reads in `client_v0.go`, plus the bounded native Plugin Host in ADR 0067), configuration change sets with the pre-write backup hook, and RESP stream wrapper | `configyaml`, `internal/usage/resp` |
-| `internal/cpa/gateway` | Fixed-endpoint CPA client for the Agent and Model Square: client-key auth, model directory, bounded SSE lines, and complete tool-call assembly for the Agent loop | — |
-| `internal/cpa/discovery` | Normalize CPA resources into the local identity model | `management`, `crypto`, `domain`, `security` |
-| `internal/cpa/configyaml` | The masked configuration view and per-value secret restoration, v8 file detection, and the plugin-system settings edit | — |
-| `internal/repository` | SQLite schema, migrations, queries, transactional invariants | `iconasset`, `fontasset`, `crypto`, `domain`, `pricing`, `security`, `usage` |
-| `internal/usage/ingest` | Collector loop, decode processor, usage-fact fold and data-lifecycle maintenance | `repository`, `management`, `security`, `usage` |
-| `internal/quota` | Per-provider quota probes and normalization | `management` |
-| `internal/release` | Published-version observation: version comparison, the release feed client, the stored index, and the project's star count for the header link | `repository` |
-| `internal/updater` | The updater role of the binary (`shell-pamc updater serve\|install\|healthcheck`, ADR 0099): a Docker Engine API client over the unix socket, container replacement with rollback, signed-manifest verification, the two-request control service, the one-command installer, and the client the console uses to reach it | `release` |
-| `internal/demo` | The publication fixture: an in-process CPA stand-in, the seeded history, and the capture state the console renders | `domain`, `pricing`, `quota`, `repository`, `security`, `usage`, `usage/ingest` |
-| `internal/capability` | Agent capability declarations, JSON Schema validation, permission/risk rules, pending-operation store, executor audit | `repository`, `crypto` |
-| `internal/operations` | Shared management operations (usage analysis, requests, providers, OAuth, quota, keys, config, pricing, system, model directory) used by both console handlers and capabilities | `capability`, `cpa/management`, `cpa/gateway`, `modelcatalog`, `pricing`, `quota`, `repository` |
-| `internal/agent` | Server-side Agent runtime: conversation persistence, the tool catalogue it declares to the model, the sectioned system prompt, display tools, model loop, resumption | `capability`, `cpa/gateway`, `repository` |
-| `internal/agui` | The AG-UI 1.0 wire protocol for Agent runs: strict `RunAgentInput` decoding, the event translator and SSE framing; knows nothing of Shell-PAMC | — |
-| `internal/mcpbridge` | MCP server definition over the capability registry, its Streamable HTTP handler and the stdio bridge over the capability HTTP endpoints; no business logic or approval policy | `capability` |
-| `internal/api` | Routes, DTO allowlists, audited sensitive reveals, audit writes, the demo policy, capability/Agent endpoints | all of the above, `internal/web` |
-| `internal/web` | `go:embed` of the built SPA, with a committed placeholder entry page for a binary built without it (ADR 0033) | — |
-| `internal/app` | Wiring, background loops, graceful shutdown | all of the above |
+| `internal/config` | Análisis de entorno y valores por defecto; carga de `.env` | — |
+| `internal/domain` | Entidades duraderas (`CPAInstance`, recursos) | — |
+| `internal/crypto` | Envoltura AES-GCM para secretos en reposo | — |
+| `internal/iconasset` | Validación de imágenes estáticas, decodificación acotada, verificación de MIME y reconstrucción de SVG con lista de XML permitido | — |
+| `internal/fontasset` | Reconocimiento del contenedor de fuentes por firma, descripción de peso/estilo/familia a partir de `OS/2`, `fvar` y `name`, y el instalador de Google Fonts (análisis de la hoja de estilos, descarga de fragmentos confinada al host) | — |
+| `internal/security` | Redacción, huellas HMAC con clave, máscaras de visualización | — |
+| `internal/applog` | El registro del servicio Shell-PAMC: un handler de `slog` que copia cada registro que acepta el handler de stderr a un anillo en memoria acotado y redactado que lee la consola | `security` |
+| `internal/auth` | Cookie de sesión de administrador: firmar, verificar, rotar | — |
+| `internal/usage` | Decodifica los payloads de uso/error de CPA en eventos tipados | `security` |
+| `internal/usage/resp` | Cliente RESP mínimo para el subconjunto subscribe/LPOP de CPA | — |
+| `internal/pricing` | Obtención y decodificación de OpenRouter, coincidencia de modelos, cotizaciones por niveles (ventanas leídas en la zona horaria de facturación de cada nivel), servicio de sincronización, modos y multiplicadores de canal | — |
+| `internal/modelcatalog` | Hechos de referencia canónicos de models.dev incluidos en el binario, alias de origen exactos y enlaces seguros a pesos/recursos para Model Square | — |
+| `internal/cpa/management` | Cliente tipado de la API de gestión de CPA (`/v8/management`, tras la compuerta v8; las lecturas ordinarias de `/v0/management` en `client_v0.go`, más el Plugin Host nativo acotado del ADR 0067), conjuntos de cambios de configuración con el gancho de respaldo previo a la escritura, y envoltura del flujo RESP | `configyaml`, `internal/usage/resp` |
+| `internal/cpa/gateway` | Cliente CPA de endpoint fijo para el Agent y Model Square: autenticación con clave de cliente, directorio de modelos, líneas SSE acotadas y ensamblado completo de llamadas a herramientas para el bucle del Agent | — |
+| `internal/cpa/discovery` | Normaliza los recursos de CPA al modelo de identidad local | `management`, `crypto`, `domain`, `security` |
+| `internal/cpa/configyaml` | La vista enmascarada de la configuración y la restauración de secretos por valor, la detección de archivos v8 y la edición de los ajustes del sistema de plugins | — |
+| `internal/repository` | Esquema de SQLite, migraciones, consultas, invariantes transaccionales | `iconasset`, `fontasset`, `crypto`, `domain`, `pricing`, `security`, `usage` |
+| `internal/usage/ingest` | Bucle del recolector, procesador de decodificación, plegado de hechos de uso y mantenimiento del ciclo de vida de los datos | `repository`, `management`, `security`, `usage` |
+| `internal/quota` | Sondas de cuota por proveedor y normalización | `management` |
+| `internal/release` | Observación de versiones publicadas: comparación de versiones, cliente del feed de publicaciones, el índice almacenado y el conteo de estrellas del proyecto para el enlace del encabezado | `repository` |
+| `internal/updater` | El rol de actualizador del binario (`shell-pamc updater serve\|install\|healthcheck`, ADR 0099): un cliente de la API de Docker Engine sobre el socket unix, reemplazo de contenedores con reversión, verificación de manifiestos firmados, el servicio de control de dos solicitudes, el instalador de un solo comando y el cliente que usa la consola para alcanzarlo | `release` |
+| `internal/demo` | El fixture de publicación: un sustituto de CPA en proceso, el historial sembrado y el estado de captura que renderiza la consola | `domain`, `pricing`, `quota`, `repository`, `security`, `usage`, `usage/ingest` |
+| `internal/capability` | Declaraciones de capacidades del Agent, validación de JSON Schema, reglas de permisos/riesgo, almacén de operaciones pendientes, auditoría del ejecutor | `repository`, `crypto` |
+| `internal/operations` | Operaciones de gestión compartidas (análisis de uso, solicitudes, proveedores, OAuth, cuota, claves, configuración, precios, sistema, directorio de modelos) usadas tanto por los handlers de la consola como por las capacidades | `capability`, `cpa/management`, `cpa/gateway`, `modelcatalog`, `pricing`, `quota`, `repository` |
+| `internal/agent` | Runtime del Agent del lado del servidor: persistencia de conversaciones, el catálogo de herramientas que declara al modelo, el prompt de sistema por secciones, herramientas de visualización, bucle del modelo, reanudación | `capability`, `cpa/gateway`, `repository` |
+| `internal/agui` | El protocolo de transmisión AG-UI 1.0 para ejecuciones del Agent: decodificación estricta de `RunAgentInput`, el traductor de eventos y el enmarcado SSE; no sabe nada de Shell-PAMC | — |
+| `internal/mcpbridge` | Definición del servidor MCP sobre el registro de capacidades, su handler HTTP Streamable y el puente stdio sobre los endpoints HTTP de capacidades; sin lógica de negocio ni política de aprobación | `capability` |
+| `internal/api` | Rutas, listas de campos permitidos de los DTO, revelaciones sensibles auditadas, escrituras de auditoría, la política de demo, endpoints de capacidades/Agent | todos los anteriores, `internal/web` |
+| `internal/web` | `go:embed` de la SPA compilada, con una página de entrada de marcador de posición versionada para un binario compilado sin ella (ADR 0033) | — |
+| `internal/app` | Cableado, bucles en segundo plano, apagado ordenado | todos los anteriores |
 
-Two rules keep the boundary meaningful:
+Dos reglas mantienen significativa la frontera:
 
-- `internal/repository` owns transaction boundaries. Anything that must be
-  atomic with a write (cost locking, inbox→event promotion, the usage-fact fold and its checkpoint)
-  is a repository method, not a sequence of calls from a service.
-- `internal/api` owns the allowlist. A new response field is a deliberate DTO
-  change; the allowlist tests fail otherwise. Every management surface declares its own
-  response shape (`ProviderItemDTO`, `QuotaItemDTO`, `PluginItemDTO`,
-  `managementAuthFileResponse`, …) instead of forwarding the facade model it decoded CPA
-  into, so a field added there for decoding cannot reach a caller without a decision at
-  this boundary. The plugin projection is also where manifest text is bounded
-  (`management_plugin_projection.go`), because that text arrives from an installed plugin
-  or a registry; it also derives each entry's repository link and whether an entry
-  is first-party, so no surface decides trust on its own.
+- `internal/repository` es dueño de los límites de las transacciones. Todo lo que
+  deba ser atómico con una escritura (bloqueo de costos, promoción de bandeja de
+  entrada a evento, el plegado de hechos de uso y su punto de control) es un
+  método del repositorio, no una secuencia de llamadas desde un servicio.
+- `internal/api` es dueño de la lista de campos permitidos. Un campo nuevo en una
+  respuesta es un cambio deliberado de DTO; de lo contrario fallan las pruebas de
+  la lista permitida. Cada superficie de gestión declara su propia forma de
+  respuesta (`ProviderItemDTO`, `QuotaItemDTO`, `PluginItemDTO`,
+  `managementAuthFileResponse`, …) en lugar de reenviar el modelo de fachada en el
+  que decodificó CPA, de modo que un campo añadido allí para la decodificación no
+  pueda llegar a un llamador sin una decisión en esta frontera. La proyección de
+  plugins es también donde se acota el texto del manifiesto
+  (`management_plugin_projection.go`), porque ese texto llega desde un plugin
+  instalado o un registro; además deriva el enlace al repositorio de cada entrada
+  y si una entrada es de origen propio, de modo que ninguna superficie decida la
+  confianza por su cuenta.
 
-**Plugin management** (ADR 0029, ADR 0038). `internal/api/management_plugins.go` maps
-the installed list with the global switch and each plugin's declared configuration
-fields and removal to
-CPA's plugin routes. The console has no plugin store or marketplace page: browsing and
-installing from a registry is not offered (the store UI, `/plugin-store` and the
-store/install facade routes were removed). The per-plugin switch and settings document are keys of the
-configuration: the switch is written at `plugins.configs.<id>.enabled` and the settings
-document (passed through unprojected because its shape is the plugin's) is read and
-written at `plugins.configs.<id>` through the v8 configuration API, under the provider
-write gate and the configuration mutex a configuration save holds; a write for a plugin
-that is neither installed nor configured is refused as `plugin_not_found`.
-CPA's plugin error codes (`plugin_not_found`, `plugin_delete_requires_restart`,
-`plugin_store_rate_limited`, …) are kept rather than folded into the generic facade
-error. The plugin system's own settings - `plugins.enabled`, `plugins.store-sources`
-and `plugins.store-auth` - have no dedicated CPA plugin route, so
-`internal/api/management_plugin_settings.go` writes them as a configuration change set
-on their `plugins.*` paths (`configyaml.PluginSettingsEdit`), under the provider write
-gate, the configuration mutex and the revision the page loaded, exactly like a
-configuration save.
+**Gestión de plugins** (ADR 0029, ADR 0038). `internal/api/management_plugins.go`
+asigna a las rutas de plugins de CPA la lista de instalados con el interruptor
+global, los campos de configuración declarados de cada plugin y su eliminación.
+La consola no tiene tienda de plugins ni página de marketplace: no se ofrece
+explorar ni instalar desde un registro (se eliminaron la interfaz de la tienda,
+`/plugin-store` y las rutas de fachada de tienda/instalación). El interruptor por
+plugin y el documento de ajustes son claves de la configuración: el interruptor se
+escribe en `plugins.configs.<id>.enabled` y el documento de ajustes (pasado sin
+proyectar porque su forma es la del plugin) se lee y se escribe en
+`plugins.configs.<id>` mediante la API de configuración v8, bajo la compuerta de
+escritura de proveedores y el mutex de configuración que mantiene un guardado de
+configuración; una escritura para un plugin que no está instalado ni configurado
+se rechaza como `plugin_not_found`. Los códigos de error de plugins de CPA
+(`plugin_not_found`, `plugin_delete_requires_restart`,
+`plugin_store_rate_limited`, …) se conservan en lugar de fundirse en el error
+genérico de la fachada. Los ajustes propios del sistema de plugins -
+`plugins.enabled`, `plugins.store-sources` y `plugins.store-auth` - no tienen una
+ruta de plugin dedicada en CPA, así que
+`internal/api/management_plugin_settings.go` los escribe como un conjunto de
+cambios de configuración en sus rutas `plugins.*` (`configyaml.PluginSettingsEdit`),
+bajo la compuerta de escritura de proveedores, el mutex de configuración y la
+revisión que cargó la página, exactamente como un guardado de configuración.
 
-Shell-PAMC's own registry is a managed entry of that list rather than a configured one
-(`internal/api/management_plugin_source.go`, ADR 0104). `internal/pluginregistry`
-compiles in the address published from `plugins/registry.json`; the server reads the
-`omc_plugin_source_enabled` preference (default on) and keeps `plugins.store-sources`
-in agreement with it. A plugin-settings save and both
-configuration save paths add or remove the address under the gate and the mutex, and a
-configuration save that removed it is repaired inside the save's own lock scope so the
-revision it reports already contains it. The plugin settings tab names the source `Shell-PAMC` instead of CPA's URL host as one fixed line.
+El registro propio de Shell-PAMC es una entrada gestionada de esa lista y no una
+configurada (`internal/api/management_plugin_source.go`, ADR 0104).
+`internal/pluginregistry` compila la dirección publicada desde
+`plugins/registry.json`; el servidor lee la preferencia
+`omc_plugin_source_enabled` (activada por defecto) y mantiene
+`plugins.store-sources` en concordancia con ella. Un guardado de ajustes de
+plugins y ambas rutas de guardado de configuración agregan o quitan la dirección
+bajo la compuerta y el mutex, y un guardado de configuración que la haya quitado
+se repara dentro del propio alcance de bloqueo del guardado, de modo que la
+revisión que informa ya la contiene. La pestaña de ajustes de plugins nombra la
+fuente `Shell-PAMC` en lugar del host de la URL de CPA, como una línea fija.
 
-The facade preserves CPA's `supports_oauth` wire field. CPA derives it from the presence
-of an auth provider, so the installed-plugin badge names the **Auth provider** capability
-rather than claiming an OAuth login method. No plugin-specific classification is applied.
-The connection picker uses plugin names without an OAuth suffix and labels their method
-as plugin-managed. When a running plugin registers a page, its connection action opens
-the first registered page through the existing plugin host instead of starting OAuth.
-Pageless auth providers retain an explicit login request with capability-neutral copy;
-only a successful login response activates device or callback controls. Recognized CPA
-flow labels are authoritative. When a plugin response omits the label or uses an unknown
-one, a device code identifies device flow; otherwise a login URL plus session state
-establishes a redirect. Incomplete responses remain plugin-managed. Built-in declared flows retain their
-compatibility fallback. No login is started to probe capability, and credential collection
-membership and plugin logos remain independent of connection actions.
+La fachada preserva el campo de protocolo `supports_oauth` de CPA. CPA lo deriva
+de la presencia de un proveedor de autenticación, así que la insignia de plugin
+instalado nombra la capacidad **Auth provider** en lugar de afirmar un método de
+inicio de sesión OAuth. No se aplica ninguna clasificación específica de plugin.
+El selector de conexiones usa los nombres de plugin sin sufijo OAuth y rotula su
+método como gestionado por el plugin. Cuando un plugin en ejecución registra una
+página, su acción de conexión abre la primera página registrada a través del host
+de plugins existente en lugar de iniciar OAuth. Los proveedores de autenticación
+sin página conservan una solicitud de inicio de sesión explícita con texto neutro
+respecto a la capacidad; solo una respuesta de inicio de sesión exitosa activa los
+controles de dispositivo o de callback. Las etiquetas de flujo reconocidas de CPA
+son la autoridad. Cuando la respuesta de un plugin omite la etiqueta o usa una
+desconocida, un código de dispositivo identifica el flujo de dispositivo; de lo
+contrario, una URL de inicio de sesión junto con el estado de sesión establece una
+redirección. Las respuestas incompletas siguen siendo gestionadas por el plugin.
+Los flujos declarados integrados conservan su alternativa de compatibilidad. No se
+inicia ningún inicio de sesión para sondear la capacidad, y la pertenencia a la
+colección de credenciales y los logotipos de plugins siguen siendo independientes
+de las acciones de conexión.
 
-**Plugin host** (ADR 0067, extending ADR 0060). `projectPluginPages` lists pages only
-for running plugins and under their own resource id. `internal/api/management_plugin_host.go`
-serves them behind the console session under `/api/v1/plugin-host/`. Resources use
-`/v0/resource/plugins/<id>/...` without credentials. Management calls use the fixed CPA
-origin's `/v0/management/*` and `/v8/management/*`, including native core and namespaced
-plugin routes; the model directory is only `GET /v1/models`. Management calls reach CPA
-only with the stored server management key. A page that sends Authorization or
-X-Management-Key, even empty, has that credential read with CPA's precedence and compared
-with the stored key in `PluginRoute`; a mismatch is answered `401` in CPA's wire shape
-before any upstream request, backup or write (ADR 0069). CPA bans a client address after
-repeated failed management authentications and every hosted page shares this process's
-address, so a page credential is never CPA's to count. Models receive only caller Authorization.
-Cookies and Set-Cookie never cross; redirects are not followed. Cleaned paths refuse
-traversal, backslashes and controls, and both versions' outbound `api-call` bridges are
-refused. Ordinary facade DTO allowlists remain unchanged.
+**Host de plugins** (ADR 0067, que extiende el ADR 0060). `projectPluginPages`
+lista páginas solo para plugins en ejecución y bajo su propio id de recurso.
+`internal/api/management_plugin_host.go` las sirve tras la sesión de la consola
+bajo `/api/v1/plugin-host/`. Los recursos usan `/v0/resource/plugins/<id>/...` sin
+credenciales. Las llamadas de gestión usan `/v0/management/*` y
+`/v8/management/*` del origen fijo de CPA, incluidas las rutas nativas del núcleo
+y las rutas de plugins con espacio de nombres; el directorio de modelos es solo
+`GET /v1/models`. Las llamadas de gestión alcanzan a CPA únicamente con la clave
+de gestión del servidor almacenada. Una página que envía Authorization o
+X-Management-Key, aunque esté vacía, tiene esa credencial leída con la precedencia
+de CPA y comparada con la clave almacenada en `PluginRoute`; una discrepancia se
+responde con `401` en la forma de protocolo de CPA antes de cualquier solicitud
+upstream, respaldo o escritura (ADR 0069). CPA bloquea una dirección de cliente
+tras repetidas autenticaciones de gestión fallidas y todas las páginas alojadas
+comparten la dirección de este proceso, así que una credencial de página nunca le
+corresponde contarla a CPA. Los modelos reciben solo la Authorization del
+llamador. Las cookies y Set-Cookie nunca cruzan; no se siguen las redirecciones.
+Las rutas limpiadas rechazan el recorrido de directorios, las barras invertidas y
+los caracteres de control, y se rechazan los puentes `api-call` salientes de
+ambas versiones. Las listas de campos permitidos de los DTO ordinarios de la
+fachada permanecen sin cambios.
 
-Native responses may contain provider and client secrets. Every API call records
-`plugin.route_call` attempt and outcome with only its fixed API surface, method and status;
-path suffixes, queries, bodies and transport errors are omitted. Failed attempt auditing
-prevents upstream execution; failed read-outcome auditing withholds the body. Audit
-refusals use the existing `audit_write_failed` error code. A successful
-write remains successful when outcome auditing fails. API responses use `no-store`.
-Native writes join `providerWriteGate`, validate caller authentication before snapshotting,
-keep the encrypted stored config with the existing backup gate, and call `afterConfigWrite`
-on success. Classification is conservative for all v8 writes and core v0 writes; ordinary
-deep plugin actions do not take the config gate. Native requests keep CPA's last-write
-semantics rather than adding Shell-PAMC revision fields to the external wire contract.
+Las respuestas nativas pueden contener secretos de proveedores y de clientes.
+Cada llamada a la API registra el intento y el resultado de `plugin.route_call`
+solo con su superficie de API fija, método y estado; se omiten los sufijos de
+ruta, las consultas, los cuerpos y los errores de transporte. Si falla la
+auditoría del intento, se impide la ejecución upstream; si falla la auditoría del
+resultado de una lectura, se retiene el cuerpo. Los rechazos de auditoría usan el
+código de error existente `audit_write_failed`. Una escritura exitosa sigue siendo
+exitosa cuando falla la auditoría del resultado. Las respuestas de la API usan
+`no-store`. Las escrituras nativas se unen a `providerWriteGate`, validan la
+autenticación del llamador antes de tomar la instantánea, mantienen la
+configuración almacenada cifrada con la compuerta de respaldo existente y llaman a
+`afterConfigWrite` en caso de éxito. La clasificación es conservadora para todas
+las escrituras v8 y las escrituras v0 del núcleo; las acciones profundas ordinarias
+de plugins no toman la compuerta de configuración. Las solicitudes nativas
+conservan la semántica de última escritura de CPA en lugar de añadir campos de
+revisión de Shell-PAMC al contrato externo de protocolo.
 
-HTML/CSS/JavaScript references and runtime fetch, Request, XMLHttpRequest and EventSource
-requests are rebased for the same surfaces. Rebased Request bodies are buffered before
-fetching so reconstructing a Request does not turn a JSON body into an HTTP/1-incompatible
-streaming upload; method, headers, overrides and cancellation signal are retained.
-Same-origin requests to these host surfaces carry the console session even when a plugin
-uses `credentials: 'omit'`; explicit management and client Authorization headers retain
-their existing, separate validation rules. This includes statically rebased and already-hosted
-URLs; external origins and unrelated paths keep their original credential mode.
-`management_plugin_host_shim.js` is embedded in the Go binary and tested directly in Node.
-Executable inline and external JavaScript is parsed with `tdewolff/parse`: direct
-`location.pathname` access (also through global `window`, `self`, `globalThis` or `document`)
-uses a live CPA-native resource-path view. The pathname adapter replaces only the
-matched property token with the equal-width `_omcPath` accessor on the native Location;
-all other script bytes, comments and source-map coordinates are preserved by that step.
-The actual frame URL stays under the console
-mount; native resource URLs passed to history push/replace are rebased too, so removing
-a query-string key keeps relative assets, reloads and scoped session cookies working. Locally bound
-objects, string/regex literals and non-executable script data are not pathname-rewritten.
-Scripts needing adaptation must parse successfully; refusal returns `502` with
-`code: plugin_adaptation_refused` and does not expose parser source snippets. The same-origin frame operates with the signed-in operator's authority; installation
-is the trust decision. Demo refuses the entire host. No model inference or arbitrary-target
-bridge is provided by this route tree.
+Las referencias HTML/CSS/JavaScript y las solicitudes de ejecución con fetch,
+Request, XMLHttpRequest y EventSource se reubican para las mismas superficies. Los
+cuerpos de Request reubicados se almacenan en búfer antes de hacer fetch, para que
+reconstruir un Request no convierta un cuerpo JSON en una subida en streaming
+incompatible con HTTP/1; se conservan el método, las cabeceras, las sobrescrituras
+y la señal de cancelación. Las solicitudes del mismo origen hacia estas
+superficies del host llevan la sesión de la consola incluso cuando un plugin usa
+`credentials: 'omit'`; las cabeceras Authorization explícitas de gestión y de
+cliente conservan sus reglas de validación existentes y separadas. Esto incluye
+las URL reubicadas estáticamente y las que ya están alojadas; los orígenes
+externos y las rutas no relacionadas conservan su modo de credenciales original.
+`management_plugin_host_shim.js` está embebido en el binario de Go y se prueba
+directamente en Node. El JavaScript ejecutable en línea y externo se analiza con
+`tdewolff/parse`: el acceso directo a `location.pathname` (también mediante los
+globales `window`, `self`, `globalThis` o `document`) usa una vista en vivo de la
+ruta de recurso nativa de CPA. El adaptador de pathname reemplaza solo el token de
+la propiedad coincidente por el accesor `_omcPath` de igual ancho en el Location
+nativo; todos los demás bytes del script, los comentarios y las coordenadas del
+source map se conservan en ese paso. La URL real del frame permanece bajo el
+montaje de la consola; las URL de recursos nativos pasadas a history push/replace
+también se reubican, de modo que quitar una clave de la cadena de consulta
+mantenga funcionando los recursos relativos, las recargas y las cookies de sesión
+acotadas. Los objetos enlazados localmente, los literales de cadena/regex y los
+datos de script no ejecutables no se reescriben en cuanto a pathname. Los scripts
+que necesiten adaptación deben analizarse correctamente; el rechazo devuelve
+`502` con `code: plugin_adaptation_refused` y no expone fragmentos de código del
+analizador. El frame del mismo origen opera con la autoridad del operador con
+sesión iniciada; la instalación es la decisión de confianza. La demo rechaza todo
+el host. Este árbol de rutas no ofrece inferencia de modelos ni un puente hacia
+destinos arbitrarios.
 
-### Agent runtime, capability registry and the MCP bridge
+### Runtime del Agent, registro de capacidades y el puente MCP
 
-The Agent is not a second management implementation. Every capability it can call is a
-declaration in `internal/capability` whose handler calls a shared method in
-`internal/operations`; the console's HTTP handlers call those same methods, so write
-gates, revision checks, and CPA readback cannot drift between the two entry points.
-`internal/agent` owns only the model loop: it builds the system prompt, history, and
-tool schemas, streams the model reply, executes each call through
-`capability.Executor`, and persists the result before continuing. It never touches the
-database, configuration file, or CPA client directly, and the request it sends upstream
-is assembled server-side - a client cannot inject tool results, approvals, or history.
+El Agent no es una segunda implementación de gestión. Cada capacidad a la que
+puede llamar es una declaración en `internal/capability` cuyo handler llama a un
+método compartido de `internal/operations`; los handlers HTTP de la consola llaman
+a esos mismos métodos, de modo que las compuertas de escritura, las comprobaciones
+de revisión y la relectura de CPA no pueden divergir entre los dos puntos de
+entrada. `internal/agent` es dueño únicamente del bucle del modelo: construye el
+prompt de sistema, el historial y los esquemas de herramientas, transmite la
+respuesta del modelo, ejecuta cada llamada mediante `capability.Executor` y
+persiste el resultado antes de continuar. Nunca toca directamente la base de
+datos, el archivo de configuración ni el cliente de CPA, y la solicitud que envía
+upstream se ensambla del lado del servidor: un cliente no puede inyectar
+resultados de herramientas, aprobaciones ni historial.
 
-`POST /agent/run` speaks AG-UI 1.0 (ADR 0041). `internal/agui` decodes a strict `RunAgentInput` -
-one user message or a `resume` list naming the interrupts it continues from, never history, state
-or tool results; the key, model, effort, the revision the page last saw and, for a retry or an edit, the newest turn the message replaces (`replace_turn`, honoured only when `isReplaceable` finds the turn settled and read-only) as `forwardedProps`;
-and, when a composer command asked for one, the answer's presentation (`present`: `ui` or `text`, with legacy `canvas` accepted) as `forwardedProps`;
-the console language and its token unit style (`console_language`, `console_token_style`) as the only `context` entries - and `internal/api/agent_http.go` translates the
-runtime's transport-independent events onto the stream. `RUN_STARTED` is sent only once the turn
-is persisted, so a run refused before that emits `RUN_ERROR` alone and the console hands the
-message back to the composer. Each model round is a step; a capability call is announced
-(`TOOL_CALL_START`/`ARGS`/`END`) before it executes and its receipt follows as `TOOL_CALL_RESULT`;
-reasoning (`reasoning_content`, or `reasoning`) streams as reasoning messages and never enters the
-messages later rounds are built from. The run ends with a `STATE_SNAPSHOT` of the console-projected
-conversation and `RUN_FINISHED`, whose outcome is `success` or `interrupt` with one interrupt per
-waiting operation (`approval`, `question`, `secret` or `oauth`, naming the call that raised it), or
-with `RUN_ERROR`; token usage rides on the last event. A resume must name exactly the waiting
-operations, each already decided on the decision endpoint (`confirmation_pending` otherwise).
+`POST /agent/run` habla AG-UI 1.0 (ADR 0041). `internal/agui` decodifica un
+`RunAgentInput` estricto - un mensaje de usuario o una lista `resume` que nombra
+las interrupciones que continúa, nunca historial, estado ni resultados de
+herramientas; la clave, el modelo, el esfuerzo, la revisión que la página vio por
+última vez y, para un reintento o una edición, el turno más reciente que el
+mensaje reemplaza (`replace_turn`, respetado solo cuando `isReplaceable` encuentra
+el turno asentado y de solo lectura) como `forwardedProps`; y, cuando un comando
+del compositor pidió una, la presentación de la respuesta (`present`: `ui` o
+`text`, aceptando `canvas` heredado) como `forwardedProps`; el idioma de la
+consola y su estilo de unidad de tokens (`console_language`,
+`console_token_style`) como únicas entradas de `context` - e
+`internal/api/agent_http.go` traduce los eventos del runtime, independientes del
+transporte, al flujo. `RUN_STARTED` se envía solo una vez persistido el turno, así
+que una ejecución rechazada antes de eso emite únicamente `RUN_ERROR` y la consola
+devuelve el mensaje al compositor. Cada ronda del modelo es un paso; una llamada
+de capacidad se anuncia (`TOOL_CALL_START`/`ARGS`/`END`) antes de ejecutarse y su
+recibo la sigue como `TOOL_CALL_RESULT`; el razonamiento (`reasoning_content` o
+`reasoning`) se transmite como mensajes de razonamiento y nunca entra en los
+mensajes con los que se construyen las rondas posteriores. La ejecución termina
+con un `STATE_SNAPSHOT` de la conversación proyectada para la consola y
+`RUN_FINISHED`, cuyo resultado es `success` o `interrupt` con una interrupción por
+cada operación en espera (`approval`, `question`, `secret` u `oauth`, nombrando la
+llamada que la originó), o con `RUN_ERROR`; el uso de tokens viaja en el último
+evento. Una reanudación debe nombrar exactamente las operaciones en espera, cada
+una ya decidida en el endpoint de decisión (`confirmation_pending` en caso
+contrario).
 
-`internal/api/agent_projection.go` projects session reads and final snapshots into explicit console
-DTOs: model history (`messages`) and queued model calls (`pending`) stay server-side. For
-`database_query`, both the streamed receipt and stored trace omit raw `data` and any `view`, while
-retaining status, diagnostics, arguments and timing. Projection never mutates the persisted
-conversation: the model loop and display tools still resolve the full query result. Answer text
-and explicitly generated display views remain visible and may include data selected by the model.
+`internal/api/agent_projection.go` proyecta las lecturas de sesión y las
+instantáneas finales en DTO explícitos para la consola: el historial del modelo
+(`messages`) y las llamadas al modelo en cola (`pending`) permanecen del lado del
+servidor. Para `database_query`, tanto el recibo transmitido como el rastro
+almacenado omiten los `data` sin procesar y cualquier `view`, conservando el
+estado, los diagnósticos, los argumentos y los tiempos. La proyección nunca muta
+la conversación persistida: el bucle del modelo y las herramientas de
+visualización siguen resolviendo el resultado completo de la consulta. El texto de
+la respuesta y las vistas de visualización generadas explícitamente permanecen
+visibles y pueden incluir datos seleccionados por el modelo.
 
-The turn records its output as ordered `parts` - reasoning, text and capability calls, in arrival
-order, with a new part for each model round - plus its rounds, token usage (summed over the rounds,
-and `context_tokens`, the input of the last round that reported one), any follow-up `suggestions`
-the presentation it was asked for and the `agent.PROMPT_VERSION` it ran with. The system prompt is built from named sections (identity,
-approach, data, safety, wording, presentation, context) in `internal/agent/prompt.go`, bounded by
-`agent.MAX_PROMPT_BYTES` because it is resent on every round. The wording section is what makes an
-answer read like the console beside it: things are called by their display names, alias or label
-rather than by identifiers, fields are described rather than quoted, and numbers follow fixed
-forms - grouped digits, token counts in the operator's unit style (`TOKEN_STYLES`), USD, durations,
-percentages, and clock times in the deployment's zone. Domain terms, shared half-open analysis
-windows and configured request identity are explicit; model aliases do not attest upstream identity.
-Earlier settled turns contribute their question, images, conclusion and bounded provenance
-metadata in chronological order (`buildCompletedTurnMessages`, ADR 0078), without replaying SQL,
-HTML or repair transcripts; a turn that failed or was stopped contributes too, so the writes it
-ran stay visible to the next question. Up to eight dataset references and eight recent mutation/refusal
-outcomes remain available per completed turn; references already used by a display take priority.
-Omitted outcomes are disclosed, never interpreted as write success. The active turn keeps every
-model message and result. The runtime neither truncates requests to an estimated context budget
-nor drops stored turns to meet a session size cap; actual provider context limits can still
-refuse a request. Image inclusion has its own newest-eight policy below.
-The display tool `render_ui` (`internal/agent/display.go`, ADR 0042, 0072, 0073, 0082) is offered
-only when the client declares it. `presentedTools` offers `render_ui` for `ui` (and legacy
-`canvas`) presentations, no display for `text`, and keeps declared `suggest_next` in both cases.
-A canvas references rows of an earlier
-capability result by `source {data_ref}` with top-level `fields`; the runtime supplies bounded,
-value-free `data_sources` metadata in private model messages (`internal/agent/data_sources.go`).
-Legacy `source {call_id, path}` remains accepted, with a tool-call id and a path inside result data.
-These handles grant no access outside the retained conversation. The server resolves and checks them, freezes the dataset on the call's trace as its `view`, and returns
-a small receipt instead of the rows. Display calls never pass through the executor. `render_chart`, `render_table`, `render_view`
-and `render_canvas` are withdrawn (`RETIRED_DISPLAY_TOOLS`): a stored trace that names one is still
-read as a display call, and nothing new can call or reference it. `suggest_next` is
-declared the same way but is not a call the turn makes: `takeSuggestions` removes it from a round's
-calls, so it has no trace, no stored tool call and no further model round, and its questions are
-kept on the turn only when that round ends it. Stored `render_view` panels (ADR 0079) remain
-readable alongside stored canvases (ADR 0072); new `render_ui` calls freeze the model's markup
-beside resolved rows. New calls default to inline components and persist `frame: none`,
-removing card chrome without changing the sandbox. Explicit `card` remains omitted in storage,
-so earlier views retain their original framing (ADR 0087). `AgentMessage` excludes
-displays from chain grouping and `DisplayCall` draws the draft or frozen view at the call's
-ordered part; failed displays stay diagnostic call rows. Reasoning uses the shared unframed
-`ReasoningBlock`, following the latest line until the reader scrolls up and folding on completion.
-Its effect-owned ResizeObserver tracks both the unbounded Markdown content and its scroll viewport,
-so deferred Markdown commits and reflow stay pinned after the live body reaches its height cap.
-Scroll and resize callbacks share one movement check before correcting the tail, so a layout
-commit cannot erase a pending backscroll. Shrinking content clamps the previous offset without
-mistaking that clamp for reader intent. Corrections are instant. Closing the live disclosure
-disconnects the observer, and reopening resumes at the tail. The Agent's disclosure
-names the thought process while the separate activity row owns the live phase and elapsed time.
-The console builds a canvas's document in `web/src/agent/canvasDocument.ts` - the content security policy, the theme variables,
-the frozen rows, then the kit in `web/src/agent/canvasKit.ts` (`OMC.rows`, `OMC.fmt`, `OMC.chart`,
-`OMC.table`, `OMC.diagram`, `OMC.icon` and `OMC.compose`, configured with the operator's token
-style, language and time zone; `OMC.compose` only drafts a composer message; a chart is drawn at
-its frame's width between 280px and 760px and again when that width changes, so its text keeps
-its size on a phone) ahead of the
-model's markup - and shows it in a script-only sandboxed `srcdoc`
-frame. Drafts draw partial markup under a fresh nonce-only script policy, allowing only the
-host bootstrap to execute: neither model scripts nor inline event handlers run until the
-completed component replaces its preview. Height observations coalesce after resize and
-mutation, growing or shrinking within 48px–16384px without retaining the previous viewport
-as a minimum. `tools/CanvasView.tsx` can portal the same figure over the viewport, and saves it as an
-image by posting a capture request the kit answers with an SVG of its own document; `canvasImage`
-validates that reply before it is rasterised. `web/index.html` declares `frame-src 'self' blob:` so that frame cannot navigate away.
-Panel icons resolve against `web/src/generated/lucideIcons.json`, generated by
-`scripts/generate-lucide-icons.mjs` and loaded on first use.
+El turno registra su salida como `parts` ordenadas - razonamiento, texto y
+llamadas de capacidades, en orden de llegada, con una parte nueva por cada ronda
+del modelo - además de sus rondas, el uso de tokens (sumado sobre las rondas, y
+`context_tokens`, la entrada de la última ronda que informó una), cualquier
+`suggestions` de seguimiento, la presentación que se le pidió y el
+`agent.PROMPT_VERSION` con el que se ejecutó. El prompt de sistema se construye a
+partir de secciones con nombre (identidad, enfoque, datos, seguridad, redacción,
+presentación, contexto) en `internal/agent/prompt.go`, acotado por
+`agent.MAX_PROMPT_BYTES` porque se reenvía en cada ronda. La sección de redacción
+es lo que hace que una respuesta se lea como la consola que tiene al lado: las
+cosas se llaman por sus nombres para mostrar, alias o etiqueta en lugar de por
+identificadores, los campos se describen en lugar de citarse, y los números siguen
+formas fijas - dígitos agrupados, conteos de tokens en el estilo de unidad del
+operador (`TOKEN_STYLES`), USD, duraciones, porcentajes y horas en la zona del
+despliegue. Los términos del dominio, las ventanas de análisis semiabiertas
+compartidas y la identidad de solicitud configurada son explícitos; los alias de
+modelo no certifican la identidad upstream. Los turnos asentados anteriores aportan
+su pregunta, imágenes, conclusión y metadatos de procedencia acotados en orden
+cronológico (`buildCompletedTurnMessages`, ADR 0078), sin reproducir SQL, HTML ni
+transcripciones de reparación; un turno que falló o se detuvo también aporta, de
+modo que las escrituras que ejecutó sigan siendo visibles para la siguiente
+pregunta. Por cada turno completado siguen disponibles hasta ocho referencias de
+conjuntos de datos y ocho resultados recientes de mutación/rechazo; las
+referencias ya usadas por una visualización tienen prioridad. Los resultados
+omitidos se informan, nunca se interpretan como escrituras exitosas. El turno
+activo mantiene cada
+mensaje y resultado del modelo. El runtime ni trunca las solicitudes a un presupuesto de contexto
+estimado ni descarta turnos almacenados para cumplir un tope de tamaño de sesión; los límites reales
+de contexto del proveedor aún pueden rechazar una solicitud. La inclusión de imágenes tiene su propia
+política de las ocho más recientes, descrita más abajo.
+La herramienta de visualización `render_ui` (`internal/agent/display.go`, ADR 0042, 0072, 0073, 0082) se ofrece
+solo cuando el cliente la declara. `presentedTools` ofrece `render_ui` para las presentaciones `ui` (y la
+heredada `canvas`), ninguna visualización para `text`, y mantiene `suggest_next` declarada en ambos casos.
+Un canvas hace referencia a filas de un resultado de capacidad anterior mediante
+`source {data_ref}` con `fields` de nivel superior; el runtime aporta metadatos `data_sources` acotados
+y sin valores en mensajes privados del modelo (`internal/agent/data_sources.go`).
+El formato heredado `source {call_id, path}` sigue aceptándose, con un id de llamada a herramienta y una ruta dentro de los datos del resultado.
+Estos manejadores no otorgan acceso fuera de la conversación retenida. El servidor los resuelve y los comprueba, congela el conjunto de datos en el rastro de la llamada como su `view`, y devuelve
+un recibo pequeño en lugar de las filas. Las llamadas de visualización nunca pasan por el ejecutor. `render_chart`, `render_table`, `render_view`
+y `render_canvas` están retiradas (`RETIRED_DISPLAY_TOOLS`): un rastro almacenado que nombre alguna se sigue
+leyendo como llamada de visualización, y nada nuevo puede llamarla ni referenciarla. `suggest_next` se
+declara del mismo modo pero no es una llamada que haga el turno: `takeSuggestions` la quita de las
+llamadas de una ronda, por lo que no tiene rastro, ni llamada a herramienta almacenada, ni otra ronda del modelo, y sus preguntas se
+conservan en el turno solo cuando esa ronda lo termina. Los paneles `render_view` almacenados (ADR 0079) siguen
+siendo legibles junto a los canvases almacenados (ADR 0072); las nuevas llamadas `render_ui` congelan el marcado del modelo
+junto a las filas resueltas. Las nuevas llamadas usan por defecto componentes en línea y persisten `frame: none`,
+lo que quita el marco de tarjeta sin cambiar el sandbox. `card` explícito sigue omitiéndose en el almacenamiento,
+de modo que las vistas anteriores conservan su marco original (ADR 0087). `AgentMessage` excluye
+las visualizaciones de la agrupación en cadena y `DisplayCall` dibuja la vista borrador o congelada en la
+parte ordenada de la llamada; las visualizaciones fallidas siguen siendo filas de llamada de diagnóstico. El razonamiento usa el
+`ReasoningBlock` compartido sin marco, siguiendo la última línea hasta que el lector se desplaza hacia arriba y plegándose al completarse.
+Su ResizeObserver, propiedad del efecto, observa tanto el contenido Markdown sin límite como su viewport de desplazamiento,
+de modo que las confirmaciones diferidas de Markdown y el reflujo permanecen anclados tras alcanzar el cuerpo en vivo su tope de altura.
+Los callbacks de desplazamiento y de redimensionado comparten una comprobación de movimiento antes de corregir el final, así que una confirmación
+de diseño no puede borrar un desplazamiento hacia atrás pendiente. Un contenido que se encoge ajusta el desplazamiento previo sin
+confundir ese ajuste con una intención del lector. Las correcciones son instantáneas. Cerrar el desplegable en vivo
+desconecta el observador, y reabrirlo continúa en el final. El desplegable del Agent
+nombra el proceso de pensamiento, mientras que la fila de actividad separada es dueña de la fase en vivo y del tiempo transcurrido.
+La consola construye el documento de un canvas en `web/src/agent/canvasDocument.ts` - la política de seguridad de contenido, las variables del tema,
+las filas congeladas, luego el kit en `web/src/agent/canvasKit.ts` (`OMC.rows`, `OMC.fmt`, `OMC.chart`,
+`OMC.table`, `OMC.diagram`, `OMC.icon` y `OMC.compose`, configurado con el estilo de tokens,
+el idioma y la zona horaria del operador; `OMC.compose` solo redacta un borrador de mensaje del compositor; un gráfico se dibuja al
+ancho de su marco entre 280px y 760px y de nuevo cuando ese ancho cambia, para que su texto conserve
+su tamaño en un teléfono) antes del
+marcado del modelo - y lo muestra en un marco `srcdoc` con sandbox solo de scripts.
+Los borradores dibujan marcado parcial bajo una política de scripts nueva basada solo en nonce, que permite ejecutar únicamente el
+bootstrap del host: ni los scripts del modelo ni los manejadores de eventos en línea se ejecutan hasta que el
+componente completado reemplaza su vista previa. Las observaciones de altura se agrupan tras el redimensionado y la
+mutación, creciendo o encogiéndose entre 48px y 16384px sin conservar el viewport anterior
+como mínimo. `tools/CanvasView.tsx` puede proyectar la misma figura sobre el viewport mediante un portal, y la guarda como
+imagen enviando una solicitud de captura que el kit responde con un SVG de su propio documento; `canvasImage`
+valida esa respuesta antes de rasterizarla. `web/index.html` declara `frame-src 'self' blob:` para que ese marco no pueda navegar a otro sitio.
+Los íconos de los paneles se resuelven contra `web/src/generated/lucideIcons.json`, generado por
+`scripts/generate-lucide-icons.mjs` y cargado en el primer uso.
 
-The workspace above that loop is `web/src/pages/agent`, on assistant-ui's `ExternalStore` runtime
-over the shared shell in `web/src/components/workspace`. Text files attached in the composer are folded into the message by `web/src/pages/agent/attachments.ts` (ADR 0074), so the server stores and resumes them as part of the one string it already keeps. The composer's `/` list is built in `AgentPage.tsx` from what the page can do at that moment;
-`/ui` and `/text` hold a presentation until the next message takes it (`takeSendOptions`). The framework-free run layer is
-`web/src/agent/`: the request builder and event parser (`protocol.ts`), the chunk-safe SSE reader
-(`sse.ts`), the transport (`transport.ts`), a pure reducer that folds the events into the parts the
-server stores (`runReducer.ts`) and the exports (`export.ts`). `useAgentRun.ts` drives one run and
-publishes its frame on a 40ms cadence; `thread.ts` converts the stored conversation and the live
-frame to thread messages; `runtime.ts` is the one module that knows assistant-ui's runtime API, and
-routes every framework action - send, stop, approve, answer - back into Shell-PAMC's code. A message sent
-during a run waits in a queue behind it. Capability calls render through a toolkit of
-render-only `backend` entries (`tools/registry.tsx`) handed to the runtime provider: one disclosure per call (`tools/CapabilityCall.tsx`), joined into a collapsible timeline, each opening its arguments and the receipt
-the model received under its own row (ADR 0084); display calls render as a
-panel or a canvas inside the answer. A prepared operation is decided on a card under
-the call that raised it (`interrupts/ApprovalCard.tsx`, ADR 0043), and an `ask_question` call is
-answered in a panel that takes the composer's place (`interrupts/QuestionPanel.tsx`); deciding
-either one resumes the run (ADR 0035). A conversation exports as a self-contained HTML page, a PNG image or JSON, one answer as HTML,
-and one canvas as HTML or PNG (see "Conversation exports" below). The presentation rules - status vocabulary,
-failure copy, argument summaries, change preview - are pure functions in `state.ts`,
-`thread.ts` and `web/src/agent/`, which is what lets `scripts/test-agent-workspace.ts` assert them
-without a browser.
+El espacio de trabajo sobre ese bucle es `web/src/pages/agent`, sobre el runtime `ExternalStore` de assistant-ui
+y la carcasa compartida en `web/src/components/workspace`. Los archivos de texto adjuntos en el compositor se pliegan en el mensaje mediante `web/src/pages/agent/attachments.ts` (ADR 0074), de modo que el servidor los almacena y reanuda como parte de la única cadena que ya conserva. La lista `/` del compositor se construye en `AgentPage.tsx` a partir de lo que la página puede hacer en ese momento;
+`/ui` y `/text` retienen una presentación hasta que el siguiente mensaje la toma (`takeSendOptions`). La capa de ejecución sin framework es
+`web/src/agent/`: el constructor de solicitudes y el analizador de eventos (`protocol.ts`), el lector SSE seguro frente a fragmentos
+(`sse.ts`), el transporte (`transport.ts`), un reductor puro que pliega los eventos en las partes que el
+servidor almacena (`runReducer.ts`) y las exportaciones (`export.ts`). `useAgentRun.ts` conduce una ejecución y
+publica su marco con una cadencia de 40ms; `thread.ts` convierte la conversación almacenada y el marco en vivo
+en mensajes del hilo; `runtime.ts` es el único módulo que conoce la API de runtime de assistant-ui, y
+encamina cada acción del framework - enviar, detener, aprobar, responder - de vuelta al código de Shell-PAMC. Un mensaje enviado
+durante una ejecución espera en una cola detrás de ella. Las llamadas de capacidades se renderizan mediante un toolkit de
+entradas `backend` solo de renderizado (`tools/registry.tsx`) entregado al proveedor del runtime: un desplegable por llamada (`tools/CapabilityCall.tsx`), unido en una línea de tiempo plegable, cada uno abriendo sus argumentos y el recibo
+que recibió el modelo bajo su propia fila (ADR 0084); las llamadas de visualización se renderizan como un
+panel o un canvas dentro de la respuesta. Una operación preparada se decide en una tarjeta bajo
+la llamada que la originó (`interrupts/ApprovalCard.tsx`, ADR 0043), y una llamada `ask_question` se
+responde en un panel que ocupa el lugar del compositor (`interrupts/QuestionPanel.tsx`); decidir
+cualquiera de las dos reanuda la ejecución (ADR 0035). Una conversación se exporta como página HTML autocontenida, imagen PNG o JSON, una respuesta como HTML,
+y un canvas como HTML o PNG (véase «Exportaciones de conversación» más abajo). Las reglas de presentación - vocabulario de estados,
+texto de fallos, resúmenes de argumentos, vista previa de cambios - son funciones puras en `state.ts`,
+`thread.ts` y `web/src/agent/`, lo que permite a `scripts/test-agent-workspace.ts` verificarlas
+sin un navegador.
 
-There is no consent flag: the page states where the data goes (ADR 0027). Resetting a conversation
-keeps its key, model and effort. The selector itself is the `agent_target` preference, so a choice
-made before anything is sent survives a reload; a conversation waiting on an approval restores its
-own target instead, because only that target can resume it.
+No hay indicador de consentimiento: la página indica adónde van los datos (ADR 0027). Restablecer una conversación
+conserva su clave, modelo y esfuerzo. El propio selector es la preferencia `agent_target`, de modo que una elección
+hecha antes de enviar nada sobrevive a una recarga; una conversación que espera una aprobación restaura su
+propio destino, porque solo ese destino puede reanudarla.
 
-`internal/capability.Executor` is the authority gate. Reads execute immediately; a
-capability marked high risk returns a server-generated pending operation with a
-structured preview and target revision; approval is one allow-or-deny decision made only
-in the browser and is re-validated against the capability version, the caller's authority, and the current
-revision while the write gate is held. An unverified or interrupted write is reported
-as `uncertain` rather than retried. Secrets and OAuth authorization never enter tool
-arguments or model-visible results: the console posts them directly while approving the
-operation. `ask_question`, which `internal/agent` registers, uses the same pending-operation
-path with an `answer` input and is the only capability that belongs to the conversation rather
-than to `internal/operations`.
+`internal/capability.Executor` es la compuerta de autoridad. Las lecturas se ejecutan de inmediato; una
+capacidad marcada como de alto riesgo devuelve una operación pendiente generada por el servidor con una
+vista previa estructurada y la revisión de destino; la aprobación es una única decisión de permitir o denegar tomada solo
+en el navegador y se revalida contra la versión de la capacidad, la autoridad del llamador y la revisión
+actual mientras se mantiene la compuerta de escritura. Una escritura no verificada o interrumpida se informa
+como `uncertain` en lugar de reintentarse. Los secretos y la autorización OAuth nunca entran en los argumentos de herramientas
+ni en resultados visibles para el modelo: la consola los envía directamente al aprobar la
+operación. `ask_question`, que registra `internal/agent`, usa la misma ruta de operación pendiente
+con una entrada `answer` y es la única capacidad que pertenece a la conversación y no
+a `internal/operations`.
 
-`database_schema` and `database_query` read Shell-PAMC's own database through a second, read-only
-SQLite pool that `internal/repository` opens on first use (`mode=ro`, `query_only`, no attached
-databases). Its escaped absolute file URI keeps Windows drive letters in the path
-(`file:///C:/...`), with reserved filename characters escaped and the connection
-settings unchanged. The repository checks each statement's compiled `EXPLAIN` program against a table and
-column classification before running it, and bounds and masks what it returns (ADR 0036,
+`database_schema` y `database_query` leen la propia base de datos de Shell-PAMC a través de un segundo pool de SQLite de solo lectura
+que `internal/repository` abre en el primer uso (`mode=ro`, `query_only`, sin bases de datos
+adjuntas). Su URI de archivo absoluta escapada conserva las letras de unidad de Windows en la ruta
+(`file:///C:/...`), con los caracteres reservados de nombres de archivo escapados y los ajustes de
+conexión sin cambios. El repositorio comprueba el programa `EXPLAIN` compilado de cada sentencia contra una clasificación de tablas y
+columnas antes de ejecutarla, y acota y enmascara lo que devuelve (ADR 0036,
 `docs/agent-capabilities.md`).
 
-External agents use the same registry over MCP (ADR 0070). `mcpbridge.NewServer` declares
-one tool per capability offered to the `mcp` adapter, plus `omc_operation_status`, from a
-`Backend`, and two transports serve that one definition:
+Los agentes externos usan el mismo registro mediante MCP (ADR 0070). `mcpbridge.NewServer` declara
+una herramienta por cada capacidad ofrecida al adaptador `mcp`, más `omc_operation_status`, a partir de un
+`Backend`, y dos transportes sirven esa única definición:
 
-- `POST <base>/api/mcp` (`serveMCP` in `internal/api/agent_mcp.go`) is Streamable HTTP in
-  the console process. Its backend calls `capability.Executor` directly. The route sits
-  outside `/api/v1` and its session middleware: it accepts the management key as a
-  bearer token only, spends the login throttle on a wrong one, is stateless with plain
-  JSON responses, and is refused by the demo policy.
-- `shell-pamc mcp` is a stdio process whose backend forwards to the `/api/v1/capabilities`
-  endpoints with the same bearer credential. The subcommand is dispatched before
-  configuration, database, and CPA client initialization, so it opens no data directory.
-  Non-loopback URLs must be HTTPS, redirects are refused, responses are bounded, and only
-  Shell-PAMC's own refusal codes are repeated to the agent.
+- `POST <base>/api/mcp` (`serveMCP` en `internal/api/agent_mcp.go`) es HTTP Streamable en
+  el proceso de la consola. Su backend llama directamente a `capability.Executor`. La ruta queda
+  fuera de `/api/v1` y de su middleware de sesión: acepta la clave de gestión solo como token
+  bearer, gasta el límite de intentos de inicio de sesión ante una incorrecta, no tiene estado, usa respuestas
+  JSON simples y la política de demo la rechaza.
+- `shell-pamc mcp` es un proceso stdio cuyo backend reenvía a los endpoints de `/api/v1/capabilities`
+  con la misma credencial bearer. El subcomando se despacha antes de la inicialización de configuración, base de datos
+  y cliente de CPA, así que no abre ningún directorio de datos.
+  Las URL que no sean loopback deben usar HTTPS, se rechazan las redirecciones, las respuestas están acotadas y solo se
+  repiten al agente los códigos de rechazo propios de Shell-PAMC.
 
-Neither can approve operations, submit secrets, or complete OAuth. A prepared operation
-returns its id and a link to `<console>/authorize/<id>`. That route is
-`web/src/pages/agent/AuthorizePage.tsx`, the one console route outside `AppLayout`: a
-consent screen on the sign-in page's column (`auth-*` classes), behind the same
-`AuthGate`, that names the requester, the deployment and the capability and carries the
-approval card in its `consent` variant, posting to the same decision endpoint as the
-built-in Agent's approvals. The Agent page's Connect action opens
-`web/src/pages/agent/ExternalAgentGuide.tsx` in a drawer, showing the deployment's endpoint
-and per-client configuration built by `web/src/pages/agent/connect.ts`.
+Ninguno puede aprobar operaciones, enviar secretos ni completar OAuth. Una operación preparada
+devuelve su id y un enlace a `<console>/authorize/<id>`. Esa ruta es
+`web/src/pages/agent/AuthorizePage.tsx`, la única ruta de la consola fuera de `AppLayout`: una
+pantalla de consentimiento en la columna de la página de inicio de sesión (clases `auth-*`), tras el mismo
+`AuthGate`, que nombra al solicitante, el despliegue y la capacidad y lleva la tarjeta de
+aprobación en su variante `consent`, enviando al mismo endpoint de decisión que las aprobaciones del
+Agent integrado. La acción Connect de la página del Agent abre
+`web/src/pages/agent/ExternalAgentGuide.tsx` en un panel lateral, mostrando el endpoint del despliegue
+y la configuración por cliente construida por `web/src/pages/agent/connect.ts`.
 
-#### What the model loop spends, and where
+#### Qué gasta el bucle del modelo, y dónde
 
-Agent runs have no application-level token, round, call, display-count or duration ceiling
+Las ejecuciones del Agent no tienen tope a nivel de aplicación de tokens, rondas, llamadas, cantidad de visualizaciones ni duración
 (ADR 0083).
-Cancellation is checked between model calls and capability calls. The provider owns its actual
-context and output limits; the reference context window is a composer readout, not an Shell-PAMC
-request-sizing gate. Transport health remains bounded: the gateway waits at most 120 seconds
-for response headers and cancels an Agent stream after 120 seconds without received bytes;
-individual SSE lines remain limited to 1 MiB. Payload validation and capability security limits
-remain separate:
+La cancelación se comprueba entre llamadas al modelo y llamadas a capacidades. El proveedor es dueño de sus límites reales de
+contexto y de salida; la ventana de contexto de referencia es una lectura del compositor, no una compuerta de
+dimensionado de solicitudes de Shell-PAMC. La salud del transporte sigue acotada: el gateway espera como máximo 120 segundos
+las cabeceras de respuesta y cancela un flujo del Agent tras 120 segundos sin bytes recibidos;
+las líneas SSE individuales siguen limitadas a 1 MiB. La validación de payloads y los límites de seguridad de las capacidades
+siguen siendo independientes:
 
-| Boundary | Limit | Counts |
+| Frontera | Límite | Cuenta |
 | --- | --- | --- |
-| `agent.MAX_MESSAGE_BYTES` | 48 KiB | One operator message, attached text files included (ADR 0074) |
-| Attached images | Four per message, 5 MiB each; newest eight included in a model request | Validated image content (ADR 0075) |
-| Tool catalogue regression | 64 KiB | `TestAgentCatalogueFitsTheSchemaBudget` checks declaration compactness; it is not a runtime refusal gate |
-| `agent.MAX_PROMPT_BYTES` | 6 KiB | System-prompt regression budget, including dynamic metadata |
+| `agent.MAX_MESSAGE_BYTES` | 48 KiB | Un mensaje del operador, incluidos los archivos de texto adjuntos (ADR 0074) |
+| Imágenes adjuntas | Cuatro por mensaje, 5 MiB cada una; las ocho más recientes se incluyen en una solicitud al modelo | Contenido de imagen validado (ADR 0075) |
+| Regresión del catálogo de herramientas | 64 KiB | `TestAgentCatalogueFitsTheSchemaBudget` comprueba la compacidad de las declaraciones; no es una compuerta de rechazo en tiempo de ejecución |
+| `agent.MAX_PROMPT_BYTES` | 6 KiB | Presupuesto de regresión del prompt de sistema, incluidos los metadatos dinámicos |
 
-Three properties hold across the loop:
+Tres propiedades se cumplen a lo largo del bucle:
 
-- **The tool catalogue is declared from the first round.** Every registered capability
-  reaches the model on round one with its description and inferred schema. Discovery is not
-  a step: deferring the catalogue behind a search costs a full model round trip per action,
-  and it makes a request the agent cannot serve look like a capability it does not hold.
-- **A fingerprint is resolved once per turn.** Resolution reads CPA's client-key list; the
-  turn holds the resulting client in a per-turn map, because the conversation's target
-  cannot change inside a turn. The console also caches the fingerprint-to-key join in
-  memory for a short window (`agentState.catalog`), which is what keeps a `providers_list`
-  call from re-reading a list CPA is concurrently mutating; the cache is dropped on the same
-  lazy maintenance pass that purges expired documents.
-- **Completed history is summarized, not evicted.** Every settled turn contributes prior model
-  context, in chronological order, as conclusions and bounded metadata. That includes a turn that
-  failed, was stopped or was found stale: the writes it ran before it ended are facts the next
-  question has to see. The stored transcript and active-turn exchanges remain authoritative.
-- **A failed inference attempt is retried at most three times.** `agent.UPSTREAM_RETRIES`
-  bounds the loop; each retry first rolls the turn's streamed text and parts back to the
-  checkpoint it started from, then emits `omc.upstream_retry` (an AG-UI `CUSTOM` event carrying
-  the attempt and the authoritative parts) so the console draws no discarded draft. Deterministic
-  refusals - context overflow, oversized or invalid requests, images, a missing or unauthorized
-  model, unsupported parameters, oversized tool calls, an answer the provider ended before `stop`,
-  the unclassified 4xx statuses, plus local conflicts and refusals - are reported without a retry,
-  because a repeat would spend paid generations to reach the same answer; an unclassified 5xx is an
-  outage rather than a verdict on the request, so it keeps its retries. A stream error frame is read
-  the same way after the status line has already been sent, on the frame's own words: one that names
-  a transient fault (a server error, an overload, a rate limit) keeps its retries, while one that
-  names a refusal or names nothing this gateway knows is reported as `upstream_stream_rejected` on
-  the first attempt. The failure carries the closed-vocabulary code, the upstream status when there
-  was one, the parameter it named, and whether the attempt bound was exhausted.
+- **El catálogo de herramientas se declara desde la primera ronda.** Cada capacidad registrada
+  llega al modelo en la ronda uno con su descripción y esquema inferido. El descubrimiento no es
+  un paso: diferir el catálogo tras una búsqueda cuesta un viaje de ida y vuelta completo al modelo por acción,
+  y hace que una solicitud que el agente no puede atender parezca una capacidad que no posee.
+- **Una huella se resuelve una vez por turno.** La resolución lee la lista de claves de cliente de CPA; el
+  turno conserva el cliente resultante en un mapa por turno, porque el destino de la conversación
+  no puede cambiar dentro de un turno. La consola también guarda en caché en memoria, durante una ventana corta, la unión de
+  huella y clave (`agentState.catalog`), lo que evita que una llamada a `providers_list`
+  vuelva a leer una lista que CPA está mutando de forma concurrente; la caché se descarta en la misma
+  pasada de mantenimiento perezoso que purga los documentos caducados.
+- **El historial completado se resume, no se expulsa.** Cada turno asentado aporta contexto previo al modelo,
+  en orden cronológico, como conclusiones y metadatos acotados. Eso incluye un turno que
+  falló, se detuvo o se halló obsoleto: las escrituras que ejecutó antes de terminar son hechos que la siguiente
+  pregunta tiene que ver. La transcripción almacenada y los intercambios del turno activo siguen siendo la referencia autorizada.
+- **Un intento de inferencia fallido se reintenta como máximo tres veces.** `agent.UPSTREAM_RETRIES`
+  acota el bucle; cada reintento primero revierte el texto transmitido y las partes del turno al
+  punto de control del que partió, y luego emite `omc.upstream_retry` (un evento `CUSTOM` de AG-UI que lleva
+  el intento y las partes autorizadas) para que la consola no dibuje ningún borrador descartado. Los rechazos
+  deterministas - desbordamiento de contexto, solicitudes sobredimensionadas o inválidas, imágenes, un modelo ausente o no autorizado,
+  parámetros no admitidos, llamadas a herramientas sobredimensionadas, una respuesta que el proveedor terminó antes de `stop`,
+  los estados 4xx sin clasificar, además de los conflictos y rechazos locales - se informan sin reintento,
+  porque repetir gastaría generaciones de pago para llegar a la misma respuesta; un 5xx sin clasificar es una
+  caída y no un veredicto sobre la solicitud, así que conserva sus reintentos. Un marco de error de flujo se lee
+  de la misma manera una vez enviada ya la línea de estado, según las palabras del propio marco: uno que nombra
+  una falla transitoria (un error de servidor, una sobrecarga, un límite de tasa) conserva sus reintentos, mientras que uno que
+  nombra un rechazo o no nombra nada que este gateway conozca se informa como `upstream_stream_rejected` en
+  el primer intento. El fallo lleva el código de vocabulario cerrado, el estado upstream cuando lo
+  hubo, el parámetro que nombró y si se agotó el límite de intentos.
 
-The latest Agent session, images and pending or terminal operations live in `agent_documents`
-(migrations 026 and 036), encrypted with `SHELLPAMC_MASTER_KEY`. Sessions are exempt from the
-repository's 8 MiB document bound and remain until reset or explicit turn replacement; terminal
-operations are retained for 7 days. Image admission owns only its newly saved rows: validation,
-image-storage or initial session-save failure attempts to delete those rows with a detached,
-five-second cleanup context. Reused images and images referenced by an accepted session survive
-later failures. A committed reset deletes the images of the turns it dropped on the same detached
-context, so a client that disconnects after the save cannot cancel a deletion the new transcript
-already owes. This is best-effort cleanup, not a transaction across image and session writes.
-Purging expired documents is lazy during Agent requests, with no additional background loop.
-Long conversations therefore grow database, memory and request costs; see `docs/operations.md`.
+La última sesión del Agent, las imágenes y las operaciones pendientes o terminales viven en `agent_documents`
+(migraciones 026 y 036), cifradas con `SHELLPAMC_MASTER_KEY`. Las sesiones están exentas del
+límite de documento de 8 MiB del repositorio y permanecen hasta el restablecimiento o el reemplazo explícito de un turno; las operaciones
+terminales se conservan 7 días. La admisión de imágenes es dueña solo de las filas que acaba de guardar: los fallos de validación,
+de almacenamiento de imágenes o del guardado inicial de la sesión intentan eliminar esas filas con un contexto de limpieza desacoplado de
+cinco segundos. Las imágenes reutilizadas y las referenciadas por una sesión aceptada sobreviven a
+fallos posteriores. Un restablecimiento confirmado elimina las imágenes de los turnos que descartó en el mismo contexto
+desacoplado, de modo que un cliente que se desconecta tras el guardado no pueda cancelar una eliminación que la nueva transcripción
+ya debe. Es una limpieza de mejor esfuerzo, no una transacción entre las escrituras de imágenes y de sesión.
+La purga de documentos caducados es perezosa durante las solicitudes del Agent, sin un bucle adicional en segundo plano.
+Por tanto, las conversaciones largas incrementan los costos de base de datos, memoria y solicitudes; véase `docs/operations.md`.
 
-### Known coverage gaps
+### Brechas de cobertura conocidas
 
-- The browser suite had a history of timing-sensitive flakes in the usage-events
-  filter section, unrelated to the provider write path: `the list is back to the
-  unfiltered page` and `the queued search still lands` each failed once in repeated
-  runs before the request-view policies were lifted out of the page. They were fixed
-  rather than tolerated - see §12.3 - and the diagnosis was confirmed by reproducing
-  them on the unmodified baseline commit, two runs in three, under a 2-CPU
-  constraint. The suite now passes eight consecutive trials in the configuration the
-  baseline failed, including with the probes running concurrently.
-- The lost-update regression is the Go test, not the browser check. The interleaving
-  that loses a write depends on two requests overlapping at CPA, and a browser run
-  cannot force that: removing the gate still produced a green browser run, because
-  the first write happened to land before the second read. The browser check
-  therefore asserts only the operator-visible outcome, and
-  `TestConcurrentProviderTogglesDoNotLoseAWrite` (which controls the ordering at
-  the fake gateway) is the check that fails when the gate is removed.
-- The stale-list-read guard (a read issued before a confirmation is discarded
-  rather than published over it) is reasoned and implemented but has no automated
-  check: the console's list read and a toggle's internal read are the same CPA
-  endpoint, so a fixture cannot delay one without delaying the other, and the
-  ordering cannot be produced deterministically yet. The browser suite therefore
-  covers the concurrent-toggle and rapid-burst paths, not this one.
-- The `503 write_busy` refusal is covered where it is decided (the gate test in
-  `internal/api`, and the retry-classification test for the controller), but not
-  end to end: producing it in the browser needs the gate held open from outside
-  the page, which the fixture cannot express. Its user-visible message is checked
-  by `pnpm check-i18n` and type-checking only.
-- `isRetryableWriteFailure` in `web/src/api/client.ts` is the classifier the
-  toggle's retries depend on, and it is not directly unit-tested: the module
-  imports the application's whole type graph (one of its type-only imports is
-  unresolvable under the test runner's loader), so the harness cannot import it.
-  Its behaviour is exercised only through the controller tests' own predicate,
-  which mirrors it. Moving it to a module with no application imports would make
-  it testable.
+- La suite del navegador tenía un historial de fallos intermitentes sensibles al tiempo en la sección de filtros de
+  eventos de uso, ajenos a la ruta de escritura de proveedores: `the list is back to the
+  unfiltered page` y `the queued search still lands` fallaron cada uno una vez en ejecuciones
+  repetidas antes de extraer de la página las políticas de la vista de solicitudes. Se corrigieron
+  en lugar de tolerarse - véase el §12.3 - y el diagnóstico se confirmó reproduciéndolos
+  en el commit base sin modificar, dos ejecuciones de cada tres, bajo una restricción
+  de 2 CPU. La suite ahora pasa ocho pruebas consecutivas en la configuración en la que
+  falló la base, incluso con las sondas ejecutándose de forma concurrente.
+- La regresión de actualización perdida es la prueba de Go, no la comprobación del navegador. El entrelazado
+  que pierde una escritura depende de que dos solicitudes se solapen en CPA, y una ejecución del navegador
+  no puede forzarlo: quitar la compuerta aún producía una ejecución verde del navegador, porque
+  la primera escritura aterrizó antes de la segunda lectura. Por tanto, la comprobación del navegador
+  verifica solo el resultado visible para el operador, y
+  `TestConcurrentProviderTogglesDoNotLoseAWrite` (que controla el orden en
+  el gateway falso) es la comprobación que falla cuando se quita la compuerta.
+- La protección contra lecturas de lista obsoletas (una lectura emitida antes de una confirmación se descarta
+  en lugar de publicarse sobre ella) está razonada e implementada pero no tiene ninguna comprobación
+  automatizada: la lectura de la lista de la consola y la lectura interna de un interruptor son el mismo endpoint
+  de CPA, así que un fixture no puede retrasar una sin retrasar la otra, y el
+  orden aún no puede producirse de forma determinista. Por tanto, la suite del navegador
+  cubre las rutas de interruptores concurrentes y de ráfaga rápida, no esta.
+- El rechazo `503 write_busy` se cubre donde se decide (la prueba de la compuerta en
+  `internal/api` y la prueba de clasificación de reintentos del controlador), pero no
+  de extremo a extremo: producirlo en el navegador exige mantener la compuerta abierta desde fuera
+  de la página, algo que el fixture no puede expresar. Su mensaje visible para el usuario lo comprueban
+  solo `pnpm check-i18n` y la comprobación de tipos.
+- `isRetryableWriteFailure` en `web/src/api/client.ts` es el clasificador del que dependen los
+  reintentos del interruptor, y no tiene pruebas unitarias directas: el módulo
+  importa todo el grafo de tipos de la aplicación (una de sus importaciones solo de tipos es
+  irresoluble bajo el cargador del ejecutor de pruebas), así que el arnés no puede importarlo.
+  Su comportamiento se ejercita solo mediante el propio predicado de las pruebas del controlador,
+  que lo replica. Moverlo a un módulo sin importaciones de la aplicación lo haría
+  comprobable.
 
-### Effect-scoped resources must survive a StrictMode remount
+### Los recursos acotados a un efecto deben sobrevivir a un remontaje de StrictMode
 
-React runs mount, unmount, and mount again for every component under `React.StrictMode`
-in a **development** build. `web/src/main.tsx` enables StrictMode, so any resource a
-hook owns has to be created where the effect that owns it is created, and its
-cleanup has to release the resource rather than leave a disposed one installed.
+React ejecuta montar, desmontar y montar de nuevo para cada componente bajo `React.StrictMode`
+en una compilación de **desarrollo**. `web/src/main.tsx` habilita StrictMode, así que todo recurso que un
+hook posee tiene que crearse donde se crea el efecto que lo posee, y su
+limpieza tiene que liberar el recurso en lugar de dejar instalado uno ya descartado.
 
-A resource created during render and disposed in an effect cleanup is disposed by
-the simulated unmount and then reinstated by the remount, so consumers hold a dead
-object. That failure is silent and one-sided: operations on it become no-ops, so a
-control still animates while nothing is sent, and every production-bundle check
-passes because StrictMode's checks do not run in a production build. It reached a
-user as "the provider switch no longer toggles" on the development server while the
-deterministic browser suite was green.
+Un recurso creado durante el renderizado y descartado en la limpieza de un efecto es descartado por
+el desmontaje simulado y luego reinstalado por el remontaje, de modo que los consumidores conservan un objeto
+muerto. Ese fallo es silencioso y unilateral: las operaciones sobre él se vuelven no-ops, así que un
+control sigue animándose mientras no se envía nada, y todas las comprobaciones del bundle de producción
+pasan porque las comprobaciones de StrictMode no se ejecutan en una compilación de producción. Llegó a
+un usuario como «el interruptor del proveedor ya no cambia» en el servidor de desarrollo mientras la suite
+determinista del navegador estaba en verde.
 
-`web/src/hooks/disposableSlot.ts` implements the rule (setup builds and installs,
-teardown disposes and releases, a replacing setup disposes what it replaces) and
-`scripts/test-provider-toggle-queue.ts` exercises the mount/unmount/remount sequence
-directly. When adding a hook that owns a disposable resource, use the slot rather
-than a ref that is disposed in place.
+`web/src/hooks/disposableSlot.ts` implementa la regla (la preparación construye e instala,
+el desmontaje descarta y libera, una preparación que reemplaza descarta lo que reemplaza) y
+`scripts/test-provider-toggle-queue.ts` ejercita directamente la secuencia montar/desmontar/remontar.
+Al añadir un hook que posea un recurso descartable, use el slot en lugar de
+una ref que se descarta en el sitio.
 
-### Provider configuration write gate
+### Compuerta de escritura de la configuración de proveedores
 
-`internal/api` serialises every whole-list provider configuration write through
-one process-wide gate (`management_provider_writes.go`): the status toggle, the
-provider create/update/delete paths, and the configuration-source writer, which
-replaces the same document.
+`internal/api` serializa toda escritura de configuración de proveedores de lista completa a través de
+una compuerta única de todo el proceso (`management_provider_writes.go`): el interruptor de estado, las
+rutas de crear/actualizar/eliminar proveedores y el escritor de la fuente de configuración, que
+reemplaza el mismo documento.
 
-This is a correctness invariant rather than a performance choice. CPA exposes no
-per-entry write for a provider family, so a change means reading that family's
-list, editing it, and writing the whole list back. Two such writes that overlap
-read the same baseline and the later one discards the earlier, which loses a
-change that both requests reported as successful. The per-provider last-intent
-queue in the browser cannot close that window: it deliberately runs writes for
-different providers concurrently, and those are exactly the writes that collide
-over one family's list. The revision check on the configuration-source path
-detects a change that already landed but not one landing between its read and its
-write, which is why that path takes the same gate.
+Esto es un invariante de corrección y no una decisión de rendimiento. CPA no expone ninguna
+escritura por entrada para una familia de proveedores, así que un cambio significa leer la
+lista de esa familia, editarla y volver a escribir la lista completa. Dos escrituras de ese tipo que se solapan
+leen la misma base y la posterior descarta la anterior, lo que pierde un
+cambio que ambas solicitudes informaron como exitoso. La cola de última intención por proveedor en el navegador
+no puede cerrar esa ventana: ejecuta deliberadamente en paralelo las escrituras de
+proveedores distintos, y esas son justamente las escrituras que colisionan
+sobre la lista de una familia. La comprobación de revisión en la ruta de la fuente de configuración
+detecta un cambio que ya aterrizó pero no uno que aterrice entre su lectura y su
+escritura, razón por la cual esa ruta toma la misma compuerta.
 
-Properties to preserve when changing this code:
+Propiedades que deben preservarse al cambiar este código:
 
-- The read happens inside the gate, together with the write. Acquiring only
-  around the write keeps a stale snapshot and reproduces the lost update.
-- The permit is a single slot, so the helper that performs the read-modify-write
-  must not be called while already holding it; re-entry deadlocks against the
-  caller's own acquisition and surfaces as a busy refusal.
-- Acquisition is bounded and cancellable. A caller that cannot enter is answered
-  `503` with `code: write_busy` and no gateway write has started, which is what
-  makes the refusal safe for the client to repeat.
-- The permit is released on every exit path, including a panic in the callbacks.
-- The gate is process-local. It orders this console's own writes; it cannot order
-  writes made to CPA by another client, and it does not make click order
-  authoritative across clients.
-- A provider is addressed by its position in the family, so a write carries the
-  identity the operator saw (`expected_auth_index`, or `expected_name` for the
-  family without an auth index) and the handler refuses the write when the entry
-  at that position is no longer it. A retry repeats the position, and positions
-  shift when a provider is deleted; without this check a retry would toggle a
-  different provider and report success. The precondition is optional, so a
-  caller with no identity to send still works, and a mismatch answers `409`
-  rather than writing.
-- The operator's name, website and icon for a provider are stored under the
-  same positional id (`provider_names`, `provider_websites`, `provider_icons`).
-  A delete therefore re-keys every later entry of that family
-  (`shiftPositionalProviderIDs`), because otherwise the name given to one
-  credential would relabel whichever credential took the freed index, and the
-  deleted row's own brand mark would reappear on it. The icon overlay is written
-  by the console through the preferences API rather than by a provider save, so
-  the server both re-keys the stored document and the console replays the same
-  shift into its local cache - a cache that kept the deleted key would write it
-  back on the next icon change. The name and website overlays of an update are
-  written by the gated write itself, after the gateway accepted the update and
-  before the write permit is released. The row, the request list's provider label
-  and the name resolver read these maps, so an entry recorded ahead of a refused
-  write would leave the console naming a credential CPA never accepted; recording
-  it after the permit would let two accepted updates invert their overlay order.
-  If the local overlay write fails after CPA accepted the list, the gate answers
-  `500` with `code: provider_commit_partial` instead of reporting success. The
-  overlay write takes a short context detached from the client request, because a
-  disconnected client must not abandon the local half of an accepted write. The
-  refusal is deliberately not a retry instruction: a create may already have added
-  its row, so the client must reload before deciding what to do next.
-  A partial commit still notifies the pricing manager before the refusal is
-  returned, because CPA's model catalogue may already have changed even though the
-  console metadata transaction did not.
-  Icon values are authored by the console through the preferences API; a provider
-  save never sets them. A delete is the exception to that authorship split: it
-  re-keys the stored icon together with the name and website maps in the same
-  gated metadata transaction.
+- La lectura ocurre dentro de la compuerta, junto con la escritura. Adquirirla solo
+  alrededor de la escritura mantiene una instantánea obsoleta y reproduce la actualización perdida.
+- El permiso es una única ranura, por lo que el ayudante que realiza el leer-modificar-escribir
+  no debe llamarse mientras ya se mantiene; el reingreso produce un interbloqueo contra la
+  propia adquisición del llamador y se manifiesta como un rechazo por ocupado.
+- La adquisición está acotada y es cancelable. A un llamador que no puede entrar se le responde
+  `503` con `code: write_busy` y sin que haya empezado ninguna escritura al gateway, lo que
+  hace seguro que el cliente repita el rechazo.
+- El permiso se libera en toda ruta de salida, incluido un pánico en los callbacks.
+- La compuerta es local al proceso. Ordena las escrituras propias de esta consola; no puede ordenar
+  las escrituras hechas a CPA por otro cliente, y no hace que el orden de los clics sea
+  autoritativo entre clientes.
+- Un proveedor se direcciona por su posición en la familia, de modo que una escritura lleva la
+  identidad que vio el operador (`expected_auth_index`, o `expected_name` para la
+  familia sin índice de autenticación) y el handler rechaza la escritura cuando la entrada
+  en esa posición ya no es esa. Un reintento repite la posición, y las posiciones
+  se desplazan cuando se elimina un proveedor; sin esta comprobación un reintento alternaría
+  un proveedor distinto e informaría éxito. La precondición es opcional, así que un
+  llamador sin identidad que enviar sigue funcionando, y una discrepancia responde `409`
+  en lugar de escribir.
+- El nombre, el sitio web y el ícono que el operador da a un proveedor se almacenan bajo el
+  mismo id posicional (`provider_names`, `provider_websites`, `provider_icons`).
+  Por tanto, una eliminación reasigna la clave de cada entrada posterior de esa familia
+  (`shiftPositionalProviderIDs`), porque de lo contrario el nombre dado a una
+  credencial reetiquetaría a la credencial que tomara el índice liberado, y la marca de la
+  fila eliminada reaparecería en ella. La superposición de íconos la escribe
+  la consola mediante la API de preferencias y no un guardado de proveedor, así que
+  el servidor reasigna las claves del documento almacenado y la consola reproduce el mismo
+  desplazamiento en su caché local - una caché que conservara la clave eliminada la
+  volvería a escribir en el siguiente cambio de ícono. Las superposiciones de nombre y sitio web de una actualización se
+  escriben en la propia escritura con compuerta, después de que el gateway aceptó la actualización y
+  antes de liberar el permiso de escritura. La fila, la etiqueta de proveedor de la lista de solicitudes
+  y el resolvedor de nombres leen estos mapas, así que una entrada registrada antes de una
+  escritura rechazada dejaría a la consola nombrando una credencial que CPA nunca aceptó; registrarla
+  después del permiso permitiría que dos actualizaciones aceptadas invirtieran su orden de superposición.
+  Si la escritura local de la superposición falla después de que CPA aceptó la lista, la compuerta responde
+  `500` con `code: provider_commit_partial` en lugar de informar éxito. La
+  escritura de la superposición toma un contexto corto desacoplado de la solicitud del cliente, porque un
+  cliente desconectado no debe abandonar la mitad local de una escritura aceptada. El
+  rechazo deliberadamente no es una instrucción de reintento: una creación puede haber agregado ya
+  su fila, así que el cliente debe recargar antes de decidir qué hacer a continuación.
+  Una confirmación parcial notifica al gestor de precios antes de devolver el rechazo,
+  porque el catálogo de modelos de CPA puede haber cambiado ya aunque la transacción de metadatos
+  de la consola no lo hiciera.
+  Los valores de ícono los redacta la consola mediante la API de preferencias; un guardado de proveedor
+  nunca los establece. Una eliminación es la excepción a esa división de autoría: reasigna la clave del
+  ícono almacenado junto con los mapas de nombre y sitio web en la misma transacción
+  de metadatos con compuerta.
 
-### The CPA v8 baseline
+### La base de CPA v8
 
-Shell-PAMC requires CPA v8.0.0 or later (ADR 0034, superseding ADR 0028; the mapping and
-measurements are in `docs/cpa-v8-compat.md`). The management client addresses
-`/v8/management` for every operation and never follows a redirect: the management key
-rides on every request, so a redirect is returned to the caller as the response it is
-rather than replayed to wherever the gateway points. Whether a gateway serves it is observed, never
-inferred from a version string: `Client.SupportsManagementV8` reads
-`/v8/management/config/config-version` and requires the value `8`; when that route is
-missing, `/v0/management/debug` tells an older gateway (`unsupported`) from one whose
-Management API is disabled because it has no management secret (`disabled`). The answer
-is cached per base URL (`API_SUPPORT_TTL` for v8, the shorter `API_UNSUPPORTED_TTL`
-otherwise) and dropped when a v8 route answers "missing"; a probe with no answer stops
-the gate re-probing for `API_UNDECIDED_TTL`. Every request passes that gate
-(`requireManagementV8` in `internal/cpa/management/v8_gate.go`): against a gateway that
-answered "not v8" it returns `ErrManagementV8Required` without sending anything, which
-the API layer reports as `cpa_v8_required`, and against a `disabled` one
-`ErrManagementDisabled` (`cpa_management_disabled`). `/api/healthz` carries the gate's
-answer as `cpa_management_api`, and the console shell replaces every page with upgrade
-guidance while it reads `unsupported` (`CpaUpgradeRequired`), or with the
-management-secret setting while it reads `disabled` (`CpaManagementDisabled`).
+Shell-PAMC requiere CPA v8.0.0 o posterior (ADR 0034, que reemplaza al ADR 0028; la correspondencia y
+las mediciones están en `docs/cpa-v8-compat.md`). El cliente de gestión direcciona
+`/v8/management` para toda operación y nunca sigue una redirección: la clave de gestión
+viaja en cada solicitud, así que una redirección se devuelve al llamador como la respuesta que es
+en lugar de reproducirse hacia donde apunte el gateway. Que un gateway lo sirva se observa, nunca se
+infiere de una cadena de versión: `Client.SupportsManagementV8` lee
+`/v8/management/config/config-version` y exige el valor `8`; cuando esa ruta
+falta, `/v0/management/debug` distingue a un gateway más antiguo (`unsupported`) de uno cuya
+API de gestión está deshabilitada por no tener secreto de gestión (`disabled`). La respuesta
+se guarda en caché por URL base (`API_SUPPORT_TTL` para v8, el más corto `API_UNSUPPORTED_TTL`
+en caso contrario) y se descarta cuando una ruta v8 responde «no existe»; una sonda sin respuesta detiene
+el reintento de sondeo de la compuerta durante `API_UNDECIDED_TTL`. Toda solicitud pasa por esa compuerta
+(`requireManagementV8` en `internal/cpa/management/v8_gate.go`): frente a un gateway que
+respondió «no es v8» devuelve `ErrManagementV8Required` sin enviar nada, error que
+la capa de la API informa como `cpa_v8_required`, y frente a uno `disabled`
+`ErrManagementDisabled` (`cpa_management_disabled`). `/api/healthz` lleva la respuesta de la compuerta
+como `cpa_management_api`, y la carcasa de la consola reemplaza cada página con guía de actualización
+mientras lee `unsupported` (`CpaUpgradeRequired`), o con el ajuste del
+secreto de gestión mientras lee `disabled` (`CpaManagementDisabled`).
 
-Outside the trusted Plugin Host exception (ADR 0067), `/v0/management` is addressed
-through `internal/cpa/management/client_v0.go` only for reads: the per-family credential lists, which alone carry each upstream key's
-`auth-index`, and the configuration file as stored (`StoredConfigYAML`), which only v0
-returns. Every ordinary facade configuration write goes through the v8 configuration API
-(ADR 0037, ADR 0038). Trusted plugin pages preserve native v0/v8 write contracts with
-pre-write backups and serialization (ADR 0067).
+Fuera de la excepción del Plugin Host de confianza (ADR 0067), `/v0/management` se direcciona
+mediante `internal/cpa/management/client_v0.go` solo para lecturas: las listas de credenciales por familia, que son las únicas que llevan el
+`auth-index` de cada clave upstream, y el archivo de configuración tal como está almacenado (`StoredConfigYAML`), que solo v0
+devuelve. Toda escritura ordinaria de configuración de la fachada pasa por la API de configuración v8
+(ADR 0037, ADR 0038). Las páginas de plugins de confianza preservan los contratos de escritura nativos v0/v8 con
+respaldos previos a la escritura y serialización (ADR 0067).
 
-### Configuration editing on the v8 configuration API
+### Edición de la configuración en la API de configuración v8
 
-The configuration editors read and write the v8 layout only (ADR 0037).
-`GET /management/config` returns CPA's v8 rendering (`GET /v8/management/config.yaml`)
-with secrets masked (`configyaml.SanitizeSafeYAML`), its revision (the SHA-256 of that
-rendering) and whether the stored file is still a pre-v8 one (`stored_layout`). The
-visual editor and the Keys page diff their draft against the document they loaded
-(`web/src/components/config/configPatch.ts`) and send `PATCH /management/config` with
-the changed paths; the source view sends the whole rendering to
-`PUT /management/config/source`. Both saves take the provider write gate and the
-configuration mutex, refuse a moved revision (`409 config_conflict`), restore masked
-secrets from the stored document, and answer with CPA's new rendering, which becomes the
-editor's baseline. A failed success-audit write is logged but the save still returns
-`200` with that baseline, because the configuration write has already landed; if the
-readback fails, the response omits the baseline so the editor reloads.
-The frontend schema resolves omitted fields to CPA runtime defaults, not example
-configuration values: omitted request retries and maximum cooldown wait both mean
-`0`. Reverting a visual edit to that semantic baseline removes the added path,
-restoring the original YAML rather than materializing a default.
-The two relocated Codex behavior controls declare canonical `client.codex` and
-`upstream.codex` paths with a historical `oauth.providers.codex` fallback in the
-frontend schema. The field reader and writer choose the canonical path by its
-presence, never its truthiness; an omitted field uses the historical alias so
-early CPA v8 gateways remain writable. A field relocated between its supported
-paths in the source draft is also used at that location by visual edits, and
-reverting its value preserves the independent relocation. Visual draft rebasing moves a pending
-field edit to the path CPA's newer baseline contains, without changing unrelated
-settings. The measured paths and compatibility rule are in `docs/cpa-v8-compat.md`.
-`Client.ApplyConfigChanges` sends a change set as one
-`PATCH /v8/management/config` merge for scalars and lists, one `PUT /config/<path>` per
-map value and one `DELETE /config/<path>` per removal. CPA refuses a legacy name, an
-unknown section or a mistyped value without writing that request; when no earlier
-request in the change set landed, the facade reports `422 config_rejected` with CPA's
-reason in `reason`. Earlier valid requests are not rolled back.
+Los editores de configuración leen y escriben solo el diseño v8 (ADR 0037).
+`GET /management/config` devuelve el renderizado v8 de CPA (`GET /v8/management/config.yaml`)
+con los secretos enmascarados (`configyaml.SanitizeSafeYAML`), su revisión (el SHA-256 de ese
+renderizado) y si el archivo almacenado sigue siendo uno anterior a v8 (`stored_layout`). El
+editor visual y la página de Claves comparan su borrador con el documento que cargaron
+(`web/src/components/config/configPatch.ts`) y envían `PATCH /management/config` con
+las rutas modificadas; la vista de código fuente envía el renderizado completo a
+`PUT /management/config/source`. Ambos guardados toman la compuerta de escritura de proveedores y el
+mutex de configuración, rechazan una revisión que se movió (`409 config_conflict`), restauran los secretos
+enmascarados desde el documento almacenado y responden con el nuevo renderizado de CPA, que se convierte en la
+base del editor. Una escritura de auditoría de éxito fallida se registra pero el guardado igualmente devuelve
+`200` con esa base, porque la escritura de configuración ya aterrizó; si la
+relectura falla, la respuesta omite la base para que el editor recargue.
+El esquema del frontend resuelve los campos omitidos a los valores por defecto del runtime de CPA, no a los valores
+de la configuración de ejemplo: los reintentos de solicitud omitidos y la espera máxima de enfriamiento significan ambos
+`0`. Revertir una edición visual a esa base semántica quita la ruta añadida,
+restaurando el YAML original en lugar de materializar un valor por defecto.
+Los dos controles de comportamiento de Codex reubicados declaran las rutas canónicas `client.codex` y
+`upstream.codex` con una alternativa histórica `oauth.providers.codex` en el
+esquema del frontend. El lector y el escritor del campo eligen la ruta canónica por su
+presencia, nunca por su veracidad; un campo omitido usa el alias histórico para que los
+primeros gateways CPA v8 sigan siendo escribibles. Un campo reubicado entre sus
+rutas admitidas en el borrador de código fuente también se usa en esa ubicación en las ediciones visuales,
+y revertir su valor preserva la reubicación independiente. El rebase del borrador visual mueve una edición
+de campo pendiente a la ruta que contiene la base más nueva de CPA, sin cambiar ajustes no relacionados.
+Las rutas medidas y la regla de compatibilidad están en `docs/cpa-v8-compat.md`.
+`Client.ApplyConfigChanges` envía un conjunto de cambios como un
+`PATCH /v8/management/config` de fusión para escalares y listas, un `PUT /config/<path>` por
+valor de mapa y un `DELETE /config/<path>` por eliminación. CPA rechaza un nombre heredado, una
+sección desconocida o un valor de tipo erróneo sin escribir esa solicitud; cuando ninguna solicitud
+anterior del conjunto de cambios aterrizó, la fachada informa `422 config_rejected` con el motivo de CPA en
+`reason`. Las solicitudes válidas anteriores no se revierten.
 
-Before every configuration write the client reads the stored file and hands it, whatever
-its layout (`configyaml.IsV8Document`), to the configured `ConfigBackup`
-(`internal/cpa/management/config_backup.go`), so every operation can be undone (ADR 0051).
-The API layer stores it encrypted in `cpa_config_backups` (`repository.ConfigBackupStore`)
-with its layout and the kind of write it preceded (`management.WithBackupReason`; the
-client method names it, and an outer operation such as a restore keeps its own name). A
-copy identical to the gateway's newest one is not stored twice, so refused retries keep no
-extra copies. v8 copies are kept to the operator's retention
-(`cpa_config_backup_settings`, default `CONFIG_BACKUP_RETENTION_DEFAULT`, between
-`CONFIG_BACKUP_RETENTION_MIN` and `CONFIG_BACKUP_RETENTION_MAX`); pre-v8 copies are kept
-apart (`CONFIG_LEGACY_BACKUP_RETENTION`), so everyday writes never push out the copy taken
-before a conversion. A write whose copy cannot be kept is refused before anything is sent
-(`503 config_backup_failed`); only a v8 file with no store configured is written uncopied.
-The file is read before every write rather than remembered, which also captures an edit
-made outside Shell-PAMC since the last one. The v8 writes after which CPA itself saves the
-file (`InstallPlugin`, `DeletePlugin`, `PatchAuthFileStatus`) take the same copy first. A
-change set CPA stops partway through is `ErrConfigPartiallyApplied`
-(`502 config_partially_applied`), and CPA's reason for a refused save has the stored
-document's hidden values removed (`configyaml.ScrubStoredSecrets`).
+Antes de cada escritura de configuración el cliente lee el archivo almacenado y lo entrega, sea cual sea
+su diseño (`configyaml.IsV8Document`), al `ConfigBackup` configurado
+(`internal/cpa/management/config_backup.go`), de modo que toda operación pueda deshacerse (ADR 0051).
+La capa de la API lo almacena cifrado en `cpa_config_backups` (`repository.ConfigBackupStore`)
+con su diseño y el tipo de escritura que precedió (`management.WithBackupReason`; el
+método del cliente lo nombra, y una operación externa como una restauración conserva su propio nombre). Una
+copia idéntica a la más reciente del gateway no se almacena dos veces, así que los reintentos rechazados no dejan
+copias adicionales. Las copias v8 se conservan según la retención del operador
+(`cpa_config_backup_settings`, por defecto `CONFIG_BACKUP_RETENTION_DEFAULT`, entre
+`CONFIG_BACKUP_RETENTION_MIN` y `CONFIG_BACKUP_RETENTION_MAX`); las copias anteriores a v8 se conservan
+aparte (`CONFIG_LEGACY_BACKUP_RETENTION`), de modo que las escrituras cotidianas nunca desplacen la copia tomada
+antes de una conversión. Una escritura cuya copia no puede conservarse se rechaza antes de enviar nada
+(`503 config_backup_failed`); solo un archivo v8 sin almacén configurado se escribe sin copia.
+El archivo se lee antes de cada escritura en lugar de recordarse, lo que también captura una edición
+hecha fuera de Shell-PAMC desde la última. Las escrituras v8 tras las cuales el propio CPA guarda el
+archivo (`InstallPlugin`, `DeletePlugin`, `PatchAuthFileStatus`) toman primero la misma copia. Un
+conjunto de cambios que CPA detiene a medias es `ErrConfigPartiallyApplied`
+(`502 config_partially_applied`), y el motivo de CPA para un guardado rechazado tiene los valores
+ocultos del documento almacenado eliminados (`configyaml.ScrubStoredSecrets`).
 
-The backup routes live in `internal/api/management_config_backups.go`:
-`GET /management/config/backups` lists the copies (metadata only) with the retention
-settings; `POST /management/config/backups` keeps the stored file now
-(`config.create_backup`, answering `created: false` when it matches the newest copy);
-`PUT /management/config/backups/settings` sets the retention and prunes at once
-(`config.backup_settings`); `GET /management/config/backups/{id}` returns one document,
-audited fail-closed as `config.reveal_backup`; `DELETE /management/config/backups/{id}`
-removes one (`config.delete_backup`, fail-closed); and
-`POST /management/config/backups/{id}/restore` decrypts a v8 copy and writes it through
-`UpdateConfigYAML` under the provider write gate and `configMu`, without a revision check
-(`config.restore_backup`, fail-closed). The restore's own write keeps the replaced file
-first, so a restore is itself undoable; a pre-v8 copy answers `409 config_backup_legacy`
-because the v8 API refuses its field names. The configuration page's backup dialog
-(`web/src/components/config/ConfigBackupsButton.tsx`) withholds restore while the editor
-is dirty and reloads the editor's baseline afterwards.
+Las rutas de respaldo viven en `internal/api/management_config_backups.go`:
+`GET /management/config/backups` lista las copias (solo metadatos) con los ajustes de
+retención; `POST /management/config/backups` conserva ahora el archivo almacenado
+(`config.create_backup`, respondiendo `created: false` cuando coincide con la copia más reciente);
+`PUT /management/config/backups/settings` fija la retención y poda de inmediato
+(`config.backup_settings`); `GET /management/config/backups/{id}` devuelve un documento,
+auditado con cierre ante fallos como `config.reveal_backup`; `DELETE /management/config/backups/{id}`
+elimina uno (`config.delete_backup`, con cierre ante fallos); y
+`POST /management/config/backups/{id}/restore` descifra una copia v8 y la escribe mediante
+`UpdateConfigYAML` bajo la compuerta de escritura de proveedores y `configMu`, sin comprobación de revisión
+(`config.restore_backup`, con cierre ante fallos). La propia escritura de la restauración conserva primero el archivo reemplazado,
+de modo que una restauración es en sí misma reversible; una copia anterior a v8 responde `409 config_backup_legacy`
+porque la API v8 rechaza sus nombres de campo. El diálogo de respaldos de la página de configuración
+(`web/src/components/config/ConfigBackupsButton.tsx`) retiene la restauración mientras el editor
+esté modificado y recarga después la base del editor.
 
-### Saving multiple provider credentials
+### Guardado de múltiples credenciales de proveedor
 
-The editor submits every API-key row in `keys`. OpenAI-compatible providers keep
-these credentials inside one provider object. For the seven config API-key families,
-`management_provider_keys.go` expands a save into one provider row per non-empty key,
-preserving each key's proxy and weight and applying the shared provider settings.
-A blank first key in an edit retains the stored secret; blank additional rows are
-ignored. An empty create or repeated submitted key is refused with `400`, and a key
-that matches a stored credential is refused with `409` when their base URLs are equal
-or either is blank, before writing. Each refusal carries a stable `code`
-(`provider_key_required`, `provider_duplicate_key`, `provider_credential_exists`, and
-`provider_stale_identity` for an edit whose observed identity moved), so the editor
-names the problem in the operator's language; the English `error` message stays for
-logs and agent clients.
+El editor envía cada fila de clave de API en `keys`. Los proveedores compatibles con OpenAI conservan
+estas credenciales dentro de un único objeto de proveedor. Para las siete familias de claves de API de configuración,
+`management_provider_keys.go` expande un guardado en una fila de proveedor por cada clave no vacía,
+preservando el proxy y el peso de cada clave y aplicando los ajustes compartidos del proveedor.
+Una primera clave en blanco en una edición retiene el secreto almacenado; las filas adicionales en blanco se
+ignoran. Una creación vacía o una clave enviada repetida se rechaza con `400`, y una clave
+que coincide con una credencial almacenada se rechaza con `409` cuando sus URL base son iguales
+o alguna está en blanco, antes de escribir. Cada rechazo lleva un `code` estable
+(`provider_key_required`, `provider_duplicate_key`, `provider_credential_exists` y
+`provider_stale_identity` para una edición cuya identidad observada se movió), de modo que el editor
+nombra el problema en el idioma del operador; el mensaje `error` en inglés se conserva para
+registros y clientes agente.
 
-Create and same-family edit save all credentials in one backed-up, revision-guarded
-configuration write under the provider gate. Editing keeps the source row in place
-and appends additional credentials, so neighbouring positional ids and their metadata
-stay unchanged. The response retains the primary `id` and includes `ids` when multiple
-rows were saved. Names and websites are committed for all saved rows in one local
-transaction; added rows inherit the edited row's existing icon. The browser assigns
-the selected icon to every returned id. Each config-family row remains independently
-editable after saving.
+La creación y la edición dentro de la misma familia guardan todas las credenciales en una escritura de configuración con respaldo
+y protegida por revisión bajo la compuerta de proveedores. Editar mantiene la fila de origen en su lugar
+y añade las credenciales adicionales, así que los ids posicionales vecinos y sus metadatos
+permanecen sin cambios. La respuesta conserva el `id` principal e incluye `ids` cuando se guardaron
+varias filas. Los nombres y sitios web se confirman para todas las filas guardadas en una sola transacción
+local; las filas añadidas heredan el ícono existente de la fila editada. El navegador asigna
+el ícono seleccionado a cada id devuelto. Cada fila de la familia de configuración sigue siendo editable
+de forma independiente tras guardarse.
 
-### Editing a provider's protocol driver
+### Edición del controlador de protocolo de un proveedor
 
-The provider editor can change an existing row's family. `PUT /management/providers/{id}`
-uses the id for the source and the request's `family` for the destination; an omitted
-family keeps the source protocol. The save carries the observed `expected_auth_index`
-or `expected_name`, and a stale source is refused with `409`.
+El editor de proveedores puede cambiar la familia de una fila existente. `PUT /management/providers/{id}`
+usa el id para el origen y la `family` de la solicitud para el destino; una familia omitida
+mantiene el protocolo de origen. El guardado lleva el `expected_auth_index`
+o `expected_name` observado, y un origen obsoleto se rechaza con `409`.
 
-`management_provider_family_move.go` converts the edited provider's common fields to
-the destination schema. Credentials, key weights and proxies, headers, model aliases,
-thinking settings and supported model options survive; old protocol-specific settings
-are removed, and the editor explains this before saving. Explicit key-level runtime
-policy remains authoritative over edited shared policy when keys split into separate
-rows. A move to OpenAI-compatible keeps shared settings on the provider rather than
-pinning duplicate key-level overrides, so later provider edits stay effective. An
-OpenAI-compatible provider with multiple keys becomes one row per key in a config
-API-key family. The response
-names the first destination row in `id` and every new row in `ids`.
+`management_provider_family_move.go` convierte los campos comunes del proveedor editado al
+esquema de destino. Las credenciales, los pesos y proxies de las claves, las cabeceras, los alias de modelos,
+los ajustes de razonamiento y las opciones de modelo admitidas sobreviven; los ajustes antiguos específicos del protocolo
+se eliminan, y el editor lo explica antes de guardar. La política de runtime explícita a nivel de clave
+sigue siendo la autoridad sobre la política compartida editada cuando las claves se dividen en filas separadas.
+Un traslado a compatible con OpenAI mantiene los ajustes compartidos en el proveedor en lugar de
+fijar sobrescrituras duplicadas a nivel de clave, de modo que las ediciones posteriores del proveedor siguen siendo efectivas. Un
+proveedor compatible con OpenAI con varias claves se convierte en una fila por clave en una familia
+de claves de API de configuración. La respuesta
+nombra la primera fila de destino en `id` y cada fila nueva en `ids`.
 
-`management.Client.MoveProviderFamily` matches the visible source to its stored group
-or key, keeps all unrelated stored groups and runtime-hidden keys unchanged, and sends
-both family arrays in one sparse `PATCH /v8/management/config`. The source may become
-an empty array: a separate append and delete would not be atomic. The write takes the
-provider gate, retains the exact pre-edit configuration as a backup, and guards that
-snapshot with `If-Match`. Ambiguous source identities and destination collisions refuse
-the move. After CPA accepts, names, websites and icons move to every destination row,
-and later source ids
-shift in one local transaction; metadata failure reports `provider_commit_partial`.
-The browser refreshes those overlays before writing a newly chosen icon, and probes or
-model pulls on a changed draft use the selected protocol rather than the source id.
+`management.Client.MoveProviderFamily` hace coincidir el origen visible con su grupo o clave
+almacenados, mantiene sin cambios todos los grupos almacenados no relacionados y las claves ocultas en runtime, y envía
+ambos arreglos de familia en un único `PATCH /v8/management/config` disperso. El origen puede quedar
+como un arreglo vacío: un añadido y una eliminación por separado no serían atómicos. La escritura toma la
+compuerta de proveedores, conserva la configuración exacta previa a la edición como respaldo y protege esa
+instantánea con `If-Match`. Las identidades de origen ambiguas y las colisiones de destino rechazan
+el traslado. Tras aceptar CPA, los nombres, sitios web e íconos pasan a cada fila de destino,
+y los ids de origen posteriores
+se desplazan en una sola transacción local; un fallo de metadatos informa `provider_commit_partial`.
+El navegador refresca esas superposiciones antes de escribir un ícono recién elegido, y las sondas o
+las descargas de modelos sobre un borrador modificado usan el protocolo seleccionado en lugar del id de origen.
 
-### Provider families are data, not code paths
+### Las familias de proveedores son datos, no rutas de código
 
-CPA stores `claude`, `codex`, `gemini`, `meta`, `xai`, `vertex` and `interactions`
-credentials as seven lists with one shared entry core and one shared write shape.
-The console mirrors that: `internal/cpa/management/config_keys.go` owns the family
-values (`ConfigKeyFamilies`), the endpoints and the decoding, and `internal/api/management_providers.go` holds one
-declaration per family (`providerConfigFamilies`) that supplies the presentation
-constants, with the list projection it feeds beside it. The writes live in
-`internal/api/management_provider_crud.go`, the enable/disable toggle in
-`management_provider_status.go` and the model-list pull in
-`management_provider_models.go`, and all of them are written once against that
-table.
+CPA almacena las credenciales de `claude`, `codex`, `gemini`, `meta`, `xai`, `vertex` e `interactions`
+como siete listas con un núcleo de entrada compartido y una forma de escritura compartida.
+La consola lo refleja: `internal/cpa/management/config_keys.go` es dueño de los valores de
+familia (`ConfigKeyFamilies`), los endpoints y la decodificación, e `internal/api/management_providers.go` contiene una
+declaración por familia (`providerConfigFamilies`) que aporta las constantes de presentación,
+con la proyección de lista que alimenta a su lado. Las escrituras viven en
+`internal/api/management_provider_crud.go`, el interruptor de habilitar/deshabilitar en
+`management_provider_status.go` y la descarga de la lista de modelos en
+`management_provider_models.go`, y todas están escritas una sola vez contra esa
+tabla.
 
-Adding such a family is a constant plus a row, and the pieces that must stay in
-step are the same three in both stacks: the family's credential list in CPA, its
-row in that table, and its label in `PROVIDER_FAMILIES`
-(`web/src/types/providerFamilies.ts`). A family that reaches the API but not the
-frontend table renders as a row without a protocol label, so both the contract
-test in `internal/cpa/management/config_keys_test.go` and the browser acceptance
-check on the rendered provider table assert the label rather than the module.
+Añadir una familia así es una constante más una fila, y las piezas que deben mantenerse
+sincronizadas son las mismas tres en ambos stacks: la lista de credenciales de la familia en CPA, su
+fila en esa tabla y su etiqueta en `PROVIDER_FAMILIES`
+(`web/src/types/providerFamilies.ts`). Una familia que llega a la API pero no a la
+tabla del frontend se renderiza como una fila sin etiqueta de protocolo, de modo que tanto la prueba de
+contrato en `internal/cpa/management/config_keys_test.go` como la comprobación de aceptación del navegador
+sobre la tabla de proveedores renderizada verifican la etiqueta y no el módulo.
 
-The families differ only in the fields around that core (a Codex-style entry's
-`websockets`, a Claude entry's `cloak`, `request-retry` on most of them). The
-console does not model those, but every write it makes replaces a whole family, so
-`ConfigAPIKey` (and `OpenAICompatibility`, its key entries and `ModelAlias`) keep
-their unmodelled fields verbatim and write them back (`wire_extras.go`); an edit in
-the console cannot strip a setting the operator wrote in `config.yaml`.
+Las familias difieren solo en los campos alrededor de ese núcleo (los `websockets` de una entrada estilo Codex,
+el `cloak` de una entrada Claude, `request-retry` en la mayoría). La
+consola no los modela, pero cada escritura que hace reemplaza una familia completa, por lo que
+`ConfigAPIKey` (y `OpenAICompatibility`, sus entradas de clave y `ModelAlias`) conservan
+sus campos no modelados tal cual y los escriben de vuelta (`wire_extras.go`); una edición en
+la consola no puede eliminar un ajuste que el operador escribió en `config.yaml`.
 
-The file stores each family as v8 groups (`api-keys.<family>`: a name, a base URL
-and shared settings over a list of keys), while the console addresses providers by
-their position in CPA's flattened runtime list, the only one carrying `auth-index`
-(ADR 0038, `internal/cpa/management/provider_groups.go`). A write therefore reads
-both: `EditableConfigAPIKeys` matches the stored keys to the runtime entries in
-order, so each editable entry holds the file's own values, its `auth-index` and the
-group it came from. `UpdateConfigAPIKeys` writes the family back as groups in the
-list's exact order: a key stays in its group, stating its own value where it differs
-from a setting the group stores; a key its group cannot express (another base URL, a
-cleared `disable-cooling` or `request-retry`) and a new provider become groups of
-their own. OpenAI-compatible providers are one group per provider
-(`EditableOpenAICompatibility`, `UpdateOpenAICompatibility`). The edit form shows the
-runtime values, so an edit starts from the stored entry: a key's and a model's
-settings the form does not show are kept (matched by API key and model name), a
-base URL equal to the runtime's default for a key the file stores without one stays
-unstated (`ConfigAPIKey.SubmittedBaseURL`), and a group field outside the shared
-settings stays on the group. CPA's reason for refusing any v8 write is scrubbed of
-the stored file's secrets and of the ones the write sent before the response or the
-audit log sees it (`ApplyConfigChanges`).
-A provider's runtime policy (cooling, retry count, request-scoped error rules) and its
-family's request-behaviour switches travel as `runtime_policy` and `behavior` on the
-provider DTO and save request (`internal/api/management_provider_policy.go`). CPA
-decodes the configuration strictly and skips an error rule it cannot apply without
-reporting it, so the save refuses a switch the family lacks, a rule that would never
-run and a regular expression Go cannot compile; a save naming no policy leaves the
-stored one untouched.
-A model row's advanced settings travel the same way, as `options` on the model entry
-(`internal/api/management_provider_model_options.go`): with them a row states the whole
-entry CPA models, without them the stored model of the same name keeps its settings, and
-in both cases a field the console does not model survives the write.
-Two per-family constants in the registry carry the remaining differences:
-`RequiresBaseURL` (Codex and xAI, whose entries CPA drops without an error when the
-base URL is empty, so the console refuses them up front) and `PullProtocol` (the
-auth dialect a model-list pull uses).
+El archivo almacena cada familia como grupos v8 (`api-keys.<family>`: un nombre, una URL base
+y ajustes compartidos sobre una lista de claves), mientras que la consola direcciona los proveedores por
+su posición en la lista de runtime aplanada de CPA, la única que lleva `auth-index`
+(ADR 0038, `internal/cpa/management/provider_groups.go`). Por tanto, una escritura lee
+ambas: `EditableConfigAPIKeys` hace coincidir las claves almacenadas con las entradas de runtime en
+orden, de modo que cada entrada editable contiene los valores propios del archivo, su `auth-index` y el
+grupo del que procede. `UpdateConfigAPIKeys` escribe la familia de vuelta como grupos en el
+orden exacto de la lista: una clave permanece en su grupo, declarando su propio valor donde difiere
+de un ajuste que almacena el grupo; una clave que su grupo no puede expresar (otra URL base, un
+`disable-cooling` o `request-retry` borrado) y un proveedor nuevo se convierten en grupos
+propios. Los proveedores compatibles con OpenAI son un grupo por proveedor
+(`EditableOpenAICompatibility`, `UpdateOpenAICompatibility`). El formulario de edición muestra los
+valores de runtime, por lo que una edición parte de la entrada almacenada: los ajustes de una clave y de un modelo
+que el formulario no muestra se conservan (coincidencia por clave de API y nombre de modelo), una
+URL base igual al valor por defecto del runtime para una clave que el archivo almacena sin ella permanece
+sin declarar (`ConfigAPIKey.SubmittedBaseURL`), y un campo de grupo fuera de los ajustes
+compartidos permanece en el grupo. El motivo de CPA para rechazar cualquier escritura v8 se depura de
+los secretos del archivo almacenado y de los que envió la escritura antes de que la respuesta o el
+registro de auditoría lo vean (`ApplyConfigChanges`).
+La política de runtime de un proveedor (enfriamiento, número de reintentos, reglas de error con alcance de solicitud) y los
+interruptores de comportamiento de solicitud de su familia viajan como `runtime_policy` y `behavior` en el
+DTO del proveedor y en la solicitud de guardado (`internal/api/management_provider_policy.go`). CPA
+decodifica la configuración de forma estricta y omite sin informar una regla de error que no puede aplicar,
+por lo que el guardado rechaza un interruptor que la familia no tiene, una regla que nunca
+se ejecutaría y una expresión regular que Go no puede compilar; un guardado que no nombra política deja
+intacta la almacenada.
+Los ajustes avanzados de una fila de modelo viajan del mismo modo, como `options` en la entrada del modelo
+(`internal/api/management_provider_model_options.go`): con ellos una fila declara la entrada completa
+que modela CPA; sin ellos el modelo almacenado del mismo nombre conserva sus ajustes, y
+en ambos casos un campo que la consola no modela sobrevive a la escritura.
+Dos constantes por familia en el registro llevan las diferencias restantes:
+`RequiresBaseURL` (Codex y xAI, cuyas entradas CPA descarta sin error cuando la
+URL base está vacía, por lo que la consola las rechaza de antemano) y `PullProtocol` (el
+dialecto de autenticación que usa una descarga de lista de modelos).
 
-A family an installed CPA does not have answers `404`; that is a missing
-capability rather than an empty or broken list (`IsMissingCapability`), so a
-console release that knows a newer family still works against an older gateway.
+Una familia que un CPA instalado no tiene responde `404`; eso es una capacidad ausente
+y no una lista vacía o rota (`IsMissingCapability`), de modo que una
+versión de la consola que conoce una familia más nueva sigue funcionando contra un gateway más antiguo.
 
-Two callers fetch an address the process did not construct: a model-list pull, whose
-URL the operator typed for a provider they run, and a plugin logo, whose URL an
-installed plugin's manifest declares. `internal/api/outbound_fetch.go` owns the
-redirect rule both obey - a redirect that changes scheme or host is refused before
-the next request leaves the process, so neither the provider key nor custom
-provider headers can reach a target the operator did not enter - and the two
-destination policies sit in their own callers, because the authority behind the URL
-is not the same. A model pull accepts HTTP for localhost, loopback and private
-literals, since a self-hosted relay on the operator's LAN is the normal case;
-invalid URL policy answers `400 invalid_model_pull_url` and a refused redirect
-answers `502 model_pull_redirect_refused`. A plugin logo is allowed only over
-public HTTPS, or HTTP to the machine itself, and the resolved address is checked in
-the dialer against everything that is not public internet space - the operator's
-network, the shared-address range an overlay network hands out (`100.64.0.0/10`), the
-reserved IANA blocks and a cloud metadata endpoint - so a hostname that resolves into
-any of them is refused where the connection would actually be made rather than trusted
-because the name looked public. A plugin is not trusted to choose what this process
-connects to, which is also why this fetch connects directly instead of through an
-environment proxy: through one, the dialer would be asked about the proxy's address and
-the target would be unverifiable.
+Dos llamadores obtienen una dirección que el proceso no construyó: una descarga de lista de modelos, cuya
+URL escribió el operador para un proveedor que ejecuta, y un logotipo de plugin, cuya URL declara el
+manifiesto de un plugin instalado. `internal/api/outbound_fetch.go` es dueño de la
+regla de redirección que ambos obedecen - una redirección que cambia de esquema o de host se rechaza antes de que
+salga la siguiente solicitud del proceso, de modo que ni la clave del proveedor ni las cabeceras
+personalizadas del proveedor puedan llegar a un destino que el operador no introdujo - y las dos
+políticas de destino están en sus propios llamadores, porque la autoridad detrás de la URL
+no es la misma. Una descarga de modelos acepta HTTP para localhost, loopback y literales
+privados, ya que un relé autoalojado en la LAN del operador es el caso normal;
+una política de URL inválida responde `400 invalid_model_pull_url` y una redirección rechazada
+responde `502 model_pull_redirect_refused`. Un logotipo de plugin se permite solo por
+HTTPS público, o HTTP hacia la propia máquina, y la dirección resuelta se comprueba en
+el dialer contra todo lo que no sea espacio público de internet - la red del operador, el rango de
+direcciones compartidas que entrega una red superpuesta (`100.64.0.0/10`), los
+bloques reservados de IANA y un endpoint de metadatos de nube - de modo que un nombre de host que resuelva a
+cualquiera de ellos se rechaza donde se haría realmente la conexión en lugar de confiar en él
+porque el nombre parecía público. No se confía en que un plugin elija a qué se conecta este proceso, que es también
+la razón por la que esta obtención se conecta directamente en lugar de mediante un proxy de
+entorno: con uno, al dialer se le consultaría la dirección del proxy y
+el destino sería inverificable.
 
-A plugin's logo is fetched for a different reason than a model list: not to reach
-the plugin's host from the browser, but to keep the browser away from it.
-`internal/api/management_plugin_logos.go` fetches the URL a plugin publishes,
-requires an image media type from a bound allowlist, caps the response - for a logo
-published inline as well as for one fetched - and reports it as an inline `data:`
-URL on both `logo` and `metadata.logo`; a store registry's icon is inlined the same
-way, on the store list. Each list shares one fetch
-deadline, because what has to stay bounded is the endpoint the console polls and not
-each request; the result is cached, failures included, so a plugin list that names an
-unreachable host does not refetch it on every poll. An exhausted budget is the one
-outcome that is not cached, since running out of time is not an answer about the
-logo. A logo that cannot be inlined is reported as absent rather than as a URL, which
-is what makes every provider surface fall back to the vendored catalog mark; see §3.
+El logotipo de un plugin se obtiene por una razón distinta a la de una lista de modelos: no para llegar al
+host del plugin desde el navegador, sino para mantener al navegador alejado de él.
+`internal/api/management_plugin_logos.go` obtiene la URL que publica un plugin,
+exige un tipo de medio de imagen de una lista permitida acotada, limita la respuesta - tanto para un logotipo
+publicado en línea como para uno obtenido - y lo informa como una URL `data:`
+en línea tanto en `logo` como en `metadata.logo`; el ícono de un registro de tienda se incrusta del mismo
+modo, en la lista de la tienda. Cada lista comparte un plazo de obtención,
+porque lo que tiene que permanecer acotado es el endpoint que sondea la consola y no
+cada solicitud; el resultado se guarda en caché, fallos incluidos, de modo que una lista de plugins que nombre un
+host inalcanzable no vuelva a obtenerlo en cada sondeo. Un presupuesto agotado es el único
+resultado que no se guarda en caché, ya que quedarse sin tiempo no es una respuesta sobre el
+logotipo. Un logotipo que no puede incrustarse se informa como ausente y no como una URL, que
+es lo que hace que cada superficie de proveedores recurra a la marca del catálogo incluido; véase el §3.
 
-Plugin navigation, management cards/drawers and hosted-page headings share
-`PluginIcon`: SVG data URLs are isolated alpha masks painted with `currentColor`,
-so their ink follows theme, hover and selected states without inserting plugin SVG
-markup into the host DOM. Framed management marks drop their background and border
-for SVG glyphs. Raster data URLs retain their original colours as images; missing
-or failed artwork uses the generic plugin glyph. Provider-brand surfaces retain
-the plugin's original artwork colours.
+La navegación de plugins, las tarjetas/paneles de gestión y los encabezados de páginas alojadas comparten
+`PluginIcon`: las URL de datos SVG son máscaras alfa aisladas pintadas con `currentColor`,
+de modo que su tinta sigue los estados de tema, hover y selección sin insertar el marcado SVG del plugin
+en el DOM del host. Las marcas de gestión enmarcadas pierden su fondo y borde
+para los glifos SVG. Las URL de datos raster conservan sus colores originales como imágenes; el arte ausente
+o fallido usa el glifo genérico de plugin. Las superficies de marca de proveedor conservan
+los colores originales del arte del plugin.
 
-CPA reports a plugin's name, author, version and logo only once its host has loaded it, so
-an installed plugin that is disabled or waiting for a restart arrives with its id alone.
-`internal/api/management_plugin_identity.go` fills those empty fields - never a value the
-plugin registered - from the store's listing of the installed plugin, before the logos are
-inlined. Every store read refreshes that in-memory copy; the plugin list reads the store
-itself only when a gap remains the copy cannot close, at most once per ten minutes and
-within five seconds, so a plugin no registry lists costs one store read, not one per poll.
+CPA informa del nombre, autor, versión y logotipo de un plugin solo una vez que su host lo ha cargado, por lo que
+un plugin instalado que está deshabilitado o esperando un reinicio llega solo con su id.
+`internal/api/management_plugin_identity.go` rellena esos campos vacíos - nunca un valor que el
+plugin registró - a partir del listado de la tienda del plugin instalado, antes de incrustar los logotipos.
+Cada lectura de la tienda refresca esa copia en memoria; la lista de plugins lee la tienda
+solo cuando queda un hueco que la copia no puede cerrar, como máximo una vez cada diez minutos y
+dentro de cinco segundos, de modo que un plugin que ningún registro lista cuesta una lectura de la tienda, no una por sondeo.
 
-### OAuth providers are one registry
+### Los proveedores OAuth son un solo registro
 
-`internal/cpa/management/oauth_providers.go` is the single declaration of which
-authorizations exist, the shape of each (`redirect` or `device`), and whether CPA
-should open its loopback callback forwarder for it (`UsesLoopbackCallback`, sent
-as `is_webui`). The facade's provider list and the client's request are both
-projections of it, and the browser's card registry
-(`web/src/pages/oauthProviderLogic.ts`) carries the matching presentation plus the
-rules for judging a pasted redirect.
+`internal/cpa/management/oauth_providers.go` es la única declaración de qué
+autorizaciones existen, la forma de cada una (`redirect` o `device`) y si CPA
+debe abrir para ella su reenviador de callback en loopback (`UsesLoopbackCallback`, enviado
+como `is_webui`). La lista de proveedores de la fachada y la solicitud del cliente son ambas
+proyecciones de ese registro, y el registro de tarjetas del navegador
+(`web/src/pages/oauthProviderLogic.ts`) lleva la presentación correspondiente más las
+reglas para juzgar una redirección pegada.
 
-The registry is deliberately not an allowlist: CPA plugins register their own
-login providers at runtime, served by the same shared v8 login endpoint
-(`/v8/management/oauth/auth-url?provider=`), the console discovers them from the
-plugin list, and an id the registry does not know is forwarded unchanged with no
-per-provider flags. The two registries are held together by an id, so a provider
-is added in both or in neither.
+El registro deliberadamente no es una lista de permitidos: los plugins de CPA registran sus propios
+proveedores de inicio de sesión en tiempo de ejecución, servidos por el mismo endpoint de inicio de sesión v8 compartido
+(`/v8/management/oauth/auth-url?provider=`), la consola los descubre a partir de la
+lista de plugins, y un id que el registro no conoce se reenvía sin cambios y sin
+indicadores por proveedor. Los dos registros se mantienen unidos por un id, de modo que un proveedor
+se añade en ambos o en ninguno.
 
-A provider the console's own registry names also needs a brand mark, because a
-surface that cannot draw one falls back to a neutral placeholder - which reads as
-"this provider has no identity" even though its artwork ships in the bundle. The
-catalog marks are declared in `web/src/components/common/providerMetadata.ts` and
-`web/src/types/providerIconIds.ts`; a plugin-registered provider instead brings
-the logo it publishes (§3).
+Un proveedor que nombra el propio registro de la consola también necesita una marca, porque una
+superficie que no puede dibujarla recurre a un marcador neutro - que se lee como
+«este proveedor no tiene identidad» aunque su arte viene incluido en el bundle. Las
+marcas del catálogo se declaran en `web/src/components/common/providerMetadata.ts` y
+`web/src/types/providerIconIds.ts`; en cambio, un proveedor registrado por un plugin trae
+el logotipo que publica (§3).
 
-### OAuth management is one credential-centred workspace
+### La gestión de OAuth es un espacio de trabajo centrado en la credencial
 
-`/oauth-management` is the only OAuth navigation destination. Its collection is
-projected from the auth-file list, so imported, runtime-only, plugin-backed,
-unknown-provider and non-login-capable entries all stay visible. Quota is joined
-only when both the auth file and quota response carry one unique nonempty
-`auth_index`; missing, duplicate and quota-only race states remain diagnostics on
-the same surface, and no write is authorized from an ambiguous target. The pure
-projection lives in `web/src/pages/oauthManagement/oauthWorkspaceLogic.ts`.
+`/oauth-management` es el único destino de navegación de OAuth. Su colección se
+proyecta a partir de la lista de archivos de autenticación, de modo que las entradas importadas, solo de runtime, respaldadas por plugins,
+de proveedor desconocido y sin capacidad de inicio de sesión permanecen todas visibles. La cuota se une
+solo cuando tanto el archivo de autenticación como la respuesta de cuota llevan un único `auth_index`
+no vacío; los estados faltante, duplicado y de carrera solo de cuota siguen siendo diagnósticos en
+la misma superficie, y no se autoriza ninguna escritura desde un destino ambiguo. La proyección pura
+vive en `web/src/pages/oauthManagement/oauthWorkspaceLogic.ts`.
 
-SIWC bindings are a distinct credential-scoped operation, not provider login.
-`internal/api/management_siwc.go` resolves a unique managed target, admits at most
-128 retained sessions, and serializes callback, cancellation and completion
-readback per attempt. It pins the gateway URL and credential identity in memory;
-callback bodies are not retained. Each mutation requires a successful attempt
-audit. The four non-secret summary fields have explicit console and capability
-allowlists. CPA owns token exchange, file preservation and publication.
-`web/src/hooks/useSIWCBindings.ts` holds attempts above credential selection,
-keyed by name and auth index, so closing or switching the detail panel cannot
-mix targets. CPA completion is followed by safe target readback before success;
-readback failure keeps the completed mutation in verification. See
-[SIWC compatibility](cpa-v8-compat.md#credential-scoped-siwc-binding).
+Los enlaces SIWC son una operación distinta con alcance de credencial, no un inicio de sesión de proveedor.
+`internal/api/management_siwc.go` resuelve un único destino gestionado, admite como máximo
+128 sesiones retenidas y serializa el callback, la cancelación y la relectura de finalización
+por intento. Fija en memoria la URL del gateway y la identidad de la credencial; los cuerpos
+de callback no se retienen. Cada mutación requiere una auditoría de intento exitosa. Los cuatro campos de resumen
+no secretos tienen listas permitidas explícitas en la consola y en las capacidades. CPA es dueña del intercambio
+de tokens, la preservación del archivo y la publicación.
+`web/src/hooks/useSIWCBindings.ts` mantiene los intentos por encima de la selección de credencial,
+con clave por nombre e índice de autenticación, de modo que cerrar o cambiar el panel de detalle no pueda
+mezclar destinos. A la finalización de CPA le sigue una relectura segura del destino antes del éxito;
+si la relectura falla, la mutación completada queda en verificación. Véase
+[compatibilidad de SIWC](cpa-v8-compat.md#credential-scoped-siwc-binding).
 
-Authorization sessions live above the Connect Drawer in
-`useOAuthSessions`, keyed by provider id, so minimizing or closing the task panel
-does not stop polling, duplicate a checker or cancel an upstream session. A status
-read that fails before CPA answers is a note on a still-waiting attempt rather than
-a terminal state: the panel keeps its cancel action and the armed poll keeps running,
-because only CPA's own `error` status ends an attempt. Every site that arms the poll
-timer clears the previous one first, which is what holds the one-checker rule. The
-drawer presents one serialized status checker per attempt. The workspace opts out of
-the hook’s default completion notification and reports completion once, through its
-credential-aware toast after the list refresh settles. Credential detail,
-configuration and models share one guarded Drawer. Provider-scoped aliases and
-global OAuth exclusions share a separate Model Rules Drawer, with independent
-section drafts; switching provider or closing cannot discard an unsaved section
-without a guard. Its names and brand marks match the provider filter tabs. `CredentialQuotaBody` is the single quota renderer used by the
-workspace and its detail panel. The list always renders a compact quota summary;
-the Quota tab always renders the full quota body. Codex and Claude credentials expose
-a separate Window warmup tab for rules, status and confirmed manual runs. Warmup drafts
-survive tab switches. Configuration and Models are separate tabs with query eligibility
-bound to the selected tab. The configuration
-form remains mounted so drafts survive tab switches; its dirty-close guard applies
-to the entire Drawer. Credential identity includes the auth index when resetting
-form sessions and caching models. Historical density URL values and preference
-fields remain readable compatibility data, but do not change the overview layout.
-`oauth_management_view_v1` stores page size, status, quota condition and sort order.
-Explicit URL dimensions override the saved defaults without persisting navigation;
-editing a control saves the effective view and resets pagination. Reset filters
-persists the default status, quota and sort while preserving page size. If the
-preference read fails, the controls remain usable through URL state; saves stay
-disabled until the stored document has been read successfully.
+Las sesiones de autorización viven por encima del Connect Drawer en
+`useOAuthSessions`, con clave por id de proveedor, de modo que minimizar o cerrar el panel de tareas
+no detiene el sondeo, no duplica un verificador ni cancela una sesión upstream. Una lectura de
+estado que falla antes de que CPA responda es una nota sobre un intento aún en espera y no
+un estado terminal: el panel conserva su acción de cancelar y el sondeo armado sigue ejecutándose,
+porque solo el estado `error` propio de CPA termina un intento. Todo sitio que arma el temporizador del sondeo
+borra primero el anterior, lo que sostiene la regla de un solo verificador. El
+drawer presenta un verificador de estado serializado por intento. El espacio de trabajo renuncia a la
+notificación de finalización por defecto del hook y informa la finalización una sola vez, mediante su
+toast consciente de credenciales una vez que se asienta la actualización de la lista. El detalle de la credencial,
+la configuración y los modelos comparten un Drawer protegido. Los alias con alcance de proveedor y las
+exclusiones OAuth globales comparten un Drawer separado de reglas de modelos, con borradores independientes por
+sección; cambiar de proveedor o cerrar no puede descartar una sección sin guardar
+sin una protección. Sus nombres y marcas coinciden con las pestañas de filtro de proveedor. `CredentialQuotaBody` es el único renderizador de cuota usado por el
+espacio de trabajo y su panel de detalle. La lista siempre renderiza un resumen compacto de cuota;
+la pestaña Cuota siempre renderiza el cuerpo completo de la cuota. Las credenciales de Codex y Claude exponen
+una pestaña separada de Calentamiento de ventana para reglas, estado y ejecuciones manuales confirmadas. Los borradores de calentamiento
+sobreviven a los cambios de pestaña. Configuración y Modelos son pestañas separadas con la elegibilidad de consulta
+ligada a la pestaña seleccionada. El formulario de
+configuración permanece montado para que los borradores sobrevivan a los cambios de pestaña; su protección de cierre con cambios pendientes se aplica
+a todo el Drawer. La identidad de la credencial incluye el índice de autenticación al restablecer
+las sesiones del formulario y al guardar modelos en caché. Los valores históricos de densidad en la URL y los campos de preferencia
+siguen siendo datos de compatibilidad legibles, pero no cambian el diseño de la vista general.
+`oauth_management_view_v1` almacena el tamaño de página, el estado, la condición de cuota y el orden.
+Las dimensiones explícitas de la URL sobrescriben los valores por defecto guardados sin persistir la navegación;
+editar un control guarda la vista efectiva y reinicia la paginación. Restablecer filtros
+persiste el estado, la cuota y el orden por defecto conservando el tamaño de página. Si la
+lectura de la preferencia falla, los controles siguen usables mediante el estado de la URL; los guardados permanecen
+deshabilitados hasta que el documento almacenado se haya leído correctamente.
 
-A quota refresh reports its outcome once, as a toast, so it never pushes the
-credential list down (ADR 0045). A run without a failing target - including one
-that skipped credentials which were never eligible - is acknowledged by a toast
-that closes itself. A run with a failed or unknown target raises a report toast
-that lists each target's reason under its group (failed, no outcome, skipped) and
-stays until it is closed; the next refresh replaces it rather than stacking. Destructive and export actions on a
-credential name their target in the confirmation, not in the menu label, which
-stays short for any file-name length.
+Una actualización de cuota informa su resultado una sola vez, como toast, de modo que nunca empuja hacia abajo la
+lista de credenciales (ADR 0045). Una ejecución sin destino fallido - incluida una
+que omitió credenciales que nunca fueron elegibles - se reconoce con un toast
+que se cierra solo. Una ejecución con un destino fallido o desconocido muestra un toast de informe
+que lista el motivo de cada destino bajo su grupo (fallido, sin resultado, omitido) y
+permanece hasta que se cierra; la siguiente actualización lo reemplaza en lugar de apilarse. Las acciones destructivas y de exportación sobre una
+credencial nombran su destino en la confirmación y no en la etiqueta del menú, que
+permanece corta para cualquier longitud de nombre de archivo.
 
 
-The old `/oauth`, `/auth-files` and `/quota` routes are retained only as
-parameter-safe replacement redirects. They preserve documented filter and
-connection intent while dropping callback, state, session and code material.
+Las antiguas rutas `/oauth`, `/auth-files` y `/quota` se conservan solo como
+redirecciones de reemplazo seguras en cuanto a parámetros. Preservan la intención documentada de filtro y
+conexión mientras descartan el material de callback, estado, sesión y código.
 
-### Logs and the audit trail: three records, kept apart
+### Registros y la pista de auditoría: tres registros, mantenidos por separado
 
-The Logs page (`/logs`, with `?source=service`) reads the two log records and mounts only
-the one being read so the other does not poll; the audit trail is its own page (`/audit`,
-`pages/AuditPage.tsx`), because it is read by filtering and counting over a long span rather
-than by following a tail. An older `/logs?source=audit` link redirects there.
+La página de Registros (`/logs`, con `?source=service`) lee los dos registros de log y monta solo
+el que se está leyendo para que el otro no haga sondeo; la pista de auditoría es su propia página (`/audit`,
+`pages/AuditPage.tsx`), porque se lee filtrando y contando sobre un lapso largo en lugar de
+seguir una cola. Un enlace antiguo `/logs?source=audit` redirige allí.
 
-- **Gateway log** — CPA's own log file and request error files, proxied through the
-  typed management client (`/management/logs`, `/management/logs/status`,
-  `/management/request-error-logs`, `/management/request-logs/{id}`). The console tails
-  it; it owns none of it. A line's request id opens that request's log file in a side
-  panel (`components/logs/LogFileViewer.tsx`), as does an error log file: the file is
-  fetched once per opening, drawn up to `MAX_LOG_PREVIEW_BYTES`, saved from the same
-  copy, and dropped from the query cache when the panel closes because it quotes
-  request content. `downloadRequestLogByID` accepts only a plain-token id, audits the
-  read as `request_log.download` and is refused in demo mode. This route, not the
-  request list, is how a request with no usage record is read (see Failure Detail in
+- **Registro del gateway** — el propio archivo de log de CPA y los archivos de error de solicitudes, intermediados a través del
+  cliente de gestión tipado (`/management/logs`, `/management/logs/status`,
+  `/management/request-error-logs`, `/management/request-logs/{id}`). La consola sigue su cola;
+  no es dueña de nada de él. El id de solicitud de una línea abre el archivo de log de esa solicitud en un panel
+  lateral (`components/logs/LogFileViewer.tsx`), como también un archivo de log de error: el archivo se
+  obtiene una vez por apertura, se dibuja hasta `MAX_LOG_PREVIEW_BYTES`, se guarda desde la misma
+  copia y se elimina de la caché de consultas cuando se cierra el panel porque cita
+  contenido de solicitudes. `downloadRequestLogByID` acepta solo un id de token simple, audita la
+  lectura como `request_log.download` y se rechaza en modo demo. Esta ruta, y no la
+  lista de solicitudes, es cómo se lee una solicitud sin registro de uso (véase Detalle de fallo (Failure Detail) en
   `CONTEXT.md`).
-- **Service log** — Shell-PAMC's own process log. `cmd/shell-pamc` builds the logger as
-  `applog.NewHandler(jsonStderrHandler, buffer)`, so stderr remains the durable log a
-  deployment collects, and `NewHandler` in `internal/api` finds the buffer through
-  `applog.BufferOf`. The buffer keeps the latest `applog.DefaultCapacity` records,
-  numbers them with a sequence that only grows for the life of the process, and is
-  served by `GET /api/v1/management/service-logs?after=<seq>&limit=`. A reader that fell
-  more than a page behind jumps to the newest records and is told `gap: true` rather
-  than replaying a backlog. Values pass through `security.RedactText`, any field whose
-  name marks a credential (every `*key` name included) is replaced outright, and
-  message and field sizes are bounded, so one enormous error cannot grow the ring. A
-  process built without the tee answers `capturing: false`.
-- **Audit trail** — `audit_events`, served by `GET /api/v1/management/audit/events`
-  with `category` (action prefixes, validated identifiers), `outcome`
-  (`succeeded` / `failed` / `unfinished` — an `attempt` row, which with folding on is one
-  whose outcome never landed), `q` (a substring of action, target or request id),
-  `since_ms`, `limit` (at most 200) and `before`, an opaque `<occurred_at_ms>_<id>`
-  keyset cursor the previous page returned as `next_cursor`. `fold` (default on) hides
-  an `attempt` row once an outcome exists for the same request id and action; rows
-  written before request ids were stable per request are paired by action, target and
-  an outcome within one minute (`auditFoldWindowMS`), and only when both rows are older
-  than the moment migration 027 was applied, which is when ids became stable. `idx_audit_events_request_action`
-  (migration 027) serves that lookup. `GET /api/v1/management/audit/export` takes the
-  same filters, returns every row including attempts unless `fold=1`, stops at
-  `repository.AuditPageMax` rows with `truncated` set, and is itself audited and
-  withheld when that record cannot be written. `GET /api/v1/management/audit/summary`
-  (`repository.SummarizeAuditEvents`) counts the rows the trail would show for the
-  same `since_ms`, `q` and `fold` as a matrix of action prefix by outcome class; it ignores
-  `category`, `outcome` and the cursor, because the page derives both facets' counts from
-  that one matrix (`auditFacets`) and each facet must count under the other's selection.
-  The page keeps its filters (`category` as the console's category name, `outcome`, `q`,
-  `range` of `24h`/`7d`/`30d`/`all`) in its URL, so an entry's "only this target" and
-  "only this request" actions, and any link, open a narrowed trail.
+- **Registro del servicio** — el propio log de proceso de Shell-PAMC. `cmd/shell-pamc` construye el logger como
+  `applog.NewHandler(jsonStderrHandler, buffer)`, de modo que stderr sigue siendo el log duradero que
+  recoge un despliegue, y `NewHandler` en `internal/api` encuentra el búfer mediante
+  `applog.BufferOf`. El búfer conserva los últimos `applog.DefaultCapacity` registros,
+  los numera con una secuencia que solo crece durante la vida del proceso, y se
+  sirve mediante `GET /api/v1/management/service-logs?after=<seq>&limit=`. Un lector que se quedó
+  más de una página atrás salta a los registros más recientes y se le indica `gap: true` en lugar de
+  reproducir un atraso. Los valores pasan por `security.RedactText`, todo campo cuyo
+  nombre indique una credencial (incluido todo nombre `*key`) se reemplaza por completo, y
+  los tamaños de mensaje y de campos están acotados, de modo que un error enorme no pueda hacer crecer el anillo. Un
+  proceso compilado sin la copia responde `capturing: false`.
+- **Pista de auditoría** — `audit_events`, servida por `GET /api/v1/management/audit/events`
+  con `category` (prefijos de acción, identificadores validados), `outcome`
+  (`succeeded` / `failed` / `unfinished` — una fila `attempt`, que con el plegado activado es una
+  cuyo resultado nunca llegó), `q` (una subcadena de acción, destino o id de solicitud),
+  `since_ms`, `limit` (como máximo 200) y `before`, un cursor de conjunto de claves opaco `<occurred_at_ms>_<id>`
+  que la página anterior devolvió como `next_cursor`. `fold` (activado por defecto) oculta
+  una fila `attempt` una vez que existe un resultado para el mismo id de solicitud y acción; las filas
+  escritas antes de que los ids de solicitud fueran estables por solicitud se emparejan por acción, destino y
+  un resultado dentro de un minuto (`auditFoldWindowMS`), y solo cuando ambas filas son anteriores
+  al momento en que se aplicó la migración 027, que es cuando los ids se volvieron estables. `idx_audit_events_request_action`
+  (migración 027) sirve esa búsqueda. `GET /api/v1/management/audit/export` toma los
+  mismos filtros, devuelve todas las filas incluidos los intentos salvo con `fold=1`, se detiene en
+  `repository.AuditPageMax` filas con `truncated` establecido, y es en sí misma auditada y
+  se retiene cuando ese registro no puede escribirse. `GET /api/v1/management/audit/summary`
+  (`repository.SummarizeAuditEvents`) cuenta las filas que la pista mostraría para los
+  mismos `since_ms`, `q` y `fold` como una matriz de prefijo de acción por clase de resultado; ignora
+  `category`, `outcome` y el cursor, porque la página deriva los conteos de ambas facetas de
+  esa matriz (`auditFacets`) y cada faceta debe contar bajo la selección de la otra.
+  La página mantiene sus filtros (`category` como el nombre de categoría de la consola, `outcome`, `q`,
+  `range` de `24h`/`7d`/`30d`/`all`) en su URL, de modo que las acciones «solo este destino» y
+  «solo esta solicitud» de una entrada, y cualquier enlace, abran una pista acotada.
 
-Every request is given one server-generated id on arrival (`assignRequestID`, which
-answers it back as `X-Request-ID`). A write's attempt and outcome rows therefore share
-it; before this each audit call generated its own id and no pair could be matched. A
-caller's own `X-Request-ID` is never the pairing key - one value sent on two requests
-would pair an attempt with another request's outcome - and is recorded on the audit
-row as `client_request_id` for correlation instead.
+A cada solicitud se le asigna un id generado por el servidor al llegar (`assignRequestID`, que
+lo devuelve como `X-Request-ID`). Por tanto, las filas de intento y de resultado de una escritura lo comparten;
+antes cada llamada de auditoría generaba su propio id y no se podía emparejar ningún par. El
+`X-Request-ID` propio de un llamador nunca es la clave de emparejamiento - un mismo valor enviado en dos solicitudes
+emparejaría un intento con el resultado de otra solicitud - y en su lugar se registra en la fila de
+auditoría como `client_request_id` para correlación.
 
-### Quota resolution and partial-success boundary
+### Resolución de cuota y límite de éxito parcial
 
-Plugin quota resolution requires a matching quota identifier, plugin ID, or auth
-provider; an unmatched credential is never sent to another plugin. A successful
-Codex redemption with a failed gateway cooldown clear stays successful and
-returns `cooldown_cleared: false` plus `cooldown_error: "cooldown_clear_failed"`;
-only the HTTP status is retained in the service diagnostic, and the console
-renders localized guidance.
+La resolución de cuota de plugins requiere un identificador de cuota, un ID de plugin o un proveedor de autenticación
+coincidente; una credencial sin coincidencia nunca se envía a otro plugin. Un canje de
+Codex exitoso con una limpieza fallida del enfriamiento del gateway sigue siendo exitoso y
+devuelve `cooldown_cleared: false` más `cooldown_error: "cooldown_clear_failed"`;
+solo el estado HTTP se conserva en el diagnóstico del servicio, y la consola
+renderiza orientación localizada.
 
-## 3. Frontend shape
+## 3. Forma del frontend
 
-The console scroll engine distinguishes native option lists by their computed overflow, not merely the shared holder DOM structure. Library-native `auto`/`scroll` holders retain browser-owned wheel scrolling because their deferred React offset reconciliation would race frame-by-frame writes; ordinary native regions still glide through `scrollTop`, and hidden-overflow virtual holders are driven through their wheel handler. This keeps nonvirtualized Select popups scrollable without bypassing the request-list virtualizer.
+El motor de desplazamiento de la consola distingue las listas de opciones nativas por su overflow calculado, no solo por la estructura DOM compartida del contenedor. Los contenedores `auto`/`scroll` nativos de la biblioteca conservan el desplazamiento de rueda gestionado por el navegador porque su reconciliación diferida del desplazamiento en React competiría con las escrituras fotograma a fotograma; las regiones nativas ordinarias siguen deslizándose mediante `scrollTop`, y los contenedores virtuales con overflow oculto se conducen mediante su handler de rueda. Esto mantiene desplazables los popups Select no virtualizados sin eludir el virtualizador de la lista de solicitudes.
 
-`web/src` is a single-page app on React + TypeScript + Ant Design, with TanStack
-Query for server state.
+`web/src` es una aplicación de una sola página en React + TypeScript + Ant Design, con TanStack
+Query para el estado del servidor.
 
-| Area | Contents |
+| Área | Contenido |
 | --- | --- |
-| `App.tsx` | Router, lazily loaded pages, theme and locale providers; the theme provider sits above `ConfigProvider` (Ant Design's tokens are a projection of the resolved palette) while `ThemeServerSync` sits inside `App`, because a refused save is reported through a toast (`useToast`), which needs the antd `App` context. In demo mode it neither pushes nor adopts: the theme stays in the visitor's browser |
-| `api/client.ts` | The one typed HTTP client and the shared session/error plumbing; every ordinary endpoint is declared here. The Agent's `agent/transport.ts` wraps `requestResponse` and `agent/sse.ts` for their SSE routes, without duplicating auth or retry policy |
-| `agent/` | The Agent's framework-free run layer (ADR 0041): AG-UI request building and event parsing (`protocol.ts`), the chunk-safe SSE reader (`sse.ts`), the transport, the run reducer, the wire types and the canvas document and kit (`canvasDocument.ts`, `canvasKit.ts`) and the browser-side exports (`export.ts`: file names; `conversationSnapshot.ts`, `conversationHtml.ts`, `conversationStyles.ts`, `conversationControls.ts` and `conversationDownload.ts`: the portable conversation page and image) |
-| `types/` | Wire types, including the request-record view model split by responsibility (`usageEventQuery.ts` for the URL and filter contract, `usageEventViewPreference.ts` for the stored view, `usageEventIdentity.ts` for the credential and provider behind a row, `usageEventGrouping.ts` for how records bucket, `usageEventLabels.ts` for what a row prints, `usageEventMetrics.ts` for its numbers and `usageEventCadence.ts` for the page's timing constants), `usageEventViewActions.ts` (the view's URL and persistence rewrites), `pluginOAuthProviders.ts` (which logo an installed plugin publishes for the auth provider it registers, and whether a URL may be rendered as an image at all), `tokenDisplay.ts` (the one layer every user-facing token number is formatted through) and `rollingNumber.ts` (the animated shape of a reading) |
-| `hooks/` | `usePreference`, `useProgressTask` (counts a component's lifetime, such as a Suspense fallback's, as loading-bar work), `useCustomIcons` (shared revisioned custom-icon metadata), `useLastIntentQueue` (React binding) over `lastIntentQueue` (the framework-free controller) and `disposableSlot` (effect-scoped resource lifetime), `useLogTail` (CPA's gateway tail, positioned by CPA's cursor), `useServiceLogTail` (the service log, positioned by its sequence number), `useVisibleNow`, `useLiveRevision` (binds the shared live usage channel in `api/usageLive.ts` to a query revision, §6 "The live change signal"), `useIsNarrowViewport` (900px, the shell), `useIsPhoneViewport` (640px, lists and control sizes), `useVisibleViewport` (effect-owned usable-viewport bounds; pure policy in `types/visibleViewport.ts`), `useFocusedRegion` (in-place workspace isolation and focus cleanup), `useOverlayHistory` (React binding) over `overlayHistory` (the framework-free overlay/history policy: one sentinel per open Drawer or Modal, so the platform's Back dismisses the topmost one), `usePluginOAuthLogos` (the plugin list read once, projected to provider-key logos), `usePrefersReducedMotion` (the app-owned reduced-motion switch the canvas marks need, since neither `@antv/g2` nor `@ant-design/plots` reads the preference) |
-| `i18n/` | `index.tsx` owns the base `[zh, en]` dictionary and the `t()` context; `language.ts` is the reading-language registry and locale helpers; `locales/zh-Hant.ts` and `locales/ms.ts` are the complete additional catalogs |
-| `theme/` | `palette.ts` (the nine authored tokens, the eighteen-token derivation, the registered palettes and the resolution of a mode plus a selection into a palette), `themePreference.ts` (the stored preference document, its parse and its migration from the earlier bare palette id), `ThemeContext.tsx` (the preference, the system follow, the in-progress edit, and the server sync), `themeConfig.ts` (antd tokens and CSS-variable projection), `colorMath.ts` (OKLCH mixing, luminance and contrast - the one authority for every ratio in the console), `cacheScale.ts` and `heatmapRamp.ts` (the two sequential ramps' stops) |
-| `utils/` | `scrollSmoothing.ts` (the console-wide wheel and keyboard glide, ADR 0046: discrete wheel notches and scrolling keys glide over the `scroll` token, virtualized lists are driven through their own wheel handling and get a glide's first step inside the input event, so the glide adds no latency to their own jump (ADR 0047), trackpads and touch are never glided; loaded on demand by `hooks/useScrollSmoothing.ts` and switched by the `omc_scroll_smoothing` preference, whose words live in `scrollSmoothingPreference.ts` so the engine stays out of the main entry), `maskKey.ts` (the console's one caller-key mask shape, kept branch for branch with the server's `security.MaskSecret`), `externalUrl.ts` (the http/https link rule), `modelOptions.ts` (model-input filtering), `smoothScroll.ts` (the gesture/correction scroll schedule), `clipboard.ts` (the one copy path, below), `download.ts` (`saveBlob`, the one download path: it attaches the anchor and releases the object URL on a delay, because revoking it in the click's own task cancels the save in Firefox and Safari), `format.ts` (`formatBytes`), `loadProgress.ts` (the loading bar's pure, clock-injected model: batches, settled and pending credit, the show delay and the never-backwards smoothing), `progressController.ts` (the injected clock, scheduling and hidden/reduced-motion lifecycle) and `progressTasks.ts` (the module-level registry of non-query work in flight, and the source shape the bar reads) |
-| `components/common/` | What more than one page renders: the shared primitives a page composes instead of an antd component - `AppDrawer` (every side panel: three widths, named close, two-slot footer), `SearchInput` (every filter-as-you-type field), `EmptyState` (every empty region), `SectionHeading` (every section head, three weights), `Tag` and `ToggleTag` (a short fact about a row, five tones), `ConfirmAction` (a confirmation anchored to its trigger), `SelectionBar` (the actions on ticked rows), `Toolbar` (the row above a list), `Panel` (the framed surface), `FactList` (a label/value list), `Pager` (page navigation), `Meter` (a reading on a track), `Count` (a row count beside its label), `CopyButton`, `ToolButton` (a secondary action as a glyph square named by its tooltip, labelled again inside `ActionMenu`) and `Fold` (the disclosure body that unfolds from its own height); the shell (`AppLayout`, `HeaderNav`, `AuthGate`, `PreferenceMenus`, and `HeaderAction`, the one control every header and sign-in action is built from); the page chrome every route opens with - `PageHeader` (title, subtitle or live summary, desktop `actions` and explicit `mobileActions`), `ActionMenu` (click-open secondary tools, focus and overlay history), `FilterDisclosure` (phone-only extra filters with selected-state summary), `timeRange/TimeRangePicker` (the one window picker the dashboard and the request list both adapt: presets first and an inline range calendar one level down, in a popover or a bottom sheet; its rules are `timeRange/rangeDraft.ts`), `RefreshButton` (the one refresh glyph and size, spinning rather than locking while a read is in flight), `PanelTitle` (a card's glyph, title and its one control), `StatusLabel` (a state as pip + word), `Switch` (the one on/off control, a native `role="switch"` button with the console's own drawing; `pnpm check:feedback` refuses antd's), `FactList` (label/value rows), `StatTiles` (counted tiles that double as a list's filter), the loading feedback (ADRs 0052 and 0054: `ProgressBar` draws rough task progress from `utils/loadProgress.ts` through `utils/progressController.ts`, with an independent CSS waiting-activity segment, `DataProgress` feeds it the reads the reader waits on (`isQueryProgressWork`) and `utils/progressTasks.ts`; `Placeholder.tsx` holds the eager shell/sign-in kit, while `ContentPlaceholder.tsx` keeps paragraph/table compositions behind route imports; `utils/progressSources.ts` classifies query reads and merges sources only for the loaded shell; the kit is composed by `PageLoading`, `RouteLoading`, `SuspenseFallback` and the shell's `ShellLoading`), `CodeFrame` with `CopyButton` (a code block and its copy action, shared by the transcripts and the setup snippets); `SecretInput` (a secret that is not the console login, masked by style so the browser's password manager leaves it alone); and the list a surface renders at both widths - `ResponsiveList.tsx` (table on a wide viewport, rows below 640px, with loading-before-empty, blocked-is-not-empty and clamped paging decided once) over `PhoneRow.tsx` (headline, summary, labelled fields, controls) and `phoneRowFields.ts` (derives a row's fields, and one column's rendered cell, from the *table's own* column array, so a list has one description of a record at both widths and a column cannot silently disappear on a phone; see ADR 0012) |
-| `components/workspace/` | The conversation workspace the Agent is built on: `WorkspaceLayout` (the frame: head with title and actions; main column; resizable side panel that becomes a Back-aware Drawer below 900px), `useResizablePanel` (pointer and keyboard resizing that writes the width to the DOM during a drag and commits it once), `AssistantThread` (assistant-ui's thread viewport: follows the newest message while the reader is at the bottom, holds their place once they scroll away, and offers "back to latest" only then), `AssistantComposer` (assistant-ui's composer with Ant Design controls: attachments, the queue of messages sent during a run, the `/` command and `@` mention lists a page may hand it, recall of sent messages with Up, and Enter and the send button both asking the runtime to send, because the framework's own send controls decide from state that reaches them a task after the page changed it), `ContextReadout` (the share of the model's reference context window a conversation occupies, from `contextShare.ts`), `ModelMarkdown` (safe `@ant-design/x-markdown` rendering with allowlisted code highlighting inside the shared `CodeFrame`), `ReasoningBlock` (a collapsible reasoning disclosure that follows its newest output while it streams and folds when the stream ends), `ReasoningEffortPicker`, `ComposerPicker` (the one keyboard-navigated list behind the composer's `/` commands and `@` mentions, navigated by `pickerNavigation.ts`), `TargetChip` (the composer's target as a chip), `EndpointPicker` (the inference endpoint as a chip, ADR 0088), `ModelMark` (a call point's maker's mark), and `GenerationLoader` (the waiting figure a run in flight shows). The Agent has its own shell (ADR 0076), opens a call's details under the call (ADR 0084), and keeps its capability directory and connection guide in a Drawer |
-| `components/feedback/` | Every notification and failure surface (ADR 0045): `useToast` (an action's outcome, including report toasts with per-target reasons), `LoadFailure` (a region's failed read, in its place, with Retry) and `Notice` (a condition, or a refusal beside its input; drawn by the module itself as a callout headed by an untranslated tone code, without antd's `Alert`). `toastContent.ts` holds the pure parts - `readableReason`, grouping, lifetimes. `pnpm check:feedback` keeps raw antd `Alert`, `message`, `notification` and information-only dialogs out of the rest of `web/src` |
-| `components/logs/` | The Logs page's two sources: `CpaLogPanel` (the gateway tail and error files), `ServiceLogPanel` (the service log), and `LogList`, the scrolling tail both render into - it follows the newest line until the reader scrolls away and mounts only the newest chunk. `CpaLogPanel` renders into a host element it moves to the document body for its fullscreen viewer, because a routed page sits inside a transformed container that would confine `position: fixed`. Wire types and pure helpers (line parsing, the filters and their per-value counts) live in `types/logs.ts` |
-| `components/audit/` | The audit page's `AuditTrail`: the page head with refresh and export, the outcome tiles (`StatTiles`, each count a filter), the search, category and range filters, and the trail as one `ResponsiveList` frame per day (on a phone, one tappable row per entry: the sentence and its outcome over its time and target); `AuditEventDrawer` shows one entry in full and steps to its neighbours; `auditText.ts` turns an action and a result into the sentence and word a reader sees. Wire types, URL state and facet counting live in `types/audit.ts` |
-| `components/plugins/` | The plugin management page's tabs: `InstalledPluginsPanel` (each plugin's state in words - running, enabled but not running, disabled - its switch, direct settings action and an overflow menu for safe external links and confirmed removal), `PluginSettingsPanel` (the plugin system switch, the third-party registries and the store authentication rules) and `PluginConfigDrawer` (a plugin's declared fields as typed controls, with the JSON view of the same document). The pure rules sit beside them: `pluginConfigForm.ts` (draft to document, per-field validation, undeclared keys and CPA's `store` install record carried through), `pluginConfig.ts` (JSON parsing that refuses a duplicate key) and `pluginStoreLogic.ts` (the settings draft's validation). `pluginRuntime.ts` waits for the gateway to load or unload a switched plugin. `pages/PluginsPage.tsx` owns the tab, which is the path (`/plugins`, `/plugins/settings`). `pluginPages.ts` turns the plugin list into the pages plugins registered; `AppLayout` lists them in the navigation's Plugins group, reading the plugin list once per shell, and `pages/PluginPageHost.tsx` shows one at `/plugin-pages/<id>/<n>` in a frame on the plugin host, inside a console-written parent document that states the colour mode as `data-theme` (ADR 0060) |
-| `components/`, `pages/` | Feature UI; one page per route, no page owns another. A page composes its surface rather than carrying it: `pages/UsageEventsPage.tsx` renders `components/usage/`'s toolbar, header and rows and takes its state from that directory's hooks; each of those components imports the stylesheet that draws it (`RequestList.css` for the rows and their header, `RequestToolbar.css`, `RequestFilterChips.css`, `RequestFoldControls.css`, `RequestExportDialog.css`, `UsageEventDrawer.css`, `RequestFailureDetail.css`, and `requestMarks.css` for the marks the list and the detail share), so `pages/UsageEventsPage.css` holds only the page's own layout. The dashboard, the configuration panel, key management and the log viewer do the same with one stylesheet per directory (`components/dashboard/dashboard.css`, `components/config/config.css`, `components/keys/keys.css`, `components/logs/logs.css`), which leaves `web/src/index.css` the tokens, the Ant Design overrides, the shell, the shared primitives and the classes more than one surface uses; `pages/ProvidersPage.tsx` renders `components/providers/`'s table and editor, and `pages/ConfigPage.tsx` renders `components/config/`'s renderers. The framework-free policies of a surface stay beside it: `components/usage/` carries `searchDebounce.ts`, `pollingPolicy.ts`, and `components/dashboard/routing/` carries `routingPackets.ts` (the imperative packet player, §7 rule 9 in `docs/design.md`), `usePresence.ts` and `rowMotion.ts` (rows entering, leaving and sliding on the map) beside the routing model in `types/usageRouting.ts`; `timeRangePolicy.ts`, `syncPresentation.ts`, `chipDisplay.ts` `requestListTouch.ts` (the request list under a finger: it follows the finger, coasts and folds the header, in place of the virtualizer's touch emulation, ADR 0048) and the export of selected requests (`requestSelection.ts` decides the selection and what a redaction withholds, `requestSheetModel.ts` lays the image out as data, `requestExportJson.ts` builds the JSON document, and only `requestSheetPainter.ts` touches a canvas - so what an export can contain is asserted without a browser), and `components/config/` carries `payloadRules.ts`, `configDirty.ts` and `configPatch.ts` |
+| `App.tsx` | Router, páginas cargadas de forma diferida, proveedores de tema y de locale; el proveedor de tema queda por encima de `ConfigProvider` (los tokens de Ant Design son una proyección de la paleta resuelta) mientras que `ThemeServerSync` queda dentro de `App`, porque un guardado rechazado se informa mediante un toast (`useToast`), que necesita el contexto `App` de antd. En modo demo ni envía ni adopta: el tema permanece en el navegador del visitante |
+| `api/client.ts` | El único cliente HTTP tipado y la infraestructura compartida de sesión/errores; todo endpoint ordinario se declara aquí. El `agent/transport.ts` del Agent envuelve `requestResponse` y `agent/sse.ts` para sus rutas SSE, sin duplicar la política de autenticación ni de reintentos |
+| `agent/` | La capa de ejecución del Agent sin framework (ADR 0041): construcción de solicitudes AG-UI y análisis de eventos (`protocol.ts`), el lector SSE seguro frente a fragmentos (`sse.ts`), el transporte, el reductor de ejecución, los tipos de protocolo y el documento y kit del canvas (`canvasDocument.ts`, `canvasKit.ts`) y las exportaciones del lado del navegador (`export.ts`: nombres de archivo; `conversationSnapshot.ts`, `conversationHtml.ts`, `conversationStyles.ts`, `conversationControls.ts` y `conversationDownload.ts`: la página portátil de la conversación y la imagen) |
+| `types/` | Tipos de protocolo, incluido el modelo de vista del registro de solicitudes dividido por responsabilidad (`usageEventQuery.ts` para el contrato de URL y filtros, `usageEventViewPreference.ts` para la vista almacenada, `usageEventIdentity.ts` para la credencial y el proveedor detrás de una fila, `usageEventGrouping.ts` para cómo se agrupan los registros, `usageEventLabels.ts` para lo que imprime una fila, `usageEventMetrics.ts` para sus números y `usageEventCadence.ts` para las constantes de temporización de la página), `usageEventViewActions.ts` (las reescrituras de URL y de persistencia de la vista), `pluginOAuthProviders.ts` (qué logotipo publica un plugin instalado para el proveedor de autenticación que registra, y si una URL puede renderizarse como imagen), `tokenDisplay.ts` (la única capa por la que se formatea todo número de tokens visible al usuario) y `rollingNumber.ts` (la forma animada de una lectura) |
+| `hooks/` | `usePreference`, `useProgressTask` (cuenta la vida de un componente, como la de un fallback de Suspense, como trabajo de la barra de carga), `useCustomIcons` (metadatos de íconos personalizados compartidos y con revisión), `useLastIntentQueue` (enlace con React) sobre `lastIntentQueue` (el controlador sin framework) y `disposableSlot` (vida de un recurso acotado a un efecto), `useLogTail` (la cola del gateway de CPA, posicionada por el cursor de CPA), `useServiceLogTail` (el log del servicio, posicionado por su número de secuencia), `useVisibleNow`, `useLiveRevision` (enlaza el canal de uso en vivo compartido en `api/usageLive.ts` con una revisión de consulta, §6 «La señal de cambio en vivo»), `useIsNarrowViewport` (900px, la carcasa), `useIsPhoneViewport` (640px, listas y tamaños de controles), `useVisibleViewport` (límites del viewport utilizable gestionados por el efecto; política pura en `types/visibleViewport.ts`), `useFocusedRegion` (aislamiento del espacio de trabajo en sitio y limpieza de foco), `useOverlayHistory` (enlace con React) sobre `overlayHistory` (la política sin framework de overlay/historial: un centinela por cada Drawer o Modal abierto, de modo que el Atrás de la plataforma descarta el superior), `usePluginOAuthLogos` (la lista de plugins leída una vez, proyectada a logotipos por clave de proveedor), `usePrefersReducedMotion` (el interruptor de movimiento reducido propio de la aplicación que necesitan las marcas del canvas, ya que ni `@antv/g2` ni `@ant-design/plots` leen la preferencia) |
+| `i18n/` | `index.tsx` es dueño del diccionario base `[zh, en]` y del contexto `t()`; `language.ts` es el registro de idiomas de lectura y los ayudantes de locale; `locales/zh-Hant.ts` y `locales/ms.ts` son los catálogos adicionales completos |
+| `theme/` | `palette.ts` (los nueve tokens creados, la derivación de dieciocho tokens, las paletas registradas y la resolución de un modo más una selección en una paleta), `themePreference.ts` (el documento de preferencia almacenado, su análisis y su migración desde el id de paleta simple anterior), `ThemeContext.tsx` (la preferencia, el seguimiento del sistema, la edición en curso y la sincronización con el servidor), `themeConfig.ts` (tokens de antd y proyección de variables CSS), `colorMath.ts` (mezcla OKLCH, luminancia y contraste - la única autoridad para toda razón de la consola), `cacheScale.ts` y `heatmapRamp.ts` (las paradas de las dos rampas secuenciales) |
+| `utils/` | `scrollSmoothing.ts` (el deslizamiento de rueda y teclado de toda la consola, ADR 0046: las muescas discretas de rueda y las teclas de desplazamiento se deslizan sobre el token `scroll`, las listas virtualizadas se conducen mediante su propio manejo de rueda y reciben el primer paso de un deslizamiento dentro del evento de entrada, para que el deslizamiento no añada latencia a su propio salto (ADR 0047), los trackpads y el tacto nunca se deslizan; se carga bajo demanda mediante `hooks/useScrollSmoothing.ts` y se activa con la preferencia `omc_scroll_smoothing`, cuyas palabras viven en `scrollSmoothingPreference.ts` para que el motor quede fuera de la entrada principal), `maskKey.ts` (la única forma de máscara de clave de llamador de la consola, mantenida rama por rama con el `security.MaskSecret` del servidor), `externalUrl.ts` (la regla de enlaces http/https), `modelOptions.ts` (filtrado de entradas de modelo), `smoothScroll.ts` (la programación de gestos/correcciones de desplazamiento), `clipboard.ts` (la única ruta de copia, más abajo), `download.ts` (`saveBlob`, la única ruta de descarga: adjunta el ancla y libera la URL del objeto con retraso, porque revocarla en la propia tarea del clic cancela el guardado en Firefox y Safari), `format.ts` (`formatBytes`), `loadProgress.ts` (el modelo puro de la barra de carga con reloj inyectado: lotes, crédito resuelto y pendiente, el retraso de aparición y el suavizado que nunca retrocede), `progressController.ts` (el reloj inyectado, la programación y el ciclo de vida de oculto/movimiento reducido) y `progressTasks.ts` (el registro a nivel de módulo del trabajo en curso que no es de consultas, y la forma de la fuente que lee la barra) |
+| `components/common/` | Lo que renderiza más de una página: las primitivas compartidas que una página compone en lugar de un componente de antd - `AppDrawer` (todo panel lateral: tres anchos, cierre con nombre, pie de dos ranuras), `SearchInput` (todo campo de filtro mientras se escribe), `EmptyState` (toda región vacía), `SectionHeading` (todo encabezado de sección, tres pesos), `Tag` y `ToggleTag` (un dato breve sobre una fila, cinco tonos), `ConfirmAction` (una confirmación anclada a su disparador), `SelectionBar` (las acciones sobre filas marcadas), `Toolbar` (la fila sobre una lista), `Panel` (la superficie enmarcada), `FactList` (una lista de etiqueta/valor), `Pager` (navegación de páginas), `Meter` (una lectura sobre una pista), `Count` (un conteo de filas junto a su etiqueta), `CopyButton`, `ToolButton` (una acción secundaria como un cuadrado con glifo nombrado por su tooltip, etiquetada de nuevo dentro de `ActionMenu`) y `Fold` (el cuerpo de divulgación que se despliega desde su propia altura); la carcasa (`AppLayout`, `HeaderNav`, `AuthGate`, `PreferenceMenus` y `HeaderAction`, el único control con el que se construye toda acción de encabezado y de inicio de sesión); el chrome de página con el que abre toda ruta - `PageHeader` (título, subtítulo o resumen en vivo, `actions` de escritorio y `mobileActions` explícitas), `ActionMenu` (herramientas secundarias que se abren con clic, foco e historial de overlay), `FilterDisclosure` (filtros adicionales solo para teléfono con resumen del estado seleccionado), `timeRange/TimeRangePicker` (el único selector de ventana que adaptan el panel y la lista de solicitudes: primero los preajustes y un calendario de rango en línea un nivel más abajo, en un popover o una hoja inferior; sus reglas son `timeRange/rangeDraft.ts`), `RefreshButton` (el único glifo y tamaño de actualización, que gira en lugar de bloquearse mientras una lectura está en curso), `PanelTitle` (el glifo de una tarjeta, su título y su único control), `StatusLabel` (un estado como punto + palabra), `Switch` (el único control de encendido/apagado, un botón nativo `role="switch"` con el dibujo propio de la consola; `pnpm check:feedback` rechaza el de antd), `FactList` (filas de etiqueta/valor), `StatTiles` (mosaicos contados que además sirven de filtro de una lista), la retroalimentación de carga (ADR 0052 y 0054: `ProgressBar` dibuja el progreso aproximado de tareas a partir de `utils/loadProgress.ts` mediante `utils/progressController.ts`, con un segmento CSS independiente de actividad de espera, `DataProgress` le alimenta las lecturas que espera el lector (`isQueryProgressWork`) y `utils/progressTasks.ts`; `Placeholder.tsx` contiene el kit ansioso de carcasa/inicio de sesión, mientras que `ContentPlaceholder.tsx` mantiene las composiciones de párrafo/tabla tras importaciones de ruta; `utils/progressSources.ts` clasifica las lecturas de consultas y fusiona fuentes solo para la carcasa cargada; el kit lo componen `PageLoading`, `RouteLoading`, `SuspenseFallback` y el `ShellLoading` de la carcasa), `CodeFrame` con `CopyButton` (un bloque de código y su acción de copia, compartido por las transcripciones y los fragmentos de configuración); `SecretInput` (un secreto que no es el inicio de sesión de la consola, enmascarado por estilo para que el gestor de contraseñas del navegador lo deje en paz); y la lista que una superficie renderiza en ambos anchos - `ResponsiveList.tsx` (tabla en un viewport ancho, filas por debajo de 640px, con carga antes que vacío, bloqueado-no-es-vacío y paginación acotada decididos una sola vez) sobre `PhoneRow.tsx` (titular, resumen, campos etiquetados, controles) y `phoneRowFields.ts` (deriva los campos de una fila, y la celda renderizada de una columna, del arreglo de columnas *propio de la tabla*, de modo que una lista tiene una sola descripción de un registro en ambos anchos y una columna no puede desaparecer en silencio en un teléfono; véase el ADR 0012) |
+| `components/workspace/` | El espacio de trabajo de conversación sobre el que se construye el Agent: `WorkspaceLayout` (el marco: cabecera con título y acciones; columna principal; panel lateral redimensionable que pasa a ser un Drawer consciente de Atrás por debajo de 900px), `useResizablePanel` (redimensionado con puntero y teclado que escribe el ancho en el DOM durante un arrastre y lo confirma una sola vez), `AssistantThread` (el viewport del hilo de assistant-ui: sigue el mensaje más nuevo mientras el lector está al final, mantiene su lugar cuando se desplaza hacia arriba y ofrece «volver al último» solo entonces), `AssistantComposer` (el compositor de assistant-ui con controles de Ant Design: adjuntos, la cola de mensajes enviados durante una ejecución, las listas de comandos `/` y menciones `@` que una página puede entregarle, recuperación de mensajes enviados con la flecha arriba, y Enter y el botón de enviar que piden ambos al runtime que envíe, porque los controles de envío propios del framework deciden a partir de un estado que les llega una tarea después de que la página lo cambió), `ContextReadout` (la proporción de la ventana de contexto de referencia del modelo que ocupa una conversación, a partir de `contextShare.ts`), `ModelMarkdown` (renderizado seguro de `@ant-design/x-markdown` con resaltado de código de lista permitida dentro del `CodeFrame` compartido), `ReasoningBlock` (un desplegable de razonamiento plegable que sigue su salida más nueva mientras se transmite y se pliega cuando termina el flujo), `ReasoningEffortPicker`, `ComposerPicker` (la única lista navegada con teclado detrás de los comandos `/` y las menciones `@` del compositor, navegada mediante `pickerNavigation.ts`), `TargetChip` (el destino del compositor como un chip), `EndpointPicker` (el endpoint de inferencia como un chip, ADR 0088), `ModelMark` (la marca del fabricante de un punto de llamada) y `GenerationLoader` (la figura de espera que muestra una ejecución en curso). El Agent tiene su propia carcasa (ADR 0076), abre los detalles de una llamada bajo la llamada (ADR 0084) y mantiene su directorio de capacidades y su guía de conexión en un Drawer |
+| `components/feedback/` | Toda superficie de notificación y de fallo (ADR 0045): `useToast` (el resultado de una acción, incluidos los toasts de informe con motivos por destino), `LoadFailure` (la lectura fallida de una región, en su lugar, con Reintentar) y `Notice` (una condición, o un rechazo junto a su entrada; dibujado por el propio módulo como un callout encabezado por un código de tono sin traducir, sin el `Alert` de antd). `toastContent.ts` contiene las partes puras - `readableReason`, agrupación, duraciones. `pnpm check:feedback` mantiene fuera del resto de `web/src` los `Alert`, `message`, `notification` y diálogos solo informativos en bruto de antd |
+| `components/logs/` | Las dos fuentes de la página de Registros: `CpaLogPanel` (la cola del gateway y los archivos de error), `ServiceLogPanel` (el log del servicio) y `LogList`, la cola desplazable en la que ambos renderizan - sigue la línea más nueva hasta que el lector se desplaza y monta solo el fragmento más nuevo. `CpaLogPanel` renderiza en un elemento anfitrión que mueve al body del documento para su visor a pantalla completa, porque una página enrutada se sitúa dentro de un contenedor transformado que confinaría `position: fixed`. Los tipos de protocolo y los ayudantes puros (análisis de líneas, los filtros y sus conteos por valor) viven en `types/logs.ts` |
+| `components/audit/` | El `AuditTrail` de la página de auditoría: la cabecera de página con actualizar y exportar, los mosaicos de resultado (`StatTiles`, cada conteo es un filtro), los filtros de búsqueda, categoría y rango, y la pista como un marco `ResponsiveList` por día (en un teléfono, una fila tocable por entrada: la frase y su resultado sobre su hora y destino); `AuditEventDrawer` muestra una entrada completa y pasa a sus vecinas; `auditText.ts` convierte una acción y un resultado en la frase y la palabra que ve un lector. Los tipos de protocolo, el estado de URL y el conteo de facetas viven en `types
+| `components/plugins/` | Las pestañas de la página de gestión de plugins: `InstalledPluginsPanel` (el estado de cada plugin en palabras - en ejecución, habilitado pero sin ejecutarse, deshabilitado - su interruptor, acción directa de ajustes y un menú de desbordamiento para enlaces externos seguros y eliminación confirmada), `PluginSettingsPanel` (el interruptor del sistema de plugins, los registros de terceros y las reglas de autenticación de la tienda) y `PluginConfigDrawer` (los campos declarados de un plugin como controles tipados, con la vista JSON del mismo documento). Las reglas puras están junto a ellos: `pluginConfigForm.ts` (borrador a documento, validación por campo, claves no declaradas y el registro de instalación `store` de CPA transportado), `pluginConfig.ts` (análisis JSON que rechaza una clave duplicada) y `pluginStoreLogic.ts` (la validación del borrador de ajustes). `pluginRuntime.ts` espera a que el gateway cargue o descargue un plugin conmutado. `pages/PluginsPage.tsx` es dueña de la pestaña, que es la ruta (`/plugins`, `/plugins/settings`). `pluginPages.ts` convierte la lista de plugins en las páginas que registraron los plugins; `AppLayout` las lista en el grupo Plugins de la navegación, leyendo la lista de plugins una vez por carcasa, y `pages/PluginPageHost.tsx` muestra una en `/plugin-pages/<id>/<n>` en un marco sobre el host de plugins, dentro de un documento padre escrito por la consola que declara el modo de color como `data-theme` (ADR 0060) |
+| `components/`, `pages/` | UI de funcionalidades; una página por ruta, ninguna página es dueña de otra. Una página compone su superficie en lugar de cargarla: `pages/UsageEventsPage.tsx` renderiza la barra de herramientas, la cabecera y las filas de `components/usage/` y toma su estado de los hooks de ese directorio; cada uno de esos componentes importa la hoja de estilos que lo dibuja (`RequestList.css` para las filas y su cabecera, `RequestToolbar.css`, `RequestFilterChips.css`, `RequestFoldControls.css`, `RequestExportDialog.css`, `UsageEventDrawer.css`, `RequestFailureDetail.css` y `requestMarks.css` para las marcas que comparten la lista y el detalle), de modo que `pages/UsageEventsPage.css` contiene solo el diseño propio de la página. El panel, el panel de configuración, la gestión de claves y el visor de logs hacen lo mismo con una hoja de estilos por directorio (`components/dashboard/dashboard.css`, `components/config/config.css`, `components/keys/keys.css`, `components/logs/logs.css`), lo que deja a `web/src/index.css` los tokens, las sobrescrituras de Ant Design, la carcasa, las primitivas compartidas y las clases que usa más de una superficie; `pages/ProvidersPage.tsx` renderiza la tabla y el editor de `components/providers/`, y `pages/ConfigPage.tsx` renderiza los renderizadores de `components/config/`. Las políticas sin framework de una superficie permanecen a su lado: `components/usage/` lleva `searchDebounce.ts`, `pollingPolicy.ts`, y `components/dashboard/routing/` lleva `routingPackets.ts` (el reproductor imperativo de paquetes, §7 regla 9 en `docs/design.md`), `usePresence.ts` y `rowMotion.ts` (filas que entran, salen y se deslizan en el mapa) junto al modelo de enrutamiento en `types/usageRouting.ts`; `timeRangePolicy.ts`, `syncPresentation.ts`, `chipDisplay.ts`, `requestListTouch.ts` (la lista de solicitudes bajo un dedo: sigue al dedo, se desliza por inercia y pliega la cabecera, en lugar de la emulación táctil del virtualizador, ADR 0048) y la exportación de solicitudes seleccionadas (`requestSelection.ts` decide la selección y lo que una redacción retiene, `requestSheetModel.ts` dispone la imagen como datos, `requestExportJson.ts` construye el documento JSON, y solo `requestSheetPainter.ts` toca un canvas - de modo que lo que una exportación puede contener se verifica sin un navegador), y `components/config/` lleva `payloadRules.ts`, `configDirty.ts` y `configPatch.ts` |
 
-OAuth workspace sorting constructs its numeric/base-sensitive name collator lazily
-within one sort invocation, resolving the runtime default locale afresh. Numeric
-ranking, fallback defaults and stable name ties are unchanged. Do not share this
-comparator with `components/authFiles/authFileLogic.ts` blindly: that legacy list's
-numeric-ranking ties use a different plain-name comparison policy. The differential
-oracle and opt-in benchmark are documented in `docs/testing.md`.
+La ordenación del espacio de trabajo de OAuth construye de forma diferida su colador de nombres sensible a numéricos/base
+dentro de una sola invocación de ordenación, resolviendo de nuevo el locale por defecto del runtime. El ranking
+numérico, los valores por defecto de respaldo y los empates estables de nombre no cambian. No comparta este
+comparador a ciegas con `components/authFiles/authFileLogic.ts`: los empates de ranking numérico de esa lista heredada
+usan una política de comparación de nombres simples distinta. El oráculo diferencial
+y el benchmark opcional están documentados en `docs/testing.md`.
 
-Shared conversation primitives do not depend on a page at runtime: `utils/ids.ts`
-owns one fallback ID counter, `utils/thinking.ts` parses inline thinking,
-`types/requestModel.ts` reads the effective custom-body model, and
-`components/workspace/imageAttachments.ts` owns admission, decoding and bounded
-Agent image encoding. Agent and portable exports import these leaves directly.
-`components/workspace/conversationLabels.ts` owns status admission, Agent
-error vocabularies and duration presentation for the shared export hook.
-Page modules retain their public exports, while shared workspace runtime modules
-must not import page internals.
-The runtime-graph guard in `scripts/conversation-boundaries.test.mjs` prevents
-reversing these dependencies.
+Las primitivas de conversación compartidas no dependen de una página en tiempo de ejecución: `utils/ids.ts`
+es dueño de un contador de ids de respaldo, `utils/thinking.ts` analiza el razonamiento en línea,
+`types/requestModel.ts` lee el modelo efectivo del cuerpo personalizado, y
+`components/workspace/imageAttachments.ts` es dueño de la admisión, la decodificación y la codificación acotada de imágenes
+del Agent. El Agent y las exportaciones portátiles importan directamente estas hojas.
+`components/workspace/conversationLabels.ts` es dueño de la admisión de estados, los vocabularios de error
+del Agent y la presentación de duraciones para el hook de exportación compartido.
+Los módulos de página conservan sus exportaciones públicas, mientras que los módulos de runtime del espacio de trabajo compartido
+no deben importar internos de páginas.
+La guarda de grafo de runtime en `scripts/conversation-boundaries.test.mjs` impide
+invertir estas dependencias.
 
-A failure's sentence goes through `describeError` (`api/client.ts`) rather than each
-call site's own `instanceof` ladder: an `ApiError` already carries the server's message
-(or the console's localized demo refusal), and a transport `Error`'s message is the useful
-part - `String(error)` prefixed every one of them with `Error: `.
+La frase de un fallo pasa por `describeError` (`api/client.ts`) en lugar de la propia escalera
+`instanceof` de cada sitio de llamada: un `ApiError` ya lleva el mensaje del servidor
+(o el rechazo localizado de demo de la consola), y el mensaje de un `Error` de transporte es la parte
+útil - `String(error)` anteponía `Error: ` a todos ellos.
 
-Every copy control goes through `utils/clipboard.ts` rather than calling the
-Clipboard API itself. That API exists only in a secure context, and a plain-HTTP
-origin is a supported deployment of this console (`deploy/nginx.conf` listens on
-:80 without TLS, and the dev server is reachable from a LAN or Tailscale device),
-where `navigator.clipboard` is `undefined` outright. The helper therefore falls
-back to the selection path and returns whether the text actually reached the
-clipboard, and no control may announce a copy it did not make.
+Todo control de copia pasa por `utils/clipboard.ts` en lugar de llamar él mismo a la
+API del Portapapeles. Esa API existe solo en un contexto seguro, y un origen HTTP simple
+es un despliegue admitido de esta consola (`deploy/nginx.conf` escucha en
+:80 sin TLS, y el servidor de desarrollo es alcanzable desde un dispositivo de LAN o Tailscale),
+donde `navigator.clipboard` es sencillamente `undefined`. Por tanto, el ayudante recurre
+a la ruta de selección y devuelve si el texto realmente llegó al
+portapapeles, y ningún control puede anunciar una copia que no hizo.
 
-That fallback carries two constraints a control inside a dialog depends on. A dialog -
-antd's Drawer and Modal both - pulls focus back into its own subtree, so the scratch
-element the selection path types through has to join that subtree rather than
-`document.body`: attached outside it, the element never keeps the focus its selection
-needs and the selection stays empty. And `execCommand('copy')` answers `true` for an
-empty selection, so the helper checks that the scratch element holds focus and its own
-selection before believing the result.
+Ese respaldo conlleva dos restricciones de las que depende un control dentro de un diálogo. Un diálogo -
+el Drawer y el Modal de antd por igual - devuelve el foco a su propio subárbol, así que el elemento
+temporal por el que la ruta de selección escribe tiene que unirse a ese subárbol y no a
+`document.body`: adjunto fuera de él, el elemento nunca mantiene el foco que su selección
+necesita y la selección queda vacía. Y `execCommand('copy')` responde `true` ante una
+selección vacía, así que el ayudante comprueba que el elemento temporal tenga foco y su propia
+selección antes de creer el resultado.
 
-All page routes and the authenticated `AppLayout` are `React.lazy` import
-boundaries. `AuthGate`, `ShellLoading` and the route recovery fallback remain
-eager so sign-in and recovery do not wait for authenticated code. Brand/provider marks are copied from the pinned
-`@lobehub/icons-static-svg` package into `web/public/lobe-icons` and referenced
-as SVG URLs. The small catalog used for lookup and grouping is vendored in
-`web/src/generated/lobeIconCatalog.json`; the React icon package is not a
-dependency, because importing it would pull hundreds of components into the
-eager bundle; the Shell-PAMC Settings page is lazy for the same reason, because the palette editor it carries
-pulls in Ant Design's colour picker. Dashboard KPI cards use `@ant-design/charts` in a dedicated
-`vendor-charts` chunk, lazily loaded so the entry bundle stays small. Their
-numbers animate through `@number-flow/react`, which the dashboard page imports
-directly instead of through a vendor chunk: only that route uses it, and being on
-a lazy route boundary it never enters the entry's static module graph. The marks
-themselves morph between revisions on the same motion token, gated by the
-reduced-motion hook above. `docs/design.md`
-§7 rules 5 and 8 own the motion they are allowed to run, and ADRs 0007 and 0008 own the
-trade-offs.
+Todas las rutas de página y el `AppLayout` autenticado son límites de importación
+`React.lazy`. `AuthGate`, `ShellLoading` y el fallback de recuperación de rutas permanecen
+ansiosos para que el inicio de sesión y la recuperación no esperen al código autenticado. Las marcas de marca/proveedor se copian del paquete fijado
+`@lobehub/icons-static-svg` a `web/public/lobe-icons` y se referencian
+como URL SVG. El pequeño catálogo usado para búsqueda y agrupación está incluido en
+`web/src/generated/lobeIconCatalog.json`; el paquete de íconos de React no es una
+dependencia, porque importarlo arrastraría cientos de componentes al
+bundle ansioso; la página de Ajustes de Shell-PAMC es diferida por la misma razón, porque el editor de paletas que lleva
+arrastra el selector de color de Ant Design. Las tarjetas KPI del panel usan `@ant-design/charts` en un chunk
+`vendor-charts` dedicado, cargado de forma diferida para que el bundle de entrada siga siendo pequeño. Sus
+números se animan mediante `@number-flow/react`, que la página del panel importa
+directamente en lugar de mediante un chunk de proveedor: solo esa ruta lo usa, y al estar en
+un límite de ruta diferido nunca entra en el grafo estático de módulos de la entrada. Las propias marcas
+se transforman entre revisiones con el mismo token de movimiento, controlado por el hook de
+movimiento reducido citado arriba. Las reglas 5 y 8 del §7 de `docs/design.md`
+son dueñas del movimiento que se les permite ejecutar, y los ADR 0007 y 0008 son dueños de los
+compromisos.
 
-Dashboard chart creation is paced by `utils/chartMountQueue.ts` and `charts/ChartMount.tsx`:
-one queued mount commits in a task following each animation frame, leaving opportunities
-for paint and input between the eight G2 initializations. The caller reserves the existing
-chart geometry, queued work is canceled on unmount (including StrictMode cleanup), and
-hidden tabs pause with the browser's animation frames. Once mounted, charts keep their
-instances and receive data, theme, timezone, locale and unit-style updates normally; the
-queue does not defer updates or change the motion specification. KPI selectors and
-formatters have stable references, and memoized chart boundaries avoid reprocessing
-unchanged series on query-status updates.
+La creación de gráficos del panel se dosifica mediante `utils/chartMountQueue.ts` y `charts/ChartMount.tsx`:
+un montaje en cola se confirma en una tarea posterior a cada fotograma de animación, dejando oportunidades
+de pintado y de entrada entre las ocho inicializaciones de G2. El llamador reserva la geometría
+existente del gráfico, el trabajo en cola se cancela al desmontar (incluida la limpieza de StrictMode), y
+las pestañas ocultas se pausan con los fotogramas de animación del navegador. Una vez montados, los gráficos conservan sus
+instancias y reciben normalmente actualizaciones de datos, tema, zona horaria, locale y estilo de unidades; la
+cola no difiere las actualizaciones ni cambia la especificación de movimiento. Los selectores y
+formateadores de KPI tienen referencias estables, y los límites de gráficos memoizados evitan reprocesar
+series sin cambios en las actualizaciones de estado de consultas.
 
-Icons come from `lucide-react`, through the wrapper layer in
-`web/src/components/icons/index.tsx` rather than by direct import, so the console keeps the Ant
-Design icon names and the `anticon` classes its CSS already selects on. Those wrappers are thin
-forwarders, so the icon set is tree-shaken to the icons actually referenced; ADR 0025 records the
-switch away from `@ant-design/icons` and the two stylesheet declarations the console took over so
-its icons no longer depend on another package's runtime injection.
+Los íconos proceden de `lucide-react`, a través de la capa de envoltorios en
+`web/src/components/icons/index.tsx` y no por importación directa, de modo que la consola conserva los nombres de íconos de Ant
+Design y las clases `anticon` sobre las que ya selecciona su CSS. Esos envoltorios son reenviadores finos,
+así que el conjunto de íconos se reduce por tree-shaking a los íconos realmente referenciados; el ADR 0025 registra el
+cambio desde `@ant-design/icons` y las dos declaraciones de hoja de estilos que asumió la consola para que
+sus íconos ya no dependan de la inyección en runtime de otro paquete.
 
-**A plugin's published logo outranks the catalog mark for the provider it
-registers.** A plugin that declares `supports_oauth` may publish its own logo, and
-when it publishes usable artwork that mark is the one drawn: the plugin is the only
-authority on what its own provider looks like, and the vendored catalog cannot be
-updated by installing a plugin, so guessing a brand from the provider key would
-label the operator's own credential with somebody else's mark.
-It is not loaded from the plugin's host, though - the deployment must not
-depend on a CDN, and the console's CSP allows images only from itself or inline -
-so the Go process inlines it (§2) and `types/pluginOAuthProviders.ts` resolves the
-plugin list into provider-key logos (including a plugin whose auths are typed by
-its own id rather than by `oauth_provider`). `LobeIcon.tsx`'s `ProviderBrandIcon`
-renders it - one component for the provider tabs, the unified credential records,
-the request records, the provider table and the dashboard's provider rows, so
-those surfaces cannot disagree about the same provider. Only inline artwork is
-rendered: a provider no plugin owns, a logo that could not be inlined, and a value
-at a scheme the browser may not load all fall back to the catalog mark, and a
-plugin-owned row shows the plugin's mark even when an operator icon override is
-stored for that key, and it does not depend on the plugin being enabled — the mark
-identifies the provider behind a credential or a past request, which does not stop being
-true when the plugin is switched off (ADR 0014). ADR 0013 owns the trade-offs behind the
-other choices here, including why a plugin-declared logo URL is held to a stricter
-destination policy than an operator-typed one.
-The backend discovery/binding model the retired triage console rendered is still
-live behind Providers and OAuth management; the console no longer carries a
-component of its own for it.
+**El logotipo publicado de un plugin prevalece sobre la marca del catálogo para el proveedor que
+registra.** Un plugin que declara `supports_oauth` puede publicar su propio logotipo, y
+cuando publica arte utilizable esa marca es la que se dibuja: el plugin es la única
+autoridad sobre cómo se ve su propio proveedor, y el catálogo incluido no puede
+actualizarse instalando un plugin, de modo que adivinar una marca a partir de la clave del proveedor
+rotularía la credencial del propio operador con la marca de otro.
+Sin embargo, no se carga desde el host del plugin - el despliegue no debe
+depender de un CDN, y la CSP de la consola permite imágenes solo desde sí misma o en línea -
+así que el proceso de Go lo incrusta (§2) y `types/pluginOAuthProviders.ts` resuelve la
+lista de plugins en logotipos por clave de proveedor (incluido un plugin cuyas autenticaciones se tipan por
+su propio id y no por `oauth_provider`). El `ProviderBrandIcon` de `LobeIcon.tsx`
+lo renderiza - un solo componente para las pestañas de proveedores, los registros unificados de credenciales,
+los registros de solicitudes, la tabla de proveedores y las filas de proveedores del panel, de modo que
+esas superficies no puedan discrepar sobre el mismo proveedor. Solo se renderiza arte en línea:
+un proveedor que ningún plugin posee, un logotipo que no pudo incrustarse y un valor
+con un esquema que el navegador no puede cargar recurren todos a la marca del catálogo, y una
+fila propiedad de un plugin muestra la marca del plugin incluso cuando hay almacenada una sobrescritura de ícono
+del operador para esa clave, y no depende de que el plugin esté habilitado — la marca
+identifica al proveedor detrás de una credencial o de una solicitud pasada, lo cual no deja de ser
+cierto cuando el plugin se apaga (ADR 0014). El ADR 0013 es dueño de los compromisos detrás de las
+otras decisiones aquí, incluido por qué la URL de un logotipo declarada por un plugin se somete a una política de
+destino más estricta que una escrita por el operador.
+El modelo de descubrimiento/enlace del backend que renderizaba la consola de triaje retirada sigue
+vigente tras Proveedores y la gestión de OAuth; la consola ya no lleva un
+componente propio para ello.
 
-`components/icons/index.tsx` is the console's icon layer, and is referenced by every
-surface that draws an icon: it wraps Lucide components in the Ant Design icon names the
-rest of the codebase imports (`<ApiOutlined />`, `<SyncOutlined spin />`) instead of
-letting components import an icon library directly. It keeps the `anticon` class names and
-the `spin` prop, because first-party CSS and antd's own components select on them, and
-`web/src/index.css` owns the two declarations that used to arrive from that library's
-runtime-injected stylesheet (the base box model and the spin keyframes). ADR 0025 records
-the move; the console has no direct dependency on `@ant-design/icons`, while antd keeps
-its own transitive one.
+`components/icons/index.tsx` es la capa de íconos de la consola, y la referencian todas las
+superficies que dibujan un ícono: envuelve componentes de Lucide en los nombres de íconos de Ant Design que importa
+el resto del código (`<ApiOutlined />`, `<SyncOutlined spin />`) en lugar de
+dejar que los componentes importen directamente una biblioteca de íconos. Conserva los nombres de clase `anticon` y
+la prop `spin`, porque el CSS propio y los componentes de antd seleccionan sobre ellos, y
+`web/src/index.css` es dueño de las dos declaraciones que antes llegaban de la hoja de estilos
+inyectada en runtime de esa biblioteca (el modelo de caja base y los keyframes de giro). El ADR 0025 registra
+el cambio; la consola no tiene dependencia directa de `@ant-design/icons`, mientras que antd conserva
+la suya transitiva.
 
-CSS class names are kebab-case everywhere, including `*.module.css` exports,
-which are consumed as `styles['kebab-case']`. That is not cosmetic: `tsc` types a
-CSS module as `Record<string, string>`, so a stale class reference compiles and
-fails silently at runtime. `pnpm check-css-modules` is the guard that closes
-that hole.
+Los nombres de clase CSS son kebab-case en todas partes, incluidas las exportaciones de `*.module.css`,
+que se consumen como `styles['kebab-case']`. Eso no es cosmético: `tsc` tipa un
+módulo CSS como `Record<string, string>`, así que una referencia de clase obsoleta compila y
+falla en silencio en runtime. `pnpm check-css-modules` es la guarda que cierra
+esa brecha.
 
-The motion budget is enforced the same way. `pnpm check:motion` reads the
-stylesheets and the inline `transition:` strings in components, and fails on a
-duration that is not a `--motion-*` token, a transition on a layout property (or
-on `all`), a keyframe animation with no `prefers-reduced-motion` counterpart, and
-a hover transitioning colour outside the fast token; the disclosures that need a
-layout animation, and the routing map's lane flow that plays under reduced motion
-(ADR 0102), are listed in its `EXCEPTIONS` table with a reason each, and a stale
-entry is itself a failure. The budget it enforces is stated in
-`docs/design.md` §7, and the reasoning behind the hover bound is ADR 0009.
+El presupuesto de movimiento se hace cumplir del mismo modo. `pnpm check:motion` lee las
+hojas de estilos y las cadenas `transition:` en línea de los componentes, y falla ante una
+duración que no es un token `--motion-*`, una transición sobre una propiedad de layout (o
+sobre `all`), una animación keyframe sin contraparte `prefers-reduced-motion`, y
+un hover que transiciona color fuera del token rápido; los desplegables que necesitan una
+animación de layout, y el flujo de carriles del mapa de enrutamiento que se reproduce con movimiento reducido
+(ADR 0102), figuran en su tabla `EXCEPTIONS` con un motivo cada uno, y una
+entrada obsoleta es en sí misma un fallo. El presupuesto que hace cumplir está declarado en
+`docs/design.md` §7, y el razonamiento detrás del límite de hover es el ADR 0009.
 
-The type and radius scales are held the same way. `pnpm check:style-tokens` reads
-every stylesheet and fails on a font size that the scale owns but is written as a
-number, a fractional font size, a corner on the 2 · 6 · 8 · 12 scale written as a
-number, an off-scale 5px corner, and a `--text-*` or `--radius-*` reference
-that no stylesheet defines or that carries a fallback (`docs/design.md` §3 and §4).
+Las escalas de tipografía y de radios se mantienen del mismo modo. `pnpm check:style-tokens` lee
+cada hoja de estilos y falla ante un tamaño de fuente que la escala posee pero está escrito como
+número, un tamaño de fuente fraccionario, una esquina de la escala 2 · 6 · 8 · 12 escrita como
+número, una esquina de 5px fuera de escala, y una referencia `--text-*` o `--radius-*`
+que ninguna hoja de estilos define o que lleva un valor de respaldo (`docs/design.md` §3 y §4).
 
-The console font ships complete (ADR 0094). `web/src/assets/fonts/sarasa/` holds Sarasa
-Mono SC cut into `unicode-range` shards by `pnpm subset-font` (`scripts/subset-font.mjs`,
-with the pure planning in `scripts/font-shards.mjs`), plus `manifest.json`, `core.css` and
-`shardUrls.ts` (one static `?url` import per shard, so built modules hold only hashed URLs).
-`index.css` imports `core.css`, which declares only shard 000 of each weight, so startup
-waits for one file per weight. At startup `main.tsx` also starts an asynchronous import of
-`web/src/theme/sarasaFont.ts`, which registers every other shard through the `FontFace`
-API; a browser fetches one only when a page draws a character it holds. Exports embed the
-shards their text draws through the same module (`shardsForText` in
-`web/src/theme/fontShards.ts`). `scripts/font-shards.test.mjs` holds the committed shards,
-manifest, core stylesheet and URL module to each other.
-
-
-### Route error recovery
-
-The root data route in `web/src/App.tsx` provides `RouteErrorPage` as its
-`errorElement`. Descendant render errors, rejected lazy page imports and shell
-render errors bubble to this eagerly imported, full-page fallback, outside
-`AppLayout` but inside the existing theme and language providers. It makes no API
-reads. The authenticated `AppLayout` is loaded lazily inside the root route's
-Suspense boundary, with `ShellLoading` (the shell's own outline as placeholders)
-while pending. The same placeholder stands in while `TimeZoneProvider` waits for the
-stored preferences. Its placeholder region exposes a status role named by the existing
-`common.loading` translation, and it reads locale independently of router construction. The shell's
-code is not needed for sign-in or error recovery; a rejected shell import reaches
-the same eager error boundary. `web/src/utils/routeErrorDiagnostics.ts` projects
-a bounded error name, message and stack plus route pathname, build version, UTC
-occurrence time and HTTP status for route responses. It never serializes arbitrary thrown objects or
-response bodies; only a string body or its string `message` field is projected.
-Common credential forms and URL credentials/query/fragment values are removed
-before rendering or copying. Redaction is best-effort rather than a guarantee
-that arbitrary exception text contains no sensitive content. The existing `CopyButton` uses the
-shared clipboard path and its feedback policy.
-Both recovery actions replace the document: reload retries the current URL, while
-the dashboard anchor includes the runtime base path. Replacing the document also
-clears React's cached rejected lazy imports. Provider/bootstrap failures outside
-the router, event-handler exceptions and detached asynchronous failures are not
-caught by this route boundary. Unknown console paths retain their existing
-dashboard redirect.
-
-The loading bar's fill is an estimate of counted tasks, not a measurable percentage: pending
-requests and module imports have no known total duration. Its localized `progressbar` omits
-`aria-valuenow`; `aria-busy` describes pending tasks only. CSS animates a short waiting marker
-independently of the fill. `progressController.ts` injects clocks, scheduling, visibility and
-motion preferences; query-cache notifications update accounting without resetting the frame clock.
-The last settlement (including failure or cancellation) stops activity and closes the fill within
-the resolved base-motion token, then the completed bar holds and fades. Content renders immediately.
-`ProgressBar` owns its DOM transition and visibility handlers and removes them on unmount. Reduced
-motion updates only on task events, preserves pending progress and immediately hides completed
-work; hidden documents suspend frames/timers and retire completed work without replay. Opacity
-transition end or cancellation retires a completed fade independently of source notifications.
-
-### Navigation and calendar render costs
-
-`web/src/routePages.ts` owns the lazy page modules and their shared loaders;
-`web/src/routePreload.ts` maps navigation intent to those loaders and stays behind
-the authenticated shell import. The navigation
-menu preloads a target's code on pointer hover, keyboard focus or touch start. It does not
-prefetch authenticated data, mount the target or load the configuration page's YAML editor.
-The sign-in screen has no navigation menu and starts none of these speculative imports.
-`web/src/utils/routeLoader.ts` shares one import across intent and navigation, reusing success
-and clearing a failed speculative attempt so a later navigation can retry.
-The content column records whether it has scrolled through its own scroll events.
-Path navigation resets it only after actual scrolling; a column already at the top
-avoids the otherwise redundant `scrollTo` call and its synchronous layout flush.
-Nested scrollable widgets do not change the content column's recorded state.
-
-The token heatmap resolves its first-stored and as-of instants to calendar days once per
-observation/timezone revision, rather than once per cell. `createHeatmapCellClassifier`
-retains the same per-instant dayjs timezone/DST interpretation. Localized cell names and
-Agent clocks reuse the bounded formatter cache in `web/src/utils/dateTimeFormat.ts`;
-civil-date keys use a UTC carrier so the browser's zone cannot shift or skip a date.
-Cells are plain memoized DOM nodes. The first click creates one antd tooltip, portaled
-into the selected cell through a stationary, pointer-transparent anchor; switching days
-replaces that one instance without replacing cell DOM or focus. The active cell owns the
-ARIA description and open ring. Outside pointer and Escape dismiss it; Escape from its
-link restores cell focus. Closing keeps antd's exit motion, with popup content destroyed
-when hidden. The instance and listeners are removed on navigation or calendar changes.
-Initial positioning observes the first nonzero scroll-container layout and sets the scroll
-position to the browser-clamped end once per mount, rather than synchronously reading the
-whole dashboard's pending layout. Refreshes preserve the operator's scroll position.
-See `docs/performance.md` for the measured audit and remaining bottlenecks.
-
-Request rows generate their short label and millisecond-precision tooltip in
-`web/src/components/usage/requestTimestamp.ts` from one `Intl.DateTimeFormat` that is
-built per display timezone and shared by every row, so mounting a row while scrolling
-does not resolve the zone again. The row memo retains both strings until its timestamp
-or the shared display timezone changes, so selection and unit-style changes do not
-repeat the formatting. Wire timestamps are unchanged.
-
-`ProviderBrandIcon` subscribes to the plugin list only for deployment custom artwork on
-a provider with keys, the one case plugin ownership decides. A catalog mark renders
-without a query observer, which matters where one mark mounts per request row.
-
-Request cells carry their exact tooltip label as a data attribute instead of creating
-an antd trigger tree per cell. `web/src/components/usage/RequestTooltip.tsx` delegates
-pointer and focus intent within the list host to one on-demand tooltip. Its fixed,
-pointer-transparent anchor is portaled to the document body so row DOM, grid layout
-and focus remain unchanged. Labels update while the target stays mounted; virtual-row
-removal, scrolling, resize, Escape and route cleanup release the active description
-and popup. The existing 100 ms pointer intent delay and antd exit motion remain;
-keyboard focus shows the price-action hint without waiting for pointer intent.
-
-Listy's initial virtual-row estimate is aligned to the request rows' existing 68 px
-minimum through its component token. Request-row CSS still owns visible padding and
-geometry; the virtualizer continues measuring real item and group-header heights.
+La fuente de la consola se distribuye completa (ADR 0094). `web/src/assets/fonts/sarasa/` contiene Sarasa
+Mono SC cortada en fragmentos de `unicode-range` por `pnpm subset-font` (`scripts/subset-font.mjs`,
+con la planificación pura en `scripts/font-shards.mjs`), más `manifest.json`, `core.css` y
+`shardUrls.ts` (una importación estática `?url` por fragmento, de modo que los módulos compilados solo contienen URL con hash).
+`index.css` importa `core.css`, que declara solo el fragmento 000 de cada peso, así que el arranque
+espera un archivo por peso. Al arrancar, `main.tsx` también inicia una importación asíncrona de
+`web/src/theme/sarasaFont.ts`, que registra todos los demás fragmentos mediante la API
+`FontFace`; un navegador descarga uno solo cuando una página dibuja un carácter que contiene. Las exportaciones incrustan los
+fragmentos que dibuja su texto mediante el mismo módulo (`shardsForText` en
+`web/src/theme/fontShards.ts`). `scripts/font-shards.test.mjs` sujeta entre sí los fragmentos versionados, el
+manifiesto, la hoja de estilos core y el módulo de URL.
 
 
-## 4. Request and session flow
+### Recuperación de errores de ruta
 
-1. `POST <base>/api/auth/login` with the CPA management key. The handler
-   compares it against `SHELLPAMC_CPA_MANAGEMENT_KEY`; there is no second password.
-   Failed attempts are throttled by the direct peer address. Forwarding headers
-   are consulted only when that peer belongs to `SHELLPAMC_TRUSTED_PROXY_CIDRS`, and
-   the rightmost untrusted address in the chain is used, so a client-supplied
-   leftmost value cannot mint a fresh limiter bucket.
-2. On success the session manager derives an HMAC key from the management key
-   and issues an HttpOnly, SameSite=Strict cookie (`Secure` when
-   `SHELLPAMC_PUBLIC_URL` is HTTPS) with a 12-hour expiry.
-3. `requireAuthentication` wraps every `/api/v1` route and rejects an absent or
-   stale cookie with 401.
-4. Rotating the CPA management key changes the derived signing key, so every
-   existing session fails verification without any server-side session store.
-5. Sensitive exports (raw auth file, request logs) write an `audit_events` row,
-   and audit-write failure blocks the export (fail closed).
+La ruta de datos raíz en `web/src/App.tsx` proporciona `RouteErrorPage` como su
+`errorElement`. Los errores de renderizado descendientes, las importaciones diferidas de páginas rechazadas y los errores de renderizado
+de la carcasa burbujean hasta este fallback de página completa importado de forma ansiosa, fuera de
+`AppLayout` pero dentro de los proveedores existentes de tema e idioma. No hace ninguna lectura de
+API. El `AppLayout` autenticado se carga de forma diferida dentro del límite Suspense de la ruta raíz,
+con `ShellLoading` (el contorno propio de la carcasa como marcadores de posición)
+mientras está pendiente. El mismo marcador ocupa su lugar mientras `TimeZoneProvider` espera las
+preferencias almacenadas. Su región de marcador expone un rol de estado nombrado por la traducción
+existente `common.loading`, y lee el locale independientemente de la construcción del router. El código de
+la carcasa no hace falta para el inicio de sesión ni la recuperación de errores; una importación rechazada de la carcasa llega al
+mismo límite de error ansioso. `web/src/utils/routeErrorDiagnostics.ts` proyecta
+un nombre de error, mensaje y pila acotados, más el pathname de la ruta, la versión de compilación, la hora UTC de
+ocurrencia y el estado HTTP para las respuestas de ruta. Nunca serializa objetos lanzados arbitrarios ni
+cuerpos de respuesta; solo se proyecta un cuerpo de cadena o su campo `message` de cadena.
+Las formas comunes de credenciales y los valores de credenciales/consulta/fragmento de las URL se eliminan
+antes de renderizar o copiar. La redacción es de mejor esfuerzo y no una garantía
+de que un texto de excepción arbitrario no contenga contenido sensible. El `CopyButton` existente usa la
+ruta compartida del portapapeles y su política de retroalimentación.
+Ambas acciones de recuperación reemplazan el documento: recargar reintenta la URL actual, mientras que
+el ancla del panel incluye la ruta base de runtime. Reemplazar el documento también
+borra las importaciones diferidas rechazadas en la caché de React. Los fallos de proveedor/bootstrap fuera
+del router, las excepciones de manejadores de eventos y los fallos asíncronos desacoplados no son
+capturados por este límite de ruta. Las rutas desconocidas de la consola conservan su redirección
+existente al panel.
 
-   **Raw config YAML is deliberately not behind a second credential.** It used to
-   require a short-lived reveal grant obtained by re-entering the CPA management
-   key, while `PUT /config/source` - which writes the same file - required only
-   the session. Since the management key is the console's only credential, the
-   grant re-checked exactly the authority the session already carried, so it added
-   a step without adding a boundary. Reading the raw source still sits behind
-   `requireAuthentication`, is served `no-store`, and keeps the fail-closed audit
-   write. This is a deliberate removal of step-up authentication, not a
-   frontend-only prompt change: the grant endpoint and its state are gone.
+El relleno de la barra de carga es una estimación de tareas contadas, no un porcentaje medible: las solicitudes
+pendientes y las importaciones de módulos no tienen una duración total conocida. Su `progressbar` localizado omite
+`aria-valuenow`; `aria-busy` describe solo las tareas pendientes. El CSS anima un breve marcador de espera
+independientemente del relleno. `progressController.ts` inyecta relojes, programación, visibilidad y
+preferencias de movimiento; las notificaciones de la caché de consultas actualizan la contabilidad sin reiniciar el reloj de fotogramas.
+La última resolución (incluido un fallo o una cancelación) detiene la actividad y cierra el relleno dentro
+del token de movimiento base resuelto, luego la barra completada se mantiene y se desvanece. El contenido se renderiza de inmediato.
+`ProgressBar` es dueña de su transición de DOM y de los manejadores de visibilidad y los elimina al desmontar. El movimiento
+reducido solo actualiza ante eventos de tarea, preserva el progreso pendiente y oculta de inmediato el trabajo
+completado; los documentos ocultos suspenden fotogramas/temporizadores y retiran el trabajo completado sin repetición. El
+fin o la cancelación de la transición de opacidad retira un desvanecimiento completado independientemente de las notificaciones de la fuente.
 
-6. The two list endpoints that can carry plaintext credentials on request,
-   `/management/api-keys?include_keys=true` and
-   `/management/providers?include_keys=true`, write `api_key.reveal` or
-   `provider.reveal_keys` before the response is emitted. The record identifies
-   the list and carries counts rather than one event per credential. Audit-write
-   failure answers `500` and no credential is returned; masked reads are not
-   audited because no credential leaves the server (ADR 0018).
+### Costos de renderizado de navegación y calendario
 
-The key itself is encrypted with `SHELLPAMC_MASTER_KEY` and stored on the
-`cpa_instances` row, where `bootstrapDefaultInstance` refreshes it at every
-startup so a rotation needs no SQLite surgery.
+`web/src/routePages.ts` es dueño de los módulos de página diferidos y sus cargadores compartidos;
+`web/src/routePreload.ts` asigna la intención de navegación a esos cargadores y permanece tras
+la importación de la carcasa autenticada. El menú de
+navegación precarga el código de un destino al pasar el puntero, al enfocar con teclado o al iniciar el toque. No
+precarga datos autenticados, no monta el destino ni carga el editor YAML de la página de configuración.
+La pantalla de inicio de sesión no tiene menú de navegación y no inicia ninguna de estas importaciones especulativas.
+`web/src/utils/routeLoader.ts` comparte una importación entre la intención y la navegación, reutilizando el éxito
+y borrando un intento especulativo fallido para que una navegación posterior pueda reintentar.
+La columna de contenido registra si se ha desplazado mediante sus propios eventos de scroll.
+La navegación de rutas la restablece solo tras un desplazamiento real; una columna que ya está arriba
+evita la llamada `scrollTo` por lo demás redundante y su vaciado síncrono de layout.
+Los widgets desplazables anidados no cambian el estado registrado de la columna de contenido.
 
-### Response compression
+El mapa de calor de tokens resuelve sus instantes de primer almacenamiento y de «a la fecha de» a días de calendario una vez por
+revisión de observación/zona horaria, en lugar de una vez por celda. `createHeatmapCellClassifier`
+conserva la misma interpretación de zona horaria/DST de dayjs por instante. Los nombres localizados de celdas y
+los relojes del Agent reutilizan la caché acotada de formateadores en `web/src/utils/dateTimeFormat.ts`;
+las claves de fecha civil usan un portador UTC para que la zona del navegador no pueda desplazar ni omitir una fecha.
+Las celdas son nodos DOM simples memoizados. El primer clic crea un tooltip de antd, proyectado mediante portal
+dentro de la celda seleccionada a través de un ancla estacionaria y transparente al puntero; cambiar de día
+reemplaza esa única instancia sin reemplazar el DOM de las celdas ni el foco. La celda activa es dueña de la
+descripción ARIA y del anillo de apertura. El puntero exterior y Escape lo descartan; Escape desde su
+enlace restaura el foco de la celda. Cerrar conserva el movimiento de salida de antd, con el contenido del popup destruido
+al ocultarse. La instancia y los listeners se eliminan al navegar o al cambiar el calendario.
+El posicionamiento inicial observa el primer layout no nulo del contenedor de desplazamiento y fija la posición
+de desplazamiento al extremo limitado por el navegador una vez por montaje, en lugar de leer de forma síncrona el layout
+pendiente de todo el panel. Las actualizaciones preservan la posición de desplazamiento del operador.
+Véase `docs/performance.md` para la auditoría medida y los cuellos de botella restantes.
 
-`internal/api/compression.go` negotiates gzip from `Accept-Encoding`, including quality-zero
-refusals and wildcard precedence. The API middleware compresses ordinary JSON with pooled
-best-speed encoders; SSE, file downloads, HEAD/range requests, already encoded bodies,
-`no-transform` responses, explicit `include_keys=true` credential reveals and responses setting
-cookies pass through unchanged. Streaming
-flushes and `http.ResponseController` operations reach the original writer. JSON compression
-removes the original content length, and both encoded and identity variants carry
-`Vary: Accept-Encoding` without discarding other vary fields.
+Las filas de solicitudes generan su etiqueta corta y su tooltip con precisión de milisegundos en
+`web/src/components/usage/requestTimestamp.ts` a partir de un único `Intl.DateTimeFormat` que se
+construye por zona horaria de visualización y es compartido por todas las filas, de modo que montar una fila mientras se desplaza
+no vuelve a resolver la zona. El memo de la fila conserva ambas cadenas hasta que su marca de tiempo
+o la zona horaria de visualización compartida cambian, de modo que la selección y los cambios de estilo de unidades no
+repiten el formateo. Las marcas de tiempo de protocolo no cambian.
 
-Embedded JS, CSS, SVG and JSON assets keep their immutable cache policy. Assets of at least
-1 KiB are compressed on first negotiated use, only when gzip saves bytes. Their compressed
-representations are reused in a process-wide cache capped at 8 MiB; larger inventories can
-still be served without increasing retained bytes. Compression runs outside the cache mutex;
-publication rechecks for a concurrent entry before charging the retained-byte budget.
-Overlapping misses may compute the same asset, but a retained result is published and counted
-only once. Fonts and other binary assets are not
-compressed. GET and HEAD select the same representation and content length under both the
-root mount and configured sub-path. No reverse-proxy compression setting is required.
+`ProviderBrandIcon` se suscribe a la lista de plugins solo para el arte personalizado del despliegue en
+un proveedor con claves, el único caso que decide la propiedad de un plugin. Una marca del catálogo se renderiza
+sin observador de consultas, lo que importa donde se monta una marca por fila de solicitud.
 
-## 5. Discovery and identity flow
+Las celdas de solicitud llevan la etiqueta exacta de su tooltip como atributo de datos en lugar de crear
+un árbol de disparadores de antd por celda. `web/src/components/usage/RequestTooltip.tsx` delega
+la intención de puntero y foco dentro del host de la lista a un único tooltip bajo demanda. Su ancla fija
+y transparente al puntero se proyecta mediante portal al body del documento para que el DOM de las filas, el layout de la cuadrícula
+y el foco permanezcan sin cambios. Las etiquetas se actualizan mientras el destino sigue montado; la eliminación de filas
+virtuales, el desplazamiento, el redimensionado, Escape y la limpieza de ruta liberan la descripción activa
+y el popup. El retraso de intención de puntero existente de 100 ms y el movimiento de salida de antd permanecen;
+el foco de teclado muestra la pista de la acción de precio sin esperar a la intención del puntero.
+
+La estimación inicial de filas virtuales de Listy se alinea con el mínimo existente de 68 px de las filas de solicitud
+mediante su token de componente. El CSS de las filas de solicitud sigue siendo dueño del relleno visible y la
+geometría; el virtualizador sigue midiendo las alturas reales de los elementos y de las cabeceras de grupo.
+
+
+## 4. Flujo de solicitudes y de sesión
+
+1. `POST <base>/api/auth/login` con la clave de gestión de CPA. El handler
+   la compara con `SHELLPAMC_CPA_MANAGEMENT_KEY`; no existe una segunda contraseña.
+   Los intentos fallidos se limitan por la dirección directa del par. Las cabeceras de reenvío
+   solo se consultan cuando ese par pertenece a `SHELLPAMC_TRUSTED_PROXY_CIDRS`, y
+   se usa la dirección no confiable más a la derecha de la cadena, de modo que un valor
+   más a la izquierda aportado por el cliente no pueda crear un nuevo cubo del limitador.
+2. En caso de éxito, el gestor de sesiones deriva una clave HMAC de la clave de gestión
+   y emite una cookie HttpOnly, SameSite=Strict (`Secure` cuando
+   `SHELLPAMC_PUBLIC_URL` es HTTPS) con una caducidad de 12 horas.
+3. `requireAuthentication` envuelve cada ruta de `/api/v1` y rechaza con 401 una cookie
+   ausente u obsoleta.
+4. Rotar la clave de gestión de CPA cambia la clave de firma derivada, de modo que toda
+   sesión existente falla la verificación sin necesidad de un almacén de sesiones en el servidor.
+5. Las exportaciones sensibles (archivo de autenticación sin procesar, registros de solicitudes) escriben una fila `audit_events`,
+   y un fallo de escritura de auditoría bloquea la exportación (cierre ante fallos).
+
+   **El YAML de configuración sin procesar deliberadamente no está tras una segunda credencial.** Antes
+   requería una concesión de revelado de corta duración obtenida volviendo a introducir la clave
+   de gestión de CPA, mientras que `PUT /config/source` - que escribe el mismo archivo - solo exigía
+   la sesión. Como la clave de gestión es la única credencial de la consola, la
+   concesión volvía a comprobar exactamente la autoridad que la sesión ya llevaba, así que añadía
+   un paso sin añadir una frontera. Leer el código fuente sin procesar sigue estando tras
+   `requireAuthentication`, se sirve con `no-store` y mantiene la escritura de auditoría con
+   cierre ante fallos. Esto es una eliminación deliberada de la autenticación escalonada, no un
+   cambio de aviso solo en el frontend: el endpoint de concesión y su estado ya no existen.
+
+6. Los dos endpoints de lista que pueden llevar credenciales en texto plano bajo petición,
+   `/management/api-keys?include_keys=true` y
+   `/management/providers?include_keys=true`, escriben `api_key.reveal` o
+   `provider.reveal_keys` antes de emitir la respuesta. El registro identifica
+   la lista y lleva conteos en lugar de un evento por credencial. Un fallo de escritura
+   de auditoría responde `500` y no se devuelve ninguna credencial; las lecturas enmascaradas no se
+   auditan porque ninguna credencial sale del servidor (ADR 0018).
+
+La propia clave se cifra con `SHELLPAMC_MASTER_KEY` y se almacena en la fila de
+`cpa_instances`, donde `bootstrapDefaultInstance` la refresca en cada
+arranque, de modo que una rotación no requiere cirugía de SQLite.
+
+### Compresión de respuestas
+
+`internal/api/compression.go` negocia gzip a partir de `Accept-Encoding`, incluidos los rechazos con calidad cero
+y la precedencia del comodín. El middleware de la API comprime el JSON ordinario con codificadores en pool
+de máxima velocidad; SSE, descargas de archivos, solicitudes HEAD/range, cuerpos ya codificados,
+respuestas `no-transform`, revelados explícitos de credenciales con `include_keys=true` y respuestas que establecen
+cookies pasan sin cambios. Los vaciados de streaming
+y las operaciones de `http.ResponseController` llegan al writer original. La compresión de JSON
+elimina la longitud de contenido original, y tanto las variantes codificadas como las de identidad llevan
+`Vary: Accept-Encoding` sin descartar otros campos vary.
+
+Los recursos JS, CSS, SVG y JSON embebidos conservan su política de caché inmutable. Los recursos de al menos
+1 KiB se comprimen en el primer uso negociado, solo cuando gzip ahorra bytes. Sus representaciones
+comprimidas se reutilizan en una caché de todo el proceso limitada a 8 MiB; inventarios mayores pueden
+seguir sirviéndose sin aumentar los bytes retenidos. La compresión se ejecuta fuera del mutex de la caché;
+la publicación vuelve a comprobar si hay una entrada concurrente antes de cargar el presupuesto de bytes retenidos.
+Los fallos solapados pueden calcular el mismo recurso, pero un resultado retenido se publica y se cuenta
+una sola vez. Las fuentes y otros recursos binarios no se
+comprimen. GET y HEAD seleccionan la misma representación y longitud de contenido tanto bajo el
+montaje raíz como bajo la subruta configurada. No se requiere ningún ajuste de compresión del proxy inverso.
+
+## 5. Flujo de descubrimiento e identidad
 
 ```text
 POST /api/v1/instances/default/discover
@@ -1382,65 +1464,65 @@ POST /api/v1/instances/default/discover
   → repository upserts discovered_resources + cpa_bindings (served via /api/v1/resources)
 ```
 
-The resource key resolution order and the ban on array position are fixed by
-ADR 0002: immutable upstream id, then family-scoped `auth_index`, then a
-versioned keyed HMAC of the credential material, then a fingerprint of
-non-sensitive metadata, and finally an explicit `identity_collision` marker
-rather than a silent merge. Secrets never enter a key or a stored fingerprint
-input, and a response DTO carries one only for the surface that edits it and only
-when it asks for it (`?include_keys=true`, ADR 0015); every other response carries
-a display mask. (The Providers list and the unified OAuth management workspace
-inspect and manage CPA runtime entries directly through
-`/api/v1/management/providers` and `/api/v1/management/auth-files`, layering
-local preference metadata on read.)
-Auth-file edits use CPA's field patch but do not treat its `200` as proof:
-the facade reads the runtime entry and a server-side projection of the
-downloaded JSON back before returning success. The projection exposes only
-prefix, proxy URL, expiry, disable-cooling, WebSockets, using-API, note, priority,
-weight, excluded models, the retry count, the request-scoped error rules and the
-credential's own model aliases; tokens
-and other credential material stay inside the Go process. A manual refresh
-(`POST /api/v1/management/auth-files/refresh`) resolves its selector to exactly one
-credential before asking CPA, and reports the outcome alone: CPA's answer carries the
-renewed tokens, so the management client never decodes it. A Vertex service-account
-import (`POST /api/v1/management/auth-files/vertex-import`) forwards the uploaded key to
-CPA's `oauth/import?provider=vertex` as a multipart form, after refusing a body that is
-not a key and a `location` that is not a region name; it is audited, and its answer
-names the stored file, project, account address and location only. The import dialog
-keeps key bytes outside cached mutation variables and invalidates pending file reads
-when it closes, so a late read cannot restore a cancelled key selection. Refresh and import
-abort if the attempt audit cannot be stored, but an outcome-audit failure after CPA's
-successful mutation does not turn the landed write into an error response or invite
-a duplicate mutation. Global OAuth model rules are separate from those per-credential fields:
-`/api/v1/management/auth-files/model-aliases` reads and replaces one provider's
-aliases, and `/api/v1/management/auth-files/excluded-models` reads and replaces
-one provider's exclusions (`oauth.model-alias` and `oauth.excluded-models` in CPA).
-Empty lists delete that provider's configuration. Both writes acquire the whole-config
-write gate, take the ordinary pre-write configuration backup, read CPA back before
-reporting success, notify pricing membership and record the audit outcome. The agent
-capabilities reuse the same normalization and write path, with a revision checked
-inside the write gate. The HTTP exclusion update requires its attempt audit to succeed
-before contacting CPA. Once CPA has persisted the rules and the readback matches,
-a failed success-audit write is logged but the endpoint returns `200` with the
-verified provider and rules; the already-landed update must not be reported as failed.
+El orden de resolución de la clave de recurso y la prohibición de usar la posición en un arreglo quedan fijados por el
+ADR 0002: id upstream inmutable, luego `auth_index` con alcance de familia, luego un
+HMAC con clave y versión del material de la credencial, luego una huella de
+metadatos no sensibles y, por último, un marcador explícito `identity_collision`
+en lugar de una fusión silenciosa. Los secretos nunca entran en una clave ni en la entrada de una huella
+almacenada, y un DTO de respuesta lleva uno solo para la superficie que lo edita y solo
+cuando lo pide (`?include_keys=true`, ADR 0015); toda otra respuesta lleva
+una máscara de visualización. (La lista de Proveedores y el espacio de trabajo unificado de gestión de OAuth
+inspeccionan y gestionan directamente las entradas de runtime de CPA mediante
+`/api/v1/management/providers` y `/api/v1/management/auth-files`, superponiendo
+metadatos de preferencias locales en la lectura.)
+Las ediciones de archivos de autenticación usan el parche de campos de CPA pero no tratan su `200` como prueba:
+la fachada relee la entrada de runtime y una proyección del lado del servidor del
+JSON descargado antes de devolver éxito. La proyección expone solo
+prefijo, URL de proxy, caducidad, disable-cooling, WebSockets, using-API, nota, prioridad,
+peso, modelos excluidos, el número de reintentos, las reglas de error con alcance de solicitud y los
+alias de modelos propios de la credencial; los tokens
+y demás material de credenciales permanecen dentro del proceso de Go. Una actualización manual
+(`POST /api/v1/management/auth-files/refresh`) resuelve su selector a exactamente una
+credencial antes de consultar a CPA, e informa solo del resultado: la respuesta de CPA lleva
+los tokens renovados, así que el cliente de gestión nunca la decodifica. Una importación de cuenta de servicio de Vertex
+(`POST /api/v1/management/auth-files/vertex-import`) reenvía la clave subida a
+`oauth/import?provider=vertex` de CPA como un formulario multipart, tras rechazar un cuerpo que no es
+una clave y un `location` que no es un nombre de región; se audita, y su respuesta
+nombra solo el archivo almacenado, el proyecto, la dirección de la cuenta y la ubicación. El diálogo de importación
+mantiene los bytes de la clave fuera de las variables de mutación en caché e invalida las lecturas de archivo pendientes
+al cerrarse, de modo que una lectura tardía no pueda restaurar una selección de clave cancelada. La actualización y la importación
+se abortan si no puede almacenarse la auditoría del intento, pero un fallo de la auditoría del resultado tras la
+mutación exitosa de CPA no convierte la escritura ya aterrizada en una respuesta de error ni invita a
+una mutación duplicada. Las reglas globales de modelos OAuth son independientes de esos campos por credencial:
+`/api/v1/management/auth-files/model-aliases` lee y reemplaza los alias de un proveedor,
+y `/api/v1/management/auth-files/excluded-models` lee y reemplaza
+las exclusiones de un proveedor (`oauth.model-alias` y `oauth.excluded-models` en CPA).
+Las listas vacías eliminan la configuración de ese proveedor. Ambas escrituras adquieren la compuerta de escritura
+de toda la configuración, toman el respaldo ordinario de configuración previo a la escritura, releen CPA antes de
+informar éxito, notifican la pertenencia a precios y registran el resultado de auditoría. Las capacidades
+del agente reutilizan la misma normalización y ruta de escritura, con una revisión comprobada
+dentro de la compuerta de escritura. La actualización de exclusiones por HTTP exige que su auditoría del intento tenga éxito
+antes de contactar a CPA. Una vez que CPA ha persistido las reglas y la relectura coincide,
+un fallo de escritura de la auditoría de éxito se registra pero el endpoint devuelve `200` con el
+proveedor y las reglas verificados; la actualización ya aterrizada no debe informarse como fallida.
 
-`GET /api/v1/management/auth-files/provider-models?provider=<key>` projects only
-model IDs and display names from the catalog CPA serves at
-`/routing/model-definitions/{channel}`: its static catalog for a built-in channel, and
-for any other channel the plugin host's or provider registry's models. The provider
-key is validated (lowercase letters, digits and hyphens, at most 64 characters) and
-escaped as one path segment before it reaches CPA. It is unaffected by aliases or
-exclusions and never reads credential secrets. CPA's 400 (unknown channel) or 404
-(a gateway without the route) returns `available: false`; other upstream failures
-remain failures. The editors retain manual entry without a catalog.
-Exclusion reads use CPA's trimmed, lowercase, deduplicated rules. The facade bounds
-provider count, rule count (512) and rule length (256 characters).
-Aliases and exclusions remain CPA-owned configuration, without a new Shell-PAMC table.
+`GET /api/v1/management/auth-files/provider-models?provider=<key>` proyecta solo
+los ID de modelos y los nombres para mostrar del catálogo que CPA sirve en
+`/routing/model-definitions/{channel}`: su catálogo estático para un canal integrado, y
+para cualquier otro canal los modelos del host de plugins o del registro de proveedores. La clave
+del proveedor se valida (letras minúsculas, dígitos y guiones, como máximo 64 caracteres) y
+se escapa como un único segmento de ruta antes de llegar a CPA. No le afectan los alias ni
+las exclusiones y nunca lee secretos de credenciales. El 400 de CPA (canal desconocido) o el 404
+(un gateway sin la ruta) devuelve `available: false`; los demás fallos upstream
+siguen siendo fallos. Los editores conservan la entrada manual sin catálogo.
+Las lecturas de exclusiones usan las reglas de CPA recortadas, en minúsculas y sin duplicados. La fachada limita
+el número de proveedores, el número de reglas (512) y la longitud de las reglas (256 caracteres).
+Los alias y las exclusiones siguen siendo configuración propiedad de CPA, sin una nueva tabla de Shell-PAMC.
 
-`cpa_bindings` carries `missing_at_ms` and `ON DELETE SET NULL` so upstream
-removal marks a binding missing without cascading into history.
+`cpa_bindings` lleva `missing_at_ms` y `ON DELETE SET NULL` para que la eliminación
+upstream marque un enlace como ausente sin propagarse en cascada al historial.
 
-## 6. Usage flow
+## 6. Flujo de uso
 
 ```text
 CPA queue / subscription
@@ -1457,728 +1539,724 @@ CPA queue / subscription
   → ingest.Changes       "stored data changed" → GET /usage/live (SSE)
 ```
 
-The pipeline exists because CPA's queue is destructive and short-lived: the only
-safe ordering is "persist the raw payload first, interpret it later". A failed
-local write records an `ingest_gaps` row so coverage loss is visible instead of
-silent, and `usage_inboxes.status` (`pending → processed | failed | discarded`)
-makes a decode failure retryable without losing telemetry.
+El pipeline existe porque la cola de CPA es destructiva y de corta vida: el único
+orden seguro es «persistir primero el payload sin procesar, interpretarlo después». Una escritura
+local fallida registra una fila `ingest_gaps` para que la pérdida de cobertura sea visible en lugar de
+silenciosa, y `usage_inboxes.status` (`pending → processed | failed | discarded`)
+hace que un fallo de decodificación sea reintentable sin perder telemetría.
 
-`usage_inboxes` is the only place a payload can be replayed from, so the decode
-step is serialised: `ClaimUsageInboxBatch` merely selects pending rows and
-`usage_events.event_key` is intentionally not unique (CPA reports retries under
-one `request_id`), so two concurrent decoders would each commit their own copy of
-the same payload. `ingest.Processor.drain` is that gate, which is why both the
-background loop and a manual sync go through it; it is a channel rather than a
-mutex so a manual sync waiting for the background loop still returns on its own
-deadline.
+`usage_inboxes` es el único lugar desde el que se puede reproducir un payload, de modo que el paso de
+decodificación se serializa: `ClaimUsageInboxBatch` simplemente selecciona filas pendientes y
+`usage_events.event_key` intencionalmente no es único (CPA informa los reintentos bajo un
+mismo `request_id`), así que dos decodificadores concurrentes confirmarían cada uno su propia copia del
+mismo payload. `ingest.Processor.drain` es esa compuerta, razón por la cual tanto el
+bucle en segundo plano como una sincronización manual pasan por ella; es un canal y no un
+mutex para que una sincronización manual que espera al bucle en segundo plano aún regrese dentro de su propio
+plazo.
 
-`internal/usage/ingest.Runner` picks its transport in `auto` mode by probing
-`AUTH` only — never by popping, because a probe that consumed a record would
-destroy it. Subscription is preferred; repeated `SUBSCRIBE` failures degrade to
-RESP `LPOP`, and an unreachable RESP endpoint degrades to the HTTP usage queue
-(`/v8/management/observability/usage/queue`). Empty pulls back off through `pullPacer` (1s → 2s →
-4s → 8s → 10s, then capped) while a full batch drains with no delay. A wrong
-management key triggers a long cooldown instead of retrying, because CPA bans a
-client IP after repeated failures.
+`internal/usage/ingest.Runner` elige su transporte en modo `auto` sondeando
+solo `AUTH` — nunca extrayendo, porque un sondeo que consumiera un registro lo
+destruiría. Se prefiere la suscripción; los fallos repetidos de `SUBSCRIBE` degradan a
+RESP `LPOP`, y un endpoint RESP inalcanzable degrada a la cola de uso HTTP
+(`/v8/management/observability/usage/queue`). Las extracciones vacías retroceden mediante `pullPacer` (1s → 2s →
+4s → 8s → 10s, y luego tope) mientras que un lote completo se drena sin retraso. Una clave de
+gestión incorrecta desencadena un enfriamiento largo en lugar de reintentar, porque CPA bloquea la
+IP de un cliente tras fallos repetidos.
 
-### The live change signal
+### La señal de cambio en vivo
 
-A page that shows request records learns that one was stored from a signal, not
-from a cadence. The path from CPA to the screen has no fixed wait in it:
+Una página que muestra registros de solicitudes se entera de que se almacenó uno por una señal, no
+por una cadencia. El camino de CPA a la pantalla no tiene ninguna espera fija:
 
-- In `subscribe` mode the runner writes a pushed record to `usage_inboxes` as soon
-  as the subscription buffer is empty, rather than on the flush tick. A record
-  received from the destructive channel exists nowhere else, so the write carries
-  no deadline while the collector runs; only a shutdown starts the final-flush
-  timeout that bounds it.
-- The runner's capture handlers wake the decode processor, which otherwise idles on
-  its interval, and the processor publishes to `ingest.Changes` after each commit
-  that stored an event. Error events are read as they arrive, not on the flush
-  tick, and each capture publishes too, since a cooldown changes what the routing
-  panel draws.
-- `ingest.Changes` is a coalescing hub: each subscriber holds a one-slot channel and
-  a publish never blocks, so a burst of commits becomes one pending signal per
-  reader and a slow reader cannot stall the decoder. Readers are capped at
-  `MAX_CHANGE_SUBSCRIBERS`; past it `/usage/live` answers 503.
-- `GET /usage/live` is a server-sent event stream that carries no data: `ready` on
-  connect, `usage` when something changed (at most one per 250 ms), and a comment
-  heartbeat every 20 s. It ends after five minutes so a session that signed out
-  cannot keep a stream; the browser reconnects and the reconnect re-authenticates.
-  Without a collector (ingestion off, demonstration mode) it answers 204; the public
-  demonstration's Worker streams signals for its simulated traffic instead.
-- In the browser, `web/src/api/usageLive.ts` opens one stream per tab, shared by
-  every reader, closes it while the tab is hidden, and retries a 204 or 503 itself
-  after 30 s because EventSource does not. `useLiveRevision` turns signals into a
-  revision a query keys on, holding a signal that arrives during a read so it costs
-  exactly one follow-up read. Every reader treats `ready` as a signal, so whatever
-  changed while it was disconnected is read on reconnect, and each reader keeps its
-  10 s poll for as long as no stream is open.
+- En modo `subscribe` el runner escribe un registro recibido por push en `usage_inboxes` tan pronto
+  como el búfer de la suscripción está vacío, en lugar de en el tick de vaciado. Un registro
+  recibido por el canal destructivo no existe en ningún otro lugar, así que la escritura no lleva
+  plazo mientras el recolector se ejecuta; solo un apagado inicia el
+  tiempo de espera de vaciado final que la acota.
+- Los handlers de captura del runner despiertan al procesador de decodificación, que de otro modo queda inactivo en
+  su intervalo, y el procesador publica en `ingest.Changes` tras cada confirmación
+  que almacenó un evento. Los eventos de error se leen según llegan, no en el tick de
+  vaciado, y cada captura también publica, ya que un enfriamiento cambia lo que dibuja el panel de
+  enrutamiento.
+- `ingest.Changes` es un hub de coalescencia: cada suscriptor mantiene un canal de una ranura y
+  una publicación nunca bloquea, de modo que una ráfaga de confirmaciones se convierte en una señal pendiente por
+  lector y un lector lento no puede bloquear al decodificador. Los lectores están limitados a
+  `MAX_CHANGE_SUBSCRIBERS`; pasado ese límite `/usage/live` responde 503.
+- `GET /usage/live` es un flujo de eventos enviados por el servidor que no lleva datos: `ready` al
+  conectar, `usage` cuando algo cambió (como máximo uno cada 250 ms) y un latido en forma de comentario
+  cada 20 s. Termina a los cinco minutos para que una sesión que cerró sesión
+  no pueda conservar un flujo; el navegador se reconecta y la reconexión vuelve a autenticarse.
+  Sin recolector (ingesta desactivada, modo de demostración) responde 204; el Worker de la demostración pública
+  transmite en su lugar señales para su tráfico simulado.
+- En el navegador, `web/src/api/usageLive.ts` abre un flujo por pestaña, compartido por
+  todos los lectores, lo cierra mientras la pestaña está oculta y reintenta por sí mismo un 204 o un 503
+  tras 30 s porque EventSource no lo hace. `useLiveRevision` convierte las señales en una
+  revisión sobre la que se basa una consulta, reteniendo una señal que llega durante una lectura para que cueste
+  exactamente una lectura posterior. Todo lector trata `ready` como una señal, de modo que lo que
+  cambió mientras estaba desconectado se lee al reconectar, y cada lector mantiene su
+  sondeo de 10 s mientras no haya ningún flujo abierto.
 
-A signal never carries rows: each reader re-reads with its own filters and cursor,
-so a merged or missed signal cannot lose a record.
+Una señal nunca lleva filas: cada lector vuelve a leer con sus propios filtros y cursor,
+de modo que una señal fusionada o perdida no puede hacer perder un registro.
 
-### Live routing
+### Enrutamiento en vivo
 
-`GET /usage/routing` answers the attempts of a rolling `USAGE_ROUTING_WINDOW` (one
-minute), entirely from request records: CPA writes one per attempt, so a record is a
-route a request took, and records sharing a `request_id` are one request CPA rerouted
-(counted once, and as an error a caller saw only when its last attempt failed). An
-attempt belongs to the minute it finished in (`timestamp_ms + latency_ms`). Without
-`after` the answer is the whole minute, newest first and capped at
-`MAX_ROUTING_RECORDS` (`has_more` says the cap was hit); with `after=<record id>` it is
-only what was recorded since. Credentials resting now come from the newest
-`error_events` row per auth index whose retry or recovery time is still ahead.
-Records are projected exactly as the request list projects them, so the dashboard's
-routing panel (`components/dashboard/routing/`) names models and credentials the way
-the list does.
+`GET /usage/routing` responde los intentos de una ventana móvil `USAGE_ROUTING_WINDOW` (un
+minuto), enteramente a partir de registros de solicitudes: CPA escribe uno por intento, así que un registro es una
+ruta que tomó una solicitud, y los registros que comparten un `request_id` son una solicitud que CPA reenrutó
+(contada una vez, y como error que vio un llamador solo cuando falló su último intento). Un
+intento pertenece al minuto en que terminó (`timestamp_ms + latency_ms`). Sin
+`after` la respuesta es el minuto completo, el más reciente primero y limitado a
+`MAX_ROUTING_RECORDS` (`has_more` indica que se alcanzó el tope); con `after=<record id>` es
+solo lo registrado desde entonces. Las credenciales en reposo ahora provienen de la fila más reciente de
+`error_events` por índice de autenticación cuyo momento de reintento o recuperación aún está por delante.
+Los registros se proyectan exactamente como los proyecta la lista de solicitudes, de modo que el panel de
+enrutamiento del dashboard (`components/dashboard/routing/`) nombra modelos y credenciales igual que
+la lista.
 
-The panel holds the minute in the browser: it reads the whole minute once, then on
-each live usage signal reads after the newest record it holds, merges, and ages
-records out on a one-second clock aligned to the server's `as_of_ms`; an incremental
-read that hit the cap restarts the window from it. The model it draws
-(`types/usageRouting.ts`) groups attempts into requests, folds models and credentials
-past the drawn limit into a count, and reconciles rows into entering, present and
-exiting so a row can animate out before it is removed. Nothing is inferred from
-configuration, and nothing is drawn as in flight: a request travels the map once its
-record is stored. The trip and the row motion play for every reader, including one
-whose system reports `prefers-reduced-motion: reduce`, because the travel is the
-panel's reading; the exception is scoped in `docs/design.md` §7 rule 9 and ADR 0102.
+El panel mantiene el minuto en el navegador: lee el minuto completo una vez y luego, en
+cada señal de uso en vivo, lee después del registro más reciente que tiene, fusiona y retira
+los registros envejecidos con un reloj de un segundo alineado con el `as_of_ms` del servidor; una lectura
+incremental que alcanzó el tope reinicia la ventana desde ella. El modelo que dibuja
+(`types/usageRouting.ts`) agrupa los intentos en solicitudes, pliega modelos y credenciales
+más allá del límite dibujado en un conteo, y concilia las filas en entrando, presente y
+saliendo para que una fila pueda animarse al salir antes de eliminarse. No se infiere nada de la
+configuración, y nada se dibuja como en vuelo: una solicitud recorre el mapa una vez que su
+registro está almacenado. El viaje y el movimiento de las filas se reproducen para todo lector, incluido uno
+cuyo sistema informa `prefers-reduced-motion: reduce`, porque el recorrido es la lectura del
+panel; la excepción está acotada en `docs/design.md` §7 regla 9 y en el ADR 0102.
 
-### Manual sync versus background collection
+### Sincronización manual frente a recolección en segundo plano
 
-The request list reads Shell-PAMC's own database, so a manual refresh that only
-re-read it could never show a request CPA accepted a moment ago. `POST
-/usage/ingest/refresh` therefore drains CPA first: `ingest.Pipeline.RefreshNow`
-hands a request to the collector goroutine (a second consumer would divert
-records from a live subscription and race the poll loop on the same destructive
-queue), waits for the pass, then runs a decode barrier until the inbox rows that
-pass could have produced are no longer `pending`.
+La lista de solicitudes lee la propia base de datos de Shell-PAMC, de modo que una actualización manual que solo
+la releyera nunca podría mostrar una solicitud que CPA aceptó hace un momento. `POST
+/usage/ingest/refresh` por tanto drena CPA primero: `ingest.Pipeline.RefreshNow`
+entrega una solicitud a la goroutine del recolector (un segundo consumidor desviaría
+registros de una suscripción en vivo y competiría con el bucle de sondeo por la misma cola
+destructiva), espera a la pasada y luego ejecuta una barrera de decodificación hasta que las filas de bandeja
+que esa pasada pudo haber producido dejen de estar `pending`.
 
-Five properties are deliberate:
+Cinco propiedades son deliberadas:
 
-- The manual pass is served by the collector's goroutine, never by the HTTP
-  handler, and it persists under the collector's context while only *asking* CPA
-  under the caller's: payloads already popped cannot be put back, so a caller that
-  stops waiting must not abort the write, but a caller that stopped waiting also
-  stops asking for more.
-- A manual failure is returned to `Run` rather than swallowed, so the backoff and
-  the wrong-key cooldown still govern it. An operator who clicks refresh five
-  times must not spend CPA's five-strike ban budget.
-- In `subscribe` mode the pass moves whatever the reader has already buffered
-  into the batch, then drains the reconnect-gap residue through the same bounded
-  multi-batch loop the poll path uses. A live subscription suppresses CPA's
-  enqueue, so a pop alone would report "nothing new" while freshly pushed records
-  waited for the next flush tick; and a single pop would report a clean sync with
-  an older backlog still queued.
-- The decode barrier is scoped by a watermark (`MAX(usage_inboxes.id)` taken after
-  the pass), and its decoded and discard counts by the same value read before
-  the pass, so the result describes this sync's own captures even when the
-  background decoder finishes before the barrier begins. Waiting for `pending == 0` instead would only finish during a lull,
-  because records keep arriving while the refresh runs.
-- `synced` requires that nothing captured at or below the watermark was parked as
-  undecodable. A poison payload leaves no event, so a barrier that ignored
-  discards would promise records the list can never show.
+- La pasada manual la atiende la goroutine del recolector, nunca el handler HTTP, y
+  persiste bajo el contexto del recolector mientras solo *pregunta* a CPA
+  bajo el del llamador: los payloads ya extraídos no pueden devolverse, así que un llamador que
+  deja de esperar no debe abortar la escritura, pero un llamador que dejó de esperar también
+  deja de pedir más.
+- Un fallo manual se devuelve a `Run` en lugar de tragarse, de modo que el retroceso y
+  el enfriamiento por clave incorrecta lo siguen gobernando. Un operador que hace clic en actualizar cinco
+  veces no debe gastar el presupuesto de cinco strikes de bloqueo de CPA.
+- En modo `subscribe` la pasada mueve lo que el lector ya ha almacenado en búfer
+  al lote y luego drena el residuo de la brecha de reconexión mediante el mismo bucle
+  acotado de varios lotes que usa la ruta de sondeo. Una suscripción en vivo suprime el
+  encolado de CPA, así que una sola extracción informaría «nada nuevo» mientras registros recién enviados
+  esperaban al siguiente tick de vaciado; y una sola extracción informaría una sincronización limpia con
+  un atraso más antiguo todavía en cola.
+- La barrera de decodificación se delimita por una marca de agua (`MAX(usage_inboxes.id)` tomada después de
+  la pasada), y sus conteos de decodificados y descartados por el mismo valor leído antes de
+  la pasada, de modo que el resultado describe las capturas de esta sincronización incluso cuando el
+  decodificador en segundo plano termina antes de que comience la barrera. Esperar a `pending == 0` en su lugar solo terminaría durante una calma,
+  porque los registros siguen llegando mientras se ejecuta la actualización.
+- `synced` exige que nada capturado en la marca de agua o por debajo se haya aparcado como
+  no decodificable. Un payload venenoso no deja evento, así que una barrera que ignorara
+  los descartes prometería registros que la lista nunca podrá mostrar.
 
-The endpoint answers with `synced` plus the reason it could not sync, and an
-already-running sync gets a 409 rather than queueing a second identical drain.
-`auth_rejected` describes this sync's own failure, or the collector's current one
-when the collector is not running; an authentication failure the collector has since
-recovered from is history, not a verdict.
+El endpoint responde con `synced` más el motivo por el que no pudo sincronizar, y una
+sincronización ya en ejecución recibe un 409 en lugar de encolar un segundo drenaje idéntico.
+`auth_rejected` describe el fallo propio de esta sincronización, o el actual del recolector
+cuando el recolector no se está ejecutando; un fallo de autenticación del que el recolector se
+ha recuperado desde entonces es historia, no un veredicto.
 
-Collector status separates the current state from that history: `failing` is set by
-a failed capture and cleared by the next successful one, while `last_error` keeps
-the most recent message. `healthy` requires a working mode, a running collector and
-`failing` unset. A subscription that closes hands the payloads it already received
-to the inbox before reconnecting, and so does a collector that is shutting down;
-CPA's queue is destructive, so a batch dropped at either point is gone.
+El estado del recolector separa el estado actual de ese historial: `failing` lo establece
+una captura fallida y lo borra la siguiente exitosa, mientras que `last_error` conserva
+el mensaje más reciente. `healthy` requiere un modo funcional, un recolector en ejecución y
+`failing` sin establecer. Una suscripción que se cierra entrega a la bandeja los payloads que ya recibió
+antes de reconectar, y también lo hace un recolector que se está apagando;
+la cola de CPA es destructiva, así que un lote descartado en cualquiera de esos puntos se pierde.
 
-### Who resolves the request list's window
+### Quién resuelve la ventana de la lista de solicitudes
 
-A sync only helps if the read that follows can see what it stored. Records carry
-CPA's own `timestamp`, which shares the server's clock; the browser's clock is a
-different one and can run minutes behind it. The request list and its facets
-therefore send the window as the reader chose it - `preset`, or `from` plus a
-`to` only for a closed range - through `eventWindowQuery` in
-`web/src/types/usageEventQuery.ts`, and `dashboardWindowFromRequest` resolves
-"now" on the server, the same contract the dashboard's `dashboardRangeParams`
-follows. When the list sent an end resolved on the browser's clock, a browser
-running behind filtered out every record newer than that clock: a request that
-had just completed stayed off the list through any number of refreshes, and
-appeared only once the browser's clock passed its timestamp. The header's printed
-window is still estimated in the browser, because it is display only.
-Its deadline is capped below the server's write timeout, so a slow sync cannot
-outlive the connection carrying its answer.
+Una sincronización solo ayuda si la lectura que sigue puede ver lo que almacenó. Los registros llevan
+el propio `timestamp` de CPA, que comparte el reloj del servidor; el reloj del navegador es uno
+distinto y puede ir minutos por detrás. Por tanto, la lista de solicitudes y sus facetas
+envían la ventana tal como la eligió el lector - `preset`, o `from` más un
+`to` solo para un rango cerrado - mediante `eventWindowQuery` en
+`web/src/types/usageEventQuery.ts`, y `dashboardWindowFromRequest` resuelve
+«ahora» en el servidor, el mismo contrato que sigue el `dashboardRangeParams` del dashboard.
+Cuando la lista enviaba un fin resuelto con el reloj del navegador, un navegador
+retrasado filtraba todo registro más nuevo que ese reloj: una solicitud que
+acababa de completarse se quedaba fuera de la lista tras cualquier número de actualizaciones, y
+aparecía solo cuando el reloj del navegador superaba su marca de tiempo. La ventana impresa en
+la cabecera sigue estimándose en el navegador, porque es solo de visualización.
+Su plazo está limitado por debajo del tiempo de espera de escritura del servidor, de modo que una sincronización lenta no pueda
+sobrevivir a la conexión que lleva su respuesta.
 
-Timestamps in the usage tables are epoch **milliseconds**; the older identity
-tables use `unixepoch()` seconds.
+Las marcas de tiempo de las tablas de uso son **milisegundos** de época; las tablas de identidad
+más antiguas usan segundos de `unixepoch()`.
 
-### Usage facts: what the dashboard reads, and why it outlives request records
+### Hechos de uso: qué lee el dashboard, y por qué sobrevive a los registros de solicitudes
 
-Request records (`usage_events`) and their captured payloads (`usage_inboxes`) grow with
-traffic and roll out of retention. The dashboard's numbers must not go with them, so every
-dashboard panel reads **usage facts** (ADR 0062): `usage_facts_15m` and `usage_facts_daily`,
-keyed by bucket, client key group, model, model alias, credential, provider and auth type,
-carrying every measure a panel prints (requests, failures, the token columns, latency and
-first-token sums, and the request-time cost with its priced and costed counts). They are
-never pruned. They grow with *distinct dimension combinations per bucket*, not with requests.
+Los registros de solicitudes (`usage_events`) y sus payloads capturados (`usage_inboxes`) crecen con
+el tráfico y salen de la retención. Los números del dashboard no deben irse con ellos, así que cada
+panel del dashboard lee **hechos de uso** (ADR 0062): `usage_facts_15m` y `usage_facts_daily`,
+con clave por cubo, grupo de clave de cliente, modelo, alias de modelo, credencial, proveedor y tipo de autenticación,
+y que llevan cada medida que imprime un panel (solicitudes, fallos, las columnas de tokens, sumas de latencia y
+de primer token, y el costo en el momento de la solicitud con sus conteos de valoradas y de costeadas). Nunca
+se podan. Crecen con las *combinaciones distintas de dimensiones por cubo*, no con las solicitudes.
 
-`Repository.QueryUsageFacts` is the single read every panel goes through; the older
+`Repository.QueryUsageFacts` es la lectura única por la que pasa cada panel; las anteriores
 `QueryUsageAnalytics`, `QueryUsageModelBuckets`, `QueryUsageProviderTotals`,
-`QueryUsageCostWindow` and `QueryDailyTokenTotals` are thin projections of it. A new panel
-adds a grouping or a measure there instead of writing another scan of `usage_events`.
+`QueryUsageCostWindow` y `QueryDailyTokenTotals` son proyecciones finas de ella. Un panel nuevo
+añade allí una agrupación o una medida en lugar de escribir otro escaneo de `usage_events`.
 
-Three rules keep the read exact:
+Tres reglas mantienen exacta la lectura:
 
-- **Both grains fold in one transaction under one checkpoint** (`facts` in
-  `usage_aggregation_checkpoints`), so the two tables always cover the same set of event
-  ids. `AggregateUsageFacts` advances it in bounded batches.
-- **The split between facts and request records is an event id, never a timestamp.** A
-  record at or below the checkpoint is in the facts; one above it is not. CPA event times
-  arrive out of order, and a timestamp boundary would count a late record on both sides -
-  quietly in a total, and visibly wrong in a per-model ranking. The facts and the
-  unfolded records are read in **one SQL statement**, so the checkpoint cannot move
-  between the two halves.
-- **A bucket is only served from a grain that divides it.** Whole days come from the daily
-  table, the remaining whole quarter hours from the fifteen-minute table, and the ragged
-  edges of the window from request records at or below the checkpoint. A grid finer than
-  fifteen minutes is read from request records alone, because a fact row cannot be split.
+- **Ambas granularidades se pliegan en una transacción bajo un punto de control** (`facts` en
+  `usage_aggregation_checkpoints`), de modo que las dos tablas siempre cubren el mismo conjunto de ids
+  de evento. `AggregateUsageFacts` lo avanza en lotes acotados.
+- **La división entre hechos y registros de solicitudes es un id de evento, nunca una marca de tiempo.** Un
+  registro en el punto de control o por debajo está en los hechos; uno por encima no. Los tiempos de evento de CPA
+  llegan desordenados, y una frontera por marca de tiempo contaría un registro tardío en ambos lados -
+  de forma silenciosa en un total, y visiblemente errónea en un ranking por modelo. Los hechos y los
+  registros sin plegar se leen en **una sola sentencia SQL**, de modo que el punto de control no puede moverse
+  entre las dos mitades.
+- **Un cubo solo se sirve desde una granularidad que lo divide.** Los días completos provienen de la tabla
+  diaria, los cuartos de hora completos restantes de la tabla de quince minutos, y los bordes irregulares de la ventana de los registros de
+  solicitudes en el punto de control o por debajo. Una cuadrícula más fina que
+  quince minutos se lee solo de los registros de solicitudes, porque una fila de hechos no puede dividirse.
 
-The fine grain is fifteen minutes because every civil UTC offset in use is a multiple of
-it: a local calendar day is a whole number of buckets in any deployment time zone, which
-an hourly grain cannot offer (`+05:30`, `+05:45`).
+La granularidad fina es de quince minutos porque todo desfase UTC civil en uso es un múltiplo de
+ella: un día de calendario local es un número entero de cubos en cualquier zona horaria de despliegue, lo
+que una granularidad horaria no puede ofrecer (`+05:30`, `+05:45`).
 
-**The detail horizon.** Once the lifecycle pass has removed request records before an
-instant, the ragged edges and the fine grids behind it can no longer be read. The instant is
-persisted (`data_lifecycle_state.horizon_ms`, policy `usage_detail`) rather than inferred
-from the oldest surviving row, and it is always a whole UTC day. `AlignUsageWindow` widens a
-window that reaches behind it to whole fact buckets and coarsens its grid to at least
-fifteen minutes; the response's `window` reports the bounds that were actually read.
+**El horizonte de detalle.** Una vez que la pasada del ciclo de vida ha eliminado los registros de solicitudes anteriores a un
+instante, los bordes irregulares y las cuadrículas finas más allá de él ya no pueden leerse. El instante se
+persiste (`data_lifecycle_state.horizon_ms`, política `usage_detail`) en lugar de inferirse
+de la fila superviviente más antigua, y siempre es un día UTC completo. `AlignUsageWindow` ensancha una
+ventana que llega más allá de él a cubos de hechos completos y engrosa su cuadrícula a al menos
+quince minutos; el `window` de la respuesta informa de los límites que realmente se leyeron.
 
-**The all-time window.** `preset=all` is resolved by the server (`Handler.dashboardWindow`)
-to start at the first usage the deployment recorded (`FirstUsageRecordMS`) and end at now.
-Only the dashboard endpoints accept it: the request list reads request records, so it
-keeps its bounded presets and rejects `all`. A custom range is still capped at 365 days.
+**La ventana de todo el tiempo.** `preset=all` lo resuelve el servidor (`Handler.dashboardWindow`)
+para empezar en el primer uso que el despliegue registró (`FirstUsageRecordMS`) y terminar ahora.
+Solo los endpoints del dashboard lo aceptan: la lista de solicitudes lee registros de solicitudes, así que
+conserva sus preajustes acotados y rechaza `all`. Un rango personalizado sigue limitado a 365 días.
 
-### Why the model breakdown is its own endpoint
+### Por qué el desglose por modelo es su propio endpoint
 
-The dashboard's two model panels - the per-model token trend and the model-usage ring - are served by
-their own endpoint, `GET /management/dashboard/models`, with its own query, its own refresh cadence and
-its own failure mode. Three properties make it the wrong thing to attach to the KPI response, and each
-is the same reasoning ADR 0005 recorded for the token grid.
+Los dos paneles de modelos del dashboard - la tendencia de tokens por modelo y el anillo de uso por modelo - se sirven desde
+su propio endpoint, `GET /management/dashboard/models`, con su propia consulta, su propia cadencia de actualización y
+su propio modo de fallo. Tres propiedades lo hacen inadecuado para adjuntarlo a la respuesta de KPI, y cada una
+es el mismo razonamiento que el ADR 0005 registró para la cuadrícula de tokens.
 
-**It is the page's widest read.** `QueryUsageModelBuckets` groups the window by model and
-bucket, so it returns a row per model per bucket where the tiles return one per bucket. It goes
-through the same usage-fact read as the tiles, and the id split described above is what makes a
-per-model *ranking* safe: a late record is counted once, so it cannot reorder models.
+**Es la lectura más ancha de la página.** `QueryUsageModelBuckets` agrupa la ventana por modelo y
+cubo, de modo que devuelve una fila por modelo por cubo donde los mosaicos devuelven una por cubo. Pasa
+por la misma lectura de hechos de uso que los mosaicos, y la división por id descrita arriba es lo que hace seguro
+un *ranking* por modelo: un registro tardío se cuenta una vez, así que no puede reordenar los modelos.
 
-**It moves on its own cadence.** The KPI tiles poll through `/management/dashboard/tail` as often as
-every five seconds; that poll recomputes the window's aggregates. Attaching the grouped read to
-it would multiply the page's widest query by twelve to redraw a ranking that changes when a caller
-switches models, which is not a second-by-second event. The panels poll on a one-minute interval for a
-sliding window and not at all for a closed one.
+**Se mueve con su propia cadencia.** Los mosaicos de KPI sondean mediante `/management/dashboard/tail` hasta cada
+cinco segundos; ese sondeo recalcula los agregados de la ventana. Adjuntarle la lectura agrupada
+multiplicaría por doce la consulta más ancha de la página para redibujar un ranking que cambia cuando un llamador
+cambia de modelo, lo que no es un evento de segundo a segundo. Los paneles sondean en un intervalo de un minuto para una
+ventana deslizante y en absoluto para una cerrada.
 
-A closed range has fixed **bounds**, not immutable contents: records are still arriving. Its panels are simply not re-read on a timer, so they show what the range held
-when it was last fetched - which is why the page's refresh button reaches them.
+Un rango cerrado tiene **límites** fijos, no contenido inmutable: los registros siguen llegando. Sus paneles simplemente no se releen con un temporizador, así que muestran lo que el rango contenía
+cuando se obtuvo por última vez - razón por la que el botón de actualizar de la página los alcanza.
 
-**It is allowed to fail alone.** An unavailable read leaves the six tiles and the activity grid beside
-it readable, which is the same reasoning that put `partial_errors` on the overview and gave the heatmap
-its own endpoint.
+**Se le permite fallar solo.** Una lectura no disponible deja legibles los seis mosaicos y la cuadrícula de actividad a su
+lado, que es el mismo razonamiento que puso `partial_errors` en la vista general y dio al mapa de calor
+su propio endpoint.
 
-**The grouping is the request's, not the panel's.** The endpoint takes `group_by=call|model` (default
-`model`, and an unknown value is a 400 rather than a silent fall-back, so a typo cannot quietly change
-what the numbers mean). The call view partitions rows by call point - the model alias a client
-requested, falling back to the upstream model name when no alias was set - so one call point served by
-several upstream variants reads as one line, the way the deployment's own vocabulary names it; the
-model view partitions by the upstream model name exactly as CPA recorded it. The choice rides in the
-query because ranking and folding are the server's single answer for exactly one grouping - a
-client-side regroup of one ranking could not also re-rank, re-fold, and re-assign colours without
-duplicating the fold logic and letting it drift from the server's. The response also carries each
-group's priced spend (`cost_usd`, null when nothing in the group was priced) and `priced_requests`,
-summed only over rows priced at request time, so an unpriced-heavy window cannot present a partial
-spend as the whole.
+**La agrupación es de la solicitud, no del panel.** El endpoint toma `group_by=call|model` (por defecto
+`model`, y un valor desconocido es un 400 en lugar de una vuelta silenciosa al valor por defecto, para que un error tipográfico no pueda cambiar discretamente
+lo que significan los números). La vista por llamada particiona las filas por punto de llamada - el alias de modelo que un cliente
+solicitó, recurriendo al nombre del modelo upstream cuando no se estableció alias - de modo que un punto de llamada servido por
+varias variantes upstream se lee como una línea, como lo nombra el vocabulario propio del despliegue; la
+vista por modelo particiona por el nombre del modelo upstream exactamente como lo registró CPA. La elección viaja en la
+consulta porque el ranking y el plegado son la respuesta única del servidor para exactamente una agrupación - una
+reagrupación en el cliente de un ranking no podría además reordenar, replegar y reasignar colores sin
+duplicar la lógica de plegado y dejar que se desvíe de la del servidor. La respuesta también lleva el gasto valorado de cada
+grupo (`cost_usd`, nulo cuando nada del grupo estaba valorado) y `priced_requests`,
+sumados solo sobre filas valoradas en el momento de la solicitud, de modo que una ventana con mucho sin valorar no pueda presentar un gasto
+parcial como si fuera el total.
 
-Two details of the fold are load-bearing. The remainder group carries a `folded` boolean rather than a
-reserved display name, because the label is the frontend's to translate and a deployment may
-legitimately serve a model whose name collides with whatever that label is; a name-based test would
-merge real traffic into the remainder or split it in two. And the ranking is tie-broken by model name,
-because equal volumes are ordinary (two aliases of one model, or a window where one request hit each)
-and without a total order the order would come from map iteration, reshuffling the legend under the
-operator on every poll.
+Dos detalles del plegado son críticos. El grupo del remanente lleva un booleano `folded` en lugar de un
+nombre para mostrar reservado, porque la etiqueta la traduce el frontend y un despliegue puede
+legítimamente servir un modelo cuyo nombre coincida con esa etiqueta; una prueba basada en el nombre
+fusionaría tráfico real en el remanente o lo dividiría en dos. Y el ranking se desempata por nombre de modelo,
+porque los volúmenes iguales son habituales (dos alias de un modelo, o una ventana donde cada uno recibió una solicitud)
+y sin un orden total el orden vendría de la iteración del mapa, reordenando la leyenda bajo el
+operador en cada sondeo.
 
-`BenchmarkUsageModelBuckets` pins the cost of both paths over 100 000 in-window records on one
-development machine: about 0.74 s while none of them is folded, and about 0.02 s once the facts
-hold them. The first figure is the transient state after an upgrade, before the fold catches up;
-the second is the steady state, and it follows the number of fact rows, not of requests.
+`BenchmarkUsageModelBuckets` fija el costo de ambas rutas sobre 100 000 registros dentro de la ventana en una
+máquina de desarrollo: unos 0,74 s mientras ninguno está plegado, y unos 0,02 s una vez que los hechos
+los contienen. La primera cifra es el estado transitorio tras una actualización, antes de que el plegado se ponga al día;
+la segunda es el estado estable, y sigue el número de filas de hechos, no el de solicitudes.
 
-### Why the daily token grid folds its own days
+### Por qué la cuadrícula diaria de tokens pliega sus propios días
 
-The dashboard's windowed read and the year-long token grid look like the same question at
-two zoom levels, and they are not - which is why
-`/management/dashboard/token-heatmap` is a separate endpoint with its own query.
+La lectura con ventana del dashboard y la cuadrícula de tokens de todo un año parecen la misma pregunta a
+dos niveles de zoom, y no lo son - razón por la cual
+`/management/dashboard/token-heatmap` es un endpoint separado con su propia consulta.
 
-Two properties of the windowed read make it the wrong tool for a calendar. Its window
-slides, so the same series is a different span every time it is asked. And its grid is a
-*bucket* grid (`dashboardBucketWidth`), chosen so a sparkline stays near 48 points.
+Dos propiedades de la lectura con ventana la hacen inadecuada para un calendario. Su ventana
+se desliza, de modo que la misma serie es un lapso distinto cada vez que se pide. Y su cuadrícula es una
+cuadrícula de *cubos* (`dashboardBucketWidth`), elegida para que un sparkline se mantenga cerca de 48 puntos.
 
-A day is not a bucket. An hourly grain cannot split a UTC hour that straddles a local
-midnight at a fractional offset: India is `+05:30`, so local midnight falls at 18:30 UTC.
-The same arithmetic is wrong for every day on the far side of a daylight-saving
-transition, not merely the two transition days, because a single offset cannot describe a
-span that crosses one.
+Un día no es un cubo. Una granularidad horaria no puede dividir una hora UTC que cruza una medianoche
+local con un desfase fraccionario: la India es `+05:30`, así que la medianoche local cae a las 18:30 UTC.
+La misma aritmética es errónea para todos los días al otro lado de una transición
+de horario de verano, no solo los dos días de transición, porque un único desfase no puede describir un
+lapso que cruza una.
 
-`Repository.QueryDailyTokenTotals` therefore takes the days as exact instant ranges,
-built by the handler from the effective Shell-PAMC IANA zone with `time.Date`/`AddDate`. Because
-every civil offset is a multiple of fifteen minutes, each of those days is a whole number
-of `usage_facts_15m` buckets: the grid is one fifteen-minute fact read over the span,
-folded into days in Go. Days that are not contiguous or not quarter-hour aligned are read
-one at a time through the same fact query.
+`Repository.QueryDailyTokenTotals` por tanto toma los días como rangos de instantes exactos,
+construidos por el handler a partir de la zona IANA efectiva de Shell-PAMC con `time.Date`/`AddDate`. Como
+todo desfase civil es múltiplo de quince minutos, cada uno de esos días es un número entero
+de cubos de `usage_facts_15m`: la cuadrícula es una lectura de hechos de quince minutos sobre el lapso,
+plegada en días en Go. Los días que no son contiguos o no están alineados a cuartos de hora se leen
+uno a uno mediante la misma consulta de hechos.
 
-The grid no longer depends on request-record retention: a day whose records have rolled
-out still carries its totals. A day before the deployment's first usage, or later this week
-than today, is reported as carrying nothing and drawn as *unrecorded*, rather than as a
-measured zero that would claim the gateway was idle.
-The panel calls it on a five-minute interval and on an explicit page refresh, not on the tail
-poll's cadence. The final day's window stops at the read instant rather than at the following
-midnight, so a record timestamped in the future cannot inflate today's total.
+La cuadrícula ya no depende de la retención de registros de solicitudes: un día cuyos registros han salido
+sigue conservando sus totales. Un día anterior al primer uso del despliegue, o posterior en esta semana
+a hoy, se informa como sin nada y se dibuja como *sin registrar*, en lugar de como un
+cero medido que afirmaría que el gateway estuvo inactivo.
+El panel la llama en un intervalo de cinco minutos y en una actualización explícita de la página, no con la cadencia del
+sondeo de cola. La ventana del último día se detiene en el instante de lectura y no en la
+medianoche siguiente, de modo que un registro con marca de tiempo futura no pueda inflar el total de hoy.
 
-### Why the request list is ordered by `timestamp_ms`
+### Por qué la lista de solicitudes se ordena por `timestamp_ms`
 
-The list's order is the column the reader sorts by eye, so the two must agree.
-`ListUsageEvents` orders by `timestamp_ms DESC, id DESC`: the newest request time
-first, with the row id as a tiebreaker.
+El orden de la lista es la columna por la que el lector ordena a ojo, así que ambos deben coincidir.
+`ListUsageEvents` ordena por `timestamp_ms DESC, id DESC`: primero la hora de solicitud
+más reciente, con el id de fila como desempate.
 
-`timestamp_ms` is when the request *started*, which is what the time column
-prints, and that is exactly why the visible column has to be the sort key. An
-agent request can run for minutes, so ordering by anything else puts a
-long-running request above requests that began after it: the reader sees
-`14:53:34`, then `14:52:57`, then `14:53:36` and concludes the sort is broken.
-Measured against a real instance, ordering by row id inverted **1329 of 5464**
-adjacent rows — about a quarter of the list.
+`timestamp_ms` es cuándo *empezó* la solicitud, que es lo que imprime la columna de hora,
+y por eso mismo la columna visible tiene que ser la clave de ordenación. Una
+solicitud del agente puede durar minutos, así que ordenar por cualquier otra cosa pone una solicitud de larga duración
+por encima de solicitudes que empezaron después de ella: el lector ve
+`14:53:34`, luego `14:52:57`, luego `14:53:36` y concluye que la ordenación está rota.
+Medido contra una instancia real, ordenar por id de fila invirtió **1329 de 5464** filas
+adyacentes — aproximadamente una cuarta parte de la lista.
 
-The `id` tiebreaker is not optional. Several records can share a start time (a
-client fanning out, or a second-granularity source), and without a total order the
-keyset boundary would skip or repeat rows as the reader pages. The cursor is
-therefore a composite `(timestamp_ms, id)` position applied as the row comparison
-`(e.timestamp_ms, e.id) < (?, ?)`, not a single-column predicate. Cursors written
-before this order existed carry only an `id`; `resolveEventCursor` looks the row's
-timestamp up to convert them, and a cursor naming a row that no longer exists is
-rejected with `ErrUsageCursorStale` (HTTP 409) so the console restarts at page one
-instead of silently serving a page from the wrong place.
+El desempate por `id` no es opcional. Varios registros pueden compartir una hora de inicio (un
+cliente que se ramifica, o una fuente con granularidad de segundos), y sin un orden total la
+frontera del conjunto de claves omitiría o repetiría filas mientras el lector pagina. El cursor es
+por tanto una posición compuesta `(timestamp_ms, id)` aplicada como la comparación de filas
+`(e.timestamp_ms, e.id) < (?, ?)`, no un predicado de una sola columna. Los cursores escritos
+antes de que existiera este orden llevan solo un `id`; `resolveEventCursor` busca la marca de tiempo de la fila
+para convertirlos, y un cursor que nombra una fila que ya no existe se
+rechaza con `ErrUsageCursorStale` (HTTP 409) para que la consola reinicie en la página uno
+en lugar de servir en silencio una página desde el lugar equivocado.
 
-This order is served by `idx_usage_events_instance_time` (migration 018),
-`(instance_id, timestamp_ms DESC, id DESC)`: the keyset predicate and the
-instance/time window both read from it, and the plan is a covering index seek with
-no temp B-tree. Migration 021's `idx_usage_events_instance_id` no longer serves the
-list order; it remains the index for `id`-keyed lookups such as the ingestion
-watermark behind the console's "N records arrived" pill.
+Este orden lo sirve `idx_usage_events_instance_time` (migración 018),
+`(instance_id, timestamp_ms DESC, id DESC)`: el predicado del conjunto de claves y la ventana de
+instancia/tiempo leen ambos de él, y el plan es una búsqueda de índice cubriente sin
+B-tree temporal. El `idx_usage_events_instance_id` de la migración 021 ya no sirve el orden de
+la lista; sigue siendo el índice para las búsquedas por `id` como la marca de agua de ingesta
+detrás de la píldora «N registros llegaron» de la consola.
 
-That pill is the one place the two orderings still have to be told apart, because
-"new records" means newly *recorded*, not newest request time. A request that
-started an hour ago and finished just now is genuinely new while sorting far below
-the first page, so the console counts arrivals against an ingestion id
-(`?since=<row id>`) rather than diffing the rows it has loaded — which would report
-"nothing new" while records were flowing in. On a real instance **5415 of 5515**
-records sort below page one, so that distinction is the normal case, not an edge
-case. The arrival count is resolved before the list scan, and the list result set
-is closed before the function returns. With one SQLite connection, issuing the
-count after the list could otherwise keep both statements on the same WAL
-snapshot, so a record committed between polls would remain invisible until a
-later transaction happened to replace it. Built acceptance precommits one dedicated
-arrival already inside the server window. Its fixture availability gate withholds
-only that row until the reader enters Hold, preserving the baseline with real API
-reads, then forwards subsequent responses unchanged. The poll therefore exercises
-the real ID-based count without depending on startup duration or a second writer.
+Esa píldora es el único lugar donde aún hay que distinguir los dos órdenes, porque
+«registros nuevos» significa recién *registrados*, no la hora de solicitud más reciente. Una solicitud que
+empezó hace una hora y terminó justo ahora es genuinamente nueva aunque se ordene muy por debajo de
+la primera página, así que la consola cuenta las llegadas contra un id de ingesta
+(`?since=<row id>`) en lugar de comparar las filas que ha cargado — lo que informaría
+«nada nuevo» mientras los registros seguían entrando. En una instancia real **5415 de 5515**
+registros se ordenan por debajo de la página uno, así que esa distinción es el caso normal, no un caso
+límite. El conteo de llegadas se resuelve antes del escaneo de la lista, y el conjunto de resultados de la lista
+se cierra antes de que la función regrese. Con una sola conexión SQLite, emitir el
+conteo después de la lista podría mantener ambas sentencias en la misma instantánea WAL,
+de modo que un registro confirmado entre sondeos seguiría invisible hasta que una
+transacción posterior lo reemplazara. La aceptación compilada precomitea una llegada dedicada
+ya dentro de la ventana del servidor. Su compuerta de disponibilidad del fixture retiene
+solo esa fila hasta que el lector entra en Hold, preservando la línea base con lecturas reales de la API,
+y luego reenvía sin cambios las respuestas posteriores. El sondeo ejercita por tanto
+el conteo real basado en ID sin depender de la duración del arranque ni de un segundo escritor.
 
-Request *time* is also the windowing key (`timestamp_ms >= from AND <= to`) and the
-axis of every rollup and chart, so the list, the window and the charts all agree on
-what the numbers mean.
+La *hora* de solicitud es también la clave de ventana (`timestamp_ms >= from AND <= to`) y el
+eje de cada agregación y gráfico, así que la lista, la ventana y los gráficos coinciden todos en
+qué significan los números.
 
-### Client key aliases: one identity, two purposes
+### Alias de claves de cliente: una identidad, dos propósitos
 
-Operator-assigned names for gateway client keys live in `client_key_aliases`
-(migration 022), keyed by `(instance_id, key_fingerprint)`.
+Los nombres asignados por el operador a las claves de cliente del gateway viven en `client_key_aliases`
+(migración 022), con clave `(instance_id, key_fingerprint)`.
 
-The fingerprint is `usage_events.api_group_key`, which is `security.Fingerprint`
-under the purpose **`usage-api-key`** (`repository.UsageClientKeyPurpose`). The
-purpose is part of the HMAC input, so the same key hashed under a different
-purpose is an unrelated value - and that is exactly what the key list used to do:
-it fingerprinted under `client-key`, producing an identity that matched **no**
-request record. An alias written against that value could never label anything.
-`ClientAPIKeyItemDTO` therefore carries both: `fingerprint` (the legacy page value,
-kept for compatibility) and `usage_fingerprint` (the joinable identity).
+La huella es `usage_events.api_group_key`, que es `security.Fingerprint`
+bajo el propósito **`usage-api-key`** (`repository.UsageClientKeyPurpose`). El
+propósito forma parte de la entrada del HMAC, de modo que la misma clave con hash bajo otro
+propósito es un valor sin relación - y eso es exactamente lo que hacía antes la lista de claves:
+calculaba la huella bajo `client-key`, produciendo una identidad que no coincidía con **ningún**
+registro de solicitud. Un alias escrito contra ese valor nunca podía etiquetar nada.
+`ClientAPIKeyItemDTO` por tanto lleva ambas: `fingerprint` (el valor heredado de la página,
+conservado por compatibilidad) y `usage_fingerprint` (la identidad que permite el join).
 
-Three consequences shape the implementation:
+Tres consecuencias dan forma a la implementación:
 
-- **Identity is the fingerprint, never an array index or a mask.** Reordering CPA's
-  `api-keys` list moves an index, and a mask keeps only a short head and tail, so
-  two keys can share one. Either would put one key's name on another key's records.
-- **Aliases are never pruned.** Requests keep their `api_group_key` forever, so a
-  deleted key's history still needs its name; an alias belongs to the identity, not
-  to the current configuration. Renaming is read-time resolution, so it changes how
-  historical rows read without rewriting a single usage record.
-- **Alias writes never touch CPA's configuration.** Naming a key is Shell-PAMC
-  metadata with its own endpoint, because routing it through `PUT /config.yaml`
-  would rotate the revision for every other editor and rewrite a secret the
-  operator did not touch.
+- **La identidad es la huella, nunca un índice de arreglo ni una máscara.** Reordenar la lista
+  `api-keys` de CPA mueve un índice, y una máscara conserva solo una cabeza y una cola cortas, de modo que
+  dos claves pueden compartir una. Cualquiera de las dos pondría el nombre de una clave en los registros de otra.
+- **Los alias nunca se podan.** Las solicitudes conservan su `api_group_key` para siempre, así que el
+  historial de una clave eliminada sigue necesitando su nombre; un alias pertenece a la identidad, no
+  a la configuración actual. Renombrar es resolución en tiempo de lectura, de modo que cambia cómo se leen
+  las filas históricas sin reescribir un solo registro de uso.
+- **Las escrituras de alias nunca tocan la configuración de CPA.** Nombrar una clave son
+  metadatos de Shell-PAMC con su propio endpoint, porque encaminarlo por `PUT /config.yaml`
+  rotaría la revisión para todos los demás editores y reescribiría un secreto que el
+  operador no tocó.
 
-Resolution is a single batched `IN` lookup per page (deduplicated, chunked at 500
-parameters), not one query per row, and it is best-effort: a failure leaves
-`api_key_alias` empty and the console falls back to the mask rather than failing
-the list. The fingerprint remains the filter identity, so a rename cannot change
-what a saved filter or a drill-down link selects.
+La resolución es una única búsqueda `IN` por lotes por página (deduplicada, dividida en fragmentos de 500
+parámetros), no una consulta por fila, y es de mejor esfuerzo: un fallo deja
+`api_key_alias` vacío y la consola recurre a la máscara en lugar de hacer fallar
+la lista. La huella sigue siendo la identidad del filtro, de modo que un cambio de nombre no puede alterar
+lo que selecciona un filtro guardado o un enlace de profundización.
 
-Because neither a mask nor an index can stand in for the value, the key list is
-the one reader that asks the management API for it: `/management/api-keys` sends
-`ClientAPIKeyItemDTO.Key` as a display mask unless the caller opts in with
-`?include_keys=true`, which is the flag the provider list already uses. The key
-page opts in, joins the overlay by that value, and keeps its own query cache entry
-so the dashboard's key picker — which only needs the mask — cannot be served the
-values, and the key page cannot be served the masks (ADR 0015).
+Como ni una máscara ni un índice pueden sustituir al valor, la lista de claves es
+el único lector que se lo pide a la API de gestión: `/management/api-keys` envía
+`ClientAPIKeyItemDTO.Key` como máscara de visualización salvo que el llamador opte por
+`?include_keys=true`, que es la bandera que ya usa la lista de proveedores. La página de claves
+opta por ella, une la superposición por ese valor y mantiene su propia entrada de caché de consultas
+para que al selector de claves del dashboard — que solo necesita la máscara — no se le puedan servir
+los valores, y a la página de claves no se le puedan servir las máscaras (ADR 0015).
 
-### Provider traffic is credited by the serving key
+### El tráfico de un proveedor se acredita a la clave que lo sirvió
 
-A provider row's traffic number answers "how much did this provider serve", and CPA's
-`provider` label on a usage record cannot answer it. For an API-key request CPA writes
-the credential's *family* (`codex`, `claude`, `xai`, ...) — the same word it writes for
-the family's OAuth channel — so one label covers several distinct providers at once, and
-the matching it invites (family, display name, or substring) credits a provider that has
-served nothing with another surface's traffic. The fact that does identify the key is
-already in the record: the credential's runtime `auth_index`.
+El número de tráfico de la fila de un proveedor responde «cuánto sirvió este proveedor», y la
+etiqueta `provider` de CPA en un registro de uso no puede responderlo. Para una solicitud con clave de API CPA escribe
+la *familia* de la credencial (`codex`, `claude`, `xai`, ...) — la misma palabra que escribe para
+el canal OAuth de la familia — de modo que una etiqueta cubre a varios proveedores distintos a la vez, y
+la coincidencia que invita (familia, nombre para mostrar o subcadena) acredita a un proveedor que no
+ha servido nada con el tráfico de otra superficie. El dato que sí identifica la clave
+ya está en el registro: el `auth_index` de runtime de la credencial.
 
-`/management/dashboard/providers` therefore answers with two lists instead of one.
-`QueryUsageProviderTotals` reads the usage facts grouped by `UsageGroupProviderCredential`
-(`usageFactGroupExpressions` in `internal/repository/usage_facts.go`): the provider label
-CPA wrote, and `CASE WHEN auth_type = 'apikey' THEN auth_index ELSE '' END`;
-`internal/api/management_dashboard_providers.go` folds the empty-index rows into
-`providers[]` by the label CPA wrote — the OAuth channels, and records that name no
-credential — and the rest into `credentials[]`, one entry per key that served traffic.
-A configured provider's traffic is the sum over the indexes of its own keys, which
-the provider DTO publishes as `auth_indexes` (`internal/api/management_providers.go`),
-plus whatever a label attributes to it — never a general claim on indexless records, which
-carry no provider identity at all. Only an `openai-compatibility` row takes a label: exactly
-the `openai-compatible-<name>` label CPA derives from that provider's own name, or, when the
-row is one the console presents as an OAuth channel, that channel's label as channel rows have
-always been matched. A `{family}-api-key` provider takes neither — not even when its display
-name spells a family — because those records were served by different credentials, and family
-labels belong to the family's OAuth channel. Only a name **CPA** carries makes a row a channel:
-the display name is an operator preference the browser can change, so a rename must not hand a
-relay the channel whose name it borrows.
+`/management/dashboard/providers` por tanto responde con dos listas en lugar de una.
+`QueryUsageProviderTotals` lee los hechos de uso agrupados por `UsageGroupProviderCredential`
+(`usageFactGroupExpressions` en `internal/repository/usage_facts.go`): la etiqueta de proveedor
+que escribió CPA y `CASE WHEN auth_type = 'apikey' THEN auth_index ELSE '' END`;
+`internal/api/management_dashboard_providers.go` pliega las filas de índice vacío en
+`providers[]` por la etiqueta que escribió CPA — los canales OAuth, y los registros que no nombran
+ninguna credencial — y el resto en `credentials[]`, una entrada por clave que sirvió tráfico.
+El tráfico de un proveedor configurado es la suma sobre los índices de sus propias claves, que
+el DTO del proveedor publica como `auth_indexes` (`internal/api/management_providers.go`),
+más lo que una etiqueta le atribuya — nunca una reclamación general sobre registros sin índice, que
+no llevan ninguna identidad de proveedor. Solo una fila de `openai-compatibility` toma una etiqueta: exactamente
+la etiqueta `openai-compatible-<name>` que CPA deriva del propio nombre de ese proveedor, o, cuando la
+fila es una que la consola presenta como canal OAuth, la etiqueta de ese canal como siempre se han
+emparejado las filas de canal. Un proveedor `{family}-api-key` no toma ninguna — ni siquiera cuando su nombre para mostrar
+escribe una familia — porque esos registros los sirvieron credenciales distintas, y las etiquetas de familia
+pertenecen al canal OAuth de la familia. Solo un nombre que **CPA** lleva convierte una fila en canal:
+el nombre para mostrar es una preferencia del operador que el navegador puede cambiar, así que un cambio de nombre no debe entregar a un
+relé el canal cuyo nombre toma prestado.
 
-Six properties are load-bearing:
+Seis propiedades son críticas:
 
-- **The join is an identity, never a heuristic.** No family match, no display-name
-  match, no substring and no "the provider's only key": each of those is wrong in the
-  case this rule exists for — a second provider of the same family, or a provider
-  created a moment ago — and a confidently wrong number is worse than a narrow one.
-- **Every configured provider is its own row.** Rows are no longer merged or skipped by
-  name, so two providers left at CPA's default name, and two keys of one family, each
-  report their own count instead of collapsing into one row and a dash. Only an
-  `openai-compatibility` row claims the gateway's label rows for its own name, which is
-  the identity its requests carry; a configured key provider whose display name spells a
-  channel is a different thing and leaves that channel's row standing.
-- **A provider's credential count is its own** (`key_entries`, or `auth_indexes` for a
-  key CPA reports without a mask). The gateway's per-type tally counts auth files, and
-  several of those type ids are shared with the API-key families, so taking the count
-  from there reported credentials the provider does not hold. The converse holds for a
-  channel row: CPA also lists a runtime entry (account type `api_key`) for every
-  configured `{family}-api-key` key under the family's type, so the overview's
-  `credentials.by_type` reports that share as `api_keys` / `api_keys_disabled`. A
-  channel row counts and reads only the auth files, a configured family row reads only
-  its keys, and a type holding nothing but configured keys has no channel row.
-  Once `credentials` has been read, the tally is the only evidence an OAuth channel
-  exists — an empty `by_type` included. The overview's live `providers[]` bucket counts
-  every key CPA's usage lists under a family's label, API keys among them, so it stands
-  in for a channel row or count only while the auth-file read failed (`credentials` is
+- **El join es una identidad, nunca una heurística.** Ni coincidencia de familia, ni de nombre
+  para mostrar, ni de subcadena, ni «la única clave del proveedor»: cada una de ellas es errónea en el
+  caso para el que existe esta regla — un segundo proveedor de la misma familia, o un proveedor
+  creado hace un momento — y un número confiadamente erróneo es peor que uno estrecho.
+- **Cada proveedor configurado es su propia fila.** Las filas ya no se fusionan ni se omiten por
+  nombre, así que dos proveedores con el nombre por defecto de CPA, y dos claves de una misma familia, cada uno
+  informa su propio conteo en lugar de colapsar en una fila y un guion. Solo una fila de
+  `openai-compatibility` reclama para su propio nombre las filas de etiqueta del gateway, que es
+  la identidad que llevan sus solicitudes; un proveedor de claves configurado cuyo nombre para mostrar escribe un
+  canal es otra cosa y deja en pie la fila de ese canal.
+- **El conteo de credenciales de un proveedor es el suyo propio** (`key_entries`, o `auth_indexes` para una
+  clave que CPA informa sin máscara). El recuento por tipo del gateway cuenta archivos de autenticación,
+  y varios de esos ids de tipo se comparten con las familias de claves de API, así que tomar el conteo
+  de allí informaba credenciales que el proveedor no posee. Lo inverso vale para una
+  fila de canal: CPA también lista una entrada de runtime (tipo de cuenta `api_key`) por cada
+  clave `{family}-api-key` configurada bajo el tipo de la familia, de modo que el
+  `credentials.by_type` de la vista general informa esa parte como `api_keys` / `api_keys_disabled`. Una
+  fila de canal cuenta y lee solo los archivos de autenticación, una fila de familia configurada lee solo
+  sus claves, y un tipo que no contiene más que claves configuradas no tiene fila de canal.
+  Una vez leído `credentials`, el recuento es la única evidencia de que existe un canal OAuth
+  — incluido un `by_type` vacío. El bucket `providers[]` en vivo de la vista general cuenta
+  cada clave que el uso de CPA lista bajo la etiqueta de una familia, claves de API incluidas, así que
+  sustituye a una fila o conteo de canal solo mientras falló la lectura de archivos de autenticación (`credentials` es
   `null`).
-- **A record that names no index is credited to nobody.** History written before the
-  index was captured, and a record whose credential CPA no longer holds — it keeps the index it
-  was served under, which no configured provider publishes — count toward no configured provider.
-  They stay in the totals and in the request list. The alternative is inference, and inference is
-  what produced the defect this rule exists for.
-- **An index two providers both publish is credited to neither.** CPA derives a credential's
-  runtime index from the credential itself, so one key entered twice under one name resolves to
-  a single index. Crediting whichever row the list happens to put first would print a number that
-  changes with the order of the provider list.
-- **A label is an identity, at CPA's precision.** `deep-seek` and `deepseek` are two labels to
-  CPA and stay two rows here; the console must not fold them through a normalizer that strips
-  separators to look a label up, and it must keep the label the server folded rather than
-  re-deriving it from a display name.
+- **Un registro que no nombra índice no se acredita a nadie.** El historial escrito antes de que se capturara el
+  índice, y un registro cuya credencial CPA ya no tiene — conserva el índice bajo el que
+  se sirvió, que ningún proveedor configurado publica — no cuentan para ningún proveedor configurado.
+  Permanecen en los totales y en la lista de solicitudes. La alternativa es la inferencia, y la inferencia es
+  lo que produjo el defecto para el que existe esta regla.
+- **Un índice que dos proveedores publican no se acredita a ninguno.** CPA deriva el índice de runtime de una credencial
+  de la propia credencial, así que una clave introducida dos veces bajo un mismo nombre se resuelve en
+  un solo índice. Acreditar a la fila que la lista ponga primero imprimiría un número que
+  cambia con el orden de la lista de proveedores.
+- **Una etiqueta es una identidad, con la precisión de CPA.** `deep-seek` y `deepseek` son dos etiquetas para
+  CPA y siguen siendo dos filas aquí; la consola no debe plegarlas mediante un normalizador que elimine
+  separadores para buscar una etiqueta, y debe conservar la etiqueta que plegó el servidor en lugar de
+  volver a derivarla de un nombre para mostrar.
 
-The panel shows the first eight rows of that order and folds the rest behind a
-"show all" toggle, so a fleet of dozens of providers does not push every panel below
-it off the page; the order puts serving channels by volume first, so the fold hides
-the quiet tail.
+El panel muestra las primeras ocho filas de ese orden y pliega el resto tras un
+interruptor de «mostrar todo», para que una flota de decenas de proveedores no empuje cada panel
+debajo de ella fuera de la página; el orden pone primero los canales que sirven por volumen, de modo que el plegado oculta
+la cola silenciosa.
 
-The provider page reuses this aggregation rather than reimplementing it
-(`providerTrafficById` in `web/src/components/providers/providerOverview.ts`), so the
-dashboard's panel and the provider list cannot credit one request to two different
-rows.
+La página de proveedores reutiliza esta agregación en lugar de reimplementarla
+(`providerTrafficById` en `web/src/components/providers/providerOverview.ts`), de modo que el
+panel del dashboard y la lista de proveedores no puedan acreditar una solicitud a dos filas
+distintas.
 
-### Provider key masks: which upstream key answered
+### Máscaras de claves de proveedor: qué clave upstream respondió
 
-A request record names its provider, and an operator reading it needs one more
-fact — which of that provider's keys the request actually went through. CPA does
-not put that key in the usage payload: it publishes the credential's runtime
-`auth_index` and nothing else. The keys exist only in CPA's configuration, so the
-mask is resolved on the server while the request list is read, and returned on each
-record as `provider_key_mask`.
+Un registro de solicitud nombra a su proveedor, y un operador que lo lee necesita un dato más
+— por cuál de las claves de ese proveedor pasó realmente la solicitud. CPA
+no pone esa clave en el payload de uso: publica el `auth_index` de runtime de la credencial
+y nada más. Las claves existen solo en la configuración de CPA, así que la
+máscara se resuelve en el servidor mientras se lee la lista de solicitudes, y se devuelve en cada
+registro como `provider_key_mask`.
 
-`internal/api/usage_provider_key_masks.go` owns that resolution. It reads the
-credential lists CPA currently reports — the config API-key families and the
-`openai-compatibility` providers — and indexes each one by auth index.
+`internal/api/usage_provider_key_masks.go` es responsable de esa resolución. Lee las
+listas de credenciales que CPA informa actualmente — las familias de claves de API de la configuración y los
+proveedores `openai-compatibility` — e indexa cada una por índice de autenticación.
 
-**The record's own provider label chooses the list, and an unrecognized label is not
-a candidate at all.** CPA labels a config API-key credential with the family name
-(`codex`, `claude`, `gemini`, `meta`, `xai`, `vertex`, `interactions`) and a
-compatibility credential with
+**La propia etiqueta de proveedor del registro elige la lista, y una etiqueta no reconocida no es
+candidata en absoluto.** CPA etiqueta una credencial de clave de API de la configuración con el nombre de la familia
+(`codex`, `claude`, `gemini`, `meta`, `xai`, `vertex`, `interactions`) y una credencial de compatibilidad con
 `openai-compatible-<upstream name>`
-(`management.OpenAICompatibilityLabelPrefix`, the same constant the dashboard's
-provider grouping uses). Those two shapes are what an attributable request looks
-like; anything else — an OAuth-only provider, a family the console does not manage —
-reads nothing, so an index that happens to collide across lists can never be answered
-by the wrong one. Within each list the match is by index alone, deliberately:
-renaming a compatibility provider in CPA changes the label on later records while the
-credential, and CPA's index for it, stay the same, so a name-scoped match would
-orphan history that is still perfectly identifiable.
+(`management.OpenAICompatibilityLabelPrefix`, la misma constante que usa la agrupación de proveedores del
+dashboard). Esas dos formas son las de una solicitud atribuible;
+cualquier otra cosa — un proveedor solo OAuth, una familia que la consola no gestiona —
+no lee nada, de modo que un índice que casualmente colisione entre listas nunca puede ser respondido
+por la equivocada. Dentro de cada lista la coincidencia es solo por índice, deliberadamente:
+renombrar un proveedor de compatibilidad en CPA cambia la etiqueta de los registros posteriores mientras la
+credencial, y el índice de CPA para ella, siguen igual, así que una coincidencia limitada por nombre
+dejaría huérfano un historial que sigue siendo perfectamente identificable.
 
-Four properties are load-bearing:
+Cuatro propiedades son críticas:
 
-- **It resolves against the configuration as it is read, not as it was at request
-  time.** A credential that has been rotated or deleted since the request stops
-  being offered as that index's owner, so that record prints nothing once the cached
-  read of its list expires — at once if the operator removed it through this console,
-  and within the TTL if it was changed outside it. The console cannot reconstruct a
-  key it can no longer read, and a plausible-looking mask would be a fabrication
-  rather than a display label.
+- **Se resuelve contra la configuración tal como se lee, no como estaba en el momento de la
+  solicitud.** Una credencial que se ha rotado o eliminado desde la solicitud deja
+  de ofrecerse como propietaria de ese índice, de modo que ese registro no imprime nada una vez que la lectura
+  en caché de su lista caduca — de inmediato si el operador la eliminó mediante esta consola,
+  y dentro del TTL si se cambió fuera de ella. La consola no puede reconstruir una
+  clave que ya no puede leer, y una máscara de aspecto plausible sería una invención
+  y no una etiqueta de visualización.
 
-  A provider that has merely been **switched off** is deliberately not treated as a
-  removal. CPA reports no auth index for a disabled compatibility provider, so such
-  an entry claims nothing anyway, while filtering on the flag would additionally hide
-  the key of a request served *before* the provider was switched off — the provider's
-  current state is not part of the credential's identity, and that label is a true
-  fact about the request rather than a wrong one. An index claimed by both a disabled
-  and a live entry resolves to nothing, so the protection that matters is kept.
-- **Nothing is guessed.** An index no entry claims, a key CPA reports without an
-  index (the compatibility list's legacy `api-keys` array), an index two entries
-  claim, a record with no index at all, and a provider that has exactly one key but
-  does not claim the record's index are all left empty. The duplicate case is resolved
-  to nothing even when the two masks are identical, because neither an index nor a
-  mask is an identity — the same rule the resource join follows.
-- **Only an API-key credential has one.** An OAuth record names the account it used
-  instead, and its index lives in the same column, so an auth-type check stands in
-  front of the lookup. The mask is display only, is stored on no row, is never a
-  filter value, and the property is absent rather than empty when nothing was
-  resolved; only `security.MaskSecret` output ever leaves the process, and a failed
-  read is reported through the same public classifier every other gateway failure
-  uses, because a management error body can echo the credential it rejected.
-- **It is best effort and bounded.** The lists are read at most once per TTL, one
-  read is shared by concurrent pages, failures are negatively cached, and the whole
-  enrichment has its own short deadline. A gateway that is down, slow or missing a
-  family leaves the masks empty and returns the request list unchanged, because a
-  display label must not be able to fail the page whose job is to show request
-  history. A write through this console drops the cached read, so an edit is
-  reflected immediately; a read that was already in flight when that write landed is
-  withheld as well as not stored, since the list it saw is the one being replaced.
+  Un proveedor que simplemente ha sido **desactivado** deliberadamente no se trata como una
+  eliminación. CPA no informa índice de autenticación para un proveedor de compatibilidad desactivado, de modo que esa
+  entrada no reclama nada de todos modos, mientras que filtrar por la bandera además ocultaría la
+  clave de una solicitud servida *antes* de desactivar el proveedor — el estado actual del proveedor
+  no forma parte de la identidad de la credencial, y esa etiqueta es un hecho verdadero
+  sobre la solicitud y no uno erróneo. Un índice reclamado tanto por una entrada desactivada como por una
+  activa se resuelve en nada, de modo que se conserva la protección que importa.
+- **No se adivina nada.** Un índice que ninguna entrada reclama, una clave que CPA informa sin
+  índice (el arreglo heredado `api-keys` de la lista de compatibilidad), un índice que reclaman dos entradas,
+  un registro sin ningún índice y un proveedor que tiene exactamente una clave pero
+  no reclama el índice del registro se dejan todos vacíos. El caso duplicado se resuelve
+  en nada incluso cuando las dos máscaras son idénticas, porque ni un índice ni una
+  máscara son una identidad — la misma regla que sigue el join de recursos.
+- **Solo una credencial de clave de API tiene una.** Un registro OAuth nombra en su lugar la cuenta que usó,
+  y su índice vive en la misma columna, de modo que una comprobación del tipo de autenticación se interpone
+  ante la búsqueda. La máscara es solo de visualización, no se almacena en ninguna fila, nunca es
+  un valor de filtro, y la propiedad está ausente y no vacía cuando nada se resolvió;
+  solo la salida de `security.MaskSecret` sale jamás del proceso, y una lectura fallida se informa mediante el mismo clasificador público
+  que usa todo otro fallo del gateway, porque el cuerpo de un error de gestión puede repetir la credencial que rechazó.
+- **Es de mejor esfuerzo y está acotada.** Las listas se leen como máximo una vez por TTL, una
+  lectura la comparten las páginas concurrentes, los fallos se almacenan en caché negativa, y todo el
+  enriquecimiento tiene su propio plazo corto. Un gateway caído, lento o sin una
+  familia deja las máscaras vacías y devuelve la lista de solicitudes sin cambios, porque una
+  etiqueta de visualización no debe poder hacer fallar la página cuyo trabajo es mostrar el historial de
+  solicitudes. Una escritura mediante esta consola descarta la lectura en caché, de modo que una edición se
+  refleja de inmediato; una lectura que ya estaba en vuelo cuando esa escritura aterrizó se
+  retiene además de no almacenarse, ya que la lista que vio es la que se está reemplazando.
 
-### Streaming status and throughput (TPS) derivation
+### Derivación del estado de streaming y del rendimiento (TPS)
 
-CPA usage payloads include a boolean `stream` field indicating whether the request
-was executed in streaming mode. Shell-PAMC records this in `usage_events.stream`
-(migration 023) as a nullable integer: `1` for streaming, `0` for non-streaming,
-and `NULL` for historical rows where the flag was not captured.
+Los payloads de uso de CPA incluyen un campo booleano `stream` que indica si la solicitud
+se ejecutó en modo streaming. Shell-PAMC lo registra en `usage_events.stream`
+(migración 023) como un entero anulable: `1` para streaming, `0` para no streaming,
+y `NULL` para filas históricas donde no se capturó la bandera.
 
-The flag is operational metadata, not a sufficient classifier for TTFT validity.
-An upstream executor can capture a real first-token event even when the client
-requested `stream: false`, while an apparently streaming request can still receive
-its whole payload in one chunk. `eventTokensPerSecond` in
-`web/src/types/usageEventMetrics.ts` derives output-token rates using the deployment's
-`omc_tps_calculation_mode` preference:
+La bandera es metadato operativo, no un clasificador suficiente de la validez del TTFT.
+Un ejecutor upstream puede capturar un evento real de primer token incluso cuando el cliente
+solicitó `stream: false`, mientras que una solicitud aparentemente de streaming aún puede recibir
+todo su payload en un solo fragmento. `eventTokensPerSecond` en
+`web/src/types/usageEventMetrics.ts` deriva las tasas de tokens de salida usando la preferencia
+`omc_tps_calculation_mode` del despliegue:
 
-- `exclude_ttft` (default): subtract a finite positive `ttft_ms` only when it is below
-  total latency and `latency_ms - ttft_ms >= MIN_STREAMING_GENERATION_WINDOW_MS` (50 ms).
-  TPS is then `output_tokens * 1000 / (latency_ms - ttft_ms)`. Otherwise use
-  `output_tokens * 1000 / latency_ms` and identify the result as a fallback.
-- `include_ttft`: always use `output_tokens * 1000 / latency_ms`, even when TTFT is
-  measurable. This does not hide or invalidate the independent TTFT readout.
-- Non-generation records, non-positive or non-finite output tokens, and invalid total
-  latency have no TPS. Remaining elapsed time can include server-side tool calls;
-  the subtraction is not a measurement of pure generation time.
+- `exclude_ttft` (por defecto): resta un `ttft_ms` finito y positivo solo cuando es menor que la
+  latencia total y `latency_ms - ttft_ms >= MIN_STREAMING_GENERATION_WINDOW_MS` (50 ms).
+  El TPS es entonces `output_tokens * 1000 / (latency_ms - ttft_ms)`. En caso contrario usa
+  `output_tokens * 1000 / latency_ms` e identifica el resultado como alternativo (fallback).
+- `include_ttft`: usa siempre `output_tokens * 1000 / latency_ms`, incluso cuando el TTFT es
+  medible. Esto no oculta ni invalida la lectura independiente del TTFT.
+- Los registros que no son de generación, los tokens de salida no positivos o no finitos y la latencia
+  total inválida no tienen TPS. El tiempo transcurrido restante puede incluir llamadas a herramientas del lado del servidor;
+  la resta no es una medida del tiempo puro de generación.
 
-`TokenDisplayProvider` owns the setting through the existing optimistic, per-key
-serialized preference hook. Shell-PAMC Settings and request rows share
-one value; changing it recalculates historical readouts without touching stored observations.
-The calculation result exposes `basis` (`exclude_ttft`, `include_ttft`, `fallback_total`,
-or `null`) so both surfaces select the same accurate formula tooltip. The closed preference
-API allowlist accepts the new key using its existing JSON-document contract. Missing or
-unsupported values resolve to `exclude_ttft`; no migration is needed.
+`TokenDisplayProvider` es dueño del ajuste mediante el hook de preferencias existente, optimista y serializado
+por clave. Los Ajustes de Shell-PAMC y las filas de solicitudes comparten
+un solo valor; cambiarlo recalcula las lecturas históricas sin tocar las observaciones almacenadas.
+El resultado del cálculo expone `basis` (`exclude_ttft`, `include_ttft`, `fallback_total`
+o `null`) para que ambas superficies seleccionen el mismo tooltip de fórmula exacto. La lista cerrada de permitidos de
+la API de preferencias acepta la nueva clave usando su contrato existente de documento JSON. Los valores ausentes o
+no admitidos se resuelven a `exclude_ttft`; no se necesita migración.
 
-`internal/operations/tps_calculation.go` registers `tps_calculation_get` and
-`tps_calculation_set` for both Agent and MCP administrators. The low-risk write validates
-its two mode values, returns `invalid_parameters` otherwise, persists through the same
-repository and invalidates `preferences`. Reads return the effective mode using
+`internal/operations/tps_calculation.go` registra `tps_calculation_get` y
+`tps_calculation_set` para los administradores tanto del Agent como de MCP. La escritura de bajo riesgo valida
+sus dos valores de modo, devuelve `invalid_parameters` en caso contrario, persiste mediante el mismo
+repositorio e invalida `preferences`. Las lecturas devuelven el modo efectivo usando
 `internal/repository/tps_calculation.go`.
 
-The request list and detail drawer show a non-stream badge when an explicit
-`stream: false` record has no measurable TTFT or when the observed residual window
-collapsed. Historical records (`stream IS NULL`) use the same residual-window
-heuristic, preserving genuine legacy first-token observations without inferring a
-first-token boundary from a completion-only measurement.
+La lista de solicitudes y el drawer de detalle muestran una insignia de no streaming cuando un registro
+explícito `stream: false` no tiene TTFT medible o cuando la ventana residual observada
+colapsó. Los registros históricos (`stream IS NULL`) usan la misma heurística de ventana residual,
+preservando las observaciones genuinas heredadas de primer token sin inferir un
+límite de primer token a partir de una medición solo de finalización.
 
-### 6.1 The request-record filter vocabulary
+### 6.1 El vocabulario de filtros de registros de solicitudes
 
-`UsageEventFilter` in `internal/repository/usage_events.go` is the single filter
-vocabulary for the whole request-record feature set. Dimensions combine as AND;
-values inside one dimension combine as OR, so an empty list means "do not narrow
-this dimension" and a cleared multi-select is indistinguishable from one that was
-never set.
+`UsageEventFilter` en `internal/repository/usage_events.go` es el único vocabulario de filtros
+para todo el conjunto de funciones de registros de solicitudes. Las dimensiones se combinan con AND;
+los valores dentro de una dimensión se combinan con OR, de modo que una lista vacía significa «no estrechar
+esta dimensión» y un multiselector vaciado es indistinguible de uno que
+nunca se estableció.
 
-The console sends a multi-select as a **repeated query parameter**
-(`?model=a&model=b`), never as a delimited list. A comma is a legal character in
-a model name, a source label and a caller mask, so splitting on one would corrupt
-the exact values being filtered on. A single occurrence still parses, which keeps
-drill-down links written before multi-select existed working unchanged.
+La consola envía un multiselector como un **parámetro de consulta repetido**
+(`?model=a&model=b`), nunca como una lista delimitada. Una coma es un carácter legal en
+un nombre de modelo, una etiqueta de origen y una máscara de llamador, así que dividir por ella corrompería
+los valores exactos por los que se filtra. Una sola aparición todavía se interpreta, lo que mantiene
+funcionando sin cambios los enlaces de profundización escritos antes de que existiera el multiselector.
 
-| Dimension | Wire parameter | Match |
+| Dimensión | Parámetro de red | Coincidencia |
 | --- | --- | --- |
-| Model / alias / provider / caller key / auth index / source / auth type / executor / reasoning effort / service tier | same name, repeatable | exact, OR within the dimension |
-| Resolved service tier | `resolved_service_tier`, repeatable | provider-aware mode evidence; original request tier remains `service_tier` |
-| Identity search | `q` | literal substring across the columns in `usageEventSearchColumns` |
-| Endpoint, user agent | `endpoint`, `ua` | literal substring |
-| Request id | `request_id` | exact |
-| Pattern | `regex` as `field:pattern` | RE2, unanchored, against one of `model`, `model_alias`, `response_model`, `provider`, `endpoint`, `ua`, `request_id`; a missing value matches as the empty string |
-| Latency / tokens | `latency_min`…`tokens_max` | inclusive integer bounds |
-| Cost | `cost_min`, `cost_max` | inclusive bounds in decimal USD, at most nine fractional digits |
-| Price availability | `cost` | `priced` (`cost_nanos IS NOT NULL`) or `unpriced` |
-| Served model | `served` | `substituted` (`model_substituted = 1`) or `matched` (an upstream-reported model that is the requested one); a record whose upstream reported no model is in neither |
-| Result | `result` | `all`, `success`, `failed` |
+| Modelo / alias / proveedor / clave del llamador / índice de autenticación / origen / tipo de autenticación / ejecutor / esfuerzo de razonamiento / nivel de servicio | mismo nombre, repetible | exacta, OR dentro de la dimensión |
+| Nivel de servicio resuelto | `resolved_service_tier`, repetible | evidencia de modo consciente del proveedor; el nivel de la solicitud original sigue siendo `service_tier` |
+| Búsqueda de identidad | `q` | subcadena literal en las columnas de `usageEventSearchColumns` |
+| Endpoint, user agent | `endpoint`, `ua` | subcadena literal |
+| Id de solicitud | `request_id` | exacta |
+| Patrón | `regex` como `field:pattern` | RE2, sin anclar, contra uno de `model`, `model_alias`, `response_model`, `provider`, `endpoint`, `ua`, `request_id`; un valor ausente coincide como cadena vacía |
+| Latencia / tokens | `latency_min`…`tokens_max` | límites enteros inclusivos |
+| Costo | `cost_min`, `cost_max` | límites inclusivos en USD decimal, con a lo sumo nueve dígitos fraccionarios |
+| Disponibilidad de precio | `cost` | `priced` (`cost_nanos IS NOT NULL`) o `unpriced` |
+| Modelo servido | `served` | `substituted` (`model_substituted = 1`) o `matched` (un modelo informado por upstream que es el solicitado); un registro cuyo upstream no informó modelo no está en ninguno |
+| Resultado | `result` | `all`, `success`, `failed` |
 
-The pattern filter is the one place a caller's text is executed rather than compared,
-and three choices keep that safe. The engine is Go's `regexp` (RE2), registered as SQLite's
-`REGEXP` function in `internal/repository/usage_regex.go`, so matching is linear in the
-input and a pattern cannot stall a scan; patterns are capped at 256 characters and compiled
-once per distinct pattern. The field is a name looked up in a closed map, never text placed
-in the statement, and the fingerprinted columns (`source`, the caller key) are absent from
-it because no pattern a reader writes can describe a fingerprint. And the field and pattern
-travel as one parameter, so neither can be applied without the other. An unknown field, an
-oversized pattern or one RE2 refuses (lookaround, backreferences) is a 400 with the reason.
-User functions belong to the driver instance the SQLite package registers, which is why
-`openGatedPool` wraps that instance instead of constructing its own.
+El filtro de patrón es el único lugar donde el texto de un llamador se ejecuta en lugar de compararse,
+y tres decisiones lo mantienen seguro. El motor es `regexp` de Go (RE2), registrado como la función
+`REGEXP` de SQLite en `internal/repository/usage_regex.go`, de modo que la coincidencia es lineal en la
+entrada y un patrón no puede detener un escaneo; los patrones se limitan a 256 caracteres y se compilan
+una vez por patrón distinto. El campo es un nombre buscado en un mapa cerrado, nunca texto colocado
+en la sentencia, y las columnas con huella (`source`, la clave del llamador) están ausentes de
+él porque ningún patrón que escriba un lector puede describir una huella. Y el campo y el patrón
+viajan como un solo parámetro, de modo que ninguno puede aplicarse sin el otro. Un campo desconocido, un
+patrón demasiado grande o uno que RE2 rechaza (lookaround, referencias hacia atrás) es un 400 con el motivo.
+Las funciones de usuario pertenecen a la instancia del driver que registra el paquete SQLite, razón por la cual
+`openGatedPool` envuelve esa instancia en lugar de construir la suya.
 
-Three properties are load-bearing rather than incidental:
+Tres propiedades son críticas y no incidentales:
 
-- **The search is literal.** `%` and `_` are escaped with an explicit
-  `ESCAPE '\'`, because SQLite's `LIKE` has no default escape character:
-  untreated, searching for `50%` would match every row and `gpt_5` would also
-  match `gpt-5`. The disjunction across columns is parenthesised, or its loose
-  `OR`s would bind more weakly than the surrounding `AND`s and silently drop
-  every other filter.
-- **Bounds are pointers.** `0` is a meaningful bound (`max_cost=0` selects the
-  records priced at nothing), so it cannot double as "unset". `cost_nanos` is
-  compared directly, which means an unpriced row satisfies neither a lower nor an
-  upper bound — it is reachable only by asking for `cost=unpriced`. Cost bounds
-  arrive as decimal USD and are scaled to integer nanos in string form, so a
-  bound of `0.1` cannot land below the value it was meant to include. Precision
-  is **refused rather than rounded**: a bound of `0.0000000001` exceeds what the
-  column stores, and rounding it to zero would answer a real constraint with "no
-  cost at all". The console therefore carries cost bounds as decimal strings end
-  to end — field, URL and preference document — because a nano-dollar amount does
-  not survive a round trip through a double.
-- **Diagnostic values are protected, not list fields.** `client_ip` and
-  `x_forwarded_for` are preserved as the exact peer address and complete valid
-  proxy chain for the single-record detail view, while list payloads and the
-  shared search box omit both. `endpoint` is likewise available only on detail.
-  `source` and `api_group_key` are fingerprinted at the persistence boundary, so
-  a filter matches the stored fingerprint the facet offered, never the plaintext.
-  Historical rows written under the earlier `/24` and `/64` policy remain masked;
-  they are not guessed or backfilled.
-- **Address projection is shape-tolerant and explicit.** `NormalizeClientIP`
-  accepts IPv4, IPv6 and valid host:port forms and removes the transport port;
-  `NormalizeForwardedFor` keeps every valid hop in order. An endpoint arrives as
-  the request line CPA handled (`POST /v1/chat/completions`), not as a bare path,
-  so `PublicEndpoint` keeps the method while stripping query, fragment and
-  authority credentials. Round-trip tests run a raw payload through decode *and*
-  insert, proving the protected detail value survives both boundaries without
-  widening the list contract.
+- **La búsqueda es literal.** `%` y `_` se escapan con un
+  `ESCAPE '\'` explícito, porque el `LIKE` de SQLite no tiene carácter de escape por defecto:
+  sin tratar, buscar `50%` coincidiría con todas las filas y `gpt_5` también
+  coincidiría con `gpt-5`. La disyunción entre columnas va entre paréntesis, o sus `OR`
+  sueltos se unirían más débilmente que los `AND` circundantes y descartarían en silencio
+  todos los demás filtros.
+- **Los límites son punteros.** `0` es un límite con significado (`max_cost=0` selecciona los
+  registros valorados en nada), así que no puede hacer de «sin establecer». `cost_nanos` se
+  compara directamente, lo que significa que una fila sin valorar no satisface ni un límite inferior ni uno
+  superior — solo es alcanzable pidiendo `cost=unpriced`. Los límites de costo
+  llegan como USD decimal y se escalan a nanos enteros en forma de cadena, de modo que un
+  límite de `0.1` no pueda caer por debajo del valor que pretendía incluir. La precisión
+  se **rechaza en lugar de redondearse**: un límite de `0.0000000001` excede lo que almacena la
+  columna, y redondearlo a cero respondería una restricción real con «ningún
+  costo en absoluto». La consola por tanto lleva los límites de costo como cadenas decimales de extremo
+  a extremo — campo, URL y documento de preferencias — porque una cantidad en nano-dólares no
+  sobrevive a un viaje de ida y vuelta por un double.
+- **Los valores de diagnóstico están protegidos, no son campos de lista.** `client_ip` y
+  `x_forwarded_for` se conservan como la dirección exacta del par y la cadena de proxy válida
+  completa para la vista de detalle de un solo registro, mientras que las cargas de lista y el
+  cuadro de búsqueda compartido omiten ambos. `endpoint` está igualmente disponible solo en el detalle.
+  `source` y `api_group_key` se convierten en huella en la frontera de persistencia, de modo que
+  un filtro coincide con la huella almacenada que ofreció la faceta, nunca con el texto plano.
+  Las filas históricas escritas bajo la política anterior de `/24` y `/64` siguen enmascaradas;
+  no se adivinan ni se rellenan.
+- **La proyección de direcciones tolera formas y es explícita.** `NormalizeClientIP`
+  acepta IPv4, IPv6 y formas válidas host:puerto y elimina el puerto de transporte;
+  `NormalizeForwardedFor` conserva en orden cada salto válido. Un endpoint llega como
+  la línea de solicitud que CPA atendió (`POST /v1/chat/completions`), no como una ruta desnuda,
+  de modo que `PublicEndpoint` conserva el método mientras elimina la consulta, el fragmento y las
+  credenciales de la autoridad. Las pruebas de ida y vuelta pasan un payload sin procesar por la decodificación *y* la
+  inserción, demostrando que el valor protegido del detalle sobrevive a ambas fronteras sin
+  ampliar el contrato de la lista.
 
-### 6.2 Facets
+### 6.2 Facetas
 
-`GetUsageFacets` enumerates the values actually present in a window so a dropdown
-never offers a choice that returns nothing. A single SQL statement materializes a
-narrow `facet_window` CTE from the indexed instance/time window, then groups each of
-the ten dimensions over that relation instead of walking the wide detail table ten
-times. Each dimension still excludes only empty values, orders by count descending
-and value ascending, and caps at 200. Caller-key masks retain the maximum nonempty
-stored mask and normalization; empty results remain arrays. All dimensions share one
-statement snapshot. Materialization uses SQLite temporary storage proportional to
-the selected rows; no unbounded Go cardinality map or connection change is introduced.
-`BenchmarkUsageFacets`, `BenchmarkUsageFacetsStrategies` and
-`BenchmarkUsageFacetsNarrowWindow` track sparse, populated/high-cardinality and selective
-windows. Endpoint and user agent are deliberately **not** facets: both are
-long, high-cardinality values where a typed substring beats a capped 200-row list,
-and the endpoint must never be handed to the browser at all.
+`GetUsageFacets` enumera los valores realmente presentes en una ventana para que un desplegable
+nunca ofrezca una opción que no devuelva nada. Una sola sentencia SQL materializa una CTE
+estrecha `facet_window` a partir de la ventana indexada de instancia/tiempo, y luego agrupa cada una de
+las diez dimensiones sobre esa relación en lugar de recorrer diez veces la tabla ancha de detalle.
+Cada dimensión sigue excluyendo solo los valores vacíos, ordena por conteo descendente
+y valor ascendente, y limita a 200. Las máscaras de claves de llamador conservan la máscara almacenada no vacía
+máxima y la normalización; los resultados vacíos siguen siendo arreglos. Todas las dimensiones comparten una
+instantánea de sentencia. La materialización usa almacenamiento temporal de SQLite proporcional a
+las filas seleccionadas; no se introduce ningún mapa de cardinalidad ilimitado en Go ni cambio de conexión.
+`BenchmarkUsageFacets`, `BenchmarkUsageFacetsStrategies` y
+`BenchmarkUsageFacetsNarrowWindow` siguen ventanas dispersas, pobladas/de alta cardinalidad y selectivas.
+El endpoint y el user agent deliberadamente **no** son facetas: ambos son valores
+largos y de alta cardinalidad donde una subcadena escrita supera a una lista limitada de 200 filas,
+y el endpoint nunca debe entregarse al navegador en absoluto.
 
-Facets are read on their own window revision rather than on the list's poll
-counter, and are cached with a five-minute `staleTime`. They describe which values
-exist in a window, so they change only when the window is redefined (a new preset
-or absolute range) or the operator refreshes explicitly — not on each list poll.
-That manual refresh is the same sync described in §6: the page waits for the pull
-and the decode barrier, then re-reads the list, the facets and the pipeline status.
-The window is sent unresolved (see "Who resolves the request list's window"), so a
-preset is the same parameters on every visit. The facet query key therefore also
-carries a revision stamped when the window is defined and on each manual refresh,
-and nothing else: a filter change keeps the cached entry, because the facet read
-carries no filter, while a re-entered preset or a refresh is never answered from an
-entry still inside its `staleTime`.
-The `refresh-sequencing` scenario in `scripts/acceptance/scenarios.mjs` asserts this
-directly through `refreshRecords`: a manual refresh issues
-a `POST` to `/usage/ingest/refresh` *and the list and facet reads wait for it*.
-Request counts alone cannot establish that ordering — a page that fired all three
-in parallel would still issue all three — so the probe holds the pull's response
-open and requires that no list or facet read happens while it is held. Because the
-response is capped at 200 values per dimension, a value that is selected but absent
-from it is merged back into the options, so a filter that is still applied never
-renders as a blank control.
+Las facetas se leen con su propia revisión de ventana y no con el contador de sondeo de la lista, y se almacenan en caché con un `staleTime` de cinco minutos. Describen qué valores
+existen en una ventana, de modo que cambian solo cuando se redefine la ventana (un nuevo preajuste
+o rango absoluto) o el operador actualiza explícitamente — no en cada sondeo de la lista.
+Esa actualización manual es la misma sincronización descrita en §6: la página espera la extracción
+y la barrera de decodificación, y luego vuelve a leer la lista, las facetas y el estado del pipeline.
+La ventana se envía sin resolver (véase «Quién resuelve la ventana de la lista de solicitudes»), de modo que un
+preajuste son los mismos parámetros en cada visita. La clave de consulta de facetas por tanto también
+lleva una revisión estampada cuando se define la ventana y en cada actualización manual,
+y nada más: un cambio de filtro conserva la entrada en caché, porque la lectura de facetas
+no lleva filtro, mientras que un preajuste reintroducido o una actualización nunca se responde desde una
+entrada aún dentro de su `staleTime`.
+El escenario `refresh-sequencing` en `scripts/acceptance/scenarios.mjs` afirma esto
+directamente mediante `refreshRecords`: una actualización manual emite
+un `POST` a `/usage/ingest/refresh` *y las lecturas de lista y facetas esperan a que termine*.
+Los conteos de solicitudes por sí solos no pueden establecer ese orden — una página que disparara las tres
+en paralelo aún emitiría las tres — así que la sonda mantiene abierta la respuesta de la extracción
+y exige que no ocurra ninguna lectura de lista o facetas mientras se mantiene. Como la
+respuesta está limitada a 200 valores por dimensión, un valor que está seleccionado pero ausente
+de ella se fusiona de nuevo en las opciones, de modo que un filtro que sigue aplicado nunca
+se renderiza como un control en blanco.
 
-### 6.3 Grouping the request list
+### 6.3 Agrupación de la lista de solicitudes
 
-The list offers three modes: chronological (`time`, the default), `source`, and
-`ua`. `source` merges what used to be two separate modes, "by provider" and "by
-credential": they were the same axis at two zoom levels, so one mode buckets on
-provider-plus-credential and decides per provider whether the credential half is
-worth printing. That decision is a property of the *page*, not of one bucket —
-`providersWithMultipleAuthSources` answers it for every provider in the loaded
-window — so a line served by a single credential reads as the provider alone
-while a line split across two names both.
+La lista ofrece tres modos: cronológico (`time`, el predeterminado), `source` y
+`ua`. `source` fusiona lo que antes eran dos modos separados, «por proveedor» y «por
+credencial»: eran el mismo eje a dos niveles de zoom, así que un modo agrupa por
+proveedor más credencial y decide, por proveedor, si vale la pena imprimir la mitad de la credencial.
+Esa decisión es una propiedad de la *página*, no de un cubo —
+`providersWithMultipleAuthSources` la responde para cada proveedor en la ventana
+cargada — de modo que una línea servida por una sola credencial se lee como el proveedor solo,
+mientras que una dividida entre dos nombres muestra ambos.
 
-Grouping keys and labels are computed in `web/src/types/usageEventGrouping.ts` and
-`web/src/types/usageEventLabels.ts`, which is what the logic test harness loads,
-and are pinned there rather than by reading the DOM. Two properties matter beyond
-the labels:
+Las claves y etiquetas de agrupación se calculan en `web/src/types/usageEventGrouping.ts` y
+`web/src/types/usageEventLabels.ts`, que es lo que carga el arnés de pruebas de lógica,
+y se fijan allí y no leyendo el DOM. Dos propiedades importan más allá de
+las etiquetas:
 
-- **The stored preference migrates.** `parseUsageEventsView` maps the retired
-  `provider` and `credential` values onto `source`, so an operator returning to a
-  saved view keeps it instead of being silently moved to chronological order. An
-  unreadable value falls back to `time`, which is the mode that never hides a
-  record.
-- **Unknown is a bucket, not a drop.** A record with no provider, no credential or
-  no user agent is grouped under `unknown` and keeps its own header, because
-  "nothing was recorded" is a fact about the record worth seeing.
+- **La preferencia almacenada migra.** `parseUsageEventsView` asigna los valores retirados
+  `provider` y `credential` a `source`, de modo que un operador que vuelve a una
+  vista guardada la conserva en lugar de ser movido en silencio al orden cronológico. Un
+  valor ilegible recurre a `time`, que es el modo que nunca oculta un
+  registro.
+- **Desconocido es un cubo, no un descarte.** Un registro sin proveedor, sin credencial o
+  sin user agent se agrupa bajo `unknown` y conserva su propio encabezado, porque
+  «no se registró nada» es un hecho sobre el registro que vale la pena ver.
 
-The UA mode uses the stored `user_agent` verbatim: the value was already reduced
-to a short product label on the persistence path, so grouping must not re-parse a
-raw header or widen what was deliberately minimised.
+El modo UA usa el `user_agent` almacenado literalmente: el valor ya se redujo
+a una etiqueta corta de producto en la ruta de persistencia, así que la agrupación no debe volver a analizar una
+cabecera sin procesar ni ampliar lo que deliberadamente se minimizó.
 
-## 7. Pricing flow
+## 7. Flujo de precios
 
-The catalog, the editable current price, and the immutable version history are
-separate things (ADR 0003); OpenRouter is the only automatic source, and a price
-carries tiers and is scaled per channel (ADR 0030). The design, matching chain
-and limits are in `docs/plans/model-prices.md`.
+El catálogo, el precio actual editable y el historial inmutable de versiones son
+cosas separadas (ADR 0003); OpenRouter es la única fuente automática, y un precio
+lleva niveles y se escala por canal (ADR 0030). El diseño, la cadena de coincidencia
+y los límites están en `docs/plans/model-prices.md`.
 
-The CPA discovery sweep returns both alias targets and non-secret provider membership. Migration 029 adds `pricing_catalog_state.providers_json`; the repository publishes that metadata in the same transaction as `pricing_model_catalog`, and pricing access requires migration 029. Empty price targets represent ambiguous aliases and are valid catalog entries but cannot auto-match. Provider metadata carries only the endpoint hostname for existing brand-icon resolution, never URL credentials, paths or query strings. The pricing response projects provider display-name/icon overlays locally; no per-model or per-credential network requests are made by the workbench. The existing `pricing_list` capability also returns membership for the models in its current page.
+El barrido de descubrimiento de CPA devuelve tanto los destinos de alias como la pertenencia no secreta a proveedores. La migración 029 añade `pricing_catalog_state.providers_json`; el repositorio publica esos metadatos en la misma transacción que `pricing_model_catalog`, y el acceso a precios requiere la migración 029. Los destinos de precio vacíos representan alias ambiguos y son entradas de catálogo válidas, pero no pueden coincidir automáticamente. Los metadatos del proveedor llevan solo el nombre de host del endpoint para la resolución de íconos de marca existente, nunca credenciales de URL, rutas ni cadenas de consulta. La respuesta de precios proyecta localmente las superposiciones de nombre para mostrar e ícono del proveedor; el espacio de trabajo no hace solicitudes de red por modelo ni por credencial. La capacidad existente `pricing_list` también devuelve la pertenencia de los modelos de su página actual.
 
-The price book groups by actual configured API-key/OAuth providers, orders groups by routing priority then name, and renders at most 20 model memberships per page across all groups. Provider marks appear only in group headings, with individual models rendered as text. Search and filters reset pagination on both viewport layouts. The shared `ResponsiveList` also controls and clamps desktop and phone page state consistently.
-
+El libro de precios agrupa por los proveedores de clave de API/OAuth realmente configurados, ordena los grupos por prioridad de enrutamiento y luego por nombre, y renderiza como máximo 20 pertenencias de modelo por página entre todos los grupos. Las marcas de proveedor aparecen solo en los encabezados de grupo, con los modelos individuales renderizados como texto. La búsqueda y los filtros reinician la paginación en ambos diseños de viewport. El `ResponsiveList` compartido también controla y acota de forma coherente el estado de página en escritorio y teléfono.
 
 ```text
 CPA catalog read ──▶ pricing_model_catalog      (last complete snapshot)
@@ -2194,397 +2272,393 @@ operator ──▶ pricing_channels ──triggers──▶ pricing_channel_vers
 operator ──▶ channel_model_prices ──triggers──▶ model_price_versions (channel-scoped)
 ```
 
-`usage_events` stores, in the event's own insert transaction and by the request
-timestamp, the price version id, the channel version id (absent means 1×), the
-index of the tier the request qualified for, and integer USD nanos computed by
-`pricing.Quote`. `pricing.ResolveServiceTier` interprets the recorded evidence:
-Codex first uses a nonempty final outbound `effective_service_tier`, captured by
-CPA v8.0.39 after translation and payload rules. Outbound `auto` selects no lane
-and does not fall back to the client choice. Without this evidence, Codex keeps
-its requested-tier policy even when its response says `default`/`auto`: a missing
-client tier may use the response, while explicit client `auto` selects no lane.
-Other providers remain response-first with request fallback. Provider identity or a concrete Codex executor identifies this policy,
-never a model name or provider display label.
+`usage_events` almacena, en la propia transacción de inserción del evento y por la marca de tiempo
+de la solicitud, el id de versión de precio, el id de versión de canal (ausente significa 1×), el
+índice del nivel para el que calificó la solicitud y los nanos de USD enteros calculados por
+`pricing.Quote`. `pricing.ResolveServiceTier` interpreta la evidencia registrada:
+Codex usa primero un `effective_service_tier` saliente final no vacío, capturado por
+CPA v8.0.39 tras la traducción y las reglas de payload. Un `auto` saliente no selecciona ningún carril
+y no recurre a la elección del cliente. Sin esta evidencia, Codex mantiene
+su política de nivel solicitado incluso cuando su respuesta dice `default`/`auto`: un nivel de
+cliente ausente puede usar la respuesta, mientras que un `auto` explícito del cliente no selecciona ningún carril.
+Los demás proveedores siguen priorizando la respuesta con la solicitud como respaldo. La identidad del proveedor o un ejecutor concreto de Codex identifica esta política,
+nunca un nombre de modelo ni una etiqueta para mostrar del proveedor.
 
-Migration 045 locks the selected `billed_service_tier` and its
-`billed_service_tier_source` beside the amount, including an empty selection.
-Both are immutable. NULL identifies historical snapshots, whose breakdown keeps
-the original response-first policy. The API exposes the current interpretation
-as `resolved_service_tier`/`resolved_service_tier_source` for mode indicators and
-exports; a deterministic SQLite function calls the same resolver for filters and
-facets, including historical rows. The cost breakdown instead explains the
-selection originally locked. Migration 046 preserves all request fields, indexes,
-immutability triggers and the request-id high-water mark while adding
-`effective_service_tier` and allowing the `outbound` snapshot source. Missing
-telemetry keeps the existing per-record policy, including for older CPA, mixed
-queues and CPA downgrades. CPA omits empty outbound tiers, so a missing field
-cannot distinguish an older publisher from a payload rule that removed the tier;
-Shell-PAMC does not infer that fact from gateway version, configuration or latency.
-Historical totals never join the mutable tables, so a later edit
-cannot rewrite an invoice. A request with no effective price version is stored
-with pricing status `unpriced` (`legacy_unpriced` for rows that predate migration
-019), cost absent, and is never backfilled. The request detail recomputes a
-breakdown from the locked versions for display; the stored amount stays
-authoritative.
+La migración 045 fija el `billed_service_tier` seleccionado y su
+`billed_service_tier_source` junto al monto, incluida una selección vacía.
+Ambos son inmutables. NULL identifica instantáneas históricas, cuyo desglose conserva
+la política original que prioriza la respuesta. La API expone la interpretación actual
+como `resolved_service_tier`/`resolved_service_tier_source` para indicadores de modo y
+exportaciones; una función determinista de SQLite llama al mismo resolvedor para filtros y
+facetas, incluidas las filas históricas. El desglose de costo en cambio explica la
+selección originalmente fijada. La migración 046 preserva todos los campos de solicitud, índices,
+triggers de inmutabilidad y la marca de agua máxima de id de solicitud mientras añade
+`effective_service_tier` y permite la fuente de instantánea `outbound`. La telemetría
+ausente mantiene la política existente por registro, incluso para CPA más antiguo, colas
+mixtas y degradaciones de CPA. CPA omite los niveles salientes vacíos, así que un campo ausente
+no puede distinguir a un publicador más antiguo de una regla de payload que eliminó el nivel;
+Shell-PAMC no infiere ese hecho de la versión del gateway, la configuración ni la latencia.
+Los totales históricos nunca se unen a las tablas mutables, de modo que una edición posterior
+no pueda reescribir una factura. Una solicitud sin versión de precio vigente se almacena
+con estado de precio `unpriced` (`legacy_unpriced` para filas anteriores a la migración
+019), costo ausente, y nunca se rellena retroactivamente. El detalle de la solicitud recalcula un
+desglose a partir de las versiones fijadas para mostrarlo; el monto almacenado sigue
+siendo la autoridad.
 
-Migration 043 adds optional custom prices keyed by the recorded CPA channel and
-upstream model (ADR 0101). Request locking first resolves that scope's history;
-an absent or tombstoned override selects the shared model history. The existing
-channel multiplier still applies. Shared histories use an empty channel, so old
-version ids and locked amounts remain unchanged. The editor carries the channel
-separately from the model and validates writes against provider membership.
+La migración 043 añade precios personalizados opcionales con clave por el canal CPA registrado y el
+modelo upstream (ADR 0101). El bloqueo de la solicitud resuelve primero el historial de ese alcance;
+un override ausente o con lápida selecciona el historial de modelo compartido. El multiplicador
+de canal existente se sigue aplicando. Los historiales compartidos usan un canal vacío, de modo que los ids de
+versión antiguos y los montos fijados no cambian. El editor lleva el canal
+por separado del modelo y valida las escrituras contra la pertenencia al proveedor.
 
-A sync downloads outside the write lock, then re-reads prices and pins under it,
-so an operator's pin set during the download is honoured. Catalog reconciliation
-every five minutes prices a model CPA starts serving from the stored snapshot,
-without reaching the network. Every surface that shows a cost opens the same
-price editor in place (`web/src/components/pricing/`).
+Una sincronización descarga fuera del bloqueo de escritura y luego vuelve a leer precios y fijaciones bajo él,
+de modo que se respeta una fijación del operador hecha durante la descarga. La conciliación del catálogo
+cada cinco minutos valora un modelo que CPA empieza a servir a partir de la instantánea almacenada,
+sin llegar a la red. Toda superficie que muestra un costo abre el mismo
+editor de precios en el lugar (`web/src/components/pricing/`).
 
-## 8. Quota flow
+## 8. Flujo de cuota
 
-`internal/quota` calls CPA's `/api-call` with the credential under observation to
-reach the provider's own usage endpoint. Targets are restricted to
-`AllowedURLPrefixes` — a compile-time allowlist of official HTTPS endpoints — and
-the resulting snapshot is normalized and stored in `quota_snapshots`. Quota observations
-and the fixed credential warmup adapters are the only server-initiated CPA request
-proxies (ADR 0097): there is no user-supplied URL or generic `/api-call` surface.
+`internal/quota` llama al `/api-call` de CPA con la credencial bajo observación para
+llegar al propio endpoint de uso del proveedor. Los destinos se restringen a
+`AllowedURLPrefixes` — una lista de permitidos en tiempo de compilación de endpoints HTTPS oficiales — y
+la instantánea resultante se normaliza y se almacena en `quota_snapshots`. Las observaciones de cuota
+y los adaptadores fijos de calentamiento de credenciales son los únicos proxies de solicitudes de CPA iniciados por el servidor
+(ADR 0097): no existe ninguna URL suministrada por el usuario ni superficie genérica de `/api-call`.
 
-Kimi international credentials use the single allowlisted
-`https://api.kimi.ai/coding/v1/usages` endpoint rather than the domestic Kimi host.
-`kimiUsageURLFor` selects the account system from safe credential metadata without
-reading tokens or trying a second host. Endpoint entries refuse appended paths;
-entries ending in `/` cover a family (ADR 0064).
+Las credenciales internacionales de Kimi usan el único endpoint permitido
+`https://api.kimi.ai/coding/v1/usages` en lugar del host nacional de Kimi.
+`kimiUsageURLFor` selecciona el sistema de cuenta a partir de metadatos seguros de la credencial sin
+leer tokens ni intentar un segundo host. Las entradas de endpoint rechazan rutas añadidas;
+las entradas que terminan en `/` cubren una familia (ADR 0064).
 
-Meta observations and xAI/Antigravity subscription reads use four additional
-individual endpoints (ADR 0065); xAI's two billing documents share one of them,
-told apart by a query that entry already admits. Meta's key endpoint requires the stored DCA token,
-so only this probe downloads its selected credential server-side; a fail-closed
-attempt audit precedes the download and exchange. It can mint a key upstream, but
-only subscription/window fields are decoded and no returned key is retained or
-written back. Its transport, HTTP and decoding errors never quote raw payloads.
-The other probes use CPA's token substitution. xAI reads both of its billing
-documents — the credits document carries a subscription's window and the ledger
-carries the metered monthly figures — and keeps each document's period atomic
-rather than merging one's figures into the other's window (ADR 0071). It reads its
-subscription only after CLI billing succeeds, preserving independent billing
-fields; Antigravity
-reads `loadCodeAssist` and no longer assumes Pro on a failed tier observation.
-Supplemental subscription failures preserve successful usage readings. Meta's
-optional `subscription_active` distinguishes false from an unknown reading, and
-the console displays an explicit inactive state beside the plan.
+Las observaciones de Meta y las lecturas de suscripción de xAI/Antigravity usan cuatro endpoints
+individuales adicionales (ADR 0065); los dos documentos de facturación de xAI comparten uno de ellos,
+distinguidos por una consulta que esa entrada ya admite. El endpoint de claves de Meta requiere el token DCA almacenado,
+de modo que solo esta sonda descarga su credencial seleccionada en el servidor; un intento de auditoría
+con cierre ante fallos precede a la descarga y al intercambio. Puede acuñar una clave upstream, pero
+solo se decodifican los campos de suscripción/ventana y ninguna clave devuelta se retiene ni
+se escribe de vuelta. Sus errores de transporte, HTTP y decodificación nunca citan payloads sin procesar.
+Las demás sondas usan la sustitución de tokens de CPA. xAI lee ambos documentos de facturación
+— el documento de créditos lleva la ventana de una suscripción y el libro mayor
+lleva las cifras mensuales medidas — y mantiene atómico el período de cada documento
+en lugar de fusionar las cifras de uno en la ventana del otro (ADR 0071). Lee su
+suscripción solo después de que la facturación de la CLI tenga éxito, preservando campos de facturación independientes; Antigravity
+lee `loadCodeAssist` y ya no asume Pro ante una observación fallida del nivel.
+Los fallos de suscripción suplementarios preservan las lecturas de uso exitosas. El
+`subscription_active` opcional de Meta distingue falso de una lectura desconocida, y
+la consola muestra un estado inactivo explícito junto al plan.
 
-A refresh that succeeds without publishing a window is recorded as an
-`unpublished` observation rather than left indistinguishable from a credential
-nobody has read, and a window's identity — its id, label and kind — comes from the
-duration the payload states rather than from the slot it arrived in (ADR 0071).
+Una actualización que tiene éxito sin publicar una ventana se registra como una
+observación `unpublished` en lugar de quedar indistinguible de una credencial que
+nadie ha leído, y la identidad de una ventana — su id, etiqueta y tipo — proviene de la
+duración que declara el payload y no de la ranura en que llegó (ADR 0071).
 
-A provider is observed only once `internal/quota` both recognizes it
-(`DetectProvider`) and implements its probe; a credential whose provider has no
-probe is reported with `refresh_supported: false` rather than as a failed fetch.
+Un proveedor se observa solo cuando `internal/quota` tanto lo reconoce
+(`DetectProvider`) como implementa su sonda; una credencial cuyo proveedor no tiene
+sonda se informa con `refresh_supported: false` y no como una lectura fallida.
 
-Normalization never lets an exhausted window make another look exhausted. Codex
-flags a whole rate limit as reached (`limit_reached` / `allowed: false`) without
-saying which window tripped, while still reporting each window's own
-`used_percent`. `ParseCodexUsage` therefore attributes the flag per window
-(`exhaustedFlags`): a window with its own reading keeps it, a window with no
-readable usage is pinned to 100%, and when every window reports usage below 100
-(upstream rounds) only the most used one is pinned. The rule applies alike to the
-standard, code-review and additional per-model rate limits; the domain definition
-is **Quota Window** in `CONTEXT.md`.
+La normalización nunca permite que una ventana agotada haga que otra parezca agotada. Codex
+marca un límite de tasa completo como alcanzado (`limit_reached` / `allowed: false`) sin
+decir qué ventana lo activó, aunque sigue informando el `used_percent` propio de cada ventana.
+`ParseCodexUsage` por tanto atribuye la bandera por ventana
+(`exhaustedFlags`): una ventana con lectura propia la conserva, una ventana sin
+uso legible se fija en 100%, y cuando todas las ventanas informan uso por debajo de 100
+(upstream redondea) solo la más usada se fija. La regla se aplica igual a los
+límites de tasa estándar, de revisión de código y adicionales por modelo; la definición de dominio
+es **Quota Window** en `CONTEXT.md`.
 
-A plan's renewal instant is carried with its provenance. Codex probes the
-subscription endpoint on every refresh and records `expires_source:
-live_subscription` when it answers, so an expiry the usage payload happens to
-carry is still replaced by the fresher reading. When that probe fails, an expiry
-the usage payload already supplied is kept without a source — it is current but
-has no verified provenance — and only a plan with no expiry yet falls back to the
-credential's `id_token` claim, recorded as `credential_snapshot`, because upstream
-only ever moves that window forward and a token can be minted after the period it
-still describes. The console renders a snapshot as a `≥` bound with an unverified
-marker and never as a countdown, so a stale claim cannot read as a verified
-renewal date.
+El instante de renovación de un plan se lleva con su procedencia. Codex sondea el
+endpoint de suscripción en cada actualización y registra `expires_source:
+live_subscription` cuando responde, de modo que una caducidad que el payload de uso casualmente
+lleve se reemplaza igualmente por la lectura más fresca. Cuando ese sondeo falla, una caducidad
+que el payload de uso ya suministró se conserva sin fuente — es actual pero
+no tiene procedencia verificada — y solo un plan sin caducidad todavía recurre a la
+afirmación `id_token` de la credencial, registrada como `credential_snapshot`, porque upstream
+solo mueve esa ventana hacia adelante y un token puede acuñarse después del período que
+sigue describiendo. La consola renderiza una instantánea como un límite `≥` con una marca de no verificado
+y nunca como una cuenta regresiva, de modo que una afirmación obsoleta no pueda leerse como una fecha de renovación
+verificada.
 
-A window's **Estimated Window Capacity** and **Previous-Cycle Capacity Reference**
-(`CONTEXT.md`) are joined on read by `Handler.attachWindowCapacity` in `internal/api`,
-for the overview, credential detail, refresh responses and Agent/MCP quota outputs.
-`internal/quota` holds pure range, scope, reset-evidence, previous-observation and
-arithmetic functions; `internal/repository` supplies usage and retained observations.
+La **Estimated Window Capacity** y la **Previous-Cycle Capacity Reference**
+(`CONTEXT.md`) de una ventana se unen en la lectura mediante `Handler.attachWindowCapacity` en `internal/api`,
+para la vista general, el detalle de credencial, las respuestas de actualización y las salidas de cuota del Agent/MCP.
+`internal/quota` contiene funciones puras de rango, alcance, evidencia de reinicio, observación previa y
+aritmética; `internal/repository` suministra el uso y las observaciones retenidas.
 
-Global usage is summed through `QueryCredentialWindowUsage`; scoped usage is grouped
-by `COALESCE(NULLIF(response_model, ''), model)` through
-`QueryCredentialModelWindowUsage`, then matched by `SelectWindowUsage`. Both queries
-use the credential/time index and half-open bounds ending at the reading. Claude
-family windows use canonical family identities; exact model windows tolerate dated
-releases using the same identity rule as served-model observability. Antigravity
-normalizes only reviewed exact group names to `model_families`; an unrecognized
-period remains unknown rather than defaulting to a daily cycle. Fixed period labels
-are matched exactly; a calendar month is not treated as thirty days. Unresolved aliases
-or scope metadata withhold the whole scoped reading. No live CPA model/alias reads
-are introduced: today's routing cannot explain a historical alias reliably.
+El uso global se suma mediante `QueryCredentialWindowUsage`; el uso con alcance se agrupa
+por `COALESCE(NULLIF(response_model, ''), model)` mediante
+`QueryCredentialModelWindowUsage`, y luego se empareja con `SelectWindowUsage`. Ambas consultas
+usan el índice de credencial/tiempo y límites semiabiertos que terminan en la lectura. Las ventanas de la
+familia Claude usan identidades canónicas de familia; las ventanas de modelo exacto toleran versiones con fecha
+usando la misma regla de identidad que la observabilidad del modelo servido. Antigravity
+normaliza solo nombres de grupo exactos revisados a `model_families`; un período no reconocido
+sigue siendo desconocido en lugar de adoptar por defecto un ciclo diario. Las etiquetas de período fijo
+se comparan exactamente; un mes calendario no se trata como treinta días. Los alias o
+metadatos de alcance sin resolver retienen toda la lectura con alcance. No se introducen lecturas
+de modelos/alias vivos de CPA: el enrutamiento de hoy no puede explicar de forma fiable un alias histórico.
 
-History is read once per eligible credential, in deterministic observation/insertion
-order. `HasWindowCycleReset` detects drops throughout the sequence and premature
-boundary replacements, not only a peak above the current percentage. Before a
-successful observation is persisted, its reset evidence is carried in the existing
-`windows_json` as `has_mid_cycle_reset`; evidence survives retention and clears only
-with the next scheduled cycle. Failed or disabled refreshes retain the prior
-observation time and are not persisted, including failures masked by cooldown status.
-Corrupt/unreadable history and failed usage queries yield explicit unavailable reasons.
-A failed history read still permits saving the fresh observation, carrying a sticky
-`has_incomplete_history` marker for that cycle rather than inventing reset evidence.
-The marker prevents estimates and references until the next scheduled cycle.
+El historial se lee una vez por credencial elegible, en orden determinista de observación/inserción.
+`HasWindowCycleReset` detecta caídas a lo largo de la secuencia y reemplazos prematuros de
+límites, no solo un pico por encima del porcentaje actual. Antes de que se persista una
+observación exitosa, su evidencia de reinicio se lleva en el `windows_json` existente como `has_mid_cycle_reset`; la evidencia sobrevive a la retención y se borra solo
+con el siguiente ciclo programado. Las actualizaciones fallidas o deshabilitadas conservan el tiempo de observación previo
+y no se persisten, incluidos los fallos enmascarados por el estado de enfriamiento.
+El historial corrupto/ilegible y las consultas de uso fallidas producen motivos explícitos de no disponibilidad.
+Una lectura fallida del historial aún permite guardar la observación fresca, llevando un
+marcador persistente `has_incomplete_history` para ese ciclo en lugar de inventar evidencia de reinicio.
+El marcador impide estimaciones y referencias hasta el siguiente ciclo programado.
 
-A fresh current cycle with `low_usage`, `no_traffic` or `no_reading` may use
-`PreviousWindowObservation` to select the final retained observation of its immediately
-preceding scheduled cycle. Scope and period must match, its reset must meet the current
-start within one second, and the preceding cycle must have no retained reset evidence.
-The previous estimate is recalculated from its own locked usage range and marked
-`basis: previous_cycle`, with `observed_at_ms`, `from_ms` and `reset_at_ms`. Current
-`usage` and `capacity_unavailable` remain current; stale, expired, reset or unresolved
-cycles never invoke the fallback. It is a historical estimate, not an actual total.
+Un ciclo actual fresco con `low_usage`, `no_traffic` o `no_reading` puede usar
+`PreviousWindowObservation` para seleccionar la última observación retenida de su ciclo programado
+inmediatamente anterior. El alcance y el período deben coincidir, su reinicio debe encontrarse con el inicio actual
+dentro de un segundo, y el ciclo anterior no debe tener evidencia de reinicio retenida.
+La estimación previa se recalcula a partir de su propio rango de uso fijado y se marca
+`basis: previous_cycle`, con `observed_at_ms`, `from_ms` y `reset_at_ms`. El
+`usage` y el `capacity_unavailable` actuales siguen siendo actuales; los ciclos obsoletos, caducados, reiniciados o sin resolver
+nunca invocan el respaldo. Es una estimación histórica, no un total real.
 
-Read-time `usage`, `capacity` and `capacity_unavailable` are stripped before snapshot
-storage, and joins operate on a copied slice. Late-ingested events inside an observation
-range therefore revise both current estimates and historical references on the next
-read. Reset detection is limited to observed/retained evidence, not a complete upstream
-lifecycle. There are no new tables, migrations or routing inputs (ADR 0058 and ADR 0059).
+`usage`, `capacity` y `capacity_unavailable` en tiempo de lectura se eliminan antes del almacenamiento de la instantánea,
+y los joins operan sobre un slice copiado. Los eventos ingeridos tarde dentro del rango de una observación
+por tanto revisan tanto las estimaciones actuales como las referencias históricas en la siguiente
+lectura. La detección de reinicios se limita a la evidencia observada/retenida, no a un ciclo de vida upstream
+completo. No hay nuevas tablas, migraciones ni entradas de enrutamiento (ADR 0058 y ADR 0059).
 
-**A failed read is not a reading, but it is recorded.** Every surface that reads a
-credential — the manual refresh, the background loop, the warmup probe and the Agent
-capability — goes through `Handler.refreshQuotaReading`
-(`internal/api/management_quota.go`), which classifies the outcome with
-`quota.ReadOutcome` and upserts one row per credential in `quota_refresh_attempts`
-(migration 044: `auth_index`, `attempted_at_ms`, `outcome`, `error`; an older attempt
-never overwrites a newer one). The overview and the credential detail serve that row as
-`last_refresh` beside the retained observation, and `quota.ApplyReadingHealth` derives
-the status the console presents: a failed attempt newer than the reading outranks it —
-auth-like failures become `error` with the `reauth` recommendation, the rest `stale` with
-the previous numbers standing, and a credential with no stored observation at all becomes
-`error` rather than `stale`, because there is nothing on screen to call out of date — an
-active cooldown still outranks both, and a healthy or warning reading whose own announced
-boundary has passed unseen (past `reset_at_ms` + the reset grace, and taken before that
-boundary) becomes `stale` with no error attached. `exhausted` keeps its status: it is what stops the credential, and the
-reset-driven read answers it within minutes. The workspace therefore states a failure
-that outlives its toast, counts a stale reading apart from the healthy total, offers a
-single-credential refresh in the row that reports it, and never presents a reading days
-old as the current answer.
+**Una lectura fallida no es una lectura, pero se registra.** Toda superficie que lee una
+credencial — la actualización manual, el bucle en segundo plano, la sonda de calentamiento y la capacidad del
+Agent — pasa por `Handler.refreshQuotaReading`
+(`internal/api/management_quota.go`), que clasifica el resultado con
+`quota.ReadOutcome` y hace upsert de una fila por credencial en `quota_refresh_attempts`
+(migración 044: `auth_index`, `attempted_at_ms`, `outcome`, `error`; un intento más antiguo nunca
+sobrescribe uno más nuevo). La vista general y el detalle de credencial sirven esa fila como `last_refresh` junto a la
+observación retenida, y `quota.ApplyReadingHealth` deriva
+el estado que presenta la consola: un intento fallido más nuevo que la lectura la supera —
+los fallos de tipo autenticación pasan a `error` con la recomendación `reauth`, los demás a `stale` con
+los números previos vigentes, y una credencial sin ninguna observación almacenada pasa a
+`error` y no a `stale`, porque no hay nada en pantalla que llamar desactualizado — un
+enfriamiento activo sigue superando a ambos, y una lectura sana o de advertencia cuyo propio
+límite anunciado ha pasado sin verse (más allá de `reset_at_ms` + la gracia de reinicio, y tomada antes de ese
+límite) pasa a `stale` sin error asociado. `exhausted` conserva su estado: es lo que detiene la credencial, y la
+lectura impulsada por el reinicio la responde en minutos. El espacio de trabajo por tanto declara un fallo
+que sobrevive a su toast, cuenta una lectura obsoleta aparte del total sano, ofrece una
+actualización de una sola credencial en la fila que la informa, y nunca presenta una lectura de hace
+días como la respuesta actual.
 
-Readings are also refreshed in the background (ADR 0094). `Handler.RunQuotaAutoRefresh`
-in `internal/api/quota_auto_refresh.go` wakes every minute, reads the
-`omc_quota_auto_refresh` preference, lists the credentials and their latest snapshots,
-and asks `quota.AutoRefreshTrigger` (`internal/quota/auto_refresh.go`) which are due: a
-reset-driven read once a stored window's `reset_at_ms` plus a one-minute grace has
-passed the observation (a failed one is retried every ten minutes during the following
-hour), and a scheduled read once the newer of the observation and the process's last
-attempt is `interval_minutes` old, less a thirty-second slack for the observation being
-stamped after its tick. Due credentials - reset-driven first,
-then oldest reading first, at most sixteen per round and four at a time - go through
-`Handler.refreshQuotaReading` and `persistNormalizedQuotaSnapshot`, exactly as a manual
-refresh does, so the attempt is recorded beside the reading it could not replace. Only the
-retry backoff is remembered in process memory, because a failed read is never stored as an
-observation; a round failure is logged when it starts or changes rather than every minute. `app.Run` joins the loop before returning, as it does the pipeline. Disabled credentials, providers without a probe, duplicated `auth_index`
-claims and Meta (whose observation is an audited key exchange) are skipped. The
-preference API refuses any document for this key other than
-`{"interval_minutes": 0 | 5-1440, "refresh_on_reset": bool}` with
-`invalid_quota_auto_refresh`, and `internal/operations/quota_auto_refresh.go` registers
-`quota_auto_refresh_get` and `quota_auto_refresh_set` over the same preference. The OAuth
-management workspace polls the stored overview every minute, as the dashboard's
-Credential Quota panel already does, so a background reading appears on an open page.
+Las lecturas también se actualizan en segundo plano (ADR 0094). `Handler.RunQuotaAutoRefresh`
+en `internal/api/quota_auto_refresh.go` despierta cada minuto, lee la preferencia
+`omc_quota_auto_refresh`, lista las credenciales y sus últimas instantáneas,
+y pregunta a `quota.AutoRefreshTrigger` (`internal/quota/auto_refresh.go`) cuáles corresponden: una
+lectura impulsada por el reinicio una vez que el `reset_at_ms` de una ventana almacenada más una gracia de un minuto
+ha superado la observación (una fallida se reintenta cada diez minutos durante la hora siguiente),
+y una lectura programada una vez que la más nueva entre la observación y el último intento del proceso
+tiene `interval_minutes` de antigüedad, menos una holgura de treinta segundos porque la observación se
+estampa después de su tick. Las credenciales pendientes - primero las impulsadas por el reinicio,
+luego la lectura más antigua primero, como máximo dieciséis por ronda y cuatro a la vez - pasan por
+`Handler.refreshQuotaReading` y `persistNormalizedQuotaSnapshot`, exactamente como una
+actualización manual, de modo que el intento se registra junto a la lectura que no pudo reemplazar. Solo el
+retroceso de reintentos se recuerda en la memoria del proceso, porque una lectura fallida nunca se almacena como
+observación; un fallo de ronda se registra cuando comienza o cambia y no cada minuto. `app.Run` une el bucle antes de regresar, como hace con el pipeline. Se omiten las credenciales deshabilitadas, los proveedores sin sonda, las reclamaciones duplicadas de `auth_index`
+y Meta (cuya observación es un intercambio de clave auditado). La
+API de preferencias rechaza cualquier documento para esta clave distinto de
+`{"interval_minutes": 0 | 5-1440, "refresh_on_reset": bool}` con
+`invalid_quota_auto_refresh`, y `internal/operations/quota_auto_refresh.go` registra
+`quota_auto_refresh_get` y `quota_auto_refresh_set` sobre la misma preferencia. El espacio de trabajo de gestión
+OAuth sondea la vista general almacenada cada minuto, como ya hace el panel de Cuota de credenciales
+del dashboard, de modo que una lectura en segundo plano aparece en una página abierta.
 
-A CPA cooldown is released automatically in two cases (ADR 0094). `refreshQuotaReading`
-releases a credential that still holds `quota_exceeded` evidence once a fresh, usable
-read shows room in every published window (`quota.HasRestoredCapacity`), and each loop
-round releases an enabled credential whose every stored `next_recover_at_ms` and
-`next_retry_after_ms` has passed (`Repository.BatchExpiredCooldowns`), whether or not its
-provider can be read. Either release calls CPA's `routing/cooldown/reset`, wipes the
-evidence through `Repository.ClearCooldownEvidence`, as the operator's Clear Cooldown
-does, logs the `auth_index` and records a `quota.clear_cooldown.automatic` audit event.
+Un enfriamiento de CPA se libera automáticamente en dos casos (ADR 0094). `refreshQuotaReading`
+libera una credencial que aún tiene evidencia de `quota_exceeded` una vez que una lectura fresca y utilizable
+muestra margen en cada ventana publicada (`quota.HasRestoredCapacity`), y cada ronda del bucle
+libera una credencial habilitada cuyos `next_recover_at_ms` y
+`next_retry_after_ms` almacenados han pasado todos (`Repository.BatchExpiredCooldowns`), pueda o no
+leerse su proveedor. Cualquiera de las liberaciones llama a `routing/cooldown/reset` de CPA, borra la
+evidencia mediante `Repository.ClearCooldownEvidence`, como hace el Clear Cooldown del operador,
+registra el `auth_index` y guarda un evento de auditoría `quota.clear_cooldown.automatic`.
 
-Codex reset-credit redemption is offered in the credential Drawer's Quota tab and never
-from a list row, because it spends an irreversible entitlement; it is offered whenever the
-credential's available credit count is positive. Upstream's `applicable_available_count` is not the
-gate, and the consume response is what states the outcome. The redemption POST carries the same
-`Chatgpt-Account-Id` the read probes send, so the redemption is scoped to the same
-account as the reading it was decided from.
+El canje de créditos de reinicio de Codex se ofrece en la pestaña Cuota del Drawer de credencial y nunca
+desde una fila de lista, porque gasta un derecho irreversible; se ofrece siempre que el
+conteo de créditos disponibles de la credencial sea positivo. El `applicable_available_count` de upstream no es la
+compuerta, y la respuesta del consumo es la que declara el resultado. El POST de canje lleva el mismo
+`Chatgpt-Account-Id` que envían las sondas de lectura, de modo que el canje queda acotado a la misma
+cuenta que la lectura de la que se decidió.
 
-## 9. Storage
+## 9. Almacenamiento
 
-| Table group | Tables | Notes |
+| Grupo de tablas | Tablas | Notas |
 | --- | --- | --- |
-| Instances & identity | `cpa_instances`, `discovered_resources`, `resource_overrides`, `connections`, `cpa_bindings` | Encrypted management key; bindings survive upstream removal. `connections` is provisioned by migration 006 for the Connection entity but no code reads or writes it yet — treat it as reserved, not as a live table |
-| Usage | `usage_inboxes`, `usage_events`, `error_events`, `ingest_gaps`, `usage_facts_15m`, `usage_facts_daily`, `usage_aggregation_checkpoints`, `data_lifecycle_state` | Milliseconds; raw payloads encrypted, and stored once: with a cipher configured `raw_message` is empty and only the ciphertext is kept. Migration 035 replaces the hourly and daily overview rollups with the permanent usage facts and adds `data_lifecycle_state` (what each rolling policy has removed, and up to which instant). Every table declares its lifecycle in `TABLE_LIFECYCLES` (`internal/repository/lifecycle.go`). Migration 034 adds `usage_events.response_model` (the model the upstream reported serving, empty when unknown) and `model_substituted`, decided at ingestion by `usage.IsModelSubstituted`, with a partial index for the substituted rows; earlier rows stay unknown. Migration 037 adds `usage_events.fail_status_code` and `fail_body` (the status a failed request ended with and the upstream's redacted, bounded error body, from the `fail` block of CPA's usage record); `0` and empty mean unknown, and the list projection carries the status only. Migration 038 adds `usage_events.response_headers`, the filtered upstream header snapshot as a JSON object (`usage.FilterResponseHeaders` drops transport and credential-bearing headers and bounds the rest); only `GetUsageEvent` reads it. Migration 039 adds `usage_events.access_provider` and `is_native_key` (which access provider authenticated the caller and whether the caller's key is CPA's native configured key, from CPA's usage record); an empty `access_provider` means a gateway that predates them, while `is_native_key` is meaningful whenever a path is present, and only `GetUsageEvent` reads them |
-| Custom icons | `custom_icons` | Migration 032 adds durable sanitized image BLOBs, stable IDs and content revisions; confirmed deletion atomically clears matching provider overrides and deletes the asset |
-| Font library | `fonts`, `font_faces` | Migration 042: one row per installed family (`source` `google` or `upload`) and one per `@font-face` (weight range, style, `unicode-range`, container format, file BLOB, position). Faces cascade with their family; deletion clears the `omc_fonts` roles that used it in the same transaction. Both tables are hidden from `database_query` |
-| Pricing | `model_prices`, `model_price_versions`, `pricing_sync_state`, `pricing_model_catalog`, `pricing_catalog_state`, `pricing_model_links`, `pricing_upstream_catalog`, `pricing_channels`, `pricing_channel_versions`, `pricing_match_reviews` | Price and channel versions are append-only via triggers; migration 028 added tiers, links, the stored OpenRouter snapshot and channels, and `usage_events.channel_version_id`/`price_tier`. Migration 029 added `pricing_catalog_state.providers_json`; the pricing repository refuses to run before migration 29. Migration 031 added `pricing_match_reviews` (the OpenRouter model last answered for a custom or linked price); match-review reads and writes refuse to run before migration 31 |
-| Agent | `agent_documents` | Encrypted latest Agent session, capability operations and attached images (migrations 026 and 036). Sessions retain whole history until reset or explicit replacement, with no session size cap; images follow their references and are deleted only after a reset is persisted. Terminal operations are retained 7 days and purged lazily during Agent requests |
-| Operations | `audit_events`, `ui_preferences`, `quota_snapshots`, `schema_migrations` | Audit has no update or delete path — only `RecordAuditEvent` writes and read queries (`ListAuditEvents`, `QueryAuditEvents`) exist, and export itself is audited; the schema carries no enforcement trigger, so the guarantee lives in the repository API. Migration 027 adds `idx_audit_events_request_action`, which the trail's attempt folding looks up |
-| CPA configuration | `cpa_config_backups`, `cpa_config_backup_settings` | Encrypted copies of the stored CPA configuration file, kept before every configuration write (migration 030, ADR 0037; migration 033 adds each copy's `layout` and `reason` and the single-row retention table, ADR 0051). v8 copies are kept to the operator's retention (default 20, 5–100), pre-v8 copies to the latest ten; `cpa_config_backups` is hidden from `database_query` |
-| Release observation | `release_index`, `release_check_state` | Migrations 024 and 025; `truncated` is added by 025, so a database that applied 024 before it existed still gains the column. `release_index` holds one row per published version (tag, name, publication time, prerelease flag) and is **replaced as a unit per product** by `PublishReleaseSnapshot`, because a feed that stops listing a withdrawn release must stop the console claiming it exists. `release_check_state` holds one row per product — the last attempt and success times, the redacted failure reason, the latest tag, the ETag and the truncation flag — and is written by `RecordReleaseCheckAttempt`/`PublishReleaseSnapshot`/`RecordReleaseCheckFailure`, read by `ListReleases` and `GetReleaseCheckState(ForRepository)`. A release's prose body is **never stored**: it lives in bounded process memory for the life of the process, so an index without notes still names the versions and links to the source (see §10) |
+| Instancias e identidad | `cpa_instances`, `discovered_resources`, `resource_overrides`, `connections`, `cpa_bindings` | Clave de gestión cifrada; los enlaces sobreviven a la eliminación upstream. `connections` la aprovisiona la migración 006 para la entidad Connection pero ningún código la lee ni escribe todavía — trátela como reservada, no como una tabla viva |
+| Uso | `usage_inboxes`, `usage_events`, `error_events`, `ingest_gaps`, `usage_facts_15m`, `usage_facts_daily`, `usage_aggregation_checkpoints`, `data_lifecycle_state` | Milisegundos; los payloads sin procesar se cifran y se almacenan una vez: con un cifrador configurado `raw_message` queda vacío y solo se conserva el texto cifrado. La migración 035 reemplaza las agregaciones horarias y diarias de la vista general por los hechos de uso permanentes y añade `data_lifecycle_state` (qué ha eliminado cada política móvil, y hasta qué instante). Cada tabla declara su ciclo de vida en `TABLE_LIFECYCLES` (`internal/repository/lifecycle.go`). La migración 034 añade `usage_events.response_model` (el modelo que el upstream informó servir, vacío cuando se desconoce) y `model_substituted`, decidido en la ingesta por `usage.IsModelSubstituted`, con un índice parcial para las filas sustituidas; las filas anteriores quedan desconocidas. La migración 037 añade `usage_events.fail_status_code` y `fail_body` (el estado con el que terminó una solicitud fallida y el cuerpo de error acotado y redactado del upstream, del bloque `fail` del registro de uso de CPA); `0` y vacío significan desconocido, y la proyección de la lista lleva solo el estado. La migración 038 añade `usage_events.response_headers`, la instantánea filtrada de cabeceras upstream como objeto JSON (`usage.FilterResponseHeaders` descarta las cabeceras de transporte y las que llevan credenciales y acota el resto); solo `GetUsageEvent` la lee. La migración 039 añade `usage_events.access_provider` e `is_native_key` (qué proveedor de acceso autenticó al llamador y si la clave del llamador es la clave nativa configurada de CPA, del registro de uso de CPA); un `access_provider` vacío significa un gateway anterior a ellos, mientras que `is_native_key` tiene significado siempre que haya una ruta, y solo `GetUsageEvent` los lee |
+| Íconos personalizados | `custom_icons` | La migración 032 añade BLOBs de imagen saneados y duraderos, IDs estables y revisiones de contenido; la eliminación confirmada borra de forma atómica las anulaciones de proveedor coincidentes y elimina el recurso |
+| Biblioteca de fuentes | `fonts`, `font_faces` | Migración 042: una fila por familia instalada (`source` `google` o `upload`) y una por `@font-face` (rango de peso, estilo, `unicode-range`, formato de contenedor, BLOB del archivo, posición). Las caras se eliminan en cascada con su familia; la eliminación borra los roles de `omc_fonts` que la usaban en la misma transacción. Ambas tablas están ocultas de `database_query` |
+| Precios | `model_prices`, `model_price_versions`, `pricing_sync_state`, `pricing_model_catalog`, `pricing_catalog_state`, `pricing_model_links`, `pricing_upstream_catalog`, `pricing_channels`, `pricing_channel_versions`, `pricing_match_reviews` | Las versiones de precio y de canal son solo de anexado mediante triggers; la migración 028 añadió niveles, enlaces, la instantánea almacenada de OpenRouter y canales, y `usage_events.channel_version_id`/`price_tier`. La migración 029 añadió `pricing_catalog_state.providers_json`; el repositorio de precios se niega a ejecutarse antes de la migración 29. La migración 031 añadió `pricing_match_reviews` (el modelo de OpenRouter que respondió por última vez para un precio personalizado o enlazado); las lecturas y escrituras de revisión de coincidencias se niegan a ejecutarse antes de la migración 31 |
+| Agent | `agent_documents` | Última sesión cifrada del Agent, operaciones de capacidades e imágenes adjuntas (migraciones 026 y 036). Las sesiones retienen todo el historial hasta el reinicio o el reemplazo explícito, sin tope de tamaño de sesión; las imágenes siguen sus referencias y se eliminan solo después de que se persista un reinicio. Las operaciones terminales se retienen 7 días y se purgan de forma perezosa durante las solicitudes del Agent |
+| Operaciones | `audit_events`, `ui_preferences`, `quota_snapshots`, `schema_migrations` | La auditoría no tiene ruta de actualización ni de eliminación — solo `RecordAuditEvent` escribe y existen consultas de lectura (`ListAuditEvents`, `QueryAuditEvents`), y la propia exportación se audita; el esquema no lleva ningún trigger de cumplimiento, así que la garantía vive en la API del repositorio. La migración 027 añade `idx_audit_events_request_action`, que consulta el plegado de intentos de la pista |
+| Configuración de CPA | `cpa_config_backups`, `cpa_config_backup_settings` | Copias cifradas del archivo de configuración de CPA almacenado, conservadas antes de cada escritura de configuración (migración 030, ADR 0037; la migración 033 añade el `layout` y el `reason` de cada copia y la tabla de retención de una sola fila, ADR 0051). Las copias v8 se conservan según la retención del operador (por defecto 20, de 5 a 100), las anteriores a v8 hasta las últimas diez; `cpa_config_backups` está oculta de `database_query` |
+| Observación de versiones | `release_index`, `release_check_state` | Migraciones 024 y 025; `truncated` lo añade la 025, de modo que una base de datos que aplicó la 024 antes de que existiera también gana la columna. `release_index` contiene una fila por versión publicada (etiqueta, nombre, hora de publicación, indicador de prerelease) y **se reemplaza como unidad por producto** mediante `PublishReleaseSnapshot`, porque un feed que deja de listar una versión retirada debe dejar de hacer que la consola afirme que existe. `release_check_state` contiene una fila por producto — los tiempos del último intento y del último éxito, el motivo de fallo redactado, la última etiqueta, el ETag y el indicador de truncamiento — y la escriben `RecordReleaseCheckAttempt`/`PublishReleaseSnapshot`/`RecordReleaseCheckFailure` y la leen `ListReleases` y `GetReleaseCheckState(ForRepository)`. El cuerpo en prosa de una versión **nunca se almacena**: vive en memoria de proceso acotada mientras dure el proceso, de modo que un índice sin notas sigue nombrando las versiones y enlazando a la fuente (véase §10) |
 
-`GET /management/system` resolves the gateway client once and runs its reads side by side
-- both products' version states, the gateway's health round trip, the credential list (read
-once for both the gateway's version header and its credential count), the plugin and
-provider counts, and the database, collector, record-count and admission reads - so the page
-waits for its slowest read rather than for the sum of them.
+`GET /management/system` resuelve el cliente del gateway una vez y ejecuta sus lecturas en paralelo
+- los estados de versión de ambos productos, el viaje de ida y vuelta de salud del gateway, la lista de credenciales (leída
+una vez para la cabecera de versión del gateway y para su conteo de credenciales), los conteos de plugins y
+proveedores, y las lecturas de base de datos, recolector, conteo de registros y admisión - de modo que la página
+espera a su lectura más lenta y no a la suma de todas.
 
-The management system surface is nine routes: `GET /management/system` (the page),
-`GET /management/system/releases` (one product's merged change log), `GET
-/management/system/repository` (the project's star count for the header link), `GET
-/management/system/updates` (both products' stored version answers for the shell's update
-indicator), `GET /management/system/updater` (whether this deployment can apply updates,
-per product, and the running or last update), `POST /management/system/updater/apply`
-(start one; see [Console updates](#console-updates-adr-0099)), `POST
-/management/system/check-updates` (a check, subject to the floor), `GET
-/management/system/maintenance` (the running or last job) and `POST
-/management/system/maintenance/{checkpoint,vacuum}`. The check answers `200` with the two
-products' states and `served_from_cache`; a maintenance POST answers `202` on admission,
-`409` when a job is already running, `507` when a rebuild cannot be admitted for space, and
-`503` once the service is shutting down. Every one of them answers `503` when the handler was
-built without the corresponding service, which is how a deployment that does not offer the
-surface behaves. The repository and updates routes are the exception, because the shell reads
-them on every page: they always answer `200`, the first with a null `stargazers_count`
-whenever no count is known and the second with both products `indeterminate` /
-`not_checked_yet` when there is no release service. The updater status route is the other
-exception: it answers `200` with `state: disabled` when no updater is wired, because a
-missing updater is a state of the deployment the page explains.
+La superficie de sistema de gestión son nueve rutas: `GET /management/system` (la página),
+`GET /management/system/releases` (el registro de cambios fusionado de un producto), `GET
+/management/system/repository` (el conteo de estrellas del proyecto para el enlace de la cabecera), `GET
+/management/system/updates` (las respuestas de versión almacenadas de ambos productos para el indicador
+de actualización de la carcasa), `GET /management/system/updater` (si este despliegue puede aplicar actualizaciones,
+por producto, y la actualización en curso o la última), `POST /management/system/updater/apply`
+(iniciar una; véase [Actualizaciones de la consola](#actualizaciones-de-la-consola-adr-0099)), `POST
+/management/system/check-updates` (una comprobación, sujeta al piso), `GET
+/management/system/maintenance` (el trabajo en curso o el último) y `POST
+/management/system/maintenance/{checkpoint,vacuum}`. La comprobación responde `200` con los estados
+de los dos productos y `served_from_cache`; un POST de mantenimiento responde `202` al ser admitido,
+`409` cuando ya hay un trabajo en ejecución, `507` cuando una reconstrucción no puede admitirse por falta de espacio, y
+`503` una vez que el servicio se está apagando. Todas responden `503` cuando el handler se
+construyó sin el servicio correspondiente, que es cómo se comporta un despliegue que no ofrece la
+superficie. Las rutas de repositorio y de actualizaciones son la excepción, porque la carcasa las lee
+en cada página: siempre responden `200`, la primera con un `stargazers_count` nulo
+siempre que no se conozca ningún conteo y la segunda con ambos productos `indeterminate` /
+`not_checked_yet` cuando no hay servicio de versiones. La ruta de estado del actualizador es la otra
+excepción: responde `200` con `state: disabled` cuando no hay actualizador conectado, porque un
+actualizador ausente es un estado del despliegue que la página explica.
 
-The updates route never reads the feed. It reports what the sweep or the page's own check
-last stored, in the same per-product shape the page uses, so the shell can ask on every page
-without spending the shared budget; an open console re-reads it hourly
-(`UPDATE_STATUS_REFRESH_MS`). The shell marks the System Information navigation entry when
-either product is `update_available` and that release has not been dismissed. A dismissal is
-the `update_dismissals` preference, a product-to-tag map written from the page: it names one
-published tag, so a later release is marked again, and being a preference it holds across
-browsers and restarts. The comparison of the two lives in the browser
-(`web/src/utils/updateDismissals.ts`); the server stores the document and nothing else.
+La ruta de actualizaciones nunca lee el feed. Informa lo que el barrido o la propia comprobación de la página
+almacenó por última vez, con la misma forma por producto que usa la página, de modo que la carcasa pueda preguntar en cada página
+sin gastar el presupuesto compartido; una consola abierta la relee cada hora
+(`UPDATE_STATUS_REFRESH_MS`). La carcasa marca la entrada de navegación Información del sistema cuando
+cualquiera de los productos está `update_available` y esa versión no ha sido descartada. Un descarte es
+la preferencia `update_dismissals`, un mapa de producto a etiqueta escrito desde la página: nombra una
+etiqueta publicada, de modo que una versión posterior vuelve a marcarse, y al ser una preferencia se mantiene entre
+navegadores y reinicios. La comparación de ambas vive en el navegador
+(`web/src/utils/updateDismissals.ts`); el servidor almacena el documento y nada más.
 
-Migrations are embedded from `migrations/` and applied in filename order inside
-one transaction each. A migration against an existing on-disk database first
-writes an AES-GCM backup plus SHA-256 sidecar, restores it as a smoke test, and
-keeps the newest five. The gate that decides whether a backup is needed reads
-`schema_migrations` first, and an unreadable schema state - a failed
-`sqlite_master` lookup, or a table that exists but cannot be counted - is treated
-as "back up first" rather than as "nothing applied yet". The smoke test likewise
-refuses to pass when the sidecar digest is missing, because an unverifiable backup
-is not a recoverable one. Migration 004 additionally runs a Go governance hook
-inside its transaction to sanitize historical rows. Rollback is forward-only:
-fix a defect with a new migration, never by editing `schema_migrations`
+Las migraciones se incrustan desde `migrations/` y se aplican en orden de nombre de archivo, cada una dentro de
+una transacción. Una migración contra una base de datos existente en disco primero
+escribe una copia AES-GCM más un archivo auxiliar SHA-256, la restaura como prueba de humo y
+conserva las cinco más recientes. La compuerta que decide si hace falta una copia lee
+primero `schema_migrations`, y un estado de esquema ilegible - una búsqueda fallida en
+`sqlite_master`, o una tabla que existe pero no puede contarse - se trata
+como «hacer copia primero» y no como «aún no se ha aplicado nada». La prueba de humo igualmente
+se niega a pasar cuando falta el digest del archivo auxiliar, porque una copia no verificable
+no es una recuperable. La migración 004 además ejecuta un hook de gobernanza en Go
+dentro de su transacción para sanear filas históricas. La reversión es solo hacia adelante:
+se corrige un defecto con una nueva migración, nunca editando `schema_migrations`
 (`docs/ops/sqlite-operations.md`).
 
-## 10. Background loops
+## 10. Bucles en segundo plano
 
-| Loop | Owner | Failure behaviour |
+| Bucle | Responsable | Comportamiento ante fallos |
 | --- | --- | --- |
-| HTTP server | `app.Run` | Fatal; shutdown drains 10s |
-| Usage pipeline | `app.Run` → `ingest.Pipeline` | Fatal; a stopped collector must not serve silently stale numbers. `Run` returns only after every stage has stopped, and `app.Run` waits for it before the database closes, whichever loop ended first |
-| Pricing sync | `app.Run` → `pricing.Service` | Best effort; prices go stale, capture continues |
-| Release sweep | `app.Run` → `release.Service` | Best effort; the stored index and its timestamps go stale, and the page says so. Every six hours, first run delayed by one interval so a restart loop cannot become a request loop |
-| Quota auto refresh | `app.Run` → `api.Handler.RunQuotaAutoRefresh` | Best effort; a round that cannot reach CPA leaves the stored readings and cooldown evidence as they were and the next minute tries again. Reads only what the `omc_quota_auto_refresh` policy makes due, and releases cooldowns whose recovery times have all passed through CPA's `routing/cooldown/reset` (§8, ADR 0094) |
-| Usage-fact fold + data lifecycle | `ingest.Maintenance` inside the pipeline | Retried on its own interval; errors surface in ingest status |
-| Database maintenance | `repository.MaintenanceService`, started by an operator request | Never started automatically; a job's outcome is retained in process memory and recorded on the audit trail. The retained record is served by both reads, and the console shows only a job it observed rather than that record — see §11 |
+| Servidor HTTP | `app.Run` | Fatal; el apagado drena 10 s |
+| Pipeline de uso | `app.Run` → `ingest.Pipeline` | Fatal; un recolector detenido no debe servir en silencio números obsoletos. `Run` regresa solo después de que cada etapa se haya detenido, y `app.Run` espera a que lo haga antes de que se cierre la base de datos, sea cual sea el bucle que terminó primero |
+| Sincronización de precios | `app.Run` → `pricing.Service` | De mejor esfuerzo; los precios se vuelven obsoletos, la captura continúa |
+| Barrido de versiones | `app.Run` → `release.Service` | De mejor esfuerzo; el índice almacenado y sus marcas de tiempo se vuelven obsoletos, y la página lo dice. Cada seis horas, con la primera ejecución retrasada un intervalo para que un bucle de reinicios no pueda convertirse en un bucle de solicitudes |
+| Actualización automática de cuota | `app.Run` → `api.Handler.RunQuotaAutoRefresh` | De mejor esfuerzo; una ronda que no puede llegar a CPA deja las lecturas almacenadas y la evidencia de enfriamiento como estaban y el minuto siguiente lo intenta de nuevo. Lee solo lo que la política `omc_quota_auto_refresh` hace vencer, y libera los enfriamientos cuyos tiempos de recuperación han pasado todos mediante el `routing/cooldown/reset` de CPA (§8, ADR 0094) |
+| Pliegue de hechos de uso + ciclo de vida de datos | `ingest.Maintenance` dentro del pipeline | Se reintenta en su propio intervalo; los errores aparecen en el estado de ingesta |
+| Mantenimiento de la base de datos | `repository.MaintenanceService`, iniciado por una solicitud del operador | Nunca se inicia automáticamente; el resultado de un trabajo se retiene en memoria de proceso y se registra en la pista de auditoría. El registro retenido lo sirven ambas lecturas, y la consola muestra solo un trabajo que observó y no ese registro — véase §11 |
 
-A demo deployment starts only the HTTP server: its history is the fixture, so there
-is no collector to lose and no sync loop to let prices go stale. §13 and
-`internal/demo` explain what replaces them.
+Un despliegue de demostración inicia solo el servidor HTTP: su historial es el fixture, así que no
+hay recolector que perder ni bucle de sincronización que deje obsoletos los precios. §13 e
+`internal/demo` explican qué los reemplaza.
 
-The release sweep is the only loop that talks to a host outside the deployment's own
-gateway, and it is the one loop whose absence is invisible rather than harmful:
-without it the page shows the last known index. It can be switched off with
-`SHELLPAMC_UPDATE_CHECK_ENABLED=false`, which stops the sweep while leaving the page's own
-check and the manual button working — those are an operator asking a question rather
-than the process deciding to reach the internet.
+El barrido de versiones es el único bucle que habla con un host fuera del propio
+gateway del despliegue, y es el único bucle cuya ausencia es invisible y no dañina:
+sin él la página muestra el último índice conocido. Puede desactivarse con
+`SHELLPAMC_UPDATE_CHECK_ENABLED=false`, lo que detiene el barrido pero deja funcionando la propia
+comprobación de la página y el botón manual — son un operador que hace una pregunta, no
+el proceso que decide llegar a internet.
 
-`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` is separate because it answers a separate question: may
-opening a page spend a request from a budget shared per address? A self-hosted deployment wants
-that enabled — the page exists to answer "is there a newer version" — while an air-gapped install
-or a test suite wants it off, since a page visit there is not a reader asking anything. The manual
-button is unaffected by either switch. The acceptance harness sets both, and the reason is worth
-recording: disabling the sweep alone does not stop the traffic, because the sweep's first run is a
-full interval away and the suite visits the page that checks on open.
+`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` es independiente porque responde a una pregunta independiente: ¿puede
+abrir una página gastar una solicitud de un presupuesto compartido por dirección? Un despliegue autoalojado quiere
+eso activado — la página existe para responder «¿hay una versión más nueva?» — mientras que una instalación aislada
+o una suite de pruebas lo quiere desactivado, ya que una visita a la página allí no es un lector que pregunte nada. El botón
+manual no se ve afectado por ninguno de los dos interruptores. El arnés de aceptación establece ambos, y vale la pena
+registrar la razón: desactivar solo el barrido no detiene el tráfico, porque la primera ejecución del barrido está a un
+intervalo completo de distancia y la suite visita la página que comprueba al abrirse.
 
-### What a stored failure may contain
+### Qué puede contener un fallo almacenado
 
-A failed check records a redacted reason: one `security.RedactText` copy serves the stored
-`last_error`, the `CheckError` the page renders, and every log line, because all three can leak and
-a raw form kept for one of them defeats the other two. The reason is a remote response, and a feed or
-a proxy can echo back a token it was sent.
+Una comprobación fallida registra un motivo redactado: una sola copia de `security.RedactText` sirve al
+`last_error` almacenado, al `CheckError` que renderiza la página y a cada línea de registro, porque los tres pueden filtrar y
+conservar una forma sin procesar para uno de ellos anula los otros dos. El motivo es una respuesta remota, y un feed o
+un proxy puede devolver como eco un token que se le envió.
 
-The redactor's vendor-prefix rule had a gap worth recording: it matched only a hyphenated separator,
-so `ghp_...` - the shape a GitHub API error actually carries, and this feature reads GitHub - passed
-through untouched. It now accepts the separators the real prefixes use, and it has positive and
-negative controls; it had no test before, which is why the gap survived.
+La regla de prefijos de proveedor del redactor tenía una brecha que vale la pena registrar: solo coincidía con un separador
+con guion, de modo que `ghp_...` - la forma que realmente lleva un error de la API de GitHub, y esta función lee GitHub - pasaba
+sin tocar. Ahora acepta los separadores que usan los prefijos reales, y tiene controles positivos y
+negativos; no tenía ninguna prueba antes, razón por la cual la brecha sobrevivió.
 
-### Why a check has a floor
+### Por qué una comprobación tiene un piso
 
-`CheckFloor` is fifteen minutes, and every path that reads the feed passes it. The feed is
-one shared per-address budget — sixty requests an hour for the unauthenticated GitHub API —
-while the page is loaded far more often than a release is published. A check costs one
-request per product and a second only when a feed's first page is full, so an unthrottled
-page-load check spends up to four requests per view: fifteen views exhaust the allowance for
-every client behind that address. That is what happened, and it is how the floor was
-calibrated.
+`CheckFloor` es de quince minutos, y toda ruta que lee el feed lo respeta. El feed es
+un único presupuesto compartido por dirección — sesenta solicitudes por hora para la API de GitHub sin autenticar —
+mientras que la página se carga con mucha más frecuencia de la que se publica una versión. Una comprobación cuesta una
+solicitud por producto y una segunda solo cuando la primera página de un feed está llena, de modo que una comprobación sin limitar
+al cargar la página gasta hasta cuatro solicitudes por vista: quince vistas agotan la cuota para
+todos los clientes detrás de esa dirección. Eso es lo que ocurrió, y así se calibró el piso.
 
-Inside the floor a check is answered from the stored index and reports `served_from_cache`,
-so the button says the result was cached rather than claiming a check it did not perform. The
-floor is measured from the last attempt rather than the last success, because a failing feed
-is when an operator reloads most and re-learning the same error would spend the budget twice.
-The six-hour sweep is exempt by construction: it is far outside any floor.
+Dentro del piso una comprobación se responde desde el índice almacenado e informa `served_from_cache`,
+de modo que el botón dice que el resultado estaba en caché en lugar de afirmar una comprobación que no hizo. El
+piso se mide desde el último intento y no desde el último éxito, porque un feed que falla
+es cuando más recarga un operador, y volver a aprender el mismo error gastaría el presupuesto dos veces.
+El barrido de seis horas está exento por construcción: está muy por encima de cualquier piso.
 
-### The header's star count
+### El conteo de estrellas de la cabecera
 
-The shell's repository link shows the star count of `release.ProjectRepository`, a constant
-rather than the configured Shell-PAMC release source: the link names this project, so a count read
-from an operator's fork would describe a different repository than the one it opens. The
-browser never asks GitHub. `Service.Stargazers` reads `GET /repos/{owner}/{name}` through the
-same fixed-host client and keeps the answer in memory only; a restart costs one request to
-learn it again.
+El enlace al repositorio de la carcasa muestra el conteo de estrellas de `release.ProjectRepository`, una constante
+y no la fuente de versiones de Shell-PAMC configurada: el enlace nombra este proyecto, así que un conteo leído
+del fork de un operador describiría un repositorio distinto del que abre. El
+navegador nunca le pregunta a GitHub. `Service.Stargazers` lee `GET /repos/{owner}/{name}` mediante el
+mismo cliente de host fijo y mantiene la respuesta solo en memoria; un reinicio cuesta una solicitud para
+volver a saberla.
 
-The read has its own floor, `StargazerFloor`, of one hour measured from the last attempt,
-because the header is mounted on every page and the read spends the same shared budget. A
-page load may trigger it only when `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` allows page visits to
-check; the six-hour sweep refreshes it regardless, so a deployment that forbids page-visit
-requests still learns the count. A failed read keeps the previous count. The read is an
-optional interface on the feed source (`release.StargazerSource`), which the demonstration's
-fixture does not implement: the demonstration shows the link without a count instead of an
-invented number about a real repository. `formatStarCount` in `web/src/utils/format.ts` owns
-the display rule — exact below a thousand, truncated thousands with two decimals above.
+La lectura tiene su propio piso, `StargazerFloor`, de una hora medida desde el último intento,
+porque la cabecera está montada en cada página y la lectura gasta el mismo presupuesto compartido. Una
+carga de página puede dispararla solo cuando `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` permite que las visitas a la página
+comprueben; el barrido de seis horas la actualiza de todos modos, de modo que un despliegue que prohíbe las solicitudes por visita a la página
+igualmente conoce el conteo. Una lectura fallida conserva el conteo anterior. La lectura es una
+interfaz opcional de la fuente del feed (`release.StargazerSource`), que el fixture de la demostración no implementa:
+la demostración muestra el enlace sin conteo en lugar de un número inventado sobre un repositorio real. `formatStarCount` en `web/src/utils/format.ts` es dueño de
+la regla de visualización — exacto por debajo de mil, miles truncados con dos decimales por encima.
 
-The page applies the returned product DTOs to its query cache before refreshing the system
-reading and any open change log. The page-private presentation rules live in
-`web/src/pages/SystemPage/versionPresentation.ts`, with pure-function regression coverage. Manual checks classify each product's `check_error` before
-reporting success or a cached answer; one failed product never becomes a success toast just
-because the route returned HTTP 200. Automatic page-load checks report through the product
-rows without toasts. A local in-flight guard prevents a mount check and a click from submitting
-together. An observed background `checking` state is polled every two seconds until settled;
-this re-reads local status and does not spend another release-feed request.
+La página aplica los DTO de producto devueltos a su caché de consultas antes de actualizar la lectura del
+sistema y cualquier registro de cambios abierto. Las reglas de presentación privadas de la página viven en
+`web/src/pages/SystemPage/versionPresentation.ts`, con cobertura de regresión de funciones puras. Las comprobaciones manuales clasifican el `check_error` de cada producto antes de
+informar éxito o una respuesta en caché; un producto fallido nunca se convierte en un toast de éxito solo
+porque la ruta devolvió HTTP 200. Las comprobaciones automáticas al cargar la página informan mediante las filas de producto
+sin toasts. Una guarda local en vuelo impide que una comprobación de montaje y un clic se envíen
+juntos. Un estado `checking` observado en segundo plano se sondea cada dos segundos hasta que se asienta;
+esto relee el estado local y no gasta otra solicitud al feed de versiones.
 
-### The release check does not store release notes
+### La comprobación de versiones no almacena notas de versión
 
-A release's Markdown body is held in process memory and nowhere else. The index —
-tags, names, publication times, prerelease flags — is stored, because that is what
-answers "is there a newer version" after a restart or while offline. The notes are
-not, and the page states which of the two it has: an index with no notes still names
-the versions and links to the source, while an empty log would claim nothing changed.
+El cuerpo Markdown de una versión se mantiene en memoria de proceso y en ningún otro lugar. El índice —
+etiquetas, nombres, horas de publicación, indicadores de prerelease — se almacena, porque eso es lo que
+responde «¿hay una versión más nueva?» tras un reinicio o sin conexión. Las notas no,
+y la página declara cuál de las dos tiene: un índice sin notas sigue nombrando
+las versiones y enlazando a la fuente, mientras que un registro vacío afirmaría que nada cambió.
 
-Two details follow from that split. A `304` from a conditional request is only
-trusted while the process still holds the body the validator describes, so stored
-ETags are cleared at start-up and the first check after a restart is unconditional.
-And a failed check never clears the stored index or the last-success time: the page
-keeps the previous answer and reports the failure with its reason and the time of the
-attempt, rather than going blank or presenting stale data as current. A failed attempt
-without any prior success cannot establish that a repository has no releases: that verdict
-requires `last_success_at_ms`. Until then the comparison carries `not_checked_yet` and the
-failure is reported separately. When an index is retained, the failure notice includes the
-last successful check time so the reader can judge its age. The routine
-"last checked" readout was deliberately dropped from the cards - it was the same
-timestamp on every one of them - so staleness is now something the page states when a
-check fails rather than a number a reader has to interpret.
+De esa división se derivan dos detalles. Un `304` de una solicitud condicional solo se
+confía mientras el proceso aún tenga el cuerpo que describe el validador, de modo que los ETag almacenados
+se borran al arrancar y la primera comprobación tras un reinicio es incondicional.
+Y una comprobación fallida nunca borra el índice almacenado ni la hora del último éxito: la página
+conserva la respuesta anterior e informa el fallo con su motivo y la hora del
+intento, en lugar de quedarse en blanco o presentar datos obsoletos como actuales. Un intento fallido
+sin ningún éxito previo no puede establecer que un repositorio no tiene versiones: ese veredicto
+requiere `last_success_at_ms`. Hasta entonces la comparación lleva `not_checked_yet` y el
+fallo se informa por separado. Cuando se conserva un índice, el aviso de fallo incluye la
+hora de la última comprobación exitosa para que el lector pueda juzgar su antigüedad. La lectura rutinaria
+de «última comprobación» se eliminó deliberadamente de las tarjetas - era la misma
+marca de tiempo en todas - de modo que la obsolescencia es ahora algo que la página declara cuando una
+comprobación falla y no un número que el lector tenga que interpretar.
 
-### Console updates (ADR 0099)
+### Actualizaciones de la consola (ADR 0099)
 
-Applying an update is a second process's job. The console container cannot replace
-itself and must not hold the Docker socket, so `internal/updater` runs as a sidecar from
-the same image and the console talks to it over the Docker network:
+Aplicar una actualización es trabajo de un segundo proceso. El contenedor de la consola no puede reemplazarse
+a sí mismo y no debe tener el socket de Docker, así que `internal/updater` se ejecuta como sidecar desde
+la misma imagen y la consola le habla por la red de Docker:
 
 ```text
 System Information page
@@ -2601,1007 +2675,1006 @@ System Information page
             └─ omc only: replace the updater itself, handing the finished job to its successor
 ```
 
-`GET /management/system/updater` reduces every way of not having an updater to a state
-the page can explain: `ready`, `not_installed` (a containerised console with no answer,
-which the install command fixes), `not_containerised` (a native install), `disabled`
-(`SHELLPAMC_UPDATER_ENABLED=false`) and `rejected` (an updater that does not accept this
-console's token). The read is `200` in all of them. Products carry `action` and
+`GET /management/system/updater` reduce toda forma de no tener un actualizador a un estado
+que la página puede explicar: `ready`, `not_installed` (una consola en contenedor sin respuesta,
+que el comando de instalación corrige), `not_containerised` (una instalación nativa), `disabled`
+(`SHELLPAMC_UPDATER_ENABLED=false`) y `rejected` (un actualizador que no acepta el token de esta
+consola). La lectura es `200` en todos ellos. Los productos llevan `action` y
 `reason`: `pinned`, `not_a_local_container`, `signature_unavailable`,
-`container_not_found`, `ambiguous_container`. Demo mode wires no updater: the read
-answers `disabled` and the apply route is refused by the demo policy.
+`container_not_found`, `ambiguous_container`. El modo demo no conecta ningún actualizador: la lectura
+responde `disabled` y la política de demo rechaza la ruta de aplicación.
 
-Three invariants hold the design together:
+Tres invariantes sostienen el diseño:
 
-- **The updater decides what it touches.** Its control surface takes a product name. The
-  console container, the gateway container and the image reference are resolved by the
-  updater from Docker's own state, never supplied by the caller.
-- **Verification happens where the authority is.** The console forwards the manifest and
-  signature as bytes; the updater, which holds the socket, checks them against the key
-  compiled into its own binary.
-- **The outcome is recorded by whoever is alive.** A gateway update finishes while the
-  admitting process still runs, and a goroutine writes `system.update.completed`. A
-  console update kills that process, so `Handler.RecordInterruptedUpdate` follows the
-  updater's last job from the moment the next process starts. That process starts while
-  the job is still verifying it, and the updater then replaces itself, so the follow
-  waits through unfinished stages and failed reads, for at most fifteen minutes. The
-  audit event is keyed by the job ID so the two paths cannot both record it. Shutdown
-  ends both waits before the database closes (`Handler.CloseUpdateWatchers`); an outcome
-  left unrecorded is picked up by the next process.
+- **El actualizador decide qué toca.** Su superficie de control toma un nombre de producto. El
+  contenedor de la consola, el contenedor del gateway y la referencia de imagen los resuelve el
+  actualizador a partir del propio estado de Docker, nunca los suministra el llamador.
+- **La verificación ocurre donde está la autoridad.** La consola reenvía el manifiesto y la
+  firma como bytes; el actualizador, que tiene el socket, los comprueba contra la clave
+  compilada en su propio binario.
+- **El resultado lo registra quien siga vivo.** Una actualización del gateway termina mientras el
+  proceso que la admitió sigue ejecutándose, y una goroutine escribe `system.update.completed`. Una
+  actualización de la consola mata ese proceso, así que `Handler.RecordInterruptedUpdate` sigue el
+  último trabajo del actualizador desde el momento en que arranca el siguiente proceso. Ese proceso arranca mientras
+  el trabajo aún lo está verificando, y el actualizador luego se reemplaza a sí mismo, de modo que el seguimiento
+  espera a través de etapas sin terminar y lecturas fallidas, durante como máximo quince minutos. El
+  evento de auditoría lleva como clave el ID del trabajo para que las dos rutas no puedan registrarlo ambas. El apagado
+  termina ambas esperas antes de que se cierre la base de datos (`Handler.CloseUpdateWatchers`); un resultado
+  que quede sin registrar lo recoge el siguiente proceso.
 
-The updater role has one loop of its own, `Service.KeepLinked`: an installed updater
-lives outside the deployment's Compose project, so it follows Docker's container-start
-events and re-attaches the console to the shared network whenever Compose recreates it.
-A Compose-declared updater shares the project network and runs no such loop.
+El rol de actualizador tiene un bucle propio, `Service.KeepLinked`: un actualizador instalado
+vive fuera del proyecto Compose del despliegue, así que sigue los eventos de inicio de contenedores de Docker
+y vuelve a conectar la consola a la red compartida cada vez que Compose la recrea.
+Un actualizador declarado en Compose comparte la red del proyecto y no ejecuta tal bucle.
 
-The updater keeps a job in memory only. A restart mid-replacement is finished by
-`Service.Reconcile`, which looks for a `-omc-previous` container: with a healthy
-replacement the leftover is removed, without one it is restored. A replacement whose
-health check has not yet passed counts as without one, since it was interrupted
-mid-verification. The updater's own pair is the exception: a successor running
-`Reconcile` is up, whatever its health check reports yet.
+El actualizador mantiene un trabajo solo en memoria. Un reinicio a mitad de un reemplazo lo termina
+`Service.Reconcile`, que busca un contenedor `-omc-previous`: con un reemplazo sano
+se elimina el sobrante, sin uno se restaura. Un reemplazo cuya
+comprobación de salud aún no ha pasado cuenta como inexistente, ya que se interrumpió
+a mitad de la verificación. El par propio del actualizador es la excepción: un sucesor que ejecuta
+`Reconcile` está arriba, sea lo que sea que informe aún su comprobación de salud.
 
-On the page, `useConsoleUpdate` follows one job. While it does, a failed read or a
-`not_installed` answer is not shown, because both are what a console restart looks like
-from the browser; the last answer from a working updater stands until the job reports
-its end, the updater forgets it, or ten minutes pass without an answer. One update reports
-one end, keyed by its job id: neither the answer still held while the console gives up nor
-an updater that comes back naming the job it had lost can make the page end the same update
-twice, or follow it again. A finished console update reloads the page, since the scripts it
-holds belong to the old version.
+En la página, `useConsoleUpdate` sigue un trabajo. Mientras lo hace, una lectura fallida o una
+respuesta `not_installed` no se muestra, porque ambas son lo que parece un reinicio de la consola
+desde el navegador; la última respuesta de un actualizador funcional se mantiene hasta que el trabajo informa
+su fin, el actualizador lo olvida, o pasan diez minutos sin respuesta. Una actualización informa
+un solo fin, con clave por su id de trabajo: ni la respuesta aún retenida mientras la consola se rinde ni
+un actualizador que vuelve nombrando el trabajo que había perdido pueden hacer que la página termine la misma actualización
+dos veces, o la siga de nuevo. Una actualización de la consola terminada recarga la página, ya que los scripts que
+tiene pertenecen a la versión antigua.
 
-## 11. Database maintenance and the write gate
+## 11. Mantenimiento de la base de datos y la compuerta de escritura
 
-### A retained job status is not the reader's result
+### El estado retenido de un trabajo no es el resultado del lector
 
-The maintenance service keeps the last job's status in process memory for the life of the
-process, and **both** reads answer with it: `GET /management/system` and `GET
-/management/system/maintenance` describe one server holding one job. That retention is what
-lets a reload after a rebuild still show its numbers, but it is not a result the reader
-asked for, and presenting it directly has a defect the retention cannot fix — the panel
-then belongs to a job from an earlier session, and reloading re-reads it, so the reader can
-never put it away.
+El servicio de mantenimiento conserva el estado del último trabajo en memoria de proceso durante la vida del
+proceso, y **ambas** lecturas responden con él: `GET /management/system` y `GET
+/management/system/maintenance` describen un servidor que tiene un trabajo. Esa retención es lo que
+permite que una recarga tras una reconstrucción siga mostrando sus números, pero no es un resultado que el lector
+haya pedido, y presentarlo directamente tiene un defecto que la retención no puede arreglar: el panel
+pertenece entonces a un trabajo de una sesión anterior, y recargar lo relee, de modo que el lector nunca
+puede descartarlo.
 
-The console therefore separates the server's **retained status** from the page's own
-**displayed outcome**. The running banner is drawn from live server status and is always
-shown, including for a job that was already running when the page opened: it is the only
-evidence that a Maintenance Action holds the write gate, and it must not be dismissible. The
-completed panel is instead drawn from a local snapshot, set only when a job this page
-observed reaches its terminal state. A job is observed when the page starts it, or when a
-server snapshot reports it running and the page adopts it — so a second tab or another
-client's job is still followed to its outcome. Adoption looks at **every** snapshot rather
-than only the first one, because a job admitted elsewhere after the page was opened is
-invisible until a refetch reports it; skipping the job already being observed is what keeps
-a repeated refetch from restarting a poll that is already following it. A terminal status is
-accepted only for the job being observed, or for a job that superseded it, recognised by the
-server's `job_id` — the reservation the job was admitted under, which is monotonic within the
-process. That id is what the page compares rather than the start time, because the start time
-is the wall clock: two jobs can share a millisecond, and a synchronised clock can step
-backwards, either of which would make a later job look like one already handled and drop its
-result. A job that **started later** than the observed one is accepted as well, and becomes the
-observed job: a fast job can finish and be replaced inside a single poll interval, so the first
-sign of its replacement is that replacement's own terminal record. Without that rule the page
-would drop the newer result and keep polling for a job the server had already moved past —
-verified in the browser, where the exact-match guard reported `0` outcome panels across `23`
-polls. "Admitted later" is the accurate phrase here, not "started later": the ids are handed out
-at reservation, which precedes the launch.
+La consola por tanto separa el **estado retenido** del servidor del **resultado mostrado** de la propia
+página. El banner de ejecución se dibuja a partir del estado vivo del servidor y siempre se
+muestra, incluso para un trabajo que ya estaba en ejecución cuando se abrió la página: es la única
+evidencia de que una Acción de mantenimiento tiene la compuerta de escritura, y no debe poder descartarse. El
+panel de completado se dibuja en cambio a partir de una instantánea local, establecida solo cuando un trabajo que esta
+página observó alcanza su estado terminal. Un trabajo se observa cuando la página lo inicia, o cuando una
+instantánea del servidor lo informa en ejecución y la página lo adopta — de modo que la pestaña de otro
+cliente o el trabajo de otro cliente se sigue igualmente hasta su resultado. La adopción mira **cada** instantánea y no
+solo la primera, porque un trabajo admitido en otro lugar después de abrirse la página es
+invisible hasta que una relectura lo informa; omitir el trabajo ya observado es lo que impide
+que una relectura repetida reinicie un sondeo que ya lo está siguiendo. Un estado terminal se
+acepta solo para el trabajo observado, o para un trabajo que lo sustituyó, reconocido por el
+`job_id` del servidor — la reserva bajo la que se admitió el trabajo, que es monótona dentro del
+proceso. Ese id es lo que la página compara y no la hora de inicio, porque la hora de inicio
+es el reloj de pared: dos trabajos pueden compartir un milisegundo, y un reloj sincronizado puede retroceder,
+y cualquiera de las dos cosas haría que un trabajo posterior pareciera uno ya tratado y perdiera su
+resultado. Un trabajo que **empezó después** que el observado también se acepta, y se convierte en el
+trabajo observado: un trabajo rápido puede terminar y ser reemplazado dentro de un solo intervalo de sondeo, de modo que la primera
+señal de su reemplazo es el propio registro terminal de ese reemplazo. Sin esa regla la página
+descartaría el resultado más nuevo y seguiría sondeando un trabajo que el servidor ya había dejado atrás —
+verificado en el navegador, donde la guarda de coincidencia exacta informó `0` paneles de resultado a lo largo de `23`
+sondeos. «Admitido después» es la expresión precisa aquí, no «empezó después»: los ids se reparten
+en la reserva, que precede al lanzamiento.
 
-Adopting a running job also **seeds the poll's cache** with that job before polling is
-enabled, because while polling is enabled the card reads that cache rather than the page's own
-snapshot. A cache still holding an earlier job's terminal record otherwise hid live work: no
-in-progress banner, and maintenance actions that looked available while a job held the write
-gate. The browser probes hold the first poll open for ten seconds and assert the banner and the
-disabled actions inside that window, since after the poll answers the record is correct
-either way.
+Adoptar un trabajo en ejecución también **siembra la caché del sondeo** con ese trabajo antes de que se
+active el sondeo, porque mientras el sondeo está activo la tarjeta lee esa caché y no la instantánea propia de la página.
+Una caché que aún contuviera el registro terminal de un trabajo anterior ocultaba en cambio trabajo vivo: ningún banner
+de progreso, y acciones de mantenimiento que parecían disponibles mientras un trabajo tenía la compuerta
+de escritura. Las sondas del navegador mantienen abierto el primer sondeo diez segundos y afirman el banner y las
+acciones deshabilitadas dentro de esa ventana, ya que después de que el sondeo responde el registro es correcto
+de cualquier modo.
 
-Dismissing the outcome clears only that local snapshot, and both the close control and the
-page's Refresh button clear it. Since the snapshot is local, neither the server's retained
-record nor a later refetch can resurrect a result the reader has put away, while the next
-real job still produces a new one.
+Descartar el resultado borra solo esa instantánea local, y tanto el control de cierre como el
+botón Actualizar de la página la borran. Como la instantánea es local, ni el registro retenido del servidor
+ni una relectura posterior pueden resucitar un resultado que el lector ha descartado, mientras que el siguiente
+trabajo real sí produce uno nuevo.
 
-The terminal status is handled **once per job**, and the guard sits before the outcome is set
-rather than after it. That ordering is the whole of the guarantee: the effect names the
-translation function among its dependencies, so changing the interface language re-runs it
-while the terminal record is still cached, and a guard placed after the outcome was set would
-put back a result the reader had already dismissed. The job is recognised by the server's
-`job_id` and not by its finish time, which the backend assigns from the wall clock and does
-not promise to be unique.
+El estado terminal se trata **una vez por trabajo**, y la guarda va antes de establecer el resultado
+y no después. Ese orden es toda la garantía: el efecto nombra la función de
+traducción entre sus dependencias, de modo que cambiar el idioma de la interfaz lo vuelve a ejecutar mientras
+el registro terminal sigue en caché, y una guarda colocada después de establecer el resultado
+devolvería un resultado que el lector ya había descartado. El trabajo se reconoce por el
+`job_id` del servidor y no por su hora de fin, que el backend asigna a partir del reloj de pared y
+no promete que sea única.
 
-Because the ids come from a counter that begins again with each process, the page also records
-which process those ids describe (`runtime.started_at_ms`) and clears its observed and reported
-job when that changes. A restart can otherwise mint an id the page has already handled, and the
-new process's job would look like one already dealt with — its result never shown. The probe
-asserts this **without reloading**, since a reload resets the page's own state and would hide
-the confusion being tested.
+Como los ids provienen de un contador que vuelve a empezar con cada proceso, la página también registra
+a qué proceso describen esos ids (`runtime.started_at_ms`) y borra su trabajo observado e informado
+cuando eso cambia. Un reinicio de otro modo puede acuñar un id que la página ya ha tratado, y el
+trabajo del nuevo proceso parecería uno ya atendido — su resultado nunca se mostraría. La sonda
+afirma esto **sin recargar**, ya que una recarga reinicia el estado propio de la página y ocultaría
+la confusión que se prueba.
 
-Two operator-issued actions rewrite the database: `PRAGMA wal_checkpoint(TRUNCATE)`
-and `VACUUM`. Both are offered from the System Information page and both are
-guarded by a write gate, because the failure mode without one is not a slow request:
-`internal/usage/ingest`'s flush records an ingest gap and returns an error, and
-`app.Run` treats a stopped pipeline as fatal on purpose, so a writer that lost a
-race against a rebuild would take the process down with it.
+Dos acciones emitidas por el operador reescriben la base de datos: `PRAGMA wal_checkpoint(TRUNCATE)`
+y `VACUUM`. Ambas se ofrecen desde la página Información del sistema y ambas están
+protegidas por una compuerta de escritura, porque el modo de fallo sin una no es una solicitud lenta:
+el vaciado de `internal/usage/ingest` registra una brecha de ingesta y devuelve un error, y
+`app.Run` trata un pipeline detenido como fatal a propósito, de modo que un escritor que perdiera una
+carrera contra una reconstrucción se llevaría consigo al proceso.
 
-SQLite's own locking cannot express the boundary. Under WAL a reader never blocks a
-writer and a writer never blocks a reader, and `busy_timeout` makes a blocked call
-retry rather than stopping a writer from starting. So `internal/repository` wraps
-its driver: a statement that is not provably a read passes a gate that maintenance
-holds exclusively, writers wait rather than fail, and a queued writer can abandon its
-wait when its own context ends.
+El propio bloqueo de SQLite no puede expresar la frontera. Bajo WAL un lector nunca bloquea a un
+escritor y un escritor nunca bloquea a un lector, y `busy_timeout` hace que una llamada bloqueada
+reintente en lugar de impedir que un escritor empiece. Así que `internal/repository` envuelve
+su driver: una sentencia que no es demostrablemente una lectura pasa por una compuerta que el mantenimiento
+mantiene en exclusiva, los escritores esperan en lugar de fallar, y un escritor en cola puede abandonar su
+espera cuando termina su propio contexto.
 
-The classification is deliberately asymmetric and deliberately narrow — only `SELECT`,
-`VALUES` and `EXPLAIN` count as reads. `PRAGMA` is gated whatever its argument, because
-the family mixes reads and writes. `WITH` is gated even when the statement selects,
-because a common table expression can introduce an `UPDATE`, `DELETE` or `INSERT` and
-its first keyword does not say which. A string containing a second statement is gated
-however it starts, because a first-keyword classifier cannot see past the first
-statement at all. Each of those refusals costs one wait during a rebuild; the direction
-that would be cheap is the direction that can terminate the process.
+La clasificación es deliberadamente asimétrica y deliberadamente estrecha — solo `SELECT`,
+`VALUES` y `EXPLAIN` cuentan como lecturas. `PRAGMA` pasa por la compuerta sea cual sea su argumento, porque
+la familia mezcla lecturas y escrituras. `WITH` pasa por la compuerta incluso cuando la sentencia selecciona,
+porque una expresión de tabla común puede introducir un `UPDATE`, `DELETE` o `INSERT` y
+su primera palabra clave no dice cuál. Una cadena que contiene una segunda sentencia pasa por la compuerta
+sin importar cómo empiece, porque un clasificador por primera palabra clave no puede ver más allá de la primera
+sentencia en absoluto. Cada uno de esos rechazos cuesta una espera durante una reconstrucción; la dirección
+que sería barata es la dirección que puede terminar el proceso.
 
-Seven properties of the arrangement are load-bearing:
+Siete propiedades de la disposición son críticas:
 
-- Maintenance runs on a context marked as the holder's own (`withMaintenanceContext`),
-  because a maintenance statement that passed the gate again would queue behind the
-  exclusivity it already holds.
-- Maintenance uses its own database connection rather than the pool's. A writer takes
-  the gate inside its driver call, by which point `database/sql` has already handed it a
-  connection, so a waiting writer *holds* a connection while it waits; with one pooled
-  connection, maintenance needing that connection would wait for a writer that is
-  waiting for the job. This was observed as a real deadlock, and
-  `TestMaintenanceDoesNotDeadlockAgainstAWriterHoldingAConnection` reproduces it.
-- A write transaction holds the gate until it ends, not per statement: SQLite's write
-  lock outlives the statements inside a transaction. The `driver.TxOptions.ReadOnly`
-  hint does not exempt a transaction, because modernc.org/sqlite only uses it to pick
-  the `BEGIN` mode string — such a transaction can still write.
-- No request performs database work after admitting a job. The handler records
-  *admission* and returns the status the start returned; the job records its own
-  completion through an observer once it has released exclusivity. A request that wrote
-  anything afterwards would hold a connection while the job held the gate, so its `202`
-  would not arrive until the rebuild finished.
-- The gate's row wrappers forward the driver's optional column-metadata interfaces and
-  assert that at compile time, because a wrapper satisfying only `driver.Rows` compiles
-  while silently discarding what the driver reports about each column's type.
-- The gate belongs to one `repository.DB` rather than to the process, so a rebuild in one
-  database cannot stall writes to another. Every pool derived from that same `DB` shares its
-  gate — which is what the maintenance service relies on — while two separate `Open` calls over
-  the same file keep separate gates and are therefore not mutually exclusive. That is the
-  contract the code implements, and a deployment runs one `Open`.
-- Job status lives in memory (`MaintenanceService`), not in a table. A status endpoint
-  that read the database could not answer while a job held the connection — which is
-  exactly when an operator asks. The service owns a context derived from the
-  application's, so a job cannot outlive the process, and `Close` cancels and joins it
-  before releasing the connection.
+- El mantenimiento se ejecuta en un contexto marcado como propio del titular (`withMaintenanceContext`),
+  porque una sentencia de mantenimiento que pasara de nuevo por la compuerta se pondría en cola tras la
+  exclusividad que ya mantiene.
+- El mantenimiento usa su propia conexión de base de datos en lugar de la del pool. Un escritor toma
+  la compuerta dentro de su llamada al driver, momento en que `database/sql` ya le ha entregado una
+  conexión, de modo que un escritor en espera *retiene* una conexión mientras espera; con una sola conexión
+  en el pool, el mantenimiento que necesitara esa conexión esperaría a un escritor que a su vez
+  espera al trabajo. Esto se observó como un interbloqueo real, y
+  `TestMaintenanceDoesNotDeadlockAgainstAWriterHoldingAConnection` lo reproduce.
+- Una transacción de escritura mantiene la compuerta hasta que termina, no por sentencia: el bloqueo
+  de escritura de SQLite sobrevive a las sentencias dentro de una transacción. La pista
+  `driver.TxOptions.ReadOnly` no exime a una transacción, porque modernc.org/sqlite solo la usa para elegir
+  la cadena de modo de `BEGIN` — una transacción así aún puede escribir.
+- Ninguna solicitud realiza trabajo de base de datos después de admitir un trabajo. El handler registra la
+  *admisión* y devuelve el estado que devolvió el inicio; el trabajo registra su propia
+  finalización mediante un observador una vez que ha liberado la exclusividad. Una solicitud que escribiera
+  algo después retendría una conexión mientras el trabajo tuviera la compuerta, de modo que su `202`
+  no llegaría hasta que terminara la reconstrucción.
+- Los envoltorios de fila de la compuerta reenvían las interfaces opcionales de metadatos de columna del driver y
+  lo afirman en tiempo de compilación, porque un envoltorio que satisficiera solo `driver.Rows` compila
+  mientras descarta en silencio lo que el driver informa sobre el tipo de cada columna.
+- La compuerta pertenece a un `repository.DB` y no al proceso, de modo que una reconstrucción en una
+  base de datos no pueda detener las escrituras a otra. Todo pool derivado de ese mismo `DB` comparte su
+  compuerta — en lo que se apoya el servicio de mantenimiento — mientras que dos llamadas `Open` separadas sobre
+  el mismo archivo mantienen compuertas separadas y por tanto no son mutuamente excluyentes. Ese es el
+  contrato que implementa el código, y un despliegue ejecuta un solo `Open`.
+- El estado del trabajo vive en memoria (`MaintenanceService`), no en una tabla. Un endpoint de estado
+  que leyera la base de datos no podría responder mientras un trabajo tuviera la conexión — que es
+  exactamente cuando lo pregunta un operador. El servicio es dueño de un contexto derivado del de la
+  aplicación, de modo que un trabajo no puede sobrevivir al proceso, y `Close` lo cancela y lo une
+  antes de liberar la conexión.
 
-`VACUUM` is run as a plain `VACUUM` rather than `VACUUM INTO` plus a file swap. The
-pool holds an open handle, so replacing the file underneath it would need every
-connection closed and the pool rebuilt while other goroutines still hold references
-to it. A plain `VACUUM` copies into a temporary file and overwrites the original
-inside an ordinary transaction, so an interrupted rebuild leaves the original intact;
-`TestInterruptedVacuumLeavesTheDatabaseUsable` cancels one and then checks both the
-surviving rows and `PRAGMA integrity_check`. Its documented requirement — up to twice
-the database file in free space — is measured and shown in the confirmation before the
-action runs, as a pre-check rather than a guarantee. A checkpoint that SQLite reports
-as blocked is surfaced as an incomplete result, not as a success: `wal_checkpoint`
-returns its outcome in a row of three integers and does not raise an error when it
-cannot proceed, and a rebuild that is itself fine but cannot truncate the log reports
-that partial outcome rather than either success or failure.
+`VACUUM` se ejecuta como un `VACUUM` simple en lugar de `VACUUM INTO` más un intercambio de archivos. El
+pool mantiene un handle abierto, así que reemplazar el archivo por debajo exigiría cerrar todas las
+conexiones y reconstruir el pool mientras otras goroutines aún tienen referencias
+a él. Un `VACUUM` simple copia a un archivo temporal y sobrescribe el original
+dentro de una transacción ordinaria, de modo que una reconstrucción interrumpida deja intacto el original;
+`TestInterruptedVacuumLeavesTheDatabaseUsable` cancela una y luego comprueba tanto las filas
+supervivientes como `PRAGMA integrity_check`. Su requisito documentado — hasta el doble
+del archivo de la base de datos en espacio libre — se mide y se muestra en la confirmación antes de que se ejecute la
+acción, como una comprobación previa y no como una garantía. Un checkpoint que SQLite informa
+como bloqueado se presenta como un resultado incompleto, no como un éxito: `wal_checkpoint`
+devuelve su resultado en una fila de tres enteros y no lanza un error cuando no
+puede proceder, y una reconstrucción que en sí está bien pero no puede truncar el registro informa
+ese resultado parcial en lugar de éxito o fallo.
 
-## 12. Test layering
+## 12. Capas de pruebas
 
-Local browser impact analysis follows transpiled runtime imports, preserving eager
-and lazy edge kinds. The central `web/src/routePages.ts` registry is a boundary only
-for mapped literal lazy-page imports. Page identity is discovered from App's
-`createBrowserRouter` route elements through the registry's exported `React.lazy`
-components and their literal `createPageLoader` imports, not from directory or
-filename prefixes. Other registry imports, including helpers in page directories,
-registry changes and unrecognized wiring remain full-catalog changes. Real-tree
-planner tests independently require App to import the registry and the registry's
-proven page set to be nonempty. Full CI coverage does not depend on local selection.
-See `docs/plans/architecture-governance.md` for the measured audit and staged work.
+El análisis local de impacto en el navegador sigue los imports transpilados en runtime, preservando los tipos de arista
+ansiosos y diferidos. El registro central `web/src/routePages.ts` es una frontera solo
+para imports literales diferidos de páginas mapeadas. La identidad de la página se descubre a partir de los elementos de ruta de
+`createBrowserRouter` de App mediante los componentes `React.lazy` exportados por el registro
+y sus imports literales de `createPageLoader`, no a partir de prefijos de directorio o
+nombre de archivo. Otros imports del registro, incluidos los helpers en directorios de páginas,
+los cambios del registro y el cableado no reconocido siguen siendo cambios de catálogo completo. Las pruebas del planificador sobre el árbol real
+exigen independientemente que App importe el registro y que el conjunto de páginas
+demostrado del registro no esté vacío. La cobertura completa de CI no depende de la selección local.
+Véase `docs/plans/architecture-governance.md` para la auditoría medida y el trabajo por etapas.
 
-The suite is split by what each layer can actually prove, not by which runner is
-fashionable. `docs/testing.md` is the working guide (where a new test goes, how it is
-registered, what to run when); this section records why. The rule is **Browser Everything → Browser Only Where Browser
-Matters**: an assertion moves down a layer when a lower layer can make the same
-claim, and it stays in Chromium only when the claim is about the engine.
+La suite se divide por lo que cada capa puede realmente demostrar, no por qué ejecutor está
+de moda. `docs/testing.md` es la guía de trabajo (dónde va una prueba nueva, cómo se
+registra, qué ejecutar y cuándo); esta sección registra el porqué. La regla es **Browser Everything → Browser Only Where Browser
+Matters**: una aserción baja de capa cuando una capa inferior puede hacer la misma
+afirmación, y se queda en Chromium solo cuando la afirmación trata del motor.
 
-| Layer | Command | What it proves |
+| Capa | Comando | Qué demuestra |
 | --- | --- | --- |
-| Pure logic | `pnpm test:logic` | Decisions about the operator's own input: URL rewrites, saved-view derivation, debounce invalidation, the poll decision, range validation, chip display mapping, refresh presentation. Runs under Node with no bundler, no HTTP server, no Go binary and no browser. Every `scripts/test-*.ts` is discovered; there is no suite list to register in. |
-| React component integration | `pnpm test:components` | Automatically discovered rendered hook/provider/component claims under jsdom with real QueryClient/API wiring, held responses, isolated files and explicit cleanup. Separate from Node pure logic and Chromium engine behavior (ADR 0089). |
-| API wire contract | `pnpm test:components` + `go test ./...` + `pnpm test:self` | A reviewed corpus is independently checked by real authenticated Go handlers/SQLite, the actual typed client in Vitest Node, and per-context Browser Mock dispatch. Reuse the integration runner without simulating DOM or changing API contracts (ADR 0090). |
-| Mechanical repository gates | `pnpm test:self` | Every `*.test.mjs` under `scripts/` and `deploy/cloudflare/`, discovered: path references, translation keys, CSS class references, the dev proxy target, the embedded-distribution sync, the Chromium installer's decision, both planners, the probe shards, the workflow structure and the fixed-wait ratchet. |
-| **UI fast path** (development only) | `pnpm check:ui` | The subset of browser claims a change can affect, against the **dev server** with mocked routes. No `pnpm build`, no Go binary, no fake CPA. Like the full probe catalog, this runs `React.StrictMode` double-invocation checks that a production build cannot expose. |
-| Cross-stack smoke | `pnpm verify:browser:smoke` | A local quick check of the thin path: `/shell-pamc` redirect, sign-in rejection and success, the dashboard and request list rendering their seeded rows, no console or page error. |
-| Focused local cross-stack acceptance | `pnpm verify:browser:p0` | An optional focused local lane: the smoke path and its checks, then the request-record/live-tail suite and the OAuth management scheduling-field suite, using the same built binary and deterministic fixture. |
-| Cross-stack acceptance | `pnpm verify:browser` | The whole stack against the fake CPA: auth, every route's render and secret boundary, key aliases, provider enable/disable and its concurrent path, live-tail polling, and the unified OAuth management workspace. |
-| Browser-only probes | `pnpm verify:probes` | The full scenario catalog on the Vite dev server with mocked routes; this is not built-artifact coverage. CI runs it as three weight-balanced shards (`--shard i/3`) on every pull request and master push. Complete local catalogs reuse the three CI partitions sequentially. Playwright Test executes shared scenarios with at most two isolated workers (`--workers 1` for serial reproduction), then marked frame-timing scenarios alone; the native runner owns budgets, cleanup and reports, while project fixtures retain strict runtime/network fault checks and failure artifacts. Drawer/modal stacking and hit-testing, column geometry and truncation, the responsive alignment override, dashboard trend mark paint, refresh sequencing under a held response, the platform's Back dismissing each overlay class, the phone rendering of each list surface against its table, and the touch rules on a deliberately coarse-and-hoverless context. |
-| Demo acceptance | `pnpm verify:demo` | The staged production console and the real Worker handler served in-process, or an explicit deployment URL. Every route must complete its initial reads and render its page heading and content, with no API, transport or script errors. |
-| Go demo smoke | `pnpm verify:demo:go` | Separate coverage of the binary's demo mode: isolated settings, read-only refusals and permitted non-durable edits. This opt-in command is not part of `verify:full`. |
+| Lógica pura | `pnpm test:logic` | Decisiones sobre la propia entrada del operador: reescrituras de URL, derivación de vistas guardadas, invalidación de debounce, la decisión de sondeo, validación de rangos, mapeo de visualización de chips, presentación de actualización. Se ejecuta bajo Node sin bundler, sin servidor HTTP, sin binario de Go y sin navegador. Se descubre cada `scripts/test-*.ts`; no hay lista de suites que registrar. |
+| Integración de componentes React | `pnpm test:components` | Afirmaciones de hook/proveedor/componente renderizadas, descubiertas automáticamente, bajo jsdom con QueryClient/cableado de API reales, respuestas retenidas, archivos aislados y limpieza explícita. Separada de la lógica pura de Node y del comportamiento del motor Chromium (ADR 0089). |
+| Contrato de red de la API | `pnpm test:components` + `go test ./...` + `pnpm test:self` | Un corpus revisado se comprueba independientemente por handlers de Go autenticados y SQLite reales, el cliente tipado real en Vitest Node, y el despacho Browser Mock por contexto. Reutiliza el ejecutor de integración sin simular DOM ni cambiar los contratos de la API (ADR 0090). |
+| Compuertas mecánicas del repositorio | `pnpm test:self` | Cada `*.test.mjs` bajo `scripts/` y `deploy/cloudflare/`, descubierto: referencias de rutas, claves de traducción, referencias a clases CSS, el destino del proxy de desarrollo, la sincronización de la distribución embebida, la decisión del instalador de Chromium, ambos planificadores, los shards de sondas, la estructura de los workflows y el trinquete de esperas fijas. |
+| **Ruta rápida de UI** (solo desarrollo) | `pnpm check:ui` | El subconjunto de afirmaciones de navegador que un cambio puede afectar, contra el **servidor de desarrollo** con rutas simuladas. Sin `pnpm build`, sin binario de Go, sin CPA falso. Igual que el catálogo completo de sondas, ejecuta comprobaciones de doble invocación de `React.StrictMode` que una compilación de producción no puede exponer. |
+| Smoke de pila completa | `pnpm verify:browser:smoke` | Una comprobación local rápida de la ruta delgada: redirección de `/shell-pamc`, rechazo y éxito de inicio de sesión, el dashboard y la lista de solicitudes renderizando sus filas sembradas, sin errores de consola ni de página. |
+| Aceptación local enfocada de pila completa | `pnpm verify:browser:p0` | Un carril local enfocado opcional: la ruta smoke y sus comprobaciones, luego la suite de registros de solicitudes/cola en vivo y la suite de campos de programación de gestión OAuth, usando el mismo binario compilado y el fixture determinista. |
+| Aceptación de pila completa | `pnpm verify:browser` | Toda la pila contra el CPA falso: autenticación, el renderizado y la frontera de secretos de cada ruta, alias de claves, habilitar/deshabilitar proveedores y su ruta concurrente, sondeo de cola en vivo y el espacio de trabajo unificado de gestión OAuth. |
+| Sondas solo de navegador | `pnpm verify:probes` | El catálogo completo de escenarios en el servidor de desarrollo de Vite con rutas simuladas; no es cobertura de artefactos compilados. CI lo ejecuta como tres shards balanceados por peso (`--shard i/3`) en cada pull request y push a master. Los catálogos locales completos reutilizan secuencialmente las tres particiones de CI. Playwright Test ejecuta los escenarios compartidos con a lo sumo dos workers aislados (`--workers 1` para reproducción en serie), y luego los escenarios marcados de temporización de fotogramas por separado; el ejecutor nativo es dueño de los presupuestos, la limpieza y los informes, mientras que los fixtures del proyecto conservan comprobaciones estrictas de fallos de runtime/red y artefactos de fallo. Apilamiento y pruebas de impacto de drawers/modales, geometría y truncamiento de columnas, la anulación de alineación responsiva, el pintado de marcas de tendencia del dashboard, la secuenciación de actualizaciones bajo una respuesta retenida, el Back de la plataforma descartando cada clase de overlay, el renderizado en teléfono de cada superficie de lista frente a su tabla, y las reglas táctiles en un contexto deliberadamente grueso y sin hover. |
+| Aceptación de demo | `pnpm verify:demo` | La consola de producción preparada y el handler real del Worker servidos en proceso, o una URL de despliegue explícita. Cada ruta debe completar sus lecturas iniciales y renderizar el encabezado y el contenido de su página, sin errores de API, transporte o script. |
+| Smoke de demo en Go | `pnpm verify:demo:go` | Cobertura separada del modo demo del binario: ajustes aislados, rechazos de solo lectura y ediciones permitidas no duraderas. Este comando opcional no forma parte de `verify:full`. |
 
-Pull requests and master run the whole cross-stack acceptance and the real-browser
-harness fault-injection gate (ADR 0068). Both then run the demo acceptance. The probe catalog is its
-own sharded job on both events, behind one aggregate `probes` check (ADR 0032).
+Los pull requests y master ejecutan toda la aceptación de pila completa y la compuerta de inyección de fallos del
+arnés de navegador real (ADR 0068). Ambos ejecutan luego la aceptación de demo. El catálogo de sondas es su
+propio trabajo fragmentado en ambos eventos, tras una comprobación agregada `probes` (ADR 0032).
 
-### 12.0 Development and built-artifact coverage
+### 12.0 Cobertura de desarrollo y de artefactos compilados
 
-`check:ui` and `verify:probes` run the **same scenarios** from
-`scripts/acceptance/scenarios.mjs`, ordered under `scripts/acceptance/probes/`.
-Both delegate to Playwright Test through `scripts/testing/probes.ts`, with native
-Vite process ownership and context-local API fixtures from `scripts/acceptance/probe.mjs`. The difference is selection: `check:ui` selects affected scenarios
-(or an explicit scenario), while `verify:probes` runs the complete catalog.
+`check:ui` y `verify:probes` ejecutan los **mismos escenarios** de
+`scripts/acceptance/scenarios.mjs`, ordenados bajo `scripts/acceptance/probes/`.
+Ambos delegan en Playwright Test mediante `scripts/testing/probes.ts`, con propiedad nativa de procesos
+de Vite y fixtures de API locales al contexto de `scripts/acceptance/probe.mjs`. La diferencia es la selección: `check:ui` selecciona los escenarios afectados
+(o un escenario explícito), mientras que `verify:probes` ejecuta el catálogo completo.
 
-Neither substitutes for built-artifact acceptance. Production path resolution,
-minification, chunk loading and the embedded Go surface are exercised by
-`verify:browser`; `verify:demo` also drives the production console. Conversely,
-production builds cannot expose `React.StrictMode` double invocation. The
-`search-dev-server` scenario guards a real controller-cleanup regression that
-left production checks green but stopped search commits on the dev server.
-Moving the full probe catalog to production artifacts would require retaining
-explicit development coverage; it is not how the harness currently runs.
+Ninguno sustituye a la aceptación de artefactos compilados. La resolución de rutas de producción,
+la minificación, la carga de chunks y la superficie embebida de Go las ejercita
+`verify:browser`; `verify:demo` también maneja la consola de producción. A la inversa,
+las compilaciones de producción no pueden exponer la doble invocación de `React.StrictMode`. El
+escenario `search-dev-server` protege contra una regresión real de limpieza del controlador que
+dejaba verdes las comprobaciones de producción pero detenía las confirmaciones de búsqueda en el servidor de desarrollo.
+Trasladar el catálogo completo de sondas a artefactos de producción exigiría conservar
+cobertura explícita de desarrollo; no es como funciona actualmente el arnés.
 
-### 12.0.1 Three verification moments
+### 12.0.1 Tres momentos de verificación
 
-Verification is organised by *when it runs*, because what a developer pays is waiting
-and a gate that costs minutes gets routed around. The moments table and the rules that
-keep the gates honest live in `AGENTS.md` §5; `docs/testing.md` is the working guide.
-ADR 0032 records why the full catalog moved from a local pre-push duty to a required CI
-check: it used to be enforced only by local discipline and by master CI after merge,
-while every developer paid for it serially before each push.
+La verificación se organiza por *cuándo se ejecuta*, porque lo que un desarrollador paga es esperar
+y una compuerta que cuesta minutos se rodea. La tabla de momentos y las reglas que
+mantienen honestas las compuertas viven en `AGENTS.md` §5; `docs/testing.md` es la guía de trabajo.
+El ADR 0032 registra por qué el catálogo completo pasó de ser un deber local previo al push a una comprobación
+obligatoria de CI: antes solo lo imponían la disciplina local y el CI de master tras la fusión,
+mientras que cada desarrollador lo pagaba en serie antes de cada push.
 
-The rule that keeps this honest is that a *narrow* plan must never be **silent**.
-`scripts/affected-checks.mjs` and `scripts/acceptance/check-ui-plan.mjs` both widen
-rather than guess, and every rule that narrows has a negative case in its self-test.
-The UI planner narrows on evidence only:
+La regla que lo mantiene honesto es que un plan *estrecho* nunca debe ser **silencioso**.
+`scripts/affected-checks.mjs` y `scripts/acceptance/check-ui-plan.mjs` amplían ambos
+en lugar de adivinar, y toda regla que estrecha tiene un caso negativo en su autoprueba.
+El planificador de UI estrecha solo con evidencia:
 
-- **Runtime imports.** `scripts/acceptance/ui-impact.mjs` builds the reverse import
-  graph of `web/src` from TypeScript's `transpileModule` output, so imports used only
-  as types are not edges. A file's scenarios are those of every mapped module on the
-  chains that import it. A chain that reaches the shared layer, or a routed page
-  without a rule, selects everything; so does any unresolved local import, an asset
-  the graph cannot see (a CSS `url()`, `web/index.html`), a dependency or Vite change.
-  `scripts/ui-impact.test.mjs` separately requires the App-to-registry edge, nonempty
-  registry page discovery, every routed page's scenario rule and complete resolution
-  of the real tree. Directory helpers and incomplete route discovery are negative cases.
-- **Translation additions.** A catalog edit whose every pre-existing entry and every
-  line outside the catalog objects is unchanged selects nothing: a new entry is only
-  rendered by code that references it, which the planner places separately.
-- **Probe code.** `scripts/acceptance/probe-impact.mjs` attributes a probe module or
-  registry edit to the scenarios that use it. The runner (`probe.mjs` and the two entry
-  scripts) still selects everything; the planners select nothing, because they decide
-  which scenarios run, not what a scenario observes, and are pinned by self-tests.
-- **Manifests.** A `package.json` edit confined to `scripts` is not a runtime input.
+- **Imports en runtime.** `scripts/acceptance/ui-impact.mjs` construye el grafo inverso de imports
+  de `web/src` a partir de la salida de `transpileModule` de TypeScript, de modo que los imports usados solo
+  como tipos no son aristas. Los escenarios de un archivo son los de cada módulo mapeado en las
+  cadenas que lo importan. Una cadena que llega a la capa compartida, o una página enrutada
+  sin regla, selecciona todo; también cualquier import local sin resolver, un recurso
+  que el grafo no puede ver (un `url()` de CSS, `web/index.html`), una dependencia o un cambio de Vite.
+  `scripts/ui-impact.test.mjs` exige por separado la arista App-registro, el descubrimiento de páginas del
+  registro no vacío, la regla de escenario de cada página enrutada y la resolución completa
+  del árbol real. Los helpers de directorio y el descubrimiento incompleto de rutas son casos negativos.
+- **Adiciones de traducción.** Una edición de catálogo cuyas entradas preexistentes y cuyas líneas
+  fuera de los objetos del catálogo no cambian no selecciona nada: una entrada nueva solo la
+  renderiza el código que la referencia, que el planificador coloca por separado.
+- **Código de sondas.** `scripts/acceptance/probe-impact.mjs` atribuye la edición de un módulo de sonda o del
+  registro a los escenarios que lo usan. El ejecutor (`probe.mjs` y los dos scripts de entrada)
+  sigue seleccionando todo; los planificadores no seleccionan nada, porque deciden
+  qué escenarios se ejecutan, no qué observa un escenario, y están fijados por autopruebas.
+- **Manifiestos.** Una edición de `package.json` confinada a `scripts` no es una entrada de runtime.
 
-`test:fast` compares against `HEAD` by default. `--base <ref>` includes committed
-differences as well as staged, unstaged and untracked files; renames retain both
-source and destination paths. `--plan` only prints the selection. Each file contributes
-a conservative set of checks and the final plan is their union: a migration plus
-a Markdown edit must still run Go tests. Dependency inputs widen both the static
-and UI planners; TS/TSX references also select the CSS-module checker; a Go test edit
-also runs the self-tests, which include the fixed-wait ratchet. The frontend type
-check is incremental in `test:fast` only (build info under `tmp/tsc/`); `verify` and
-CI always run a fresh `tsc`.
+`test:fast` compara contra `HEAD` por defecto. `--base <ref>` incluye las diferencias confirmadas
+además de los archivos preparados, no preparados y sin seguimiento; los renombrados conservan tanto
+la ruta de origen como la de destino. `--plan` solo imprime la selección. Cada archivo aporta
+un conjunto conservador de comprobaciones y el plan final es su unión: una migración más
+una edición de Markdown aún debe ejecutar las pruebas de Go. Las entradas de dependencias amplían los planificadores
+estático y de UI; las referencias de TS/TSX también seleccionan el verificador de módulos CSS; una edición de prueba de Go
+también ejecuta las autopruebas, que incluyen el trinquete de esperas fijas. La comprobación de tipos del frontend
+es incremental solo en `test:fast` (información de compilación bajo `tmp/tsc/`); `verify` y
+CI siempre ejecutan un `tsc` nuevo.
 
-`scripts/fixed-waits.test.mjs` is a one-way ratchet on fixed sleeps in browser
-tests and Go tests: adding one fails, and removing one fails until its recorded count
-is lowered, so an improvement cannot be quietly undone.
+`scripts/fixed-waits.test.mjs` es un trinquete unidireccional sobre las pausas fijas en pruebas de navegador
+y pruebas de Go: añadir una falla, y quitar una falla hasta que su conteo registrado
+se reduzca, de modo que una mejora no pueda deshacerse en silencio.
 
-`test:self` discovers the Node test files in `scripts/` and `deploy/cloudflare/`,
-uses one Node invocation with test-file process isolation and concurrency two, and
-runs demo freshness checking alongside it. This removes repeated package-manager
-startup without reducing the test set. Shared fixtures must not write to the same
-paths across files; isolated temporary directories remain the convention.
+`test:self` descubre los archivos de prueba de Node en `scripts/` y `deploy/cloudflare/`,
+usa una invocación de Node con aislamiento de proceso por archivo de prueba y concurrencia dos, y
+ejecuta junto a él la comprobación de frescura de la demo. Esto elimina el arranque repetido del gestor de paquetes
+sin reducir el conjunto de pruebas. Los fixtures compartidos no deben escribir en las mismas
+rutas entre archivos; los directorios temporales aislados siguen siendo la convención.
 
-Two properties of this split are load bearing.
+Dos propiedades de esta división son críticas.
 
-**A browser assertion is never removed without a replacement.**
-`scripts/acceptance/MIGRATION.md` classifies every assertion in
-`scripts/browser-acceptance.mjs` once - `PURE`, `COMPONENT`, `BROWSER` or
-`CROSS-STACK` - and every assertion that left the browser names the test that
-replaced it. An assertion may move; it may not disappear silently.
-`scripts/browser-acceptance.mjs` is now the lifecycle/orchestration entrypoint.
-Release domains live in focused modules under `scripts/acceptance/`: OAuth
-management, key management, usage events and live-tail behavior, providers,
-observability, configuration and plugins, and theme and brand artwork. Each module
-receives the shared browser harness it needs and owns one product surface rather
-than becoming another catch-all script.
+**Una aserción de navegador nunca se elimina sin reemplazo.**
+`scripts/acceptance/MIGRATION.md` clasifica una vez cada aserción de
+`scripts/browser-acceptance.mjs` - `PURE`, `COMPONENT`, `BROWSER` o
+`CROSS-STACK` - y toda aserción que salió del navegador nombra la prueba que la
+reemplazó. Una aserción puede moverse; no puede desaparecer en silencio.
+`scripts/browser-acceptance.mjs` es ahora el punto de entrada de ciclo de vida/orquestación.
+Los dominios de versión viven en módulos enfocados bajo `scripts/acceptance/`: gestión OAuth,
+gestión de claves, registros de uso y comportamiento de cola en vivo, proveedores,
+observabilidad, configuración y plugins, y tema y arte de marca. Cada módulo
+recibe el arnés de navegador compartido que necesita y es dueño de una superficie de producto en lugar
+de convertirse en otro script comodín.
 
-**`pnpm test:fast` never pays for the browser.** No ordinary change may build the
-SPA, build a Go binary, start the product Vite HTTP listener, start Chromium or
-start the fake CPA. In-process Vite transforms used by frontend integration tests
-remain inside this boundary. The
-selection lives in `scripts/affected-checks.mjs` so it can be asserted directly,
-including that negative property, and a file the rules cannot place selects the
-broad gates rather than nothing.
+**`pnpm test:fast` nunca paga por el navegador.** Ningún cambio ordinario puede compilar la
+SPA, compilar un binario de Go, iniciar el listener HTTP de Vite del producto, iniciar Chromium ni
+iniciar el CPA falso. Las transformaciones de Vite en proceso usadas por las pruebas de integración del frontend
+permanecen dentro de esta frontera. La
+selección vive en `scripts/affected-checks.mjs` para poder afirmarla directamente,
+incluida esa propiedad negativa, y un archivo que las reglas no pueden ubicar selecciona
+las compuertas amplias en lugar de nada.
 
-### 12.1 Why some claims live where they do
+### 12.1 Por qué algunas afirmaciones viven donde viven
 
-- **Request ordering belongs to Go.** `TestListUsageEventsOrdersByRequestTime` in
-  `internal/repository` inserts a request that was recorded last but started
-  earliest, so a regression to recording order inverts the assertion. A JavaScript
-  re-check would read whatever the server already ordered and could not fail for
-  the reason its name gives.
-- **Pagination and scroll stay in the browser.** A virtualized list holding a
-  bounded DOM, a poll leaving the reader's scroll offset and row identity untouched,
-  and a back-to-top gesture landing exactly on the top are rendering behaviours.
-  The scroll *schedule* is a pure function and is tested as one
-  (`scripts/test-scroll-intent.ts`); its effect on a real list is not.
-- **Some browser waits are irreducible, and one was investigated rather than
-  assumed.** The live-tail block waits out the app's ten-second auto-refresh
-  cadence. Driving it with `page.clock` works - the interval fires early, 11s of app
-  time in about 900ms - but the same mock covers `requestAnimationFrame` and
-  `performance.now`, which is what `smoothScroll`'s gesture schedule is built from:
-  with the clock installed the back-to-top gesture landed at 37px instead of the
-  top, with no page error, breaking the assertion the block exists for. Isolating
-  the interval from the frame clock is not expressible through that API, so the
-  wait stays and the rationale is recorded at the call site.
-- **The debounce is split rather than moved.** `createSearchDebounce` carries the
-  policy and is tested directly. The one claim that stays in the browser is that a
-  real pending timer survives a real clear-all, because it depends on a React state
-  update and a URL write happening between the two.
-- **Refresh sequencing cannot be replaced by a read-policy test.** A
-  `createLiveReadPolicy()` unit test says nothing about whether the page serialises the pull
-  before the reads, so the probe holds the response and observes the ordering.
-- **The copy path is split between a unit test and the browser.** Which route a copy
-  takes - the async Clipboard API, or the selection path a plain-HTTP origin needs -
-  is a decision over stubbed globals (`scripts/test-clipboard.ts`), including where a
-  dialog's focus trap requires the scratch element to be attached. Whether that
-  selection path puts the text on the clipboard is not: it needs a real document, so
-  the acceptance pastes the value back out of the browser's own paste pipeline from
-  inside a dialog and from a drawer, which are the containers that trap focus. That
-  context is granted no clipboard permission on purpose - granting it would stop the
-  acceptance from exercising the fallback at all.
+- **El orden de las solicitudes pertenece a Go.** `TestListUsageEventsOrdersByRequestTime` en
+  `internal/repository` inserta una solicitud que se registró última pero empezó
+  primero, de modo que una regresión al orden de registro invierte la aserción. Una
+  recomprobación en JavaScript leería lo que el servidor ya ordenó y no podría fallar por
+  la razón que da su nombre.
+- **La paginación y el scroll se quedan en el navegador.** Una lista virtualizada que mantiene un
+  DOM acotado, un sondeo que deja intactos el desplazamiento y la identidad de fila del lector,
+  y un gesto de volver arriba que aterriza exactamente en la cima son comportamientos de renderizado.
+  El *calendario* del scroll es una función pura y se prueba como tal
+  (`scripts/test-scroll-intent.ts`); su efecto sobre una lista real no.
+- **Algunas esperas del navegador son irreductibles, y una se investigó en lugar de
+  suponerse.** El bloque de cola en vivo espera la cadencia de autoactualización de diez segundos de la
+  app. Manejarla con `page.clock` funciona - el intervalo se dispara antes, 11 s de tiempo
+  de la app en unos 900 ms - pero el mismo simulacro cubre `requestAnimationFrame` y
+  `performance.now`, con lo que está construido el calendario de gestos de `smoothScroll`:
+  con el reloj instalado el gesto de volver arriba aterrizó en 37 px en lugar de en la
+  cima, sin error de página, rompiendo la aserción para la que existe el bloque. Aislar
+  el intervalo del reloj de fotogramas no es expresable mediante esa API, de modo que la
+  espera se queda y la justificación se registra en el sitio de la llamada.
+- **El debounce se divide en lugar de moverse.** `createSearchDebounce` lleva la
+  política y se prueba directamente. La única afirmación que se queda en el navegador es que un
+  temporizador pendiente real sobrevive a un borrado total real, porque depende de que una actualización de estado de React
+  y una escritura de URL ocurran entre ambos.
+- **La secuenciación de actualizaciones no puede sustituirse por una prueba de política de lectura.** Una
+  prueba unitaria de `createLiveReadPolicy()` no dice nada sobre si la página serializa la extracción
+  antes de las lecturas, así que la sonda retiene la respuesta y observa el orden.
+- **La ruta de copia se divide entre una prueba unitaria y el navegador.** Qué ruta toma una copia
+  - la API asíncrona del portapapeles, o la ruta de selección que necesita un origen HTTP plano -
+  es una decisión sobre globales simulados (`scripts/test-clipboard.ts`), incluido el punto en que la trampa
+  de foco de un diálogo exige que el elemento temporal esté adjunto. Que esa ruta de selección ponga el texto en
+  el portapapeles no lo es: necesita un documento real, así que la aceptación vuelve a pegar el valor
+  desde la propia canalización de pegado del navegador desde dentro de un diálogo y desde un drawer, que son los contenedores
+  que atrapan el foco. A ese contexto no se le concede permiso de portapapeles a propósito - concederlo impediría
+  que la aceptación ejercitara el respaldo en absoluto.
 
-### 12.2 Execution cost and isolation
+### 12.2 Costo de ejecución y aislamiento
 
-Browser startup, module delivery, navigation and layout dominate acceptance cost.
-Deleting assertions does not remove those costs. Execution ownership keeps routine
-feedback narrow and the full gates independent:
+El arranque del navegador, la entrega de módulos, la navegación y el layout dominan el costo de la aceptación.
+Eliminar aserciones no elimina esos costos. La propiedad de la ejecución mantiene estrecha la retroalimentación
+rutinaria y las compuertas completas independientes:
 
-| Boundary | Execution policy |
+| Frontera | Política de ejecución |
 | --- | --- |
-| Local static work | Affected checks; incremental frontend types and strict tooling types |
-| Local UI work | Affected catalog scenarios on Vite with context-local API fixtures |
-| Full hosted static coverage | Separate Go, frontend and repository runners behind the fail-closed `static` aggregate |
-| Probe catalog | Playwright Test workers, fresh scenario contexts and invocation-owned Vite; three reviewed CI partitions |
-| Frame-level probes | One uncontended worker after the shared scenarios, within the same partition deadline |
-| Full local browser coverage | Harness, built acceptance, probes and demo run consecutively because they share the host's CPU |
-| Embedded distribution | Build settles before static Go readers enumerate embedded paths |
+| Trabajo estático local | Comprobaciones afectadas; tipos incrementales del frontend y tipos estrictos de herramientas |
+| Trabajo local de UI | Escenarios afectados del catálogo en Vite con fixtures de API locales al contexto |
+| Cobertura estática completa alojada | Ejecutores separados de Go, frontend y repositorio tras el agregado `static` con cierre ante fallos |
+| Catálogo de sondas | Workers de Playwright Test, contextos de escenario nuevos y Vite propiedad de la invocación; tres particiones de CI revisadas |
+| Sondas a nivel de fotograma | Un worker sin contención tras los escenarios compartidos, dentro del mismo plazo de partición |
+| Cobertura completa local de navegador | El arnés, la aceptación compilada, las sondas y la demo se ejecutan consecutivamente porque comparten la CPU del host |
+| Distribución embebida | La compilación termina antes de que los lectores estáticos de Go enumeren las rutas embebidas |
 
-Hosted critical-path and runner-cost improvements require matched hosted runs; local
-warm-cache timings alone do not establish either.
+Las mejoras de ruta crítica alojada y de costo del ejecutor requieren ejecuciones alojadas equiparables; los
+tiempos locales con caché caliente por sí solos no establecen ninguna de las dos.
 
-Current wait removal is narrower than changing browser clocks. Demo navigation waits
-for successful, completed initial reads and visible page content, with explicit
-per-route timeouts; it never waits for global network silence while polling continues.
-The system-information stale-cache probe holds its first response until the in-flight
-assertions finish, then releases it in `finally` instead of sleeping ten seconds.
-Every probe now prints its own elapsed duration, including failed scenarios.
+La eliminación actual de esperas es más acotada que cambiar los relojes del navegador. La navegación de la demo espera
+lecturas iniciales completadas con éxito y contenido de página visible, con tiempos de espera explícitos
+por ruta; nunca espera a un silencio global de red mientras continúa el sondeo.
+La sonda de caché obsoleta de información del sistema retiene su primera respuesta hasta que terminan las
+aserciones en vuelo, y luego la libera en `finally` en lugar de dormir diez segundos.
+Ahora cada sonda imprime su propia duración transcurrida, incluidos los escenarios fallidos.
 
-The numerical observations in this section describe earlier profiling, not current
-runtime guarantees. Re-profile the current catalog before setting a speed budget.
-Two other levers were previously evaluated:
+Las observaciones numéricas de esta sección describen perfilados anteriores, no garantías actuales de
+runtime. Vuelva a perfilar el catálogo actual antes de fijar un presupuesto de velocidad.
+Otras dos palancas se evaluaron previamente:
 
-**Clock-driven polling.** `page.clock` does make the ten-second interval fire early
-(11s of app time in about 900ms), but the same mock covers `requestAnimationFrame`
-and `performance.now`, which is what `smoothScroll`'s gesture schedule is built
-from: with the clock installed the back-to-top gesture landed at 37px instead of
-the top, with no page error, breaking the assertion the block exists for. Isolating
-the interval from the frame clock is not expressible through that API, so the wait
-stays.
+**Sondeo guiado por reloj.** `page.clock` sí hace que el intervalo de diez segundos se dispare antes
+(11 s de tiempo de la app en unos 900 ms), pero el mismo simulacro cubre `requestAnimationFrame`
+y `performance.now`, con lo que está construido el calendario de gestos de `smoothScroll`:
+con el reloj instalado el gesto de volver arriba aterrizó en 37 px en lugar de en
+la cima, sin error de página, rompiendo la aserción para la que existe el bloque. Aislar
+el intervalo del reloj de fotogramas no es expresable mediante esa API, de modo que la espera
+se queda.
 
-**`tsc --incremental`.** Adopted for `test:fast` only. The build info records a
-hash of every program file and the compiler options, so a changed file, a deleted
-file or an edited `tsconfig` invalidates what it must; a fresh `tsc` in `verify` and
-CI remains the backstop for any cache defect. Measured on a 4-CPU machine: about 16s
-cold, 6s with nothing changed, 9s after editing a widely imported utility.
+**`tsc --incremental`.** Adoptado solo para `test:fast`. La información de compilación registra un
+hash de cada archivo del programa y de las opciones del compilador, de modo que un archivo cambiado, un archivo
+eliminado o un `tsconfig` editado invalidan lo que deben; un `tsc` nuevo en `verify` y
+CI sigue siendo la red de seguridad ante cualquier defecto de caché. Medido en una máquina de 4 CPU: unos 16 s
+en frío, 6 s sin cambios, 9 s tras editar una utilidad ampliamente importada.
 
-### 12.3 The flakes were real, and they were in the assertions
+### 12.3 Los flakes eran reales, y estaban en las aserciones
 
-The suite carried a recorded history of intermittent failures in the filter
-section. Running the same suite under a 2-CPU constraint on the **unmodified
-baseline commit** reproduced them two runs in three, which settled the question of
-whether they were caused by the refactor: they were not.
+La suite arrastraba un historial registrado de fallos intermitentes en la sección de filtros.
+Ejecutar la misma suite bajo una restricción de 2 CPU en el **commit base sin modificar** los
+reprodujo dos veces de cada tres, lo que zanjó la cuestión de si los causó
+el refactor: no los causó.
 
-The shared shape is a read taken immediately after a state change, with no wait for
-the event that makes the read meaningful:
+La forma común es una lectura tomada inmediatamente después de un cambio de estado, sin esperar
+al evento que hace significativa la lectura:
 
-- **A footer read racing the refetch.** `the list is back to the unfiltered page`
-  read the pagination footer immediately after a URL write. A filterless URL and a
-  list that has re-issued its request are different states, and the read could see
-  the previous filter's page size.
-- **A poll wait with three intervals of headroom.** The live-tail block waited 30s
-  for a 10s cadence. That is not three intervals of margin under contention; it is
-  three intervals before giving up, and it expired on a page that was merely slow.
-  It is now derived from `EVENT_AUTO_REFRESH_MS` with six intervals, and a longer
-  bound costs nothing on a healthy machine because the wait returns as soon as the
-  pill appears.
-- **A row count read before the rows could arrive.** `the list still runs on the
-  usable filters` read the row count one render after the notice.
+- **Una lectura del pie compitiendo con la relectura.** `the list is back to the unfiltered page`
+  leía el pie de paginación inmediatamente después de una escritura de URL. Una URL sin filtros y una
+  lista que ha vuelto a emitir su solicitud son estados distintos, y la lectura podía ver
+  el tamaño de página del filtro anterior.
+- **Una espera de sondeo con tres intervalos de margen.** El bloque de cola en vivo esperaba 30 s
+  para una cadencia de 10 s. Eso no son tres intervalos de margen bajo contención; son
+  tres intervalos antes de rendirse, y expiró en una página que solo era lenta.
+  Ahora se deriva de `EVENT_AUTO_REFRESH_MS` con seis intervalos, y un límite más largo
+  no cuesta nada en una máquina sana porque la espera regresa tan pronto como aparece
+  la píldora.
+- **Un conteo de filas leído antes de que las filas pudieran llegar.** `the list still runs on the
+  usable filters` leía el conteo de filas un renderizado después del aviso.
 
-A negative claim still cannot be waited on: `a clean URL shows no notice` stays a
-plain `check`, because waiting for the absence of a notice would pass on the first
-poll whether or not the page had rendered. What makes it meaningful is the await
-before it - the rows being visible is the evidence that the page rendered, and it
-rendered without a notice.
+Una afirmación negativa aún no puede esperarse: `a clean URL shows no notice` sigue siendo un
+`check` simple, porque esperar la ausencia de un aviso pasaría en el primer
+sondeo, se hubiera renderizado la página o no. Lo que lo hace significativo es el await
+anterior - que las filas sean visibles es la evidencia de que la página se renderizó, y se
+renderizó sin aviso.
 
-After the fixes, the suite passes eight consecutive trials under the strictest
-configuration available here (2 CPUs, with the probes running concurrently), which
-is the configuration the baseline failed.
+Tras las correcciones, la suite pasa ocho pruebas consecutivas bajo la configuración más estricta
+disponible aquí (2 CPU, con las sondas ejecutándose concurrentemente), que
+es la configuración en la que falló la línea base.
 
-Segmented preferences have a separate animation-state boundary. The dashboard
-model-view probe read antd's selected CSS class as the grouping value, but the
-component suppresses that class while its thumb moves, independently of the native
-radio's checked state. A rapid reversal can leave the probe waiting on animation
-completion instead of testing the preference. The probe reads checked radios and
-holds the rejected model-view write until the optimistic selection is observed,
-then releases the refusal and asserts rollback.
+Las preferencias segmentadas tienen una frontera propia de estado de animación. La sonda del modo de vista de modelos
+del dashboard leía la clase CSS seleccionada de antd como valor de agrupación, pero el
+componente suprime esa clase mientras se mueve su pulgar, independientemente del estado checked del
+radio nativo. Una inversión rápida puede dejar a la sonda esperando a que termine la animación
+en lugar de probar la preferencia. La sonda lee los radios marcados y
+retiene la escritura rechazada del modo de vista de modelos hasta que se observa la selección optimista,
+y luego libera el rechazo y afirma la reversión.
 
-### 12.4 CI preparation and fail-early artifact gates
+### 12.4 Preparación de CI y compuertas de artefactos de fallo temprano
 
-An earlier profile of the `browser` job's preparation step was about 99s, bound by
-`playwright-core install --with-deps chromium`: almost all of it apt installing the
-shared libraries Chromium links against. The SPA build (29.5s) and the Go binaries
-(1.3s) run concurrently with that work and are entirely hidden behind it, which is
-why overlapping more with the step cannot shorten it.
+Un perfilado anterior del paso de preparación del trabajo `browser` fue de unos 99 s, limitado por
+`playwright-core install --with-deps chromium`: casi todo era apt instalando las
+bibliotecas compartidas contra las que enlaza Chromium. La compilación de la SPA (29,5 s) y los binarios de Go
+(1,3 s) se ejecutan concurrentemente con ese trabajo y quedan totalmente ocultos tras él, razón
+por la cual solapar más con el paso no puede acortarlo.
 
-The apt cost is real but it is not always necessary. `scripts/install-chromium.mjs`
-downloads the browser without `--with-deps`, probes a real launch, and installs the
-dependencies only when that launch fails. A runner image that already carries the
-libraries therefore skips the ~100s, and one that does not gets exactly the command
-the workflow used to run unconditionally, so the worst case is the previous cost
-rather than a new failure mode. A second launch failure is reported instead of
-ignored, because the alternative is a browser job with no browser, which surfaces
-as a test failure rather than an environment one.
+El costo de apt es real pero no siempre es necesario. `scripts/install-chromium.mjs`
+descarga el navegador sin `--with-deps`, sondea un lanzamiento real e instala las
+dependencias solo cuando ese lanzamiento falla. Una imagen de ejecutor que ya trae las
+bibliotecas por tanto se ahorra los ~100 s, y una que no las trae obtiene exactamente el comando que
+el workflow ejecutaba antes incondicionalmente, de modo que el peor caso es el costo anterior
+y no un nuevo modo de fallo. Un segundo fallo de lanzamiento se informa en lugar de
+ignorarse, porque la alternativa es un trabajo de navegador sin navegador, que aflora
+como un fallo de prueba y no de entorno.
 
-The probe, not the download's exit status, is what decides. A download that reports
-success while the binary cannot start is precisely the state `--with-deps` exists to
-repair, so trusting the exit status would reintroduce the bug the flag prevents.
-`scripts/install-chromium.test.mjs` asserts both halves.
+Lo que decide es la sonda, no el estado de salida de la descarga. Una descarga que informa
+éxito mientras el binario no puede arrancar es precisamente el estado que `--with-deps` existe para
+reparar, así que confiar en el estado de salida reintroduciría el error que previene la bandera.
+`scripts/install-chromium.test.mjs` afirma ambas mitades.
 
-Removing the apt cost then exposed what it had been hiding: the Go build became the
-floor of that measured step, about 60s locally with a cold build cache against 92s on the
-runner. Two ideas for it were measured and rejected rather than left looking open:
-warming the non-embedding packages concurrently with the SPA build is *slower*
-(48s against 46s), because the warm-up competes for the same cores the build is
-using; and starting the seeder beside the SPA build is also slower (34s for two
-concurrent `go build` calls against 23s plus about 5s serially), because both share
-one module and build cache and contend on its lock.
+Eliminar el costo de apt expuso entonces lo que había estado ocultando: la compilación de Go pasó a ser el
+piso de ese paso medido, unos 60 s localmente con una caché de compilación fría frente a 92 s en el
+ejecutor. Dos ideas para ello se midieron y se rechazaron en lugar de dejarlas aparentando estar abiertas:
+calentar los paquetes sin embebido concurrentemente con la compilación de la SPA es *más lento*
+(48 s frente a 46 s), porque el calentamiento compite por los mismos núcleos que usa la compilación;
+e iniciar el seeder junto a la compilación de la SPA también es más lento (34 s para dos
+llamadas `go build` concurrentes frente a 23 s más unos 5 s en serie), porque ambas comparten
+un módulo y una caché de compilación y compiten por su bloqueo.
 
-Two constraints keep the preparation step's shape:
+Dos restricciones mantienen la forma del paso de preparación:
 
-- **The application binary must be compiled after the SPA build**, because it embeds
-  `internal/web/dist`. Building it alongside `pnpm build` can embed a half-written
-  bundle, so the sequencing is a correctness requirement rather than a preference.
-  Only the seeder, which embeds nothing, runs in parallel.
-- **A cache hit on `~/.cache/ms-playwright` proves the browser files are present and
-  says nothing about the shared libraries.** That is why the OS dependencies are
-  still guaranteed on every run, just by probe rather than unconditionally.
+- **El binario de la aplicación debe compilarse después de la compilación de la SPA**, porque embebe
+  `internal/web/dist`. Compilarlo junto con `pnpm build` puede embeber un bundle a medio escribir,
+  de modo que la secuenciación es un requisito de corrección y no una preferencia.
+  Solo el seeder, que no embebe nada, se ejecuta en paralelo.
+- **Un acierto de caché en `~/.cache/ms-playwright` demuestra que los archivos del navegador están presentes y
+  no dice nada sobre las bibliotecas compartidas.** Por eso las dependencias del SO
+  siguen garantizadas en cada ejecución, solo que mediante sonda y no incondicionalmente.
 
-`pnpm check:bundle` owns production loading-boundary verification and size reporting
-(ADR 0053). `web/vite.config.ts` uses `scripts/bundle-graph.mjs` to record Rollup's
-module ownership, static/dynamic import edges and chunk SHA-256 hashes outside the
-served distribution in `tmp/bundle/graph.json`. `scripts/bundle-report.mjs` validates
-the graph against built files and traverses the HTML module entry and modulepreload
-roots, deduplicating static dependencies. It refuses eager page, authenticated shell,
-chart, Markdown and Monaco modules; the configuration route must also defer the YAML
-editor. Renaming a chunk cannot change those ownership checks. Raw and level-6 gzip
-estimates cover the entry, startup JS/CSS, largest JS, all JS, SVGs and distribution.
-Gzip estimates are not HTTP transfer measurements or execution-time guarantees.
+`pnpm check:bundle` es responsable de la verificación de fronteras de carga de producción y del informe de tamaño
+(ADR 0053). `web/vite.config.ts` usa `scripts/bundle-graph.mjs` para registrar la propiedad de
+módulos de Rollup, las aristas de import estáticas/dinámicas y los hashes SHA-256 de los chunks fuera de la
+distribución servida, en `tmp/bundle/graph.json`. `scripts/bundle-report.mjs` valida
+el grafo contra los archivos compilados y recorre la entrada de módulo del HTML y las raíces de modulepreload,
+deduplicando las dependencias estáticas. Rechaza módulos ansiosos de página, carcasa autenticada,
+gráficos, Markdown y Monaco; la ruta de configuración también debe diferir el editor de
+YAML. Renombrar un chunk no puede cambiar esas comprobaciones de propiedad. Las estimaciones sin procesar y de gzip de nivel 6
+cubren la entrada, el JS/CSS de arranque, el JS más grande, todo el JS, los SVG y la distribución.
+Las estimaciones de gzip no son mediciones de transferencia HTTP ni garantías de tiempo de ejecución.
 
-Ordinary growth is advisory. Hard anomaly ceilings allow substantial headroom:
-startup JS 3 MiB raw / 1 MiB gzip, startup CSS 256 / 96 KiB, largest JS 4 MiB raw,
-all JS 16 MiB raw, distribution 32 MiB raw (ADR 0094: the complete font) and Lobe SVGs 2 MiB raw. Reports retain
-per-file sizes, source ownership and the largest JS files for investigation.
-`scripts/bundle-baseline.mjs` compares only an exact-revision reference: an explicit
-`BUNDLE_BASELINE` file or the successful push CI artifact for `BUNDLE_BASE_SHA`.
-`scripts/bundle-reference.json` bootstraps the pre-policy commit; it is used only
-when its revision matches. Without a valid artifact, the report explicitly marks
-comparison unavailable; ownership checks and anomaly ceilings still execute.
-CI compares PRs with their base SHA and pushes with their preceding SHA, publishes
-`tmp/bundle/report.json` and `tmp/bundle/summary.md` for 30 days and appends the table
-to the job summary. Local runs default to `origin/master`; they do not contact GitHub
-without the repository and token environment.
+El crecimiento ordinario es informativo. Los techos duros de anomalía permiten un margen sustancial:
+JS de arranque 3 MiB sin procesar / 1 MiB gzip, CSS de arranque 256 / 96 KiB, JS más grande 4 MiB sin procesar,
+todo el JS 16 MiB sin procesar, distribución 32 MiB sin procesar (ADR 0094: la fuente completa) y SVG de Lobe 2 MiB sin procesar. Los informes conservan
+los tamaños por archivo, la propiedad de fuente y los archivos JS más grandes para investigación.
+`scripts/bundle-baseline.mjs` compara solo contra una referencia de revisión exacta: un archivo
+`BUNDLE_BASELINE` explícito o el artefacto de CI de push exitoso para `BUNDLE_BASE_SHA`.
+`scripts/bundle-reference.json` arranca el commit previo a la política; se usa solo
+cuando su revisión coincide. Sin un artefacto válido, el informe marca explícitamente
+la comparación como no disponible; las comprobaciones de propiedad y los techos de anomalía aún se ejecutan.
+CI compara los PR con su SHA base y los pushes con su SHA precedente, publica
+`tmp/bundle/report.json` y `tmp/bundle/summary.md` durante 30 días y añade la tabla
+al resumen del trabajo. Las ejecuciones locales usan por defecto `origin/master`; no contactan a GitHub
+sin el repositorio y las variables de entorno del token.
 
-CI builds the embedded app independently of the bundle verdict and checks generated
-cleanliness before browser execution. A captured bundle failure does not prevent
-production browser/demo evidence, but the final outcome-based verdict still fails
-the required `browser` job. The local `verify:full` and `verify:full:serial` share
-that verdict-preserving orchestration. Static/toolchain, secrets and build failures
-remain prerequisites; browser/probe failures still allow independent demo evidence.
-Standalone browser acceptance has no second bundle policy. Workflow and runner
-self-tests exercise missing, reordered and non-enforcing gates, plus serial/parallel
-failure paths. Probe structure remains shards `1..n` matching the denominator,
-no event filter or fail-fast, retained diagnostics, and an aggregate requiring every
-shard to succeed.
+CI compila la app embebida independientemente del veredicto del bundle y comprueba la limpieza de lo generado
+antes de la ejecución en navegador. Un fallo capturado del bundle no impide la evidencia de navegador/demo
+de producción, pero el veredicto final basado en resultados aún hace fallar
+el trabajo `browser` requerido. Los `verify:full` y `verify:full:serial` locales comparten
+esa orquestación que preserva el veredicto. Los fallos estáticos/de toolchain, de secretos y de compilación
+siguen siendo prerrequisitos; los fallos de navegador/sondas aún permiten evidencia independiente de demo.
+La aceptación de navegador independiente no tiene una segunda política de bundle. Las autopruebas de workflow y ejecutor
+ejercitan compuertas ausentes, reordenadas y que no se imponen, además de rutas de fallo serie/paralelo.
+La estructura de sondas sigue siendo shards `1..n` que coinciden con el denominador,
+sin filtro de eventos ni fail-fast, diagnósticos retenidos y un agregado que exige que todos
+los shards tengan éxito.
 
-Probe shards need no build and no Go: each installs dependencies and Chromium and
-runs its part of the catalog on its own runner, so the scenarios' timing-sensitive
-checks see no contention from a sibling browser. A failed check writes the same
-screenshot, DOM, URL and page-error evidence as a thrown error, and each run clears
-earlier evidence first.
+Los shards de sondas no necesitan compilación ni Go: cada uno instala dependencias y Chromium y
+ejecuta su parte del catálogo en su propio ejecutor, de modo que las comprobaciones sensibles al tiempo de los escenarios
+no ven contención de un navegador hermano. Una comprobación fallida escribe la misma
+captura de pantalla, DOM, URL y evidencia de error de página que un error lanzado, y cada ejecución borra
+primero la evidencia anterior.
 
-The application processes spawned by cross-stack acceptance and Go demo smoke use
-`scripts/acceptance/environment.mjs`: inherited `SHELLPAMC_*`, `PORT` and transport proxy
-variables are removed, fixture overrides are explicit, and `SHELLPAMC_ENV_FILE` points
-to the platform's empty device. Startup must not log a loaded dotenv file. This
-prevents a developer's working-directory `.env` or operator settings from silently
-changing the fixture. Explicit live-system smoke remains separate.
+Los procesos de aplicación lanzados por la aceptación de pila completa y el smoke de demo en Go usan
+`scripts/acceptance/environment.mjs`: las variables heredadas `SHELLPAMC_*`, `PORT` y de proxy de transporte
+se eliminan, las anulaciones del fixture son explícitas, y `SHELLPAMC_ENV_FILE` apunta
+al dispositivo vacío de la plataforma. El arranque no debe registrar un archivo dotenv cargado. Esto
+impide que un `.env` del directorio de trabajo de un desarrollador o los ajustes de un operador cambien en silencio
+el fixture. El smoke explícito contra un sistema vivo sigue siendo independiente.
 
-## 13. Demo mode
+## 13. Modo demo
 
-A public demonstration has to show the product without a gateway behind it, without
-any credential, and without becoming a second frontend to maintain. Demo mode is
-that, expressed as a thin layer over the ordinary process: `SHELLPAMC_DEMO_MODE=true`
-changes where the data comes from and refuses what must not happen, and nothing
-declares itself a demo at compile time.
+Una demostración pública tiene que mostrar el producto sin un gateway detrás, sin
+ninguna credencial, y sin convertirse en un segundo frontend que mantener. El modo demo es
+eso, expresado como una capa delgada sobre el proceso ordinario: `SHELLPAMC_DEMO_MODE=true`
+cambia de dónde vienen los datos y rechaza lo que no debe ocurrir, y nada
+se declara demo en tiempo de compilación.
 
-It is off unless it is asked for, and everything it changes is scoped to it, so the
-self-hosted path is byte-for-byte the same code (ADR 0016 records the decision and
-the alternatives).
+Está desactivado salvo que se pida, y todo lo que cambia queda acotado a él, de modo que la
+ruta autoalojada es exactamente el mismo código byte a byte (el ADR 0016 registra la decisión y
+las alternativas).
 
-| Concern | Self-hosted | Demo |
+| Aspecto | Autoalojado | Demo |
 | --- | --- | --- |
-| Upstream | The configured CPA instance | `internal/demo`'s fixture, over a loopback socket, with a key minted per process |
-| Management key | `SHELLPAMC_CPA_MANAGEMENT_KEY` | The fixture's own key; an inherited one is discarded, never encrypted into the instance row |
-| Database | `shell-pamc.db` under `SHELLPAMC_DATA_DIR` | `shell-pamc-demo.db`, deleted and rebuilt on every boot |
-| Capture and sync | Collector and pricing loop run | Neither starts; the fixture is the history and the price list |
-| Sign-in | The CPA management key | A session on first sight, so a link can be opened by anyone |
-| Dangerous routes | Served | Refused by `internal/api/demo_policy.go` |
+| Upstream | La instancia de CPA configurada | El fixture de `internal/demo`, sobre un socket de loopback, con una clave acuñada por proceso |
+| Clave de gestión | `SHELLPAMC_CPA_MANAGEMENT_KEY` | La clave propia del fixture; una heredada se descarta, nunca se cifra en la fila de la instancia |
+| Base de datos | `shell-pamc.db` bajo `SHELLPAMC_DATA_DIR` | `shell-pamc-demo.db`, eliminada y reconstruida en cada arranque |
+| Captura y sincronización | Se ejecutan el recolector y el bucle de precios | Ninguno arranca; el fixture es el historial y la lista de precios |
+| Inicio de sesión | La clave de gestión de CPA | Una sesión al primer vistazo, para que cualquiera pueda abrir un enlace |
+| Rutas peligrosas | Servidas | Rechazadas por `internal/api/demo_policy.go` |
 
-### Why the upstream is a fixture rather than a separate adapter
+### Por qué el upstream es un fixture y no un adaptador separado
 
-The console reads the gateway through `internal/cpa/management` in about twenty
-handlers. The cheapest way to keep all of them working - including the DTO
-allowlists, the credential projection and the model catalog resolution - is to keep
-the client and replace what is on the other end of it, so `internal/demo` serves the
-management API on a loopback port and the application is pointed at it exactly as it
-would be pointed at a real gateway. An adapter at the handler layer would have had
-to reproduce every response shape from Go structs and would have grown a branch in
-every handler that reads one.
+La consola lee el gateway mediante `internal/cpa/management` en unos veinte
+handlers. La forma más barata de mantenerlos todos funcionando - incluidas las listas de permitidos de DTO,
+la proyección de credenciales y la resolución del catálogo de modelos - es conservar
+el cliente y reemplazar lo que hay al otro extremo, así que `internal/demo` sirve la
+API de gestión en un puerto de loopback y la aplicación apunta a él exactamente como
+apuntaría a un gateway real. Un adaptador en la capa de handlers habría tenido
+que reproducir cada forma de respuesta a partir de structs de Go y habría crecido una rama en
+cada handler que lee una.
 
-The fixture never dials the URL it is handed: it resolves the requested provider
-endpoint against its own catalogue and refuses anything else, which is what makes
-"the demonstration contacts no provider" a property of the code rather than a promise
-about the environment. That property holds in both deployments - the Go demo mode and
-the Worker behind the public page - and neither forwards a request anywhere. The public
-page does carry an analytics beacon, which the hosting platform injects into HTML rather
-than anything this repository emits; ADR 0021 records that as an accepted property of the
-host. The URLs it answers are pinned to
-`internal/quota`'s allowlist by a test, so the duplication cannot drift into
-answering a request the console would never make.
+El fixture nunca marca la URL que se le entrega: resuelve el endpoint de proveedor solicitado
+contra su propio catálogo y rechaza cualquier otra cosa, lo que hace que
+«la demostración no contacta a ningún proveedor» sea una propiedad del código y no una promesa
+sobre el entorno. Esa propiedad se cumple en ambos despliegues - el modo demo de Go y
+el Worker tras la página pública - y ninguno reenvía una solicitud a ningún lado. La página
+pública sí lleva una baliza de analítica, que la plataforma de alojamiento inyecta en el HTML y que
+no emite nada de este repositorio; el ADR 0021 lo registra como una propiedad aceptada del
+host. Las URL que responde están fijadas a la
+lista de permitidos de `internal/quota` mediante una prueba, de modo que la duplicación no pueda desviarse hasta
+responder a una solicitud que la consola nunca haría.
 
-### The boundary is a classification, not a list of disabled buttons
+### La frontera es una clasificación, no una lista de botones deshabilitados
 
-The server classifies every route it serves. `internal/api/demo_policy.go` holds one
-table of `method + chi pattern + verdict`, first match wins, and the test suite walks
-the **real** routing table asserting that every registered route is classified: an
-endpoint added without a verdict fails the suite rather than inheriting one. At
-runtime an unclassified route is refused, so the failure mode of a gap is a blocked
-feature.
+El servidor clasifica cada ruta que sirve. `internal/api/demo_policy.go` contiene una
+tabla de `method + chi pattern + verdict`, gana la primera coincidencia, y la suite de pruebas recorre
+la tabla de enrutamiento **real** afirmando que toda ruta registrada está clasificada: un
+endpoint añadido sin veredicto hace fallar la suite en lugar de heredar uno. En
+runtime una ruta sin clasificar se rechaza, de modo que el modo de fallo de una brecha es una
+función bloqueada.
 
-The table is ordered from the specific to the general, and the trailing wildcard
-that serves the SPA comes last. That ordering is load-bearing: while the wildcard
-sat first, it classified every `GET` in the application as public - including the
-credential download and the request log - and both were allowed.
+La tabla va ordenada de lo específico a lo general, y el comodín final
+que sirve la SPA va al último. Ese orden es crítico: mientras el comodín
+estuvo primero, clasificaba como público cada `GET` de la aplicación - incluidos la
+descarga de credenciales y el registro de solicitudes - y ambos estaban permitidos.
 
-Last is not enough on its own, though. A wildcard that resolves before the refusal
-for an unclassified API path makes the coverage test unfalsifiable for reads: an
-unlisted `GET` matches the wildcard and looks classified. The fallback and the
-console are therefore separate lists, and the coverage test refuses a fallback match
-as a verdict - so a read endpoint added without one fails the suite, and is refused
-at runtime while it does.
+Que vaya al último no basta por sí solo, sin embargo. Un comodín que se resuelve antes del rechazo
+de una ruta de API sin clasificar hace que la prueba de cobertura no sea falsable para las lecturas: un
+`GET` no listado coincide con el comodín y parece clasificado. El respaldo y la
+consola son por tanto listas separadas, y la prueba de cobertura rechaza una coincidencia de respaldo como
+veredicto - de modo que un endpoint de lectura añadido sin uno hace fallar la suite, y se rechaza
+en runtime mientras tanto.
 
-Refusals answer `403` with `{"error": ..., "code": "demo_operation_refused"}` - the
-code the facade's other failures already carry - plus `X-OMCPA-Demo-Blocked` for a
-caller that never parses a body. Reads are marked with `X-OMCPA-Demo: active`, and a
-write carries `X-OMCPA-Demo-Persistence: none`, which is how a response can say its
-result is not durable without the page having to know.
+Los rechazos responden `403` con `{"error": ..., "code": "demo_operation_refused"}` - el
+código que ya llevan los demás fallos de la fachada - más `X-OMCPA-Demo-Blocked` para un
+llamador que nunca analiza un cuerpo. Las lecturas se marcan con `X-OMCPA-Demo: active`, y una
+escritura lleva `X-OMCPA-Demo-Persistence: none`, que es como una respuesta puede decir que su
+resultado no es duradero sin que la página tenga que saberlo.
 
-The classification resolves in three passes - the endpoint verdicts, then the
-fallbacks, then the console itself - and the third exists because a trailing wildcard
-matches every path below it. That ordering is what keeps the SPA fallback from
-answering for an API path: `/api/v1/...` is refused by the fallback, while `/api-keys`
-is a page and stays public. Writing the coverage test against that arrangement found
-two reads - the gateway key list and the error-log file list - that had been matching
-the SPA wildcard, which is to say they were being served without anyone having decided
-they should be.
+La clasificación se resuelve en tres pasadas - los veredictos de endpoint, luego los
+respaldos, luego la propia consola - y la tercera existe porque un comodín final
+coincide con toda ruta por debajo de él. Ese orden es lo que impide que el respaldo de la SPA
+responda por una ruta de API: `/api/v1/...` lo rechaza el respaldo, mientras que `/api-keys`
+es una página y sigue siendo pública. Escribir la prueba de cobertura contra esa disposición encontró
+dos lecturas - la lista de claves del gateway y la lista de archivos del registro de errores - que habían estado coincidiendo con
+el comodín de la SPA, es decir, se estaban sirviendo sin que nadie hubiera decidido
+que debieran.
 
-What the demo refuses is whatever moves credential material, starts a real sign-in,
-executes a plugin, writes the gateway configuration, spends a quota entitlement,
-hands back a raw request or error log, or would leave the process - provider model
-reads, the pricing catalogue sync, the diagnostic bundle. What it performs instead
-are writes that stay inside this instance: credential metadata and the enabled state
-in the fixture, and client-key names, preferences, price rows, resource overrides and
-a discovery sweep in the database. A credential status edit and a preference edit are
-therefore stored in different places, and both are gone when the instance is replaced.
+Lo que la demo rechaza es todo lo que mueve material de credenciales, inicia un inicio de sesión real,
+ejecuta un plugin, escribe la configuración del gateway, gasta un derecho de cuota,
+devuelve un registro sin procesar de solicitudes o errores, o saldría del proceso - las lecturas de
+modelos del proveedor, la sincronización del catálogo de precios, el bundle de diagnóstico. En su lugar realiza
+escrituras que se quedan dentro de esta instancia: metadatos de credenciales y el estado habilitado
+en el fixture, y nombres de claves de cliente, preferencias, filas de precios, anulaciones de recursos y
+un barrido de descubrimiento en la base de datos. Una edición del estado de una credencial y una edición de preferencia
+por tanto se almacenan en lugares distintos, y ambas desaparecen cuando se reemplaza la instancia.
 
-### The fixture is seeded through the real write path
+### El fixture se siembra mediante la ruta de escritura real
 
-`internal/demo` builds the history a deployment would have accumulated - about
-fourteen thousand requests over 371 days, rising towards the present, across fourteen
-traffic models and eight providers, with cached and reasoning tokens, latency and
-TTFT, a failure share, named caller keys and a price list - and writes it through
-`repository.InsertUsageEvents`, the same call the capture path uses. That is what keeps the fixture subject to the request-time price
-lock, the display-mask rules and the schema instead of drifting from them.
+`internal/demo` construye el historial que habría acumulado un despliegue - unas
+catorce mil solicitudes a lo largo de 371 días, en aumento hacia el presente, entre catorce
+modelos de tráfico y ocho proveedores, con tokens en caché y de razonamiento, latencia y
+TTFT, una proporción de fallos, claves de llamador con nombre y una lista de precios - y lo escribe mediante
+`repository.InsertUsageEvents`, la misma llamada que usa la ruta de captura. Eso es lo que mantiene al fixture sujeto al bloqueo de
+precio en el momento de la solicitud, a las reglas de máscara de visualización y al esquema en lugar de desviarse de ellos.
 
-The consequence is that the fabricated history needs the price version it is
-pretending existed: the price lock resolves a version by the request's own
-timestamp, and the trigger that shadows every price write stamps the moment of the
-write. `Repository.SeedModelPriceHistoryBackfill` and its channel counterpart are the
-only callers that write a version at an explicit time, and they exist so the fixture
-can stay under the real lock rather than writing a cost column directly.
+La consecuencia es que el historial fabricado necesita la versión de precio que
+finge haber existido: el bloqueo de precio resuelve una versión por la propia marca de tiempo de la solicitud,
+y el trigger que refleja cada escritura de precio estampa el momento de la
+escritura. `Repository.SeedModelPriceHistoryBackfill` y su contraparte de canal son los
+únicos que escriben una versión en un momento explícito, y existen para que el fixture
+pueda mantenerse bajo el bloqueo real en lugar de escribir directamente una columna de costo.
 
-The price list is seeded with the catalogue the pricing page resolves against,
-because a real deployment fills that catalogue from the gateway's own model list
-during a sync and the demo deliberately runs none. Without it the page would
-intersect its stored prices with an empty catalogue and render nothing. The prices
-themselves come from a trimmed copy of OpenRouter's real list
-(`internal/demo/openrouter_snapshot.json`), decoded and matched by the production
-code, beside one pinned model, hand-set rates for the relay models, one channel
-multiplier and one catalogue model left unpriced in the grouped price book.
-`Repository.SeedChannelHistoryBackfill` does for the channel multiplier what the
-price backfill does for prices.
+La lista de precios se siembra con el catálogo contra el que se resuelve la página de precios,
+porque un despliegue real llena ese catálogo a partir de la propia lista de modelos del gateway
+durante una sincronización y la demo deliberadamente no ejecuta ninguna. Sin él la página
+intersectaría sus precios almacenados con un catálogo vacío y no renderizaría nada. Los precios
+mismos provienen de una copia recortada de la lista real de OpenRouter
+(`internal/demo/openrouter_snapshot.json`), decodificada y emparejada por el código de
+producción, junto a un modelo fijado, tarifas fijadas a mano para los modelos de relé, un multiplicador de canal
+y un modelo del catálogo dejado sin valorar en el libro de precios agrupado.
+`Repository.SeedChannelHistoryBackfill` hace por el multiplicador de canal lo que el
+backfill de precios hace por los precios.
 
-Seeding is also why the demo database is rebuilt on every boot. A platform that
-scales to zero brings the process back hours later; a database left behind would end
-its history hours ago, and the fifteen-minute and one-hour windows - the panels that
-make the console look alive - would be empty.
+Sembrar es también la razón por la que la base de datos de la demo se reconstruye en cada arranque. Una plataforma que
+escala a cero devuelve el proceso horas después; una base de datos que quedara atrás terminaría
+su historial horas antes, y las ventanas de quince minutos y de una hora - los paneles que
+hacen que la consola parezca viva - estarían vacías.
 
-### The capture state is reported, not faked
+### El estado de captura se informa, no se falsea
 
-The request list prints the capture state in its own header, and a demo has no
-collector to report on. Rather than render "capture disabled" over a page full of
-requests, the demo answers with the deployment its fixture describes - a
-subscribe-mode collector that last captured seconds ago - while every number that
-describes stored data is read from the database. A manual sync is answered the same
-way: it reports a pass that found an empty queue, which is what a real deployment
-answers when nothing arrived in between.
+La lista de solicitudes imprime el estado de captura en su propia cabecera, y una demo no tiene
+recolector sobre el que informar. En lugar de renderizar «captura desactivada» sobre una página llena de
+solicitudes, la demo responde con el despliegue que describe su fixture - un
+recolector en modo suscripción que capturó por última vez hace segundos - mientras que todo número que
+describe datos almacenados se lee de la base de datos. Una sincronización manual se responde del mismo
+modo: informa una pasada que encontró una cola vacía, que es lo que responde un despliegue real
+cuando nada llegó entretanto.
 
-### Where the public demonstration is deployed
+### Dónde se despliega la demostración pública
 
-The public demonstration runs as a Cloudflare Worker: the same console as static
-assets, with its API answered from a dataset generated out of the real handlers. It is
-not a second frontend - the bundle is the one this binary embeds - and the reason it
-is generated rather than hand-written is that every served response has then been
-through the same DTO projection a self-hosted install produces.
+La demostración pública se ejecuta como un Cloudflare Worker: la misma consola como recursos
+estáticos, con su API respondida desde un conjunto de datos generado a partir de los handlers reales. No
+es un segundo frontend - el bundle es el que embebe este binario - y la razón por la que
+se genera y no se escribe a mano es que cada respuesta servida ha pasado entonces
+por la misma proyección de DTO que produce una instalación autoalojada.
 
-`deploy/cloudflare/` holds it: `worker.mjs` answers and refuses, `routes.mjs` maps a
-request to a captured response, `time.mjs` re-bases the captured history onto the
-viewer's clock, and `data/responses.json` is the dataset. `internal/api/demo_export_test.go`
-is the generator, and `scripts/generate-demo-data.mjs` is the command that runs it.
+`deploy/cloudflare/` lo contiene: `worker.mjs` responde y rechaza, `routes.mjs` asigna una
+solicitud a una respuesta capturada, `time.mjs` reubica el historial capturado en el
+reloj del espectador, y `data/responses.json` es el conjunto de datos. `internal/api/demo_export_test.go`
+es el generador, y `scripts/generate-demo-data.mjs` es el comando que lo ejecuta.
 
-Two properties are load-bearing rather than incidental. Every response is re-based by
-one delta before it is served, because the console asks for a window by name and a
-frozen capture would be visibly empty within a day. A calendar cell in the
-token-activity grid moves as one unit under that delta - its `day` key, its start and
-its end by the same whole-day offset - because the key is what a cell is matched,
-labelled and linked by, while the two instants beside it are the day's own bounds: moved
-by different amounts they describe different days. The grid itself is captured on the
-seeded history's calendar rather than on the export machine's, since it is the one read
-whose window is derived from a clock rather than taken from the request. And the dataset's coverage is a
-gate rather than an instruction: `scripts/check-demo.ts` fails when a console route
-has no captured reads, when a source it derives from has changed, or when it carries a
-value that must not be public. That last check matters because the dataset is
-downloadable by anyone.
+Dos propiedades son críticas y no incidentales. Toda respuesta se reubica con
+un solo delta antes de servirse, porque la consola pide una ventana por nombre y una
+captura congelada estaría visiblemente vacía en un día. Una celda del calendario de la
+cuadrícula de actividad de tokens se mueve como una unidad bajo ese delta - su clave `day`, su inicio y
+su fin con el mismo desfase de días completos - porque la clave es por lo que se empareja, etiqueta y enlaza una celda,
+mientras que los dos instantes junto a ella son los límites propios del día: movidos
+en cantidades distintas describirían días distintos. La propia cuadrícula se captura en el calendario del
+historial sembrado y no en el de la máquina de exportación, ya que es la única lectura
+cuya ventana se deriva de un reloj en lugar de tomarse de la solicitud. Y la cobertura del conjunto de datos es una
+compuerta y no una instrucción: `scripts/check-demo.ts` falla cuando una ruta de la consola
+no tiene lecturas capturadas, cuando cambió una fuente de la que deriva, o cuando lleva un
+valor que no debe ser público. Esa última comprobación importa porque el conjunto de datos lo
+puede descargar cualquiera.
 
-A refusal is reported once. The server answers it with English prose meant for a log
-("demo mode - uploading a credential is disabled"), and the console raises its own
-localized notice for the refusal; echoing the server's sentence as well put two messages
-on screen for one action, in two languages, reading as two different failures. The API
-layer substitutes the console's sentence for a refused call, so whichever caller reports
-it reports the same one.
+Un rechazo se informa una sola vez. El servidor lo responde con prosa en inglés pensada para un registro
+(«demo mode - uploading a credential is disabled»), y la consola emite su propio aviso
+localizado para el rechazo; repetir además la frase del servidor ponía dos mensajes
+en pantalla para una acción, en dos idiomas, leyéndose como dos fallos distintos. La capa de API
+sustituye la frase de la consola por la de una llamada rechazada, de modo que cualquier llamador que la informe
+informa la misma.
 
-The demonstration does not run the product: no gateway, no database, no capture
-pipeline and no authentication are behind it, which
+La demostración no ejecuta el producto: no hay detrás gateway, base de datos, pipeline
+de captura ni autenticación, lo que
 [ADR 0021](adr/0021-the-public-demonstration-is-generated-data-behind-the-real-console.md)
-records as a deliberate trade. `docs/ops/cloudflare-demo.md` is the runbook, including
-the account steps no command can perform and the failure modes that look like something
-else.
+registra como una concesión deliberada. `docs/ops/cloudflare-demo.md` es el runbook, incluidos
+los pasos de cuenta que ningún comando puede realizar y los modos de fallo que parecen otra
+cosa.
 
-## Browser-managed run lifetime
+## Ciclo de vida de ejecución gestionado por el navegador
 
-`internal/api/browser_runs.go` wraps console Agent POSTs carrying
-`X-OMC-Run-ID` with a notification-driven replay journal. The existing handlers
-still own validation, inference and capabilities; the wrapper owns detached lifetime, same-id
-admission, replay and explicit cancellation. Agent body admission uses the same
-`MAX_AGENT_RUN_BYTES` limit as the inner handler, including base64 image content; adding a
-run ID never narrows the uploads the handler accepts. `GET /agent/runs/active`,
-`GET /agent/runs/{id}` and `POST /agent/runs/{id}/cancel` are console-authenticated
-(formerly `/{agent|playground}/runs/...`; the Playground workspace is removed). Socket loss never cancels managed execution.
-`internal/app/app.go` joins these tasks before closing dependencies. Each journal retains the
-latest completed run for 15 minutes and has 15-second socket heartbeats. Agent journals have
-no byte ceiling or execution deadline. Replaced/expired ids have a 24-hour, 1,024-entry tombstone admission bound.
-Before buffering a managed request body, the wrapper rejects a different id while a run
-is active and refuses admission after shutdown. A shared four-permit gate bounds concurrent body
-reads, validation and handoff, including uploads with the same id; saturation returns HTTP 429
-with the Agent's busy code. Permits are released before streaming a subscription. Admission
-is checked again after reading because another request can start a run or shutdown can begin
-while an upload is in progress.
+`internal/api/browser_runs.go` envuelve los POST del Agent de la consola que llevan
+`X-OMC-Run-ID` con un diario de repetición guiado por notificaciones. Los handlers existentes
+siguen siendo dueños de la validación, la inferencia y las capacidades; el envoltorio es dueño del ciclo de vida desacoplado, la admisión
+del mismo id, la repetición y la cancelación explícita. La admisión del cuerpo del Agent usa el mismo límite
+`MAX_AGENT_RUN_BYTES` que el handler interno, incluido el contenido de imagen en base64; añadir un
+ID de ejecución nunca estrecha las cargas que el handler acepta. `GET /agent/runs/active`,
+`GET /agent/runs/{id}` y `POST /agent/runs/{id}/cancel` se autentican con la consola
+(antes `/{agent|playground}/runs/...`; el espacio de trabajo Playground se eliminó). La pérdida del socket nunca cancela la ejecución gestionada.
+`internal/app/app.go` une estas tareas antes de cerrar las dependencias. Cada diario retiene la
+última ejecución completada durante 15 minutos y tiene latidos de socket de 15 segundos. Los diarios del Agent no tienen
+tope de bytes ni plazo de ejecución. Los ids reemplazados/caducados tienen un límite de admisión de lápidas de 24 horas y 1024 entradas.
+Antes de almacenar en búfer el cuerpo de una solicitud gestionada, el envoltorio rechaza un id distinto mientras una ejecución
+está activa y rehúsa la admisión tras el apagado. Una compuerta compartida de cuatro permisos acota las lecturas
+de cuerpo concurrentes, la validación y la entrega, incluidas las cargas con el mismo id; la saturación devuelve HTTP 429
+con el código de ocupado del Agent. Los permisos se liberan antes de transmitir una suscripción. La admisión
+se comprueba de nuevo tras leer porque otra solicitud puede iniciar una ejecución o puede comenzar el apagado
+mientras una carga está en curso.
 
-`web/src/agent/runConnection.ts` is the injectable transport state machine; `reconnect.ts` binds
-it to the authenticated, subpath-aware API client. It retries GET subscriptions with 500ms-to-8s
-backoff, waits for online events and reconnects 45-second stalled reads. Full replay first resets
-the transient frame. It never repeats an initial generation POST automatically. Cleanup aborts
-subscriptions, while Stop sends the idempotent server cancel command. Agent's persisted session
-includes `active_run_id` when a managed task is running; reading a live stored turn does not mark
-it interrupted. Restarted runtimes still expose stored running turns as interrupted.
+`web/src/agent/runConnection.ts` es la máquina de estados de transporte inyectable; `reconnect.ts` la vincula
+al cliente de API autenticado y consciente de subrutas. Reintenta las suscripciones GET con retroceso de 500 ms a 8 s,
+espera a los eventos de conexión y reconecta las lecturas detenidas de 45 segundos. La repetición completa primero reinicia
+el fotograma transitorio. Nunca repite automáticamente un POST de generación inicial. La limpieza aborta
+las suscripciones, mientras que Stop envía el comando idempotente de cancelación al servidor. La sesión persistida del Agent
+incluye `active_run_id` cuando una tarea gestionada está en ejecución; leer un turno almacenado vivo no lo marca como
+interrumpido. Los runtimes reiniciados siguen exponiendo como interrumpidos los turnos almacenados en ejecución.
 
-Retry/edit descriptors identify the turn they replace. These are process-local recovery
-guarantees, not durable execution. ADR 0044 records this boundary and its shutdown behaviour.
+Los descriptores de reintento/edición identifican el turno que reemplazan. Son garantías de recuperación locales al
+proceso, no ejecución duradera. El ADR 0044 registra esta frontera y su comportamiento de apagado.
 
-## 14. Agent conversation workspace and inference client
+## 14. Espacio de trabajo de conversación del Agent y cliente de inferencia
 
-The Agent (`web/src/pages/agent/AgentPage.tsx`) is composed on the shared conversation frame
-(`web/src/components/workspace`): transcript, composer, reasoning disclosure, code blocks and side
-drawers. Its run layer is `web/src/agent/` (§ "Frontend structure"). The model list it offers is
-`GET /agent/models` (was `/playground/models`; the former Playground route and its chat endpoint
-are removed), and runs are `/agent/runs/...` (was `/{agent|playground}/runs/...`).
+El Agent (`web/src/pages/agent/AgentPage.tsx`) se compone sobre el marco de conversación compartido
+(`web/src/components/workspace`): transcripción, compositor, divulgación del razonamiento, bloques de código y drawers
+laterales. Su capa de ejecución es `web/src/agent/` (§3 «Forma del frontend»). La lista de modelos que ofrece es
+`GET /agent/models` (antes `/playground/models`; la antigua ruta Playground y su endpoint de chat
+se eliminaron), y las ejecuciones son `/agent/runs/...` (antes `/{agent|playground}/runs/...`).
 
-**Conversation exports.** The Agent exports through one path
-(`web/src/components/workspace/useConversationExport.ts`). `conversationSnapshot.ts` projects what the
-page displays into a `ConversationSnapshot` - never the stored session - and drops execution
-identities (key fingerprints, tokens, operation and run ids) at any depth. `conversationHtml.ts` renders
-that snapshot to one HTML string: the palette's resolved tokens as custom properties, the font
-shards its text draws embedded as data, Markdown rendered without raw HTML, remote images demoted to links, a canvas as the same
-sandboxed frame, and a Content-Security-Policy that allows no network. Its only script is the fixed
-`conversationControls.ts` (search, side panel, copy, table sorting, print). The PNG is the same
-document laid out as an 840px share card in a sandboxed, script-free iframe. Generated interfaces are first drawn in separate opaque-origin, network-blocked frames using the shared `canvasCapture.ts` path, inserted as PNG data images, then the document is rasterized through an
-SVG `foreignObject` at 2x (`conversationDownload.ts`); a long transcript becomes several numbered
-files, each cut at a block boundary by `snapshotImageSlices`. The download module is loaded on demand,
-so the Markdown renderer's server build stays out of the workspace chunk.
-`internal/cpa/gateway` is the inference client, separate from the management client. It
-supports only the configured origin's `/v1/models` and the three inference paths an
-`Endpoint` names - `/v1/chat/completions`, `/v1/responses` and `/v1/messages` - sets the
-resolved client key server-side, and refuses redirects. `endpoints.go` holds what differs
-between the three (ADR 0088): the body each takes and a stream decoder each. The Agent loop's
-rounds take the same three shapes (`agent_endpoints.go`): tools, calls and results are written
-in the endpoint's schema, calls are assembled whole from each stream, and a Messages reply's
-signed reasoning rides on its assistant message until the turn ends. An Agent run names its
-endpoint in `forwardedProps.endpoint`; the conversation stores it and a resumed turn keeps it.
-Model IDs come from the live client directory, not pricing or historical traffic. Each entry
-carries the OpenAI `id` plus an explicit `call_point` (the same client-visible identifier CPA
-returns); the selector uses that call point. Vision capability is unknown. Agent images are
-normalized in the browser to WebP, at most 2048 pixels on the long edge and 512 KiB, before
-storage and replay. Errors contain safe codes, upstream HTTP status and allowlisted parameter
-names rather than upstream bodies. Missing usage stays missing. CPA ingestion remains unchanged.
+**Exportaciones de conversación.** El Agent exporta mediante una sola ruta
+(`web/src/components/workspace/useConversationExport.ts`). `conversationSnapshot.ts` proyecta lo que muestra la
+página en un `ConversationSnapshot` - nunca la sesión almacenada - y descarta las identidades de ejecución
+(huellas de claves, tokens, ids de operación y de ejecución) a cualquier profundidad. `conversationHtml.ts` renderiza
+esa instantánea en una sola cadena HTML: los tokens resueltos de la paleta como propiedades personalizadas, los shards de fuente
+que dibuja su texto embebidos como datos, Markdown renderizado sin HTML sin procesar, imágenes remotas degradadas a enlaces, un canvas como el mismo
+marco aislado, y una Content-Security-Policy que no permite red. Su único script es el fijo
+`conversationControls.ts` (búsqueda, panel lateral, copia, ordenación de tablas, impresión). El PNG es el mismo
+documento maquetado como una tarjeta para compartir de 840 px en un iframe aislado y sin scripts. Las interfaces generadas se dibujan primero en marcos separados de origen opaco y con red bloqueada usando la ruta compartida `canvasCapture.ts`, se insertan como imágenes de datos PNG, y luego el documento se rasteriza mediante un
+`foreignObject` de SVG a 2x (`conversationDownload.ts`); una transcripción larga se convierte en varios archivos
+numerados, cada uno cortado en un límite de bloque por `snapshotImageSlices`. El módulo de descarga se carga bajo demanda,
+de modo que la compilación de servidor del renderizador de Markdown se queda fuera del chunk del espacio de trabajo.
+`internal/cpa/gateway` es el cliente de inferencia, separado del cliente de gestión. Admite
+solo el `/v1/models` del origen configurado y las tres rutas de inferencia que nombra un
+`Endpoint` - `/v1/chat/completions`, `/v1/responses` y `/v1/messages` - establece la
+clave de cliente resuelta en el servidor y rechaza las redirecciones. `endpoints.go` contiene lo que difiere
+entre los tres (ADR 0088): el cuerpo que toma cada uno y un decodificador de flujo para cada uno. Las rondas del bucle del Agent
+toman las mismas tres formas (`agent_endpoints.go`): las herramientas, las llamadas y los resultados se escriben
+en el esquema del endpoint, las llamadas se ensamblan completas a partir de cada flujo, y el razonamiento firmado de una respuesta de Messages
+viaja en su mensaje del asistente hasta que termina el turno. Una ejecución del Agent nombra su
+endpoint en `forwardedProps.endpoint`; la conversación lo almacena y un turno reanudado lo conserva.
+Los IDs de modelo provienen del directorio vivo de claves de cliente, no de precios ni del tráfico histórico. Cada entrada
+lleva el `id` de OpenAI más un `call_point` explícito (el mismo identificador visible para el cliente que devuelve
+CPA); el selector usa ese punto de llamada. La capacidad de visión es desconocida. Las imágenes del Agent se
+normalizan en el navegador a WebP, de a lo sumo 2048 píxeles en el borde largo y 512 KiB, antes del
+almacenamiento y la repetición. Los errores contienen códigos seguros, el estado HTTP upstream y nombres de parámetros
+permitidos y no cuerpos upstream. El uso ausente sigue ausente. La ingesta de CPA permanece sin cambios.
 
-ADR 0022 recorded the entitlement and privacy boundary of the former model playground; ADRs 0022-0024
-were deleted when the Playground was removed. Gateway unit tests, facade tests and desktop/phone
-probes cover the Agent flow. Public-demo model reads are generated through the real facade;
-inference is explicitly refused, while one browser-local recorded example demonstrates the flow (ADR 0092).
+El ADR 0022 registró la frontera de derechos y privacidad del antiguo playground de modelos; los ADR 0022-0024
+se eliminaron cuando se eliminó el Playground. Las pruebas unitarias del gateway, las pruebas de la fachada y las sondas de escritorio/teléfono
+cubren el flujo del Agent. Las lecturas de modelos de la demo pública se generan mediante la fachada real;
+la inferencia se rechaza explícitamente, mientras que un ejemplo grabado local al navegador demuestra el flujo (ADR 0092).
 
-## 15. Where to look next
+## 15. Dónde mirar a continuación
 
-- Domain wording: `CONTEXT.md`
-- Deployment and its trade-offs: `docs/adr/0001-go-react-sqlite-modular-monolith.md`
-- Identity keys and rebinding: `docs/adr/0002-cpa-binding-and-identity-hierarchy.md`
-- Cost immutability: `docs/adr/0003-request-time-price-snapshots.md`
-- Visual system: `docs/design.md`
-- Backup, restore, and migration gates: `docs/ops/sqlite-operations.md`
-- Feature parity status against CPAMC: `docs/cpamc-parity.md`
-- CPA v8 baseline, relocation table and measurements: `docs/cpa-v8-compat.md`
+- Vocabulario del dominio: `CONTEXT.md`
+- El despliegue y sus compromisos: `docs/adr/0001-go-react-sqlite-modular-monolith.md`
+- Claves de identidad y revinculación: `docs/adr/0002-cpa-binding-and-identity-hierarchy.md`
+- Inmutabilidad del costo: `docs/adr/0003-request-time-price-snapshots.md`
+- Sistema visual: `docs/design.md`
+- Compuertas de copia de seguridad, restauración y migración: `docs/ops/sqlite-operations.md`
+- Estado de paridad de funciones frente a CPAMC: `docs/cpamc-parity.md`
+- Base de CPA v8, tabla de reubicación y mediciones: `docs/cpa-v8-compat.md`
 
-## Deployment-wide calendar time
+## Hora de calendario de todo el despliegue
 
-`internal/timezone` resolves the deployment calendar from `TZ`, the system zone name or the local zone file, and embeds Go's IANA data for offline named-zone loading. `Repository` owns an atomic runtime location and serializes timezone preference commits before publishing the new location. Startup loads `omc_timezone` from the existing preference table; no migration or timestamp rewrite is needed. Invalid overrides fail validation rather than replacing a working calendar. The preference API remains allowlisted: `PUT /preferences/omc_timezone` accepts an IANA name or an empty string, and `GET /preferences` includes `time_zone` metadata (`timezone`, `server_timezone`, `effective_timezone`).
+`internal/timezone` resuelve el calendario del despliegue a partir de `TZ`, el nombre de la zona del sistema o el archivo de zona local, e incrusta los datos IANA de Go para la carga sin conexión de zonas con nombre. `Repository` es dueño de una ubicación de runtime atómica y serializa las confirmaciones de la preferencia de zona horaria antes de publicar la nueva ubicación. El arranque carga `omc_timezone` de la tabla de preferencias existente; no se necesita migración ni reescritura de marcas de tiempo. Las anulaciones inválidas fallan la validación en lugar de reemplazar un calendario que funciona. La API de preferencias sigue con lista de permitidos: `PUT /preferences/omc_timezone` acepta un nombre IANA o una cadena vacía, y `GET /preferences` incluye metadatos `time_zone` (`timezone`, `server_timezone`, `effective_timezone`).
 
-The application wraps its log handler with a per-record location resolver, so successful timezone writes affect new Shell-PAMC log timestamps without changing process-global `time.Local`. Retention, authentication expiry, collector watermarks and stored timestamps continue to use absolute instants. The built-in Agent's system context names the effective calendar; `timezone_get` and `timezone_set` use the same repository validation through `internal/operations`.
+La aplicación envuelve su handler de registros con un resolvedor de ubicación por registro, de modo que las escrituras de zona horaria exitosas afectan las nuevas marcas de tiempo de registros de Shell-PAMC sin cambiar el `time.Local` global del proceso. La retención, la caducidad de autenticación, las marcas de agua del recolector y las marcas de tiempo almacenadas siguen usando instantes absolutos. El contexto de sistema del Agent integrado nombra el calendario efectivo; `timezone_get` y `timezone_set` usan la misma validación del repositorio mediante `internal/operations`.
 
-`web/src/utils/time.ts` owns timezone-aware date construction, and gateway timestamp conversion. `TimeZoneProvider` hydrates the deployment setting inside the authenticated shell; subscribed readers update on preference changes and failed-write rollback. Memoized chart configuration and audit grouping include the zone as a dependency. Day keys use that calendar; the time range picker (`web/src/components/common/timeRange/`) stages civil dates and wall-clock times and resolves them to instants once, on Apply, so the offset applied is the one in force on the picked date. The heatmap accepts an optional explicit `tz` for API consumers and defaults to the effective server-side Shell-PAMC zone; the console sends its shared effective zone.
+`web/src/utils/time.ts` es dueño de la construcción de fechas consciente de la zona horaria y de la conversión de marcas de tiempo del gateway. `TimeZoneProvider` hidrata el ajuste del despliegue dentro de la carcasa autenticada; los lectores suscritos se actualizan ante cambios de preferencia y reversión de escrituras fallidas. La configuración de gráficos memoizada y la agrupación de auditoría incluyen la zona como dependencia. Las claves de día usan ese calendario; el selector de rango de tiempo (`web/src/components/common/timeRange/`) prepara fechas civiles y horas de reloj y las resuelve a instantes una sola vez, al Aplicar, de modo que el desfase aplicado es el vigente en la fecha elegida. El mapa de calor acepta un `tz` explícito opcional para consumidores de la API y por defecto usa la zona efectiva de Shell-PAMC del lado del servidor; la consola envía su zona efectiva compartida.
 
-`web/src/components/common/TimeZoneSelect.tsx` is a controlled, reusable picker independent of preference persistence. It accepts `value`, `onChange`, optional `serverTimezone`, `isDisabled`, `id` and an accessible label. The server zone is pinned first and annotated; the caller decides whether choosing it clears an override. Options and minute-keyed offsets are cached, and fixed-height virtual rows bound the rendered list while preserving search and keyboard navigation.
+`web/src/components/common/TimeZoneSelect.tsx` es un selector controlado y reutilizable, independiente de la persistencia de preferencias. Acepta `value`, `onChange`, `serverTimezone` opcional, `isDisabled`, `id` y una etiqueta accesible. La zona del servidor se fija primero y se anota; el llamador decide si elegirla borra una anulación. Las opciones y los desfases con clave por minuto se almacenan en caché, y las filas virtuales de altura fija acotan la lista renderizada preservando la búsqueda y la navegación por teclado.
 
-## Custom icon library
+## Biblioteca de íconos personalizados
 
-`internal/iconasset` validates static PNG/JPEG/WebP and reconstructs SVG from an XML element/attribute allowlist. Imports accept standard padded or unpadded Base64 and Base64 image Data URLs. Client MIME is not trusted; a declared Data URL MIME must match the decoded image. Decoded and reconstructed artwork is bounded to 512 KiB, raster dimensions to 1024 pixels per axis, and HTTP JSON bodies to 1 MiB. Animated PNG/WebP, scripts, events, XML directives, foreign objects, external resources and SVG style attributes are refused. Only validated artwork is previewed in the browser.
+`internal/iconasset` valida PNG/JPEG/WebP estáticos y reconstruye SVG a partir de una lista de permitidos de elementos/atributos XML. Las importaciones aceptan Base64 estándar con o sin relleno y URL de datos de imagen Base64. El MIME del cliente no es de confianza; el MIME declarado de una URL de datos debe coincidir con la imagen decodificada. El arte decodificado y reconstruido está acotado a 512 KiB, las dimensiones raster a 1024 píxeles por eje y los cuerpos JSON HTTP a 1 MiB. Se rechazan PNG/WebP animados, scripts, eventos, directivas XML, objetos foráneos, recursos externos y atributos de estilo SVG. Solo el arte validado se previsualiza en el navegador.
 
-`web/src/types/customIcons.ts` owns custom reference parsing, library filtering and plugin-safe artwork resolution; `web/src/hooks/useCustomIcons.ts` shares revisioned metadata with all rendered provider surfaces.
+`web/src/types/customIcons.ts` es dueño del análisis de referencias personalizadas, el filtrado de la biblioteca y la resolución de arte seguro para plugins; `web/src/hooks/useCustomIcons.ts` comparte metadatos con revisión con todas las superficies de proveedor renderizadas.
 
-Migration 032 creates `custom_icons`: stable random `id`, `name`, `mime_type`, image `content`, monotonic `revision`, and millisecond creation/update timestamps. The deployment holds at most 100 icons, with trimmed names of at most 80 Unicode characters. Artwork is stored separately from `ui_preferences`; `provider_icons` preserves existing catalog IDs and adds `custom:<id>` references. Preferences validate references inside their write transaction, while deletion removes every matching stored mapping, including legacy name keys, inside the same transaction as the asset deletion. Removing overrides, rather than writing a fixed catalog ID, preserves each surface's default/placeholder resolution and plugin branding authority. A single SQLite connection serializes these operations, preventing assignment/deletion races. Artwork is hidden from the free-form database capability.
+La migración 032 crea `custom_icons`: `id` aleatorio estable, `name`, `mime_type`, `content` de imagen, `revision` monótona y marcas de tiempo de creación/actualización en milisegundos. El despliegue contiene como máximo 100 íconos, con nombres recortados de a lo sumo 80 caracteres Unicode. El arte se almacena por separado de `ui_preferences`; `provider_icons` preserva los ID de catálogo existentes y añade referencias `custom:<id>`. Las preferencias validan las referencias dentro de su transacción de escritura, mientras que la eliminación quita cada mapeo almacenado coincidente, incluidas las claves de nombre heredadas, dentro de la misma transacción que la eliminación del recurso. Quitar las anulaciones, en lugar de escribir un ID de catálogo fijo, preserva la resolución por defecto/marcador de posición de cada superficie y la autoridad de marca del plugin. Una sola conexión SQLite serializa estas operaciones, impidiendo carreras de asignación/eliminación. El arte está oculto de la capacidad de base de datos de forma libre.
 
-The session-authenticated routes are `GET`/`POST /custom-icons`, `POST /custom-icons/preview`, `PATCH`/`DELETE /custom-icons/{id}`, and `GET`/`HEAD /custom-icons/{id}/content`, under the configured API base. Create accepts `{name,data}`; update accepts optional `name` and `data`; preview accepts `{data}`. List returns `{icons}` containing metadata/reference counts, not bytes. Content responses use validated MIME, nosniff, a sandbox CSP and private revalidation with a revision ETag. Preview is non-persistent and no-store. Invalid imports return 400, oversize imports 413, missing icons 404 and library exhaustion 409, using stable error codes. Console errors never quote image input.
+Las rutas autenticadas por sesión son `GET`/`POST /custom-icons`, `POST /custom-icons/preview`, `PATCH`/`DELETE /custom-icons/{id}` y `GET`/`HEAD /custom-icons/{id}/content`, bajo la base de API configurada. Crear acepta `{name,data}`; actualizar acepta `name` y `data` opcionales; la vista previa acepta `{data}`. La lista devuelve `{icons}` con metadatos/conteos de referencias, no bytes. Las respuestas de contenido usan MIME validado, nosniff, una CSP de sandbox y revalidación privada con un ETag de revisión. La vista previa no es persistente y es no-store. Las importaciones inválidas devuelven 400, las demasiado grandes 413, los íconos ausentes 404 y el agotamiento de la biblioteca 409, con códigos de error estables. Los errores de la consola nunca citan la entrada de imagen.
 
-Operations registers the same repository-backed CRUD for Agent/MCP. Lists are bounded to twenty metadata records per page; capability uploads remain subject to the existing 32 KiB tool envelope. Deletion requires confirmation tied to the icon's content revision, with a reference-count/default-reset preview. Its transaction rechecks the revision and removes all current matching overrides. Audit entries omit arguments/results. The shared frontend icon renderer resolves custom artwork using one metadata query and authenticated same-origin image URLs, with safe placeholders on failed reads. Mutation invalidation updates all mounted references. Plugin logos keep precedence; a plugin-owned provider never falls back to operator-uploaded artwork.
+Operations registra el mismo CRUD respaldado por repositorio para Agent/MCP. Las listas están acotadas a veinte registros de metadatos por página; las cargas de capacidades siguen sujetas al sobre de herramienta existente de 32 KiB. La eliminación requiere una confirmación atada a la revisión de contenido del ícono, con una vista previa de conteo de referencias/restablecimiento al valor por defecto. Su transacción vuelve a comprobar la revisión y quita todas las anulaciones coincidentes actuales. Las entradas de auditoría omiten argumentos/resultados. El renderizador de íconos compartido del frontend resuelve el arte personalizado usando una sola consulta de metadatos y URL de imagen autenticadas del mismo origen, con marcadores de posición seguros ante lecturas fallidas. La invalidación por mutación actualiza todas las referencias montadas. Los logos de plugins conservan la precedencia; un proveedor propiedad de un plugin nunca recurre al arte subido por el operador.
 
-## Font library
+## Biblioteca de fuentes
 
-The console's two typeface roles (`ui`, `mono`) are stored as the `omc_fonts` preference and resolved by `web/src/types/fonts.ts` into CSS stacks; `web/src/theme/fontLibrary.ts` writes them to `--font-ui` and `--font-mono` on the root element, declares library faces with `FontFace` (family name `omc-font-<id>`, the stored `unicode-range`, files from the face endpoint), and mirrors the resolved choice in localStorage (`omc-fonts`) so `main.tsx` paints it before the first render. `useConsoleFonts` reads the library only when a role uses it. The settings controls live in `web/src/components/settings/FontSettings.tsx`: two role pickers in Appearance, with installing, uploading and deleting families kept in a modal library dialog (ADR 0100).
+Los dos roles tipográficos de la consola (`ui`, `mono`) se almacenan como la preferencia `omc_fonts` y `web/src/types/fonts.ts` los resuelve en pilas CSS; `web/src/theme/fontLibrary.ts` los escribe en `--font-ui` y `--font-mono` en el elemento raíz, declara las caras de la biblioteca con `FontFace` (nombre de familia `omc-font-<id>`, el `unicode-range` almacenado, archivos del endpoint de caras) y refleja la elección resuelta en localStorage (`omc-fonts`) para que `main.tsx` la pinte antes del primer renderizado. `useConsoleFonts` lee la biblioteca solo cuando un rol la usa. Los controles de ajustes viven en `web/src/components/settings/FontSettings.tsx`: dos selectores de rol en Apariencia, con la instalación, la carga y la eliminación de familias en un diálogo modal de biblioteca (ADR 0100).
 
-`internal/fontasset` recognises WOFF2, WOFF, TrueType and OpenType by signature and describes a face from its `OS/2` weight and italic bit, its `fvar` weight axis and its `name` family (typographic family first); WOFF tables are inflated, WOFF2 falls back to the file name. Files are bounded to 32 MiB. The Google installer requests `css2?family=<name>:wght@400;700` (falling back to the family alone for single-weight families) with a browser identity that yields woff2 slices, merges rules that share one file into one face spanning both weights, and downloads with eight in parallel under a three-minute budget and a 96 MiB family ceiling. Every stylesheet URL and redirect must stay on Google's font hosts or the configured base's site.
+`internal/fontasset` reconoce WOFF2, WOFF, TrueType y OpenType por firma y describe una cara a partir de su peso `OS/2` y su bit de cursiva, su eje de peso `fvar` y su familia `name` (primero la familia tipográfica); las tablas WOFF se descomprimen, WOFF2 recurre al nombre de archivo. Los archivos están acotados a 32 MiB. El instalador de Google solicita `css2?family=<name>:wght@400;700` (recurriendo solo a la familia para las de un único peso) con una identidad de navegador que produce fragmentos woff2, fusiona las reglas que comparten un archivo en una sola cara que abarca ambos pesos, y descarga con ocho en paralelo bajo un presupuesto de tres minutos y un techo de familia de 96 MiB. Toda URL de hoja de estilos y toda redirección deben permanecer en los hosts de fuentes de Google o en el sitio de la base configurada.
 
-The session-authenticated routes are `GET /fonts` (families with face declarations, no bytes), `POST /fonts/google` (`{family}`), `POST /fonts/upload` (multipart `file` parts and an optional `family`, at most twelve files and 96 MiB), `DELETE /fonts/{id}`, and `GET`/`HEAD /fonts/{id}/faces/{faceId}`. The two transfer routes lift the server's 30-second read and write deadlines to four minutes for their own request. Face responses carry the font MIME type, nosniff, a sandbox CSP and `private, max-age=31536000, immutable`, because a face's bytes never change under its id. Invalid files and family names return 400, oversize 413, a missing family or face 404 (also for a Google family that does not exist), a full library (32 families) 409, and an unreachable Google 502, with stable `font_*` codes. Preference writes validate `font:` references inside their transaction. The demo allows the reads, has an empty library and refuses installs, uploads and deletions.
+Las rutas autenticadas por sesión son `GET /fonts` (familias con declaraciones de caras, sin bytes), `POST /fonts/google` (`{family}`), `POST /fonts/upload` (partes multipart `file` y un `family` opcional, como máximo doce archivos y 96 MiB), `DELETE /fonts/{id}` y `GET`/`HEAD /fonts/{id}/faces/{faceId}`. Las dos rutas de transferencia elevan los plazos de lectura y escritura de 30 segundos del servidor a cuatro minutos para su propia solicitud. Las respuestas de caras llevan el tipo MIME de fuente, nosniff, una CSP de sandbox y `private, max-age=31536000, immutable`, porque los bytes de una cara nunca cambian bajo su id. Los archivos y nombres de familia inválidos devuelven 400, los demasiado grandes 413, una familia o cara ausente 404 (también para una familia de Google que no existe), una biblioteca llena (32 familias) 409 y un Google inalcanzable 502, con códigos `font_*` estables. Las escrituras de preferencias validan las referencias `font:` dentro de su transacción. La demo permite las lecturas, tiene una biblioteca vacía y rechaza instalaciones, cargas y eliminaciones.
 
-## Phone configuration and editor lifetime
+## Configuración en teléfono y ciclo de vida del editor
 
-`ConfigPage` owns a source-session wrap override and focused state independently of `useConfigDraft`.
-Focused editing changes the existing source container's fixed geometry, never its editor key or model
-path. `YamlSourceEditor` remains lazily loaded and the same Monaco instance preserves the undo stack,
-selection and scroll. Phone defaults follow 640px unless the operator has chosen wrapping for this
-source session. Visual mode clears that override. Local YAML workers remain offline with schema
-requests disabled; the Monaco-YAML adapter supplies a concrete worker to Monaco 0.56 and delivers the
-legacy manager's bootstrap/settings messages before RPC starts. Vite prebundles the worker's otherwise unreachable CommonJS dependency imports so the dev worker matches the built offline bundle.
+`ConfigPage` es dueña de una anulación de ajuste de línea de la sesión de código fuente y del estado de enfoque, independientemente de `useConfigDraft`.
+La edición enfocada cambia la geometría fija del contenedor de código fuente existente, nunca la clave del editor ni la ruta
+del modelo. `YamlSourceEditor` sigue cargándose de forma diferida y la misma instancia de Monaco preserva la pila de deshacer,
+la selección y el scroll. Los valores por defecto del teléfono siguen los 640 px salvo que el operador haya elegido el ajuste de línea para esta
+sesión de código fuente. El modo visual borra esa anulación. Los workers locales de YAML siguen sin conexión con las solicitudes de esquema
+desactivadas; el adaptador Monaco-YAML suministra un worker concreto a Monaco 0.56 y entrega los
+mensajes de arranque/ajustes del gestor heredado antes de que comience el RPC. Vite preempaqueta los imports de dependencias CommonJS del worker que de otro modo serían inalcanzables, para que el worker de desarrollo coincida con el bundle sin conexión compilado.
 
-`useVisibleViewport` follows resize and scroll only while needed, ignores pinch scale and falls back
-to the layout viewport. `ConfigDirtyBar` reports measured height through a ResizeObserver so the page
-reserves real space; focused editing mounts the shared action bar into the focused region. Application
-siblings are inert while body-level modal portals stay interactive. Focus, tools and save confirmation
-join `useOverlayHistory`; a conflict remains above focus, and exiting focus preserves the draft.
-The shared `WorkspaceLayout` also bounds its own height to the phone visible viewport so the Agent keeps its existing transcript scroller and composer above the keyboard. All observers and event listeners are effect-owned, including StrictMode cleanup/re-setup.
+`useVisibleViewport` sigue el redimensionado y el scroll solo mientras es necesario, ignora la escala de pellizco y recurre
+al viewport de layout. `ConfigDirtyBar` informa la altura medida mediante un ResizeObserver para que la página
+reserve espacio real; la edición enfocada monta la barra de acciones compartida en la región enfocada. Los hermanos
+de la aplicación quedan inertes mientras los portales modales a nivel de body siguen siendo interactivos. El enfoque, las herramientas y la confirmación de guardado
+se unen a `useOverlayHistory`; un conflicto permanece por encima del enfoque, y salir del enfoque preserva el borrador.
+El `WorkspaceLayout` compartido también acota su propia altura al viewport visible del teléfono para que el Agent conserve su scroller de transcripción y su compositor por encima del teclado. Todos los observadores y escuchas de eventos son propiedad de efectos, incluida la limpieza/reconfiguración de StrictMode.
 
-## Model Square directory
+## Directorio Model Square
 
-The lazy `/model-square` route reads `GET /management/model-square` through
-`web/src/api/client.ts`. The HTTP adapter in `internal/api/model_square.go` and the
-read-only `models_list` capability share `operations.Service.ListModelSquare`.
-The server reads CPA's configured client keys, selects the first nonempty one and
-calls the gateway's `/v1/models`. Client keys never enter the result or frontend state;
-a deployment without one returns HTTP 409 with `client_key_required`. Gateway failures
-use the existing safe error projection. This directory makes no inference request.
+La ruta diferida `/model-square` lee `GET /management/model-square` mediante
+`web/src/api/client.ts`. El adaptador HTTP de `internal/api/model_square.go` y la
+capacidad de solo lectura `models_list` comparten `operations.Service.ListModelSquare`.
+El servidor lee las claves de cliente configuradas de CPA, selecciona la primera no vacía y
+llama al `/v1/models` del gateway. Las claves de cliente nunca entran en el resultado ni en el estado del frontend;
+un despliegue sin ninguna devuelve HTTP 409 con `client_key_required`. Los fallos del gateway
+usan la proyección de errores segura existente. Este directorio no hace ninguna solicitud de inferencia.
 
-CPA's advertised IDs are the only availability authority. Configured mappings preserve
-fanout independently of pricing's alias-ambiguity map. Native entries without explicit
-mappings may read CPA's fixed `/routing/model-definitions/{channel}` catalogs, applying
-exclusions and prefixes. OAuth lists contribute only published call points; alias
-inversion supplies upstream identity where known. All provenance is intersected with
-live advertised IDs. Unmatched live models retain empty provider/upstream identities;
-failed enrichment emits named `partial` conditions without hiding the live list. This
-additional in-memory projection does not change pricing persistence.
+Los ID anunciados por CPA son la única autoridad de disponibilidad. Los mapeos configurados preservan
+el fanout independientemente del mapa de ambigüedad de alias de precios. Las entradas nativas sin mapeos
+explícitos pueden leer los catálogos fijos `/routing/model-definitions/{channel}` de CPA, aplicando
+exclusiones y prefijos. Las listas OAuth aportan solo puntos de llamada publicados; la inversión de
+alias suministra la identidad upstream donde se conoce. Toda procedencia se interseca con
+los ID anunciados en vivo. Los modelos vivos sin coincidencia conservan identidades de proveedor/upstream vacías;
+un enriquecimiento fallido emite condiciones `partial` con nombre sin ocultar la lista viva. Esta
+proyección adicional en memoria no cambia la persistencia de precios.
 
-The shared management snapshot also reads sanitized global OAuth alias rules once
-when enabled credentials exist. Only rules matching a credential's registered ID
-add their upstream to the pricing identity map and OAuth route provenance.
-Provider `Models` remain client-visible; `internal/app` adapts OAuth membership
-through `ConfiguredModelProvider.ListPricingModelIDs` for the price book. A failed
-alias read makes pricing discovery incomplete, preserving its persisted catalog;
-Model Square continues to intersect provenance with the live advertised list.
+La instantánea de gestión compartida también lee una vez las reglas globales de alias OAuth saneadas
+cuando existen credenciales habilitadas. Solo las reglas que coinciden con el ID registrado de una credencial
+añaden su upstream al mapa de identidad de precios y a la procedencia de rutas OAuth.
+Los `Models` del proveedor siguen siendo visibles para el cliente; `internal/app` adapta la pertenencia OAuth
+mediante `ConfiguredModelProvider.ListPricingModelIDs` para el libro de precios. Una lectura fallida de alias
+hace incompleto el descubrimiento de precios, preservando su catálogo persistido;
+Model Square sigue intersecando la procedencia con la lista anunciada en vivo.
 
-The HTTP handler projects API-owned DTO allowlists for the directory, its model
-references and their nested facts/links, independent of operation/catalog type growth.
-The DTO contains advertised `models`, safe `providers`, exact `routes`, `partial`,
-`model_info` and `metadata_updated_at`. No keys, credential/account metadata or full
-upstream URL is projected; connection endpoints are reduced to hostnames. Existing
-provider-name/icon overlays apply by stable provider ID.
+El handler HTTP proyecta listas de permitidos de DTO propiedad de la API para el directorio, sus referencias
+de modelo y sus hechos/enlaces anidados, independientemente del crecimiento de tipos de operación/catálogo.
+El DTO contiene `models` anunciados, `providers` seguros, `routes` exactas, `partial`,
+`model_info` y `metadata_updated_at`. No se proyectan claves, metadatos de credenciales/cuentas ni la URL
+upstream completa; los endpoints de conexión se reducen a nombres de host. Las superposiciones existentes de
+nombre/ícono del proveedor se aplican por ID de proveedor estable.
 
-`internal/modelcatalog` embeds a models.dev reference snapshot, independent of the
-OpenRouter pricing catalog (ADR 0061). The snapshot contains canonical model facts and
-unambiguous source-declared aliases, with no reseller costs. Evidence in `Catalog.Match`
-is always an exact canonical identity or source-declared alias. A name with neither is
-retried only in forms that denote the same model, each of which must itself match exactly:
-without a router tag (`:free`), without one suffix of the closed `VARIANT_SUFFIXES` list
-(reasoning effort, `-thinking`), and without leading routing namespaces (`relay/model`).
-The literal name is always tried first, so a variant the source publishes as its own
-model keeps its own record; similarity and version stripping are never evidence. Weight/resource links admit only credential-free
-HTTPS URLs. `pnpm models:sync` regenerates the snapshot from fixed models.dev sources;
-ordinary requests never fetch third-party catalogs. Metadata is returned only for
-identities represented in this deployment's live routes. Unknowns remain unknown.
+`internal/modelcatalog` embebe una instantánea de referencia de models.dev, independiente del
+catálogo de precios de OpenRouter (ADR 0061). La instantánea contiene hechos canónicos de modelos y
+alias declarados por la fuente sin ambigüedad, sin costos de revendedores. La evidencia en `Catalog.Match`
+es siempre una identidad canónica exacta o un alias declarado por la fuente. Un nombre que no es ninguno de los dos
+se reintenta solo en formas que denotan el mismo modelo, cada una de las cuales debe coincidir exactamente:
+sin etiqueta de router (`:free`), sin un sufijo de la lista cerrada `VARIANT_SUFFIXES`
+(esfuerzo de razonamiento, `-thinking`) y sin espacios de nombres de enrutamiento iniciales (`relay/model`).
+El nombre literal siempre se prueba primero, de modo que una variante que la fuente publica como su propio
+modelo conserva su propio registro; la similitud y la eliminación de versiones nunca son evidencia. Los enlaces de pesos/recursos admiten solo URL
+HTTPS sin credenciales. `pnpm models:sync` regenera la instantánea desde fuentes fijas de models.dev;
+las solicitudes ordinarias nunca obtienen catálogos de terceros. Los metadatos se devuelven solo para
+las identidades representadas en las rutas vivas de este despliegue. Los desconocidos siguen siendo desconocidos.
 
-`web/src/types/modelSquare.ts` groups client names by maker, orders named makers ahead of
-the multiple and unidentified groups, preserves multiple targets while giving one profile per distinct source model, searches the advertised set,
-applies the maker filter, decides which reference a row may caption, classifies openness
-(closed-source, open-weight, open-source by a license allowlist) and constructs safe
-reference navigation. The page draws open maker sections and a Back-aware model-detail
-Drawer that names the serving connections and steps through the filtered list. Search and
-maker are reflected in `q` and `maker`; pagination is
-bounded to 120 rows. External links go to
-models.dev's canonical detail, OpenRouter lookup or pi.dev's `name` search; they open
-only on the operator's explicit action. All brand artwork is served locally.
+`web/src/types/modelSquare.ts` agrupa los nombres de cliente por fabricante, ordena los fabricantes con nombre por delante de los
+grupos múltiples y no identificados, preserva múltiples destinos dando un perfil por modelo de origen distinto, busca en el conjunto anunciado,
+aplica el filtro de fabricante, decide qué referencia puede rotular una fila, clasifica la apertura
+(código cerrado, pesos abiertos, código abierto según una lista de permitidos de licencias) y construye una
+navegación de referencia segura. La página dibuja secciones abiertas de fabricante y un Drawer de detalle de modelo consciente de Back
+que nombra las conexiones que sirven y recorre la lista filtrada. La búsqueda y el
+fabricante se reflejan en `q` y `maker`; la paginación está
+acotada a 120 filas. Los enlaces externos van al detalle canónico de
+models.dev, a la búsqueda de OpenRouter o a la búsqueda por `name` de pi.dev; se abren
+solo por acción explícita del operador. Todo el arte de marca se sirve localmente.
 
-### Price and request linkage
+### Vínculo con precios y solicitudes
 
-The directory also shows each model's price and recent requests, and hands off to the
-price editor and the request list. It owns none of that data. The coupling is confined to
-one pure module, `web/src/types/modelSquareLedger.ts`, and rests on one contract:
+El directorio también muestra el precio y las solicitudes recientes de cada modelo, y remite al
+editor de precios y a la lista de solicitudes. No es dueño de ninguno de esos datos. El acoplamiento se confina a
+un módulo puro, `web/src/types/modelSquareLedger.ts`, y descansa en un contrato:
 
-- **Join keys.** Request counts use the client call name as `model_alias`. Price reads and
-  edits follow the directory's explicit route to its upstream model and the provider's
-  recorded channel. No prefix is stripped heuristically. Several route targets remain
-  separate choices, and a single-price summary stays unknown when those targets differ.
-- **Reads.** `GET /pricing` under the shared `PRICING_QUERY_KEYS.book` cache key
-  (`web/src/components/pricing/pricingQueries.ts`), so a price saved in the editor reaches
-  the rows without a read of their own; and `GET /usage/facets?preset=24h`, whose
-  `model_aliases` facet is the request count per call name. No endpoint was added.
-- **Actions.** `useOpenPriceEditor` (the console-wide editor) and `modelRequestsLink`, which
-  builds the request list's own `preset` + `model_alias` query; the ledger suite parses that
-  link with the request list's reader, so a renamed filter fails a test, not a click.
-- **Degradation.** The directory is authoritative and renders alone. A neighbour that failed
-  or has not answered yields `unknown` - a blank cell and no price action - never "unpriced"
-  or zero. A name the loaded book does not list is unpriced by definition. Linkage is per model
-  only, and every usage figure shares the one 24-hour window (`MODEL_REQUEST_PRESET`); the price
-  book's 30-day usage is not read, because it is grouped by the recorded upstream model rather
-  than the call name: the page aggregates nothing about the book, whose summary belongs to Cost & Usage. The facet returns
-  at most 200 values, busiest first (`USAGE_FACET_VALUE_CAP`), so a full list leaves an
-  absent model's count unknown instead of zero.
+- **Claves de join.** Los conteos de solicitudes usan el nombre de llamada del cliente como `model_alias`. Las lecturas y
+  ediciones de precio siguen la ruta explícita del directorio hacia su modelo upstream y el canal registrado
+  del proveedor. No se elimina ningún prefijo heurísticamente. Varios destinos de ruta siguen
+  siendo opciones separadas, y un resumen de precio único queda desconocido cuando esos destinos difieren.
+- **Lecturas.** `GET /pricing` bajo la clave de caché compartida `PRICING_QUERY_KEYS.book`
+  (`web/src/components/pricing/pricingQueries.ts`), de modo que un precio guardado en el editor llega
+  a las filas sin una lectura propia; y `GET /usage/facets?preset=24h`, cuya faceta
+  `model_aliases` es el conteo de solicitudes por nombre de llamada. No se añadió ningún endpoint.
+- **Acciones.** `useOpenPriceEditor` (el editor de toda la consola) y `modelRequestsLink`, que
+  construye la propia consulta `preset` + `model_alias` de la lista de solicitudes; la suite del libro mayor analiza ese
+  enlace con el lector de la lista de solicitudes, de modo que un filtro renombrado hace fallar una prueba, no un clic.
+- **Degradación.** El directorio es la autoridad y se renderiza solo. Un vecino que falló
+  o no ha respondido produce `unknown` - una celda en blanco y ninguna acción de precio - nunca «sin valorar»
+  ni cero. Un nombre que el libro cargado no lista está sin valorar por definición. El vínculo es por modelo
+  solamente, y toda cifra de uso comparte la única ventana de 24 horas (`MODEL_REQUEST_PRESET`); el uso a 30 días
+  del libro de precios no se lee, porque se agrupa por el modelo upstream registrado y no
+  por el nombre de llamada: la página no agrega nada sobre el libro, cuyo resumen pertenece a Costo y uso. La faceta devuelve
+  como máximo 200 valores, los más activos primero (`USAGE_FACET_VALUE_CAP`), de modo que una lista llena deja
+  desconocido el conteo de un modelo ausente en lugar de cero.
 
-A change to the price book's response, the facet's shape or cap, or the request list's
-filter names is answered in that module and `scripts/test-model-square-ledger.ts`; the page
-only renders a `ModelLedgerEntry`.
+Un cambio en la respuesta del libro de precios, en la forma o el tope de la faceta, o en los
+nombres de filtro de la lista de solicitudes se responde en ese módulo y en `scripts/test-model-square-ledger.ts`; la página
+solo renderiza un `ModelLedgerEntry`.
 
-### CI and release verification ownership (ADR 0068)
+### Propiedad de la verificación de CI y de versiones (ADR 0068)
 
-Release identity precedes three parallel read-only verification lanes: static,
-full built-browser/demo and the whole probe catalog in three shards. The final
-`verify` aggregate rejects failed, cancelled or skipped prerequisites. Every
-publication consumer checks out the verified revision, and tag-to-commit agreement
-is resolved again at external publication boundaries. Native dependencies and build
-outputs remain fresh; this does not change ADR 0066's cache trust boundary.
+La identidad de la versión precede a tres carriles paralelos de verificación de solo lectura: estático,
+navegador compilado/demo completo y el catálogo de sondas completo en tres shards. El agregado final
+`verify` rechaza prerrequisitos fallidos, cancelados u omitidos. Todo consumidor de publicación
+hace checkout de la revisión verificada, y la concordancia etiqueta-commit se
+resuelve de nuevo en las fronteras de publicación externa. Las dependencias nativas y las salidas
+de compilación permanecen frescas; esto no cambia la frontera de confianza de caché del ADR 0066.
 
-Local affected logic selection is conservative and development-only; final static
-verification retains automatic full-suite discovery. Browser contexts reject
-undeclared endpoints, unexpected runtime errors and outbound HTTP/WebSocket traffic.
-Vite and BrowserServer lifetimes are explicitly owned and bounded. Structured probe
-timings support reviewed deterministic shard weights rather than runtime selection.
-The independent weekly maintenance workflow owns targeted race/fuzz/advisory checks
-and Windows/macOS runtime evidence without adding network-dependent audits to PR
-gates. See `docs/testing.md` for budgets, failure ownership and registration.
+La selección local de lógica afectada es conservadora y solo de desarrollo; la verificación estática final
+conserva el descubrimiento automático de la suite completa. Los contextos de navegador rechazan
+endpoints no declarados, errores de runtime inesperados y tráfico HTTP/WebSocket saliente.
+Los ciclos de vida de Vite y BrowserServer son explícitamente propios y están acotados. Las temporizaciones estructuradas de sondas
+respaldan pesos de shard deterministas revisados en lugar de una selección en runtime.
+El workflow independiente de mantenimiento semanal es dueño de las comprobaciones dirigidas de race/fuzz/advisory
+y de la evidencia de runtime de Windows/macOS sin añadir auditorías dependientes de la red a las compuertas de PR.
+Véase `docs/testing.md` para presupuestos, propiedad de fallos y registro.
 
-### Demonstration replay and portable answer fidelity
+### Repetición de la demostración y fidelidad de respuestas portables
 
-`web/src/demo/agentReplay.ts` streams the curated `agentRecording.json` through AG-UI;
-The recording is loaded on demand only in demo mode, pace locally and honor abort signals. The Agent's
-`session.ts` retains the settled conversation across query refetches until reload/reset.
-`recordingTemplate.ts` localizes text and re-bases recorded dates to the run's anchor. The
-Worker still refuses server writes and has no inference path. ADR 0092 records this boundary.
+`web/src/demo/agentReplay.ts` transmite la `agentRecording.json` curada mediante AG-UI;
+la grabación se carga bajo demanda solo en modo demo, con ritmo local y respetando las señales de aborto. El `session.ts` del Agent
+retiene la conversación asentada a través de las relecturas de consultas hasta la recarga/reinicio.
+`recordingTemplate.ts` localiza el texto y reubica las fechas grabadas al ancla de la ejecución. El
+Worker sigue rechazando las escrituras del servidor y no tiene ruta de inferencia. El ADR 0092 registra esta frontera.
 
-The export snapshot uses `answerLayout.ts` and `callFacts.ts` to preserve answer block order,
-call summaries, status, timings and reasoning/call timelines. The live framework grouping
-remains page-owned and is tested against those same cases. Canvas capture never combines
-script permission with same-origin permission: model markup runs only in the existing opaque
-sandbox, its bounded response becomes an image, and the outer snapshot is script-disabled.
-A missing figure retains an explicit unavailable-image note; all transcript pages must encode
-before any PNG is downloaded.
+La instantánea de exportación usa `answerLayout.ts` y `callFacts.ts` para preservar el orden de los bloques de respuesta,
+los resúmenes de llamadas, el estado, las temporizaciones y las líneas de tiempo de razonamiento/llamadas. La agrupación
+del framework en vivo sigue siendo propiedad de la página y se prueba con esos mismos casos. La captura de canvas nunca combina
+el permiso de script con el permiso de mismo origen: el marcado del modelo se ejecuta solo en el sandbox opaco existente,
+su respuesta acotada se convierte en una imagen, y la instantánea externa tiene los scripts deshabilitados.
+Una figura ausente conserva una nota explícita de imagen no disponible; todas las páginas de la transcripción deben codificarse
+antes de que se descargue ningún PNG.
 
-## Credential window warmup (ADRs 0097 and 0098)
+## Calentamiento de ventanas de credenciales (ADR 0097 y 0098)
 
-`internal/warmup` owns policies, explicit billing/activation evidence, pure calendar and
-cycle decisions, and fixed tiny-request adapters. `internal/api/warmup.go` orchestrates
-credential eligibility, audit-before-send, per-credential execution exclusion, fresh
-quota reads and completion verification. Operations exposes the same implementation to
-confirmed Agent/MCP writes. CPA retains token substitution and credential-specific
-transport; neither browser nor model can supply an upstream URL or read OAuth tokens.
+`internal/warmup` es dueño de las políticas, la evidencia explícita de facturación/activación, las decisiones puras de calendario y
+ciclo, y los adaptadores fijos de solicitudes diminutas. `internal/api/warmup.go` orquesta
+la elegibilidad de credenciales, la auditoría antes del envío, la exclusión de ejecución por credencial, las lecturas
+frescas de cuota y la verificación de la finalización. Operations expone la misma implementación a
+las escrituras confirmadas del Agent/MCP. CPA conserva la sustitución de tokens y el transporte específico de la credencial;
+ni el navegador ni el modelo pueden suministrar una URL upstream ni leer tokens OAuth.
 
-The quota service parses `warmup_evidence` from the same successful provider usage read.
-It carries paid fallback as a three-state value rather than collapsing omitted or false
-fields. `quota_snapshots.warmup_json` preserves that evidence through scheduled refresh,
-manual refresh and reset-credit redemption. A per-reading service copy keeps evidence
-isolated when the existing batch refresh shares a service concurrently.
+El servicio de cuota analiza `warmup_evidence` de la misma lectura de uso exitosa del proveedor.
+Lleva el respaldo de pago como un valor de tres estados en lugar de colapsar campos omitidos o falsos.
+`quota_snapshots.warmup_json` preserva esa evidencia a través de la actualización programada,
+la actualización manual y el canje de créditos de reinicio. Una copia del servicio por lectura mantiene la evidencia
+aislada cuando la actualización por lotes existente comparte un servicio de forma concurrente.
 
-Migration 041 adds `credential_warmup_policies` (instance/scope/identity),
-`credential_warmup_state` (one instance/credential scheduling record) and
-`credential_warmup_runs` (newest 100 receipts per instance/credential). Policies require
-confirmation and a revision; credential overrides include a keyed identity fingerprint and provider
-in their storage key. CPA's opaque account field is hashed, never persisted or returned. Identity replacement discards prior activation observations and scheduling state. The three
-secret-free tables are explicitly classified for lifecycle and read-only queries.
+La migración 041 añade `credential_warmup_policies` (instancia/alcance/identidad),
+`credential_warmup_state` (un registro de programación por instancia/credencial) y
+`credential_warmup_runs` (los 100 recibos más recientes por instancia/credencial). Las políticas requieren
+confirmación y una revisión; las anulaciones de credencial incluyen una huella de identidad con clave y el proveedor
+en su clave de almacenamiento. El campo de cuenta opaco de CPA se hashea, nunca se persiste ni se devuelve. El reemplazo de identidad descarta las observaciones de activación previas y el estado de programación. Las tres
+tablas sin secretos se clasifican explícitamente para el ciclo de vida y las consultas de solo lectura.
 
-The application starts and joins the minute warmup loop alongside quota auto-refresh.
-Disabled policies cause no upstream usage reads. Enabled credentials are checked in
-bounded rounds of 16 with at most four concurrent contexts, targeting fresh evidence
-every five minutes and reusing newer stored quota evidence. Every consuming attempt
-performs a fresh read first. Auto and manual requests share a credential lock and durable
-receipts. A pre-send revalidation refusal restores the prior cycle, daily task and activation
-basis because no consuming request occurred. Restart-abandoned executing receipts are
-uncertain; they are not resubmitted. A transient startup recovery error is diagnosed and
-retried on the minute ticks; consuming rounds wait for successful recovery.
-Definite rate-limit refusals use one/five/fifteen-minute backoff, with at most three
-retries; a successful response is checked immediately and at most twice more without
-resending. A manual run while that check is still pending is refused (`activation_pending`)
-without sending and without cutting the pending check short. The Codex backend streams
-each output item in `response.output_item.done` and usually leaves `response.completed`'s
-output empty, so the adapter judges completion from both. An idle Codex window reports a
-reset that slides with every read; activation is a reset that stopped sliding, moved only
-by the delay between the first read and the send, observed at least 30 seconds later. An approved enabled policy admits the first automatic attempt and an explicitly
-selected new model through fresh quota and billing evidence. The legacy `protocol_verified`
-and `verified_model` state fields record observed activation; they do not admit or suppress
-execution. An observed unsupported protocol response pauses automatic requests for the
-same model, while a confirmed manual action can recheck compatibility. Its optional
-`protocol_pause` model/reason is persisted independently of the latest result in the existing
-state JSON; legacy latest-result refusals are carried forward before replacement. A rate-limited
-or unresolved recheck retains the pause; observed activation for that model clears it.
-A different explicitly selected model is evaluated independently. A changed model is
-not silently substituted. Read projections preserve the current window or billing reason
-rather than replacing it with historical activation status (ADR 0098).
+La aplicación inicia y une el bucle de calentamiento por minuto junto con la actualización automática de cuota.
+Las políticas deshabilitadas no provocan lecturas de uso upstream. Las credenciales habilitadas se comprueban en
+rondas acotadas de 16 con a lo sumo cuatro contextos concurrentes, buscando evidencia fresca
+cada cinco minutos y reutilizando evidencia de cuota almacenada más reciente. Todo intento que consume
+realiza primero una lectura fresca. Las solicitudes automáticas y manuales comparten un bloqueo de credencial y recibos
+duraderos. Un rechazo de revalidación previo al envío restaura el ciclo, la tarea diaria y la base de
+activación anteriores porque no ocurrió ninguna solicitud que consumiera. Los recibos en ejecución abandonados por un reinicio son
+inciertos; no se reenvían. Un error transitorio de recuperación al arrancar se diagnostica y
+se reintenta en los ticks de minuto; las rondas que consumen esperan a una recuperación exitosa.
+Los rechazos definitivos por límite de tasa usan retroceso de uno/cinco/quince minutos, con a lo sumo tres
+reintentos; una respuesta exitosa se comprueba de inmediato y a lo sumo dos veces más sin
+reenviar. Una ejecución manual mientras esa comprobación sigue pendiente se rechaza (`activation_pending`)
+sin enviar y sin acortar la comprobación pendiente. El backend de Codex transmite
+cada elemento de salida en `response.output_item.done` y normalmente deja vacía la salida de `response.completed`,
+así que el adaptador juzga la finalización a partir de ambos. Una ventana de Codex inactiva informa un
+reinicio que se desliza con cada lectura; la activación es un reinicio que dejó de deslizarse, movido solo
+por el retraso entre la primera lectura y el envío, observado al menos 30 segundos después. Una política habilitada aprobada admite el primer intento automático y un
+modelo nuevo seleccionado explícitamente mediante evidencia fresca de cuota y facturación. Los campos de estado heredados `protocol_verified`
+y `verified_model` registran la activación observada; no admiten ni suprimen
+la ejecución. Una respuesta observada de protocolo no admitido pausa las solicitudes automáticas para el
+mismo modelo, mientras que una acción manual confirmada puede volver a comprobar la compatibilidad. Su `protocol_pause`
+opcional de modelo/motivo se persiste independientemente del último resultado en el JSON de
+estado existente; los rechazos heredados del último resultado se trasladan antes del reemplazo. Una nueva comprobación con límite de tasa
+o sin resolver conserva la pausa; la activación observada para ese modelo la borra.
+Un modelo distinto seleccionado explícitamente se evalúa de forma independiente. Un modelo cambiado
+no se sustituye en silencio. Las proyecciones de lectura preservan la ventana actual o el motivo de facturación
+en lugar de reemplazarlos con el estado de activación histórico (ADR 0098).
 
-The facade adds warmup settings, credential policy/state and manual-run routes under
-`/management/quota/warmup`. The public demo exports settings and representative
-credential state but refuses policy writes and consumption, and never starts the loop.
+La fachada añade ajustes de calentamiento, política/estado de credencial y rutas de ejecución manual bajo
+`/management/quota/warmup`. La demo pública exporta los ajustes y un estado representativo de
+credenciales pero rechaza las escrituras de políticas y el consumo, y nunca inicia el bucle.
 
-Warmup round ordering is oldest observation first. Fleets exceeding a round's capacity
-remain queued rather than increasing concurrency or skipping protection.
+El orden de las rondas de calentamiento es la observación más antigua primero. Las flotas que exceden la capacidad de una ronda
+permanecen en cola en lugar de aumentar la concurrencia u omitir la protección.

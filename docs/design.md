@@ -1,110 +1,110 @@
-# Shell-PAMC · Brand & Theme Tokens
+# Shell-PAMC · Tokens de marca y de tema
 
-Single source of truth for the visual system. The information density and engineer-first
-patterns draw on minimalist developer consoles; the brand wordmark, the palettes, the CPA
-information architecture and the security boundaries belong to Shell-PAMC.
-The palette is declared and derived in code at:
+Única fuente de verdad del sistema visual. La densidad de información y los patrones pensados para
+ingenieros se inspiran en consolas minimalistas para desarrolladores; el logotipo tipográfico de la marca, las paletas, la arquitectura
+de información de CPA y los límites de seguridad pertenecen a Shell-PAMC.
+La paleta se declara y se deriva en código en:
 
-- `web/src/theme/palette.ts` — the nine authored tokens per palette, the eighteen derived tokens, and
-  the registered palettes
-- `web/src/theme/themeConfig.ts` — the antd `ThemeConfig` projection
-- `web/src/index.css` — the pre-hydration fallback's custom properties on `:root`
+- `web/src/theme/palette.ts` — los nueve tokens autorados por paleta, los dieciocho tokens derivados y
+  las paletas registradas
+- `web/src/theme/themeConfig.ts` — la proyección de `ThemeConfig` de antd
+- `web/src/index.css` — las propiedades personalizadas del respaldo previo a la hidratación en `:root`
 
-**Rule: never hardcode a color in components.** Read the resolved palette, or use the CSS variable.
+**Regla: nunca escribas un color fijo en los componentes.** Lee la paleta resuelta o usa la variable CSS.
 
-**Rule: the tables in §2 are generated, not authored.** Eighteen of a palette's tokens are computed
-from the other nine (`derivePalette`), so a value here that disagrees with the function is a defect in
-this document. Changing an *authored* token is a one-line change plus the tables it moves; changing a
-*relationship* - how a hover fill relates to the page, how deep a filled control goes - means changing a
-constant in `palette.ts`, and the numbers in the tables below and in `DESIGN.md` move with it. Nothing
-here is hand-tuned any more, which is what makes an operator's own palette the same kind of object as a
-registered one; see `docs/adr/0011-theme-modes-and-derived-palettes.md`.
+**Regla: las tablas de §2 se generan, no se redactan a mano.** Dieciocho de los tokens de una paleta se calculan
+a partir de los otros nueve (`derivePalette`), de modo que un valor de aquí que discrepe de la función es un defecto de
+este documento. Cambiar un token *autorado* es un cambio de una línea más las tablas que mueve; cambiar una
+*relación* - cómo se relaciona un relleno de hover con la página, qué tan profundo llega un control relleno - implica cambiar una
+constante en `palette.ts`, y los números de las tablas de abajo y de `DESIGN.md` se mueven con ella. Nada
+de esto se ajusta ya a mano, y eso es lo que hace que la paleta propia de un operador sea el mismo tipo de objeto que una
+paleta registrada; véase `docs/adr/0011-theme-modes-and-derived-palettes.md`.
 
-## 1. Design language
+## 1. Lenguaje de diseño
 
-A quiet panel on a canvas (ADR 0103). The navigation stands on the canvas; the page is drawn on
-one inset, rounded panel; anything the reader summons lifts off that panel with a soft shadow.
-Static structure is a fill and a hairline, grouping is enclosure rather than division, interface
-text reads in the bundled Sarasa Mono SC unless the operator chooses another typeface, and motion is short,
-decelerating and never decorative. Dense where the data is dense, generous where a page is read.
+Un panel tranquilo sobre un lienzo (ADR 0103). La navegación se apoya en el lienzo; la página se dibuja sobre
+un único panel redondeado y empotrado; todo lo que el lector invoca se eleva de ese panel con una sombra suave.
+La estructura estática es un relleno y una línea fina, la agrupación es un recinto y no una división, el texto
+de la interfaz se lee en la Sarasa Mono SC incluida salvo que el operador elija otra tipografía, y el movimiento es breve,
+desacelerado y nunca decorativo. Denso donde los datos son densos, generoso donde se lee una página.
 
-| Principle | Meaning |
+| Principio | Significado |
 | --- | --- |
-| Two layers of chrome | The rail on `--canvas`, the work on the `--bg` panel; the panel's edge is the only separation between them |
-| Flat until summoned | Cards, tables and the layout carry no shadow; menus, popovers, toasts, dialogs and sheets lift with `--shadow-float` / `--shadow-overlay` |
-| Enclosure, not division | A group is one hairline enclosure on the page's own ground; rows inside it part with a dashed inset rule |
-| Quiet controls | A secondary control is a foreground wash, not an outline; hairlines belong to what encloses content |
-| Typography roles | Interface text uses the UI stack (Sarasa Mono SC by default); code and aligned data use the mono stack, with tabular numerals |
-| Quiet chrome, loud data | UI scaffolding stays muted; status color is reserved for real state |
-| Semantic color only | Green/red/amber mean enabled/error/warning — never decoration |
+| Dos capas de marco | La barra lateral sobre `--canvas`, el trabajo sobre el panel `--bg`; el borde del panel es la única separación entre ambos |
+| Plano hasta que se invoca | Las tarjetas, las tablas y el layout no llevan sombra; los menús, popovers, avisos, diálogos y hojas se elevan con `--shadow-float` / `--shadow-overlay` |
+| Recinto, no división | Un grupo es un recinto de línea fina sobre el fondo propio de la página; las filas de su interior se separan con una regla discontinua empotrada |
+| Controles discretos | Un control secundario es un velo de primer plano, no un contorno; las líneas finas pertenecen a lo que encierra contenido |
+| Roles tipográficos | El texto de la interfaz usa la pila UI (Sarasa Mono SC por defecto); el código y los datos alineados usan la pila mono, con numerales tabulares |
+| Marco discreto, datos llamativos | El andamiaje de la interfaz permanece atenuado; el color de estado se reserva para el estado real |
+| Solo color semántico | Verde/rojo/ámbar significan habilitado/error/advertencia — nunca decoración |
 
-## 2. Color palette
+## 2. Paleta de colores
 
-A palette is **nine authored tokens and eighteen derived ones**. `web/src/theme/palette.ts` declares the
-authored set and computes the rest; `docs/adr/0011-theme-modes-and-derived-palettes.md` records the
-formula, its calibrated constants, and the places where applying it changed the values below. Nothing in
-this section is hand-tuned any more, so a value here that disagrees with `derivePalette` is a defect in
-this document rather than a palette exception - `scripts/test-theme-presets.ts` asserts the stylesheet's
-fallback against the same function, though it cannot read this table.
+Una paleta son **nueve tokens autorados y dieciocho derivados**. `web/src/theme/palette.ts` declara el
+conjunto autorado y calcula el resto; `docs/adr/0011-theme-modes-and-derived-palettes.md` registra la
+fórmula, sus constantes calibradas y los lugares donde aplicarla cambió los valores de abajo. Nada de
+esta sección se ajusta ya a mano, de modo que un valor de aquí que discrepe de `derivePalette` es un defecto de
+este documento y no una excepción de paleta - `scripts/test-theme-presets.ts` comprueba el respaldo de la
+hoja de estilos contra la misma función, aunque no puede leer esta tabla.
 
-**One visible step in both modes.** The derivation's blends are fractions of a palette's own
-distances, and a light palette's distances are short, so a soft rule and a chart's grid
-derived from it used to land at roughly half the perceptual step the same tokens take on a dark page,
-and the trend's grid vanished in light mode. `--border-soft` therefore stands at least 0.06 of OKLCH
-lightness off `--bg` (`BORDER_SOFT_FLOOR` in `palette.ts`). OKLCH lightness is perceptual, so one
-floor is one visible step in either mode; the dark built-ins already clear it, and an operator's
-faint light palette is lifted to it. OMC Light's own border and surface were deepened to the dark
-palette's steps for the same reason. Hover keeps its blend: it is the ground the effort badges'
-fixed hues are tuned against.
+**Un paso visible en ambos modos.** Las mezclas de la derivación son fracciones de las distancias propias de una paleta,
+y las distancias de una paleta clara son cortas, de modo que una regla suave y la cuadrícula de un gráfico
+derivada de ella solían quedar en aproximadamente la mitad del paso perceptual que los mismos tokens alcanzan en una página oscura,
+y la cuadrícula de la tendencia desaparecía en modo claro. Por eso `--border-soft` se sitúa al menos 0.06 de luminosidad OKLCH
+separado de `--bg` (`BORDER_SOFT_FLOOR` en `palette.ts`). La luminosidad OKLCH es perceptual, así que un
+umbral es un paso visible en cualquiera de los modos; las paletas oscuras integradas ya lo superan, y la paleta clara tenue
+de un operador se eleva hasta él. El borde y la superficie de OMC Light se profundizaron hasta los pasos de la paleta
+oscura por la misma razón. El hover conserva su mezcla: es el fondo contra el que se ajustan los tonos
+fijos de las insignias de esfuerzo.
 
-### The authored tokens
+### Los tokens autorados
 
-| Token | Role | Contrast floor against `--bg` |
+| Token | Rol | Umbral de contraste frente a `--bg` |
 | --- | --- | --- |
-| `--bg` | the page itself | - |
-| `--surface` | cards and panels | layer step |
-| `--elevated` | menus, popovers, dialogs | layer step |
-| `--fg` | primary text | 4.5:1 |
-| `--fg-2` | secondary text | 4.5:1 |
-| `--muted` | hints, legends, labels, chart axis text | 3:1 |
-| `--meta` | group labels, footnotes, chart tick text | 2:1 |
-| `--border` | 1px borders, row dividers, chart grid rules | layer step |
-| `--accent` | links, info, active bars, the heatmap ramp | 4.5:1 |
+| `--bg` | la página misma | - |
+| `--surface` | tarjetas y paneles | paso de capa |
+| `--elevated` | menús, popovers, diálogos | paso de capa |
+| `--fg` | texto principal | 4.5:1 |
+| `--fg-2` | texto secundario | 4.5:1 |
+| `--muted` | pistas, leyendas, etiquetas, texto de ejes de gráficos | 3:1 |
+| `--meta` | etiquetas de grupo, notas al pie, texto de marcas de gráficos | 2:1 |
+| `--border` | bordes de 1px, divisores de fila, reglas de la cuadrícula de gráficos | paso de capa |
+| `--accent` | enlaces, información, barras activas, la rampa del mapa de calor | 4.5:1 |
 
-The floors are the ones the six registered palettes actually meet, and they are the ones the custom-palette
-editor reports against. A palette is never *refused* for missing one: the editor states the ratio and the
-console renders what the operator asked for.
+Los umbrales son los que las seis paletas registradas cumplen en la práctica, y son aquellos contra los que informa el editor
+de paletas personalizadas. Una paleta nunca se *rechaza* por no cumplir uno: el editor indica la razón y la
+consola muestra lo que el operador pidió.
 
-### OMC Dark (default)
+### OMC Dark (predeterminada)
 
-| Token | Value | antd mapping | Usage |
+| Token | Valor | Mapeo en antd | Uso |
 | --- | --- | --- | --- |
-| `--bg` | `#121214` | `colorBgBase`, `colorBgLayout`, `colorBgContainer` | App background, inputs, tables |
-| `--surface` | `#1c1c1f` | `colorBgElevated`, `colorFillQuaternary` | Cards, panels, dropdowns, hover states |
-| `--elevated` | `#222226` | `colorBgElevated` for overlays | Menus, popovers, dialogs |
-| `--fg` | `#f4f4f6` | `colorText`, `colorTextBase` | Primary text |
-| `--fg-2` | `#a1a1aa` | `colorTextSecondary` | Secondary text |
-| `--muted` | `#71717a` | `colorTextTertiary` | Hints, legends, labels, chart crosshair rules |
-| `--meta` | `#52525b` | `colorTextQuaternary` | Group labels, footnotes |
-| `--border` | `#2c2c30` | `colorBorder` | Primary 1px borders |
-| `--accent` | `#00a2fb` | `colorInfo`, `colorLink` | Links, info, active bars, selection |
-| `--accent-hover` | `#0579bd` | `colorPrimary` | Filled primary buttons |
-| `--accent-active` | `#025e94` | `colorPrimaryHover/Active` | A filled control, hovered or pressed |
-| `--accent-on` | `#ffffff` | `Button.primaryColor` | Label drawn on a filled accent control |
-| `--success` | `#10b981` | `colorSuccess` | Enabled / healthy / ok pip |
-| `--warn` | `#f59e0b` | `colorWarning` | Degraded / quota warning |
-| `--danger` | `#ef4444` | `colorError` | Failed / disabled / delete |
+| `--bg` | `#121214` | `colorBgBase`, `colorBgLayout`, `colorBgContainer` | Fondo de la aplicación, entradas, tablas |
+| `--surface` | `#1c1c1f` | `colorBgElevated`, `colorFillQuaternary` | Tarjetas, paneles, desplegables, estados de hover |
+| `--elevated` | `#222226` | `colorBgElevated` para superposiciones | Menús, popovers, diálogos |
+| `--fg` | `#f4f4f6` | `colorText`, `colorTextBase` | Texto principal |
+| `--fg-2` | `#a1a1aa` | `colorTextSecondary` | Texto secundario |
+| `--muted` | `#71717a` | `colorTextTertiary` | Pistas, leyendas, etiquetas, reglas de la mira del gráfico |
+| `--meta` | `#52525b` | `colorTextQuaternary` | Etiquetas de grupo, notas al pie |
+| `--border` | `#2c2c30` | `colorBorder` | Bordes principales de 1px |
+| `--accent` | `#00a2fb` | `colorInfo`, `colorLink` | Enlaces, información, barras activas, selección |
+| `--accent-hover` | `#0579bd` | `colorPrimary` | Botones primarios rellenos |
+| `--accent-active` | `#025e94` | `colorPrimaryHover/Active` | Un control relleno, con hover o presionado |
+| `--accent-on` | `#ffffff` | `Button.primaryColor` | Etiqueta dibujada sobre un control de acento relleno |
+| `--success` | `#10b981` | `colorSuccess` | Indicador de habilitado / sano / ok |
+| `--warn` | `#f59e0b` | `colorWarning` | Degradado / advertencia de cuota |
+| `--danger` | `#ef4444` | `colorError` | Fallido / deshabilitado / eliminar |
 
-**Derived** (computed, listed for reference): `--canvas` `#09090a`, `--border-soft` `#212124`, `--hover`/`--row-hover` `#272729`,
+**Derivados** (calculados, listados como referencia): `--canvas` `#09090a`, `--border-soft` `#212124`, `--hover`/`--row-hover` `#272729`,
 `--selected-inset` `#2e2e37`, `--hover-inset` `#121214`, `--tooltip-bg` `#1c1c1f`, `--heatmap-quiet`
 `#212124`, `--heatmap-busy` `#00a2fb`, `--heatmap-zero-recorded` `#2c2c30`,
 `--heatmap-zero-unrecorded` `#212124`, `--heatmap-tip-link` `#00a2fb`, `--series-track` `#2c2c30`,
-`--cache-rate-yellow` `#f59e0b`, `--cache-rate-green` `#10b981`. The six `--effort-*` steps are
-per-mode constants; see the reasoning-effort scale below.
+`--cache-rate-yellow` `#f59e0b`, `--cache-rate-green` `#10b981`. Los seis pasos `--effort-*` son
+constantes por modo; véase la escala de esfuerzo de razonamiento más abajo.
 
 ### OMC Light
 
-| Token | Value |
+| Token | Valor |
 | --- | --- |
 | `--bg` | `#ffffff` |
 | `--surface` | `#f1f1f3` |
@@ -119,664 +119,663 @@ per-mode constants; see the reasoning-effort scale below.
 | `--accent-active` | `#023b5d` |
 | `--accent-on` | `#ffffff` |
 
-**Derived**: `--canvas` `#f5f5f5`, `--border-soft` `#ebebee`, `--hover`/`--row-hover` `#f3f3f3`, `--selected-inset` `#eaedef`,
+**Derivados**: `--canvas` `#f5f5f5`, `--border-soft` `#ebebee`, `--hover`/`--row-hover` `#f3f3f3`, `--selected-inset` `#eaedef`,
 `--hover-inset` `#f2f2f2`, `--tooltip-bg` `#1c1c1e`, `--heatmap-quiet` `#ebebee`, `--heatmap-busy`
 `#005d8f`, `--heatmap-zero-recorded` `#dcdce1`, `--heatmap-zero-unrecorded` `#ebebee`,
 `--heatmap-tip-link` `#005d8f`, `--series-track` `#dcdce1`, `--cache-rate-yellow` `#b45309`,
 `--cache-rate-green` `#059669`.
 
-### Registered palettes
+### Paletas registradas
 
-Three per mode. A palette belongs to a mode - its nine tokens are chosen for that mode's surfaces, and
-its text ladder points one way - so the settings page offers a dark palette only while the console is
-reading palettes *for* dark, whichever mode is in force.
+Tres por modo. Una paleta pertenece a un modo - sus nueve tokens se eligen para las superficies de ese modo, y
+su escala de texto apunta en una sola dirección - por lo que la página de ajustes ofrece una paleta oscura solo mientras la consola
+lee paletas *para* oscuro, sea cual sea el modo en vigor.
 
-| Palette | Mode | Authored `bg` | Accent |
+| Paleta | Modo | `bg` autorado | Acento |
 | --- | --- | --- | --- |
-| OMC Dark | dark | `#121214` | `#00a2fb` |
-| Midnight | dark | `#0d1117` | `#58a6ff` |
-| Forest | dark | `#0e1411` | `#6ee7a8` |
-| OMC Light | light | `#ffffff` | `#005d8f` |
-| Porcelain | light | `#f7f8fa` | `#0b6e99` |
-| Sandstone | light | `#f8f3e8` | `#0f766e` |
+| OMC Dark | oscuro | `#121214` | `#00a2fb` |
+| Midnight | oscuro | `#0d1117` | `#58a6ff` |
+| Forest | oscuro | `#0e1411` | `#6ee7a8` |
+| OMC Light | claro | `#ffffff` | `#005d8f` |
+| Porcelain | claro | `#f7f8fa` | `#0b6e99` |
+| Sandstone | claro | `#f8f3e8` | `#0f766e` |
 
-A **theme mode** is light or dark; each mode holds one palette. The header and settings offer only these two choices. Legacy follow-the-system preferences remain readable until an explicit mode is selected. The resolved palette is
-the only source for Ant Design's `ConfigProvider`, the CSS custom properties written to the document root,
-the categorical chart/ring series, the Monaco theme and the token heatmap ramp. `web/src/index.css` keeps
-OMC Dark and OMC Light as the pre-hydration fallback and `themePaletteCssVariables` supplies every
-palette's runtime values; the two are asserted equal for those two palettes, so the first frame paints the
-same console the palette resolves to. `omc-theme` holds the whole preference document - mode, one palette
-reference per mode, and any authored palettes - and a bare palette id or a bare `dark`/`light` from an
-earlier build is still read.
+Un **modo de tema** es claro u oscuro; cada modo guarda una paleta. El encabezado y los ajustes ofrecen solo estas dos opciones. Las preferencias heredadas de seguir al sistema siguen siendo legibles hasta que se selecciona un modo explícito. La paleta resuelta es
+la única fuente para el `ConfigProvider` de Ant Design, las propiedades personalizadas CSS escritas en la raíz del documento,
+las series categóricas de gráficos/anillos, el tema de Monaco y la rampa del mapa de calor de tokens. `web/src/index.css` conserva
+OMC Dark y OMC Light como respaldo previo a la hidratación y `themePaletteCssVariables` aporta los valores de
+ejecución de cada paleta; ambos se comprueban iguales para esas dos paletas, de modo que el primer fotograma pinta la
+misma consola a la que se resuelve la paleta. `omc-theme` guarda el documento completo de preferencias - modo, una referencia de paleta
+por modo y cualquier paleta autorada - y un id de paleta suelto o un `dark`/`light` suelto de una
+compilación anterior se sigue leyendo.
 
-An **operator-authored palette** carries the registered palette it started from, which is what its reset
-returns to, and no name: it is labelled `omc.palette_custom` in the reading language, because the swatch
-beside the label already says what it looks like and a name would be the one string in the console that
-could not be translated. Both the starting palette and the tokens it is reset to come from the same mode,
-for the reason the palette groups are grouped at all. The editor reports each authorable token's contrast against the page, judged
-against the floor that token's own role carries (see the table above) - the surface and border steps are
-layers and answer to no text floor, which is why a correct palette shows no warning at all.
+Una **paleta autorada por el operador** lleva consigo la paleta registrada de la que partió, que es a lo que vuelve su
+restablecimiento, y ningún nombre: se etiqueta `omc.palette_custom` en el idioma de lectura, porque la muestra
+junto a la etiqueta ya dice cómo se ve y un nombre sería la única cadena de la consola que
+no podría traducirse. Tanto la paleta de partida como los tokens a los que se restablece proceden del mismo modo,
+por la razón por la que se agrupan las paletas. El editor informa del contraste de cada token autorable frente a la página, juzgado
+contra el umbral que lleva el rol propio de ese token (véase la tabla anterior) - los pasos de superficie y borde son
+capas y no responden a ningún umbral de texto, por lo que una paleta correcta no muestra ninguna advertencia.
 
-A palette also declares `accentOn`: the label colour for a filled accent control. It reaches Ant
-Design as `Button.primaryColor` and the stylesheet as `--accent-on`, because Ant Design's own
-`Button.primaryColor` default is `colorTextLightSolid` - white in every palette - and a palette whose
-accent fill is light cannot carry a white label. It is **computed, never authored**: the derivation picks
-whichever of white and near-black reads better on the fill, and the fill is deepened until one of them
-clears **4.5:1**. Every palette's label clears it, and the registry check fails a palette that does not.
+Una paleta también declara `accentOn`: el color de etiqueta de un control de acento relleno. Llega a Ant
+Design como `Button.primaryColor` y a la hoja de estilos como `--accent-on`, porque el valor por defecto propio de
+`Button.primaryColor` en Ant Design es `colorTextLightSolid` - blanco en todas las paletas - y una paleta cuyo
+relleno de acento es claro no puede llevar una etiqueta blanca. Se **calcula, nunca se autora**: la derivación elige
+el que mejor se lea sobre el relleno entre blanco y casi negro, y el relleno se profundiza hasta que uno de ellos
+alcanza **4.5:1**. La etiqueta de toda paleta lo alcanza, y la comprobación del registro rechaza una paleta que no lo haga.
 
-The Shell-PAMC Settings page presents two groups of named cards with a four-swatch preview, one per mode, and
-each group's last card is the operator's own. The header's control presents the mode alone. The appearance
-controls must not introduce a second palette source: both read the registry, so new palettes extend
-`web/src/theme/palette.ts`, and the derivation, contrast and mirror checks in
-`scripts/test-theme-presets.ts` fail if a palette is incomplete or unreadable.
+La página de Ajustes de Shell-PAMC presenta dos grupos de tarjetas con nombre con una vista previa de cuatro muestras, uno por modo, y
+la última tarjeta de cada grupo es la propia del operador. El control del encabezado presenta únicamente el modo. Los controles
+de apariencia no deben introducir una segunda fuente de paletas: ambos leen el registro, por lo que las paletas nuevas extienden
+`web/src/theme/palette.ts`, y las comprobaciones de derivación, contraste y espejo de
+`scripts/test-theme-presets.ts` fallan si una paleta está incompleta o es ilegible.
 
-### Accent ladder
+### Escala de acento
 
-The accent is **not** mode-invariant. It is one hue (201) at three lightness steps, and each theme
-uses a different assignment because the same blue cannot be both legible as text on a light page and
-legible as text on a dark one:
+El acento **no** es invariable entre modos. Es un solo tono (201) en tres pasos de luminosidad, y cada tema
+usa una asignación distinta porque el mismo azul no puede ser a la vez legible como texto en una página clara y
+legible como texto en una oscura:
 
-| Step | Dark | Light | Measured use |
+| Paso | Oscuro | Claro | Uso medido |
 | --- | --- | --- | --- |
-| `--accent` | `#00a2fb` | `#005d8f` | link text: **6.74:1** on the dark background, **7.09:1** on the light one |
-| `--accent-hover` | `#0579bd` | `#004a73` | white label on a filled control: **4.69:1** and **9.43:1** |
-| `--accent-active` | `#025e94` | `#023b5d` | pressed state: the same label reads **6.93:1** and **11.76:1** |
-| `--accent-on` | `#ffffff` | `#ffffff` | the label on a filled control — the colour both filled-control steps above are measured against |
+| `--accent` | `#00a2fb` | `#005d8f` | texto de enlace: **6.74:1** sobre el fondo oscuro, **7.09:1** sobre el claro |
+| `--accent-hover` | `#0579bd` | `#004a73` | etiqueta blanca sobre un control relleno: **4.69:1** y **9.43:1** |
+| `--accent-active` | `#025e94` | `#023b5d` | estado presionado: la misma etiqueta se lee a **6.93:1** y **11.76:1** |
+| `--accent-on` | `#ffffff` | `#ffffff` | la etiqueta sobre un control relleno — el color contra el que se miden los dos pasos de control relleno anteriores |
 
-The two modes share the hue and no value. Each palette authors its own link step, and `derivePalette`
-computes the two filled-control steps from it: a proportional OKLCH lightness step, then both fills
-deepened together until one label ink clears 4.5:1 on the resting fill and the pressed one alike. Shell-PAMC
-Light's link step is the deeper `#005d8f` because the bright `#00a2fb` reads **2.78:1** against white -
-which is both the light page and the label on a filled control - so it can only ever be the dark
-theme's text colour.
+Los dos modos comparten el tono y ningún valor. Cada paleta autora su propio paso de enlace, y `derivePalette`
+calcula a partir de él los dos pasos de control relleno: un paso proporcional de luminosidad OKLCH, y luego ambos rellenos
+se profundizan juntos hasta que una tinta de etiqueta alcanza 4.5:1 tanto sobre el relleno en reposo como sobre el presionado. El paso de enlace de
+Shell-PAMC Light es el más profundo `#005d8f` porque el brillante `#00a2fb` se lee a **2.78:1** contra blanco -
+que es tanto la página clara como la etiqueta de un control relleno - por lo que solo puede ser el
+color de texto del tema oscuro.
 
-Brand artwork follows the same tokens: the wordmark's accent marks and its letterforms are drawn from
-the resolved palette, so a change here moves the logo with it — an operator's own accent included. See
+El arte de la marca sigue los mismos tokens: los acentos del logotipo tipográfico y sus letras se dibujan a partir de
+la paleta resuelta, de modo que un cambio aquí mueve el logotipo con él — incluido el acento propio de un operador. Véase
 `web/src/assets/brand/markup.ts`.
 
-The brand has two drawings. The wordmark is used wherever there is width for it. The mark is the
-square drawing for the collapsed rail, the Agent authorization page and the favicon: a ring on the
-wordmark's letter grid (rounded outer edge, near-square counter, stroke a quarter of the box), cut
-twice, with its lower trailing corner in the accent — a gauge with part of its allowance spent. The
-ring is `--fg` and the corner is `--accent`. `web/public/favicon.svg` is written from the same drawing
-by `pnpm sync-brand` and holds the two default palettes behind `prefers-color-scheme`, because a
-browser tab has no console theme to follow; `pnpm check-brand` fails when it is stale.
+La marca tiene dos dibujos. El logotipo tipográfico se usa dondequiera que haya ancho para él. El símbolo es el
+dibujo cuadrado para la barra lateral contraída, la página de autorización del Agent y el favicon: un anillo sobre la
+cuadrícula de letras del logotipo (borde exterior redondeado, hueco interior casi cuadrado, trazo de un cuarto de la caja), cortado
+dos veces, con su esquina inferior final en el acento — un indicador con parte de su asignación ya gastada. El
+anillo es `--fg` y la esquina es `--accent`. `web/public/favicon.svg` se escribe a partir del mismo dibujo
+con `pnpm sync-brand` y contiene las dos paletas predeterminadas detrás de `prefers-color-scheme`, porque una
+pestaña del navegador no tiene un tema de consola que seguir; `pnpm check-brand` falla cuando está desactualizado.
 
-Success, warn and danger are per-mode constants rather than derived tokens (`MODE_SEMANTICS` in
-`web/src/theme/palette.ts`): `#10b981` / `#f59e0b` / `#ef4444` in dark mode, `#059669` / `#b45309` /
-`#dc2626` in light mode.
+Éxito, advertencia y peligro son constantes por modo y no tokens derivados (`MODE_SEMANTICS` en
+`web/src/theme/palette.ts`): `#10b981` / `#f59e0b` / `#ef4444` en modo oscuro, `#059669` / `#b45309` /
+`#dc2626` en modo claro.
 
-### Status pip semantics
+### Semántica de los indicadores de estado
 
 `ok/loaded → success` · `degraded/quota → warn` · `invalid/error/401 → danger`
-· `inactive/offline/disabled → meta (gray)`. Pips are round 6–7px dots.
+· `inactive/offline/disabled → meta (gris)`. Los indicadores son puntos redondos de 6–7px.
 
-**One pip per verdict.** A pip labels the state of the number it sits on, so a
-row that shows a rate and its two components gets one pip — on the rate. The
-components carry state by their own colour instead: a failure count is `danger`
-when it is above zero and `meta` when it is not, because "0 failures" is not a
-success worth painting green.
+**Un indicador por veredicto.** Un indicador etiqueta el estado del número sobre el que está, de modo que una
+fila que muestra una tasa y sus dos componentes lleva un solo indicador — sobre la tasa. Los componentes
+llevan el estado con su propio color: un recuento de fallos es `danger`
+cuando es mayor que cero y `meta` cuando no lo es, porque "0 fallos" no es un
+éxito digno de pintarse de verde.
 
-**Only a verdict gets a pip.** The request console's result filter segments
-(Success / Failed) reuse the Result column's square bullet in its success/danger
-token, but the All segment carries none: it is the absence of a verdict, and
-both bullets side by side would read as a third, combined outcome. Same rule as
-the success-rate bands — the state of "everything" is not a state.
+**Solo un veredicto recibe indicador.** Los segmentos del filtro de resultado de la consola de solicitudes
+(Success / Failed) reutilizan la viñeta cuadrada de la columna Result en su token success/danger,
+pero el segmento All no lleva ninguna: es la ausencia de un veredicto, y
+ambas viñetas juntas se leerían como un tercer resultado combinado. Misma regla que las
+bandas de la tasa de éxito — el estado de "todo" no es un estado.
 
-**Success rate is a verdict on one published band.** Every surface that shows a
-success rate colours it through `successRateTone`
-(`web/src/types/usageEventMetrics.ts`), so the same number cannot be green on one
-page and amber on another:
+**La tasa de éxito es un veredicto sobre una banda publicada.** Toda superficie que muestra una tasa de éxito
+la colorea mediante `successRateTone`
+(`web/src/types/usageEventMetrics.ts`), de modo que el mismo número no puede ser verde en una
+página y ámbar en otra:
 
-| Rate | Verdict |
+| Tasa | Veredicto |
 | --- | --- |
-| no traffic, or an unreadable rate | `neutral` — nothing to judge |
-| ≥ 80% | `success` — serving |
-| 50% – < 80% | `warn` — degraded |
-| < 50%, including exactly 0% | `danger` — broken |
+| sin tráfico, o una tasa ilegible | `neutral` — nada que juzgar |
+| ≥ 80% | `success` — sirviendo |
+| 50% – < 80% | `warn` — degradado |
+| < 50%, incluido exactamente 0% | `danger` — averiado |
 
-The dashboard's request tile takes that tone for its pip; the provider rows take
-it as the colour of both marks that read one rate — the rate's own number and the
-meter beside it. The number carries it as well as the meter because a meter's
-fill *is* the rate: at a measured 0% it has no width, so without the number the
-worst row on the page would show no red at all and would read as an idle one. A
-window with no traffic is *unknowable* rather than bad, so it stays `neutral` and
-does not fall into the alarm step, while a measured 0% is a real outage and does.
-The request list does not show a verdict of its own, for the reason below.
+El mosaico de solicitudes del panel toma ese tono para su indicador; las filas de proveedores lo toman
+como el color de las dos marcas que leen una misma tasa — el número de la tasa y el
+medidor contiguo. El número lo lleva además del medidor porque el relleno de un medidor *es* la tasa:
+con un 0% medido no tiene ancho, así que sin el número la peor fila de la página no mostraría nada de rojo
+y se leería como una inactiva. Una ventana sin tráfico es *incognoscible* y no mala, por lo que permanece `neutral` y
+no cae en el paso de alarma, mientras que un 0% medido es una caída real y sí cae.
+La lista de solicitudes no muestra un veredicto propio, por la razón siguiente.
 
-### Latency is not a verdict
+### La latencia no es un veredicto
 
-The request list prints latency in plain `--fg` at every value. A long duration
-is not a fault when the workload includes agents: a request that thinks for
-minutes is doing its job, and the old `>= 4000 ms → amber` rule painted normal
-traffic as degraded. Latency is read against its own baseline (the TTFT/stream
-waterfall in the detail drawer), never against an absolute threshold, and the
-semantic hues stay reserved for state.
+La lista de solicitudes imprime la latencia en `--fg` plano en todos los valores. Una duración larga
+no es un fallo cuando la carga incluye agentes: una solicitud que piensa durante
+minutos está haciendo su trabajo, y la antigua regla `>= 4000 ms → amber` pintaba el tráfico normal
+como degradado. La latencia se lee contra su propia línea base (la cascada TTFT/stream
+del panel de detalle), nunca contra un umbral absoluto, y los tonos
+semánticos se reservan para el estado.
 
-### The request list carries no summary strip
+### La lista de solicitudes no lleva franja de resumen
 
-The page used to open with a row of aggregates — page count, success rate with a
-pip, mean latency, tokens, estimated cost. It was removed, and the rule it
-violated is worth keeping:
+La página solía abrir con una fila de agregados — recuento de páginas, tasa de éxito con un
+indicador, latencia media, tokens, coste estimado. Se eliminó, y la regla que
+vulneraba merece conservarse:
 
-- **Four of the five numbers restated the rows directly beneath them.** The page
-  count is in the footer, and the totals are sums of the visible page, not of the
-  window — so they changed meaning whenever the reader paged or filtered, without
-  saying so, and they measured only the loaded page rather than what the reader
-  believes they measure.
-- **The one reading that was not a restatement was the success-rate pip, and it
-  answered a question the list already answers per row.** A gateway's failure
-  rate is a dashboard concern: it is a property of a *window*, and the dashboard
-  owns windows. The list owns individual requests. Putting a window-level verdict
-  on a page-sized sample (100 rows) made a 1-in-100 failure read as a 1%
-  failure — the exact misreading that produced the 98%-shows-amber complaint.
-- **A list is not a KPI view.** The strip consumed a full row of vertical space
-  above the data it summarised, so on a 900px viewport 10% of the height went to
-  information already available further down.
+- **Cuatro de los cinco números repetían las filas situadas justo debajo.** El recuento
+  de páginas está en el pie, y los totales son sumas de la página visible, no de la
+  ventana — así que cambiaban de significado cada vez que el lector paginaba o filtraba, sin
+  avisarlo, y medían solo la página cargada en lugar de lo que el lector
+  cree que miden.
+- **La única lectura que no era una repetición era el indicador de la tasa de éxito, y
+  respondía a una pregunta que la lista ya responde por fila.** La tasa de fallos de una pasarela
+  es una preocupación del panel: es una propiedad de una *ventana*, y el panel
+  es dueño de las ventanas. La lista es dueña de las solicitudes individuales. Poner un veredicto de ventana
+  sobre una muestra del tamaño de una página (100 filas) hacía que un fallo entre 100 se leyera como un fallo del 1%
+  — exactamente la mala lectura que produjo la queja de que el 98% aparece en ámbar.
+- **Una lista no es una vista de KPI.** La franja consumía una fila completa de espacio vertical
+  sobre los datos que resumía, de modo que en una ventana de 900px el 10% de la altura se iba en
+  información ya disponible más abajo.
 
-Totals belong where the whole window is in scope: the dashboard tiles, and the
-detail drawer for one request. If a per-page figure is ever needed again, it
-belongs in the footer next to the page count, stated as a page figure.
+Los totales pertenecen allí donde entra toda la ventana: los mosaicos del panel y el
+panel de detalle de una solicitud. Si alguna vez vuelve a hacer falta una cifra por página,
+pertenece al pie junto al recuento de páginas, enunciada como cifra de página.
 
-### A request cell answers one question
+### Una celda de solicitud responde una sola pregunta
 
-Each column of the request list answers one question about the request, and a cell that starts
-answering a second one is split. The model cell used to carry the model name, a non-streaming icon,
-a preflight tag, the substituted model and the reasoning effort; three stacked lines made the row
-taller than its neighbours, and a reader looking for "which model" had to read past "how it was
-asked" to find it.
+Cada columna de la lista de solicitudes responde una pregunta sobre la solicitud, y una celda que empieza a
+responder una segunda se divide. La celda de modelo solía llevar el nombre del modelo, un icono de no streaming,
+una etiqueta de preflight, el modelo sustituido y el esfuerzo de razonamiento; tres líneas apiladas hacían que la fila fuera
+más alta que sus vecinas, y quien buscaba "qué modelo" tenía que leer "cómo se
+pidió" para encontrarlo.
 
-| Column | Question | Carries |
+| Columna | Pregunta | Contiene |
 | --- | --- | --- |
-| Provider | Which provider answered, and on which credential? | The provider's name with an `OAuth` badge when the credential is one, then the credential on the second line: the account for OAuth, the masked key for an API key. Both lines are set alike on every row, so the first is always a provider and the second always a credential. |
-| Model | Which model answered? | The call model by default (requested model in requested-model view). An alias shows its routed upstream on a neutral `--fg-2` second line; a served substitution takes priority on that line in `--warn`, with routing detail retained in the tooltip. A preflight tag stays here because it qualifies what the record is. |
-| Mode | How was the request made? | The reasoning-effort badge on its scale, then one 18px filled mark per departure from an ordinary streamed call: a filled bolt in `--accent` when the response's service tier was `fast` or `priority`, and the crossed-out broadcast glyph for a non-streaming response. An em dash when there is nothing to say. |
+| Provider | ¿Qué proveedor respondió y con qué credencial? | El nombre del proveedor con una insignia `OAuth` cuando la credencial lo es, y luego la credencial en la segunda línea: la cuenta para OAuth, la clave enmascarada para una clave de API. Ambas líneas se componen igual en cada fila, de modo que la primera es siempre un proveedor y la segunda siempre una credencial. |
+| Model | ¿Qué modelo respondió? | El modelo de la llamada por defecto (el modelo solicitado en la vista de modelo solicitado). Un alias muestra su upstream enrutado en una segunda línea neutra `--fg-2`; una sustitución servida tiene prioridad en esa línea en `--warn`, y el detalle del enrutamiento se conserva en el tooltip. Una etiqueta de preflight se queda aquí porque califica lo que es el registro. |
+| Mode | ¿Cómo se hizo la solicitud? | La insignia de esfuerzo de razonamiento en su escala, y luego una marca rellena de 18px por cada desviación de una llamada ordinaria en streaming: un rayo relleno en `--accent` cuando el nivel de servicio de la respuesta fue `fast` o `priority`, y el glifo de difusión tachado para una respuesta sin streaming. Un guion largo cuando no hay nada que decir. |
 
-Rules:
+Reglas:
 
-- **A row is two lines at most**, so every row is the same 72px and the virtual list's estimate
-  holds. A third fact needs another column or the detail drawer, never a third line.
-- **A mark states a departure, never the default.** A streamed request carries no "streamed" mark,
-  and the requested service tier (`auto`) stays in the drawer.
-- **Every mark has a text reading**: the effort badge prints its level, and an icon mark carries an
-  accessible name and the list's shared tooltip.
-- **Only the two name columns flex.** Provider and model take the spare width; every figure, badge
-  and mark column is a rigid track, because its content has a known width and any share it took
-  would come out of the names that truncate.
+- **Una fila ocupa dos líneas como máximo**, de modo que todas las filas miden lo mismo, 72px, y la estimación de la lista virtual
+  se cumple. Un tercer dato necesita otra columna o el panel de detalle, nunca una tercera línea.
+- **Una marca enuncia una desviación, nunca lo habitual.** Una solicitud en streaming no lleva marca de "streaming",
+  y el nivel de servicio solicitado (`auto`) se queda en el panel.
+- **Toda marca tiene una lectura textual**: la insignia de esfuerzo imprime su nivel, y una marca de icono lleva un
+  nombre accesible y el tooltip compartido de la lista.
+- **Solo las dos columnas de nombre se flexibilizan.** Provider y model toman el ancho sobrante; toda columna de cifras, insignias
+  y marcas es una pista rígida, porque su contenido tiene un ancho conocido y cualquier parte que tomara
+  saldría de los nombres que se truncan.
 
-### Filter options carry the mark their rows carry
+### Las opciones de filtro llevan la marca que llevan sus filas
 
-A model, provider or credential option in the filter bar and in the "More filters" drawer is
-led by a 16px mark: a model takes its maker's mark by Model Square's rule (the generic box
-glyph in `--muted` where no maker is known), and a provider or credential is resolved through
-the request row's own resolver, so a custom icon set on the providers page or a plugin's logo
-is the same picture in the option and in the rows it leaves on screen. The label stays the
-searchable text and takes the truncation; the mark never shrinks. Closed vocabularies of words
-(auth type, reasoning effort, service tier, executor) get no mark.
+Una opción de modelo, proveedor o credencial en la barra de filtros y en el panel "More filters" está
+encabezada por una marca de 16px: un modelo toma la marca de su fabricante según la regla de Model Square (el glifo genérico de caja
+en `--muted` donde no se conoce fabricante), y un proveedor o una credencial se resuelve mediante el
+resolvedor propio de la fila de solicitud, de modo que un icono personalizado definido en la página de proveedores o el logotipo de un plugin
+es la misma imagen en la opción y en las filas que deja en pantalla. La etiqueta sigue siendo el
+texto buscable y asume el truncado; la marca nunca se encoge. Los vocabularios cerrados de palabras
+(tipo de autenticación, esfuerzo de razonamiento, nivel de servicio, ejecutor) no llevan marca.
 
-### The pattern filter
+### El filtro por patrón
 
-"More filters" ends its text fields with one compound control: a field select joined to a
-pattern input in the mono face. It is one filter - one chip ("Model matches ^claude-"),
-one count, one removal - because a pattern without its field means nothing. The hint under
-it states the three things a reader cannot guess: the syntax is RE2, the match is anywhere
-in the field, and it is case-sensitive unless the pattern starts with `(?i)`. The panel
-refuses only what is certain before a round trip (length, lookaround, backreferences); the
-server is the authority on the rest.
+"More filters" termina sus campos de texto con un control compuesto: un selector de campo unido a un
+campo de patrón en la tipografía mono. Es un solo filtro - un chip ("Model matches ^claude-"),
+un recuento, una eliminación - porque un patrón sin su campo no significa nada. La pista bajo
+él enuncia las tres cosas que un lector no puede adivinar: la sintaxis es RE2, la coincidencia es en cualquier punto
+del campo, y distingue mayúsculas de minúsculas salvo que el patrón empiece por `(?i)`. El panel
+rechaza solo lo que es seguro antes de un viaje de ida y vuelta (longitud, lookaround, referencias inversas); el
+servidor es la autoridad en el resto.
 
-### Selecting requests and exporting them
+### Seleccionar solicitudes y exportarlas
 
-Every row leads with a checkbox in its own 20px track, and the header's checkbox speaks for
-the loaded page. A tick never opens the record under it; Shift extends the run from the last
-plain click, selecting or clearing it. The selection survives paging and is dropped when the
-filters or the window change, because it would then name rows the reader can no longer see.
+Cada fila empieza con una casilla en su propia pista de 20px, y la casilla del encabezado habla por
+la página cargada. Marcar una casilla nunca abre el registro que tiene debajo; Shift extiende la serie desde el último
+clic simple, seleccionándola o limpiándola. La selección sobrevive a la paginación y se descarta cuando
+cambian los filtros o la ventana, porque entonces nombraría filas que el lector ya no puede ver.
 
-- **The checkbox is drawn from the palette, not left to the browser.** A native box is the
-  system's own fill in either theme. Resting: `--bg` with a 1px `--muted` edge (a control's
-  boundary clears 3:1 where `--border`, a divider, does not). Ticked or mixed: the
-  filled-control step `--accent-hover` with an `--accent-on` tick, `--accent-active` on hover -
-  the same pair the primary button uses, legible in both themes. Under forced colours it
-  returns to the system's drawing.
-- **The selection bar exists only while something is selected.** It states the count, repeats
-  "select all" (the stacked layout has no header row), clears, and carries the one primary
-  action, Export. It sits inside the list's frame above the header, so the columns do not move.
-- **The header carries no scrollbar gutter.** The virtual list draws its own overlay scrollbar
-  and gives up no width to one, so the header and the rows are the same grid at the same width.
-  Padding the header for a native scrollbar shifted every flexible track progressively.
-- **Columns are separated by 16px.** Right-aligned numerics end on the same edge as their
-  header, and the gap keeps a right-aligned figure from touching the left-aligned column after it.
+- **La casilla se dibuja desde la paleta, no se deja al navegador.** Una casilla nativa es el
+  relleno propio del sistema en cualquiera de los temas. En reposo: `--bg` con un borde de 1px `--muted` (el límite de un control
+  supera 3:1 donde `--border`, un divisor, no lo hace). Marcada o mixta: el
+  paso de control relleno `--accent-hover` con una marca `--accent-on`, `--accent-active` al pasar el cursor -
+  el mismo par que usa el botón primario, legible en ambos temas. Con colores forzados
+  vuelve al dibujo del sistema.
+- **La barra de selección existe solo mientras haya algo seleccionado.** Enuncia el recuento, repite
+  "select all" (el diseño apilado no tiene fila de encabezado), limpia, y lleva la única acción
+  primaria, Export. Se sitúa dentro del marco de la lista sobre el encabezado, de modo que las columnas no se mueven.
+- **El encabezado no lleva canal de barra de desplazamiento.** La lista virtual dibuja su propia barra superpuesta
+  y no cede ancho a ninguna, de modo que el encabezado y las filas son la misma cuadrícula con el mismo ancho.
+  Rellenar el encabezado para una barra nativa desplazaba progresivamente todas las pistas flexibles.
+- **Las columnas se separan por 16px.** Las cifras alineadas a la derecha terminan en el mismo borde que su
+  encabezado, y el hueco evita que una cifra alineada a la derecha toque la columna alineada a la izquierda que la sigue.
 
-Export offers two formats under one set of redaction choices:
+Export ofrece dos formatos bajo un mismo conjunto de opciones de redacción:
 
-| Format | For | Contents |
+| Formato | Para | Contenido |
 | --- | --- | --- |
-| Image (PNG) | Showing people what a model or a source did | The list's columns as a sheet, under the wordmark and a caption (count, time), drawn in the list's own vocabulary - the soft head rule, the verdict dot, filled tags and the provider tile, and the model's maker mark when the list shows model marks. The newest 100 selected rows. |
-| JSON | A program | Stored values (milliseconds, counts, dollars), every selected row, with a `schema` name and the list of what was redacted. |
+| Imagen (PNG) | Mostrar a otras personas lo que hizo un modelo o una fuente | Las columnas de la lista como una hoja, bajo el logotipo tipográfico y un pie (recuento, hora), dibujada en el vocabulario propio de la lista - la regla suave de cabecera, el punto de veredicto, las etiquetas rellenas y el mosaico de proveedor, y la marca del fabricante del modelo cuando la lista muestra marcas de modelo. Las 100 filas seleccionadas más recientes. |
+| JSON | Un programa | Valores almacenados (milisegundos, recuentos, dólares), todas las filas seleccionadas, con un nombre de `schema` y la lista de lo que se redactó. |
 
-- **Redaction is by what a reader could learn.** OAuth account names and keys (the caller's key
-  and the provider key that answered) are withheld by default; request ids and whole columns on
-  request. The source and the model stay, because they are the point of sharing.
-- **A redacted value is a neutral bar** (`--fg` at 20%, 96x10px, 2px radius), not a substitute
-  label, and it is absent from the export's data rather than covered: the sheet is built without
-  it before anything is drawn, and the JSON field is omitted.
-- **The image is drawn, not captured.** The sheet is painted on a canvas from the palette, so a
-  hundred rows cost one paint instead of a clone of several thousand elements, and the preview
-  is the canvas that is saved. It is wider than the list (1480px minimum, at up to 2x) so no
-  column is cramped, and uses the list's own marks: provider artwork, the result pill, the
-  cache-rate reading, the non-streaming and substituted-model glyphs.
+- **La redacción es según lo que un lector podría averiguar.** Los nombres de cuenta OAuth y las claves (la clave del llamador
+  y la clave del proveedor que respondió) se ocultan por defecto; los ids de solicitud y columnas enteras
+  bajo petición. La fuente y el modelo permanecen, porque son el motivo de compartir.
+- **Un valor redactado es una barra neutra** (`--fg` al 20%, 96x10px, radio de 2px), no una etiqueta
+  sustituta, y está ausente de los datos de la exportación en lugar de cubierto: la hoja se construye sin
+  él antes de dibujar nada, y el campo JSON se omite.
+- **La imagen se dibuja, no se captura.** La hoja se pinta en un canvas desde la paleta, de modo que cien
+  filas cuestan un pintado en lugar del clon de varios miles de elementos, y la vista previa
+  es el canvas que se guarda. Es más ancha que la lista (1480px como mínimo, hasta 2x) para que ninguna
+  columna quede apretada, y usa las marcas propias de la lista: ilustración del proveedor, la píldora de resultado, la
+  lectura de la tasa de caché, y los glifos de no streaming y de modelo sustituido.
 
-A non-streaming response is marked with the crossed-out broadcast glyph (`NonStreamOutlined`)
-and labelled "Non-streaming response". The stacked-boxes glyph belongs to Model Square and is
-not reused for it.
+Una respuesta sin streaming se marca con el glifo de difusión tachado (`NonStreamOutlined`)
+y se etiqueta "Non-streaming response". El glifo de cajas apiladas pertenece a Model Square y no
+se reutiliza para ello.
 
-### Cache-rate scale
+### Escala de tasa de caché
 
-The request list's cache rate is the one continuous reading in the app:
-the value itself is a quality, so the list paints it instead of bucketing it.
-`0%` yellow → `100%` green, with no thresholds and no steps. **Red is not on the
-scale**: a low hit rate is not a failure, and the danger hue is reserved for
-failed requests, so a weakly-cached request never reads as an error.
+La tasa de caché de la lista de solicitudes es la única lectura continua de la aplicación:
+el valor mismo es una cualidad, así que la lista lo pinta en lugar de agruparlo en cubos.
+`0%` amarillo → `100%` verde, sin umbrales ni escalones. **El rojo no está en la
+escala**: una tasa de aciertos baja no es un fallo, y el tono de peligro se reserva para las
+solicitudes fallidas, de modo que una solicitud con poca caché nunca se lee como un error.
 
-| Token | Dark | Light | Role |
+| Token | Oscuro | Claro | Rol |
 | --- | --- | --- | --- |
-| `--cache-rate-yellow` | `#f59e0b` | `#b45309` | 0% stop |
-| `--cache-rate-green` | `#10b981` | `#059669` | 100% stop |
+| `--cache-rate-yellow` | `#f59e0b` | `#b45309` | extremo del 0% |
+| `--cache-rate-green` | `#10b981` | `#059669` | extremo del 100% |
 
-Rules:
+Reglas:
 
-1. **Interpolate in OKLCH**, via `color-mix(in oklch, …)`. Letting the browser
-   mix keeps the stops as design tokens instead of hex values baked into a
-   component, and OKLCH keeps the hue sweep even. The component never names a
-   colour: `cacheScale.ts` returns the two stops as `var()` references plus the
-   low stop's weight, and the CSS mixes them.
-2. **The stops are palette steps, not new colours.** `derivePalette` sets
-   `--cache-rate-yellow` to the mode's `--warn` and `--cache-rate-green` to its
-   `--success` (`scripts/test-theme-presets.ts` asserts both), so the light stops
-   are the darker reading of the same two hues (the low end is ochre — a
-   saturated yellow cannot also be legible on a light page). The reading is
-   13px/500 text in its hue with a dot, straight on the row, with no box: a
-   badge's fill and edge were a second frame inside every row and cost the
-   light stops contrast. Measured with `contrastRatio`
-   (`web/src/theme/colorMath.ts`) on the page: OMC Dark reads **8.71:1** at the
-   0% stop and **7.38:1** at the 100% stop; OMC Light reads **5.02:1** and
-   **3.77:1**. These are measurements rather than a pinned bound: no check
-   asserts them.
-3. **The top of the scale is presentation policy.** `100%` is not shown: the
-   reading stops at **99.9%** (`MAX_CACHE_RATE`; the Go dashboard aggregate caps
-   identically) so the app never claims a perfect hit rate. Readings carry **one
-   decimal**; a rate that rounds to zero reads as `0%`, never `0.0%`.
-4. **No data is not 0%.** A record with no token data gets the same badge shape
-   at the neutral step (`--muted`) with an em dash, never a zero: "nothing
-   cached" and "nothing measured" are different facts. The dashboard tile shows
-   the same em dash when the window carried no prompt tokens.
-5. The hue is redundant encoding — the percentage is printed in the badge — so
-   the ramp needs no legend and no colour-only reading.
+1. **Interpola en OKLCH**, mediante `color-mix(in oklch, …)`. Dejar que el navegador
+   mezcle mantiene los extremos como tokens de diseño en lugar de valores hex incrustados en un
+   componente, y OKLCH mantiene uniforme el barrido de tono. El componente nunca nombra un
+   color: `cacheScale.ts` devuelve los dos extremos como referencias `var()` más el peso
+   del extremo bajo, y el CSS los mezcla.
+2. **Los extremos son pasos de la paleta, no colores nuevos.** `derivePalette` fija
+   `--cache-rate-yellow` en el `--warn` del modo y `--cache-rate-green` en su
+   `--success` (`scripts/test-theme-presets.ts` comprueba ambos), de modo que los extremos claros
+   son la lectura más oscura de los mismos dos tonos (el extremo bajo es ocre — un
+   amarillo saturado tampoco puede ser legible en una página clara). La lectura es
+   texto de 13px/500 en su tono con un punto, directamente sobre la fila, sin caja: el
+   relleno y el borde de una insignia eran un segundo marco dentro de cada fila y costaban contraste a
+   los extremos claros. Medido con `contrastRatio`
+   (`web/src/theme/colorMath.ts`) sobre la página: OMC Dark se lee a **8.71:1** en el
+   extremo del 0% y a **7.38:1** en el del 100%; OMC Light se lee a **5.02:1** y
+   **3.77:1**. Son mediciones y no un límite fijado: ninguna comprobación
+   las verifica.
+3. **El extremo superior de la escala es política de presentación.** El `100%` no se muestra: la
+   lectura se detiene en **99.9%** (`MAX_CACHE_RATE`; el agregado del panel en Go aplica el mismo
+   tope) para que la aplicación nunca afirme una tasa de aciertos perfecta. Las lecturas llevan **un
+   decimal**; una tasa que se redondea a cero se lee como `0%`, nunca `0.0%`.
+4. **Sin datos no es 0%.** Un registro sin datos de tokens recibe la misma forma de insignia
+   en el paso neutro (`--muted`) con un guion largo, nunca un cero: "nada
+   en caché" y "nada medido" son hechos distintos. El mosaico del panel muestra
+   el mismo guion largo cuando la ventana no registró tokens de prompt.
+5. El tono es una codificación redundante — el porcentaje se imprime en la insignia — de modo que
+   la rampa no necesita leyenda ni una lectura basada solo en el color.
 
-**Deferred: cache-write accounting.** A provider that accounts cache buckets
-separately (Anthropic-style) reports prompt tokens as `input + cache_read +
-cache_creation`, so its hit ratio currently reads high because the written
-tokens sit outside the denominator. Counting them needs evidence the app does
-not keep: CPA classifies each payload by provider/executor and emits a canonical
-breakdown, but the decoder persists only the raw counts, and the usage facts
-carry no per-convention token columns, so a window cannot be split by convention.
-Fixing it means persisting the breakdown (or per-convention token columns in the
-usage facts) before any arithmetic change. Until then the ratio is a bounded estimate
-for cache-writing providers, and the request list is exact only for providers
-whose input already includes the cached prefix.
+**Diferido: contabilidad de escritura en caché.** Un proveedor que contabiliza los cubos de caché
+por separado (al estilo Anthropic) informa los tokens de prompt como `input + cache_read +
+cache_creation`, de modo que su tasa de aciertos actualmente se lee alta porque los tokens
+escritos quedan fuera del denominador. Contarlos necesita evidencia que la aplicación
+no conserva: CPA clasifica cada carga por proveedor/ejecutor y emite un desglose
+canónico, pero el decodificador persiste solo los recuentos en bruto, y los hechos de uso
+no llevan columnas de tokens por convención, de modo que una ventana no puede dividirse por convención.
+Corregirlo significa persistir el desglose (o columnas de tokens por convención en los hechos
+de uso) antes de cualquier cambio aritmético. Hasta entonces la tasa es una estimación acotada
+para los proveedores que escriben en caché, y la lista de solicitudes es exacta solo para los proveedores
+cuya entrada ya incluye el prefijo en caché.
 
-### Reasoning-effort scale
+### Escala de esfuerzo de razonamiento
 
-The request list colours a request's reasoning effort, because effort is the one request parameter
-an operator compares down a column: a page of `high` and `xhigh` calls costs and waits differently
-from a page of `low` ones. Effort is an **ordinal** reading - each level is more thinking than the
-one below it - so it takes a sequential scale rather than one unrelated colour per name.
+La lista de solicitudes colorea el esfuerzo de razonamiento de una solicitud, porque el esfuerzo es el único parámetro de solicitud
+que un operador compara a lo largo de una columna: una página de llamadas `high` y `xhigh` cuesta y espera de forma distinta
+que una página de llamadas `low`. El esfuerzo es una lectura **ordinal** - cada nivel es más razonamiento que el
+anterior - así que toma una escala secuencial en lugar de un color sin relación por nombre.
 
-Neither OpenAI nor Anthropic publishes a colour for these levels, so the scale follows the general
-rule for ordered data instead: one sweep whose hue and saturation rise with the value, and a printed
-label so the colour is never the only carrier (WCAG 1.4.1).
+Ni OpenAI ni Anthropic publican un color para estos niveles, así que la escala sigue la regla general
+para datos ordenados: un barrido cuyo tono y saturación crecen con el valor, y una
+etiqueta impresa para que el color nunca sea el único portador (WCAG 1.4.1).
 
-| Token | Level | Dark | Light | Family |
+| Token | Nivel | Oscuro | Claro | Familia |
 | --- | --- | --- | --- | --- |
-| - | `none`, unranked | `--fg-2` | `--fg-2` | neutral: the absence of reasoning, or a level the scale does not rank (`instant`, `ultra`, a token budget) |
-| `--effort-1` | `minimal` | `#94bfce` | `#39626e` | slate |
-| `--effort-2` | `low` | `#4eccd3` | `#00686c` | teal |
-| `--effort-3` | `medium` | `#91b7fe` | `#3057a3` | blue |
-| `--effort-4` | `high` | `#bda7fe` | `#6343a4` | violet |
+| - | `none`, sin rango | `--fg-2` | `--fg-2` | neutro: la ausencia de razonamiento, o un nivel que la escala no ordena (`instant`, `ultra`, un presupuesto de tokens) |
+| `--effort-1` | `minimal` | `#94bfce` | `#39626e` | pizarra |
+| `--effort-2` | `low` | `#4eccd3` | `#00686c` | verde azulado |
+| `--effort-3` | `medium` | `#91b7fe` | `#3057a3` | azul |
+| `--effort-4` | `high` | `#bda7fe` | `#6343a4` | violeta |
 | `--effort-5` | `xhigh` | `#f08dee` | `#8a2b8a` | magenta |
-| `--effort-6` | `max` | `#ff8cc1` | `#9b2065` | pink |
-| `--effort-tint` | | `14%` | `12%` | badge fill = step over the ground; the badge has no edge |
+| `--effort-6` | `max` | `#ff8cc1` | `#9b2065` | rosa |
+| `--effort-tint` | | `14%` | `12%` | relleno de la insignia = paso sobre el fondo; la insignia no tiene borde |
 
-Rules:
+Reglas:
 
-1. **The sweep stays cool.** It runs teal to pink and never enters green, amber or red. Those hues
-   are verdicts in this console, and a request that thought hard did not succeed, degrade or fail by
-   doing so - the same reasoning that keeps latency uncoloured and red off the cache-rate scale.
-2. **One order for both vendors.** OpenAI's ladder runs `none` to `xhigh` and Anthropic's `low` to
-   `max`; they agree wherever they overlap, so `effortStep` (`web/src/theme/effortScale.ts`) ranks
-   them on one scale. Matching ignores case and surrounding whitespace.
-3. **An unranked level stays neutral, and neutral is plain rather than faint.** A
-   provider-specific value (`instant`, `ultra`, `auto`, a token budget) is printed as recorded at
-   the neutral step. Painting it as the top of the scale would state an order nobody published. The
-   neutral step is `--fg-2`, secondary text: the badge's tint is thin by design, and
-   `--muted` through them left the level close to unreadable.
-4. **The steps are per-mode constants, not derived tokens**, for the reason the series slots are: an
-   operator's accent must not rotate what a level looks like. Every palette inherits its mode's set.
-5. **Each step, the neutral one included, clears 4.5:1** as 11px badge text on its own tint, over the page, the card and the
-   row's hover fill, in every registered palette. `scripts/test-effort-scale.ts` asserts that, the
-   ranking, and that the stylesheet's fallback values match the palette.
+1. **El barrido se mantiene frío.** Va del verde azulado al rosa y nunca entra en verde, ámbar ni rojo. Esos tonos
+   son veredictos en esta consola, y una solicitud que pensó mucho no tuvo éxito, ni se degradó ni falló
+   por ello - el mismo razonamiento que mantiene la latencia sin color y el rojo fuera de la escala de tasa de caché.
+2. **Un solo orden para ambos proveedores.** La escala de OpenAI va de `none` a `xhigh` y la de Anthropic de `low` a
+   `max`; coinciden donde se solapan, así que `effortStep` (`web/src/theme/effortScale.ts`) los ordena
+   en una sola escala. La coincidencia ignora mayúsculas y los espacios circundantes.
+3. **Un nivel sin rango permanece neutro, y neutro es liso y no tenue.** Un
+   valor específico del proveedor (`instant`, `ultra`, `auto`, un presupuesto de tokens) se imprime tal como se registró en
+   el paso neutro. Pintarlo como el extremo superior de la escala enunciaría un orden que nadie publicó. El
+   paso neutro es `--fg-2`, texto secundario: el tinte de la insignia es fino por diseño, y
+   `--muted` a través de él dejaba el nivel casi ilegible.
+4. **Los pasos son constantes por modo, no tokens derivados**, por la misma razón que las ranuras de serie: el
+   acento de un operador no debe rotar el aspecto de un nivel. Toda paleta hereda el conjunto de su modo.
+5. **Cada paso, el neutro incluido, alcanza 4.5:1** como texto de insignia de 11px sobre su propio tinte, sobre la página, la tarjeta y el
+   relleno de hover de la fila, en toda paleta registrada. `scripts/test-effort-scale.ts` comprueba eso, el
+   orden, y que los valores de respaldo de la hoja de estilos coinciden con la paleta.
 
-### Token activity heatmap
+### Mapa de calor de actividad de tokens
 
-The dashboard's token grid is the app's only sequential *quantity* encoding, and it is deliberately
-not built from the semantic status hues.
+La cuadrícula de tokens del panel es la única codificación secuencial de *cantidad* de la aplicación, y deliberadamente
+no se construye con los tonos semánticos de estado.
 
-**Shape.** A contribution-graph field: one row per weekday (Monday first), one column per week,
-fifty-three whole weeks ending on the week containing today. Seven weekday rows are the whole point —
-they make a weekly rhythm a *row* and a trend a *direction*, which a single-row strip cannot show.
-The span and the shape are one decision: at seven rows a quarter's worth of days would be thirteen
-columns, which reads as a small block rather than a field.
+**Forma.** Un campo de gráfico de contribuciones: una fila por día de la semana (lunes primero), una columna por semana,
+cincuenta y tres semanas completas que terminan en la semana que contiene hoy. Siete filas de días de la semana son todo el punto —
+hacen que un ritmo semanal sea una *fila* y una tendencia una *dirección*, algo que una franja de una sola fila no puede mostrar.
+La extensión y la forma son una sola decisión: con siete filas, los días de un trimestre serían trece
+columnas, lo que se lee como un bloque pequeño y no como un campo.
 
-**The ramp is continuous, not stepped.** One hue at continuously varying lightness, from the cell's
-own empty fill up to the accent. It replaced four fixed shades, which painted every day between two
-of them identically — the day-to-day difference the panel exists to show was quantised away. The
-mapping is the **square root** of the day's volume against the window's own busiest day
-(`web/src/theme/heatmapRamp.ts`): token volume spans several orders of magnitude in one window, so a
-linear ramp collapses the whole middle of the range into one invisible shade, while a logarithm
-over-amplifies the bottom until a day with almost no traffic looks mid-scale. The square root keeps
-day-to-day differences visible at the quiet end without flattening the busy end.
+**La rampa es continua, no escalonada.** Un tono con luminosidad que varía de forma continua, desde el relleno vacío
+propio de la celda hasta el acento. Sustituyó a cuatro tonos fijos, que pintaban de forma idéntica todos los días comprendidos entre dos
+de ellos — la diferencia día a día que el panel existe para mostrar quedaba cuantizada. La
+asignación es la **raíz cuadrada** del volumen del día frente al día más ocupado de la propia ventana
+(`web/src/theme/heatmapRamp.ts`): el volumen de tokens abarca varios órdenes de magnitud en una ventana, de modo que una
+rampa lineal colapsa toda la parte media del rango en un tono invisible, mientras que un logaritmo
+sobreamplifica la parte baja hasta que un día con casi ningún tráfico parece de escala media. La raíz cuadrada mantiene
+visibles las diferencias día a día en el extremo tranquilo sin aplanar el extremo ocupado.
 
-**The window rolls.** A trailing year, not a calendar one. A calendar grid spends every January
-almost entirely empty and says nothing about last December, which is exactly the comparison a reader
-wants at that moment; a rolling window always holds a year of history and always ends on today. It
-is also GitHub's shape. The consequence is that there are no days still to come in the window,
-except the tail of the current week — and those carry no traffic, so they are drawn exactly like
-any other day with no stored record. They are still clickable: their tooltip states that nothing
-is stored, which is the same answer a pruned day gives, and only the drill-down link is absent
-because there would be nothing to open. The panel distinguishes "there is stored
-data" from "there is not"; it does not ask the reader to hold "hasn't happened yet" apart from
-"records were pruned", because those are the same fact to anyone comparing days.
+**La ventana es móvil.** Un año hacia atrás, no un año natural. Una cuadrícula natural gasta cada enero
+casi vacía y no dice nada del diciembre anterior, que es justo la comparación que un lector
+quiere en ese momento; una ventana móvil siempre contiene un año de historia y siempre termina hoy. Es
+también la forma de GitHub. La consecuencia es que no hay días por venir en la ventana,
+salvo la cola de la semana en curso — y esos no tienen tráfico, así que se dibujan exactamente como
+cualquier otro día sin registro almacenado. Siguen siendo pulsables: su tooltip indica que no hay nada
+almacenado, que es la misma respuesta que da un día purgado, y solo falta el enlace de detalle
+porque no habría nada que abrir. El panel distingue "hay datos
+almacenados" de "no los hay"; no le pide al lector que distinga "aún no ha ocurrido" de
+"los registros se purgaron", porque para quien compara días son el mismo hecho.
 
-**It shows the weeks that fit, at a readable size.** The panel fits as many of the newest weeks as
-its width holds at `--heatmap-cell-target` (18px with a 4px `--heatmap-gap`; 14px and 3px below
-900px) and stretches them to
-reach its edge, so a square is a comfortable target at every width. The older weeks stay in the
-field and scroll inside the panel, behind a pinned weekday gutter; a short fade over the first
-visible column says the field continues. The component writes the fitted size as `--heatmap-cell`
-(`fitHeatmapCell` in `web/src/types/tokenHeatmap.ts`), rounded down so the weeks in
-view never exceed the field. When the whole year fits, no size is written and the tracks fall back
-to `minmax(--heatmap-min-cell, 1fr)`, which divides the panel exactly. Dividing the year into
-whatever width the panel has was the earlier rule, and in a half-width column it left 8px squares
-in a strip a third the height of its neighbour.
+**Muestra las semanas que caben, a un tamaño legible.** El panel ajusta tantas de las semanas más recientes como
+caben en su ancho a `--heatmap-cell-target` (18px con un `--heatmap-gap` de 4px; 14px y 3px por debajo de
+900px) y las estira hasta
+alcanzar su borde, de modo que un cuadrado es un objetivo cómodo con cualquier ancho. Las semanas más antiguas permanecen en el
+campo y se desplazan dentro del panel, detrás de un canal fijo de días de la semana; un desvanecimiento breve sobre la primera
+columna visible indica que el campo continúa. El componente escribe el tamaño ajustado como `--heatmap-cell`
+(`fitHeatmapCell` en `web/src/types/tokenHeatmap.ts`), redondeado hacia abajo para que las semanas a la
+vista nunca excedan el campo. Cuando cabe todo el año, no se escribe tamaño y las pistas vuelven
+a `minmax(--heatmap-min-cell, 1fr)`, que divide el panel exactamente. Dividir el año en
+el ancho que tuviera el panel era la regla anterior, y en una columna de medio ancho dejaba cuadrados de 8px
+en una franja de un tercio de la altura de su vecina.
 
-**It shares its row.** By default the field is the left half of a board row, with credential quota
-on the right (see Dashboard arrangement). The field sets the row's height: the quota list beside it
-takes whatever height that is and scrolls inside its own panel, and the ramp's key sits on the
-heatmap panel's bottom edge. Below 1100px each takes a row of its own and the two panels stack.
+**Comparte su fila.** Por defecto el campo es la mitad izquierda de una fila del tablero, con la cuota de credenciales
+a la derecha (véase Disposición del panel). El campo fija la altura de la fila: la lista de cuotas contigua
+toma la altura que sea y se desplaza dentro de su propio panel, y la clave de la rampa se sitúa en el borde inferior del
+panel del mapa de calor. Por debajo de 1100px cada uno ocupa una fila propia y los dos paneles se apilan.
 
-**The current week is a complete column.** Its later days have not happened, so nothing is stored for
-them — the same fact as a day whose records were pruned, and they are drawn and treated identically
-rather than given a state of their own. Leaving them blank was the alternative and it reads as a
-rendering hole: the shape promises a full week.
+**La semana en curso es una columna completa.** Sus días posteriores no han ocurrido, así que no hay nada almacenado para
+ellos — el mismo hecho que un día cuyos registros se purgaron, y se dibujan y tratan de forma idéntica
+en lugar de darles un estado propio. Dejarlos en blanco era la alternativa y se lee como un hueco de
+renderizado: la forma promete una semana completa.
 
-| Token | Dark | Light | Role |
+| Token | Oscuro | Claro | Rol |
 | --- | --- | --- | --- |
-| `--heatmap-quiet` | `#212124` | `#ebebee` | the ramp's floor: a cell with no traffic |
-| `--heatmap-busy` | `#00a2fb` | `#005d8f` | the ramp's ceiling: the window's busiest day |
-| `--heatmap-zero-recorded` | `#2c2c30` | `#dcdce1` | recorded, no traffic |
-| `--heatmap-zero-unrecorded` | `#212124` | `#ebebee` | nothing stored for that day |
+| `--heatmap-quiet` | `#212124` | `#ebebee` | el suelo de la rampa: una celda sin tráfico |
+| `--heatmap-busy` | `#00a2fb` | `#005d8f` | el techo de la rampa: el día más ocupado de la ventana |
+| `--heatmap-zero-recorded` | `#2c2c30` | `#dcdce1` | registrado, sin tráfico |
+| `--heatmap-zero-unrecorded` | `#212124` | `#ebebee` | nada almacenado para ese día |
 
-### Credential quota
+### Cuota de credenciales
 
-The panel beside the activity grid answers the one question a dashboard can usefully ask of a
-credential fleet: what can still serve, and what is about to stop. A count of credentials would say
-that something is wrong and stop there — the reader's next question is always which credential, why,
-and when it recovers — so the panel lists them instead.
+El panel contiguo a la cuadrícula de actividad responde a la única pregunta que un panel puede plantear útilmente sobre una
+flota de credenciales: qué puede seguir sirviendo y qué está a punto de detenerse. Un recuento de credenciales diría
+que algo va mal y ahí se detendría — la siguiente pregunta del lector es siempre cuál credencial, por qué
+y cuándo se recupera — así que el panel las lista.
 
-**One row per credential, most urgent first.** A row draws its credential's plan: the two shortest
-quota windows as remaining-share bars, with the countdown to the tightest of them refilling. Four
-states have no reading to draw and state the reason in its place — sign-in required, cooling down,
-unavailable, and no quota reading — so the row carries the cause instead of an empty bar. An
-exhausted credential keeps its windows, because they *are* the statement: every window it can serve
-from stands at zero, and the countdown beside them is when it serves again. The order is the
-reading: sign-in required, cooling down, exhausted, unavailable, running low, healthy, no reading.
-Disabled credentials are the operator's own decision and are only counted, in the header beside the
-serving and blocked counts.
+**Una fila por credencial, la más urgente primero.** Una fila dibuja el plan de su credencial: las dos ventanas de
+cuota más cortas como barras de cuota restante, con la cuenta atrás hacia la más ajustada de ellas al reponerse. Cuatro
+estados no tienen lectura que dibujar y enuncian la razón en su lugar — inicio de sesión requerido, en enfriamiento,
+no disponible y sin lectura de cuota — así que la fila lleva la causa en vez de una barra vacía. Una
+credencial agotada conserva sus ventanas, porque *son* el enunciado: toda ventana desde la que puede servir
+está en cero, y la cuenta atrás junto a ellas indica cuándo vuelve a servir. El orden es la
+lectura: inicio de sesión requerido, en enfriamiento, agotada, no disponible, a punto de agotarse, sana, sin lectura.
+Las credenciales deshabilitadas son decisión del propio operador y solo se cuentan, en el encabezado junto a los
+recuentos de en servicio y bloqueadas.
 
-**The list scrolls inside the panel.** Every credential is listed, so a large fleet is readable
-without leaving the dashboard, and the panel keeps the height of the row it shares: the list takes
-the height the activity grid gives the row (never less than three rows) and scrolls natively, by
-wheel, scrollbar or touch. Stacked below 1100px it shows up to four and a half rows, the half row
-being what says there is more.
+**La lista se desplaza dentro del panel.** Se lista toda credencial, de modo que una flota grande se puede leer
+sin salir del panel, y el panel conserva la altura de la fila que comparte: la lista toma
+la altura que la cuadrícula de actividad da a la fila (nunca menos de tres filas) y se desplaza de forma nativa, con
+rueda, barra de desplazamiento o táctil. Apilada por debajo de 1100px muestra hasta cuatro filas y media, siendo la media fila
+lo que indica que hay más.
 
-**It displays, with one control.** A row is not interactive — it scrolls under a finger, and a row
-that navigated would turn a touch meant to move the list into leaving the page. The header carries
-a refresh glyph that asks the providers for fresh readings: it is the one action worth having where
-the readings are read, and it runs the same refresh the credential workspace does
-(`web/src/utils/quotaRefresh.ts`), reporting under the same toast. Clearing a cooldown, signing in
-again and everything else done to a single credential stay in `/oauth-management`, which the footer
-links to. The panel reads
-`GET /management/auth-files` and `GET /management/quota` — the stored readings, never a provider —
-and interprets those two responses in its own module
-(`web/src/components/dashboard/credentialQuotaLogic.ts`). Beyond the shared refresh run it shares
-no code with the workspace, so the workspace can change how it selects, labels or acts on quota
-without moving the dashboard.
+**Muestra, con un solo control.** Una fila no es interactiva — se desplaza bajo un dedo, y una fila
+que navegara convertiría un toque pensado para mover la lista en abandonar la página. El encabezado lleva
+un glifo de actualización que pide a los proveedores lecturas nuevas: es la única acción que merece estar donde
+se leen las lecturas, y ejecuta la misma actualización que el espacio de trabajo de credenciales
+(`web/src/utils/quotaRefresh.ts`), informando bajo el mismo aviso. Borrar un enfriamiento, volver a iniciar sesión
+y todo lo demás que se haga con una credencial individual permanece en `/oauth-management`, a donde enlaza
+el pie. El panel lee
+`GET /management/auth-files` y `GET /management/quota` — las lecturas almacenadas, nunca un proveedor —
+e interpreta esas dos respuestas en su propio módulo
+(`web/src/components/dashboard/credentialQuotaLogic.ts`). Aparte de la ejecución de actualización compartida, no comparte
+código con el espacio de trabajo, de modo que este puede cambiar cómo selecciona, etiqueta o actúa sobre la cuota
+sin mover el panel.
 
-A bar's hue is the remaining share — `--success` from 70%, `--warn` from 25%, `--danger` below —
-and never the heatmap ramp: "plenty left" and "a lot of tokens" must not be the same colour. Its
-states are about freshness: a re-read that fails keeps the rows and says so in the warning tone, only a
-credential list that was never read is reported as unknown, with a retry, and a deployment holding
-no credential gets an empty state that links to connecting one.
+El tono de una barra es la cuota restante — `--success` desde el 70%, `--warn` desde el 25%, `--danger` por debajo —
+y nunca la rampa del mapa de calor: "queda mucho" y "muchos tokens" no deben ser el mismo color. Sus
+estados tratan de la frescura: una relectura fallida conserva las filas y lo dice en el tono de advertencia, solo una
+lista de credenciales que nunca se leyó se informa como desconocida, con un reintento, y un despliegue sin
+credenciales recibe un estado vacío que enlaza a conectar una.
 
-A measured cell mixes these two stops in **OKLCH** at a weight its own `--heatmap-quiet-share`
-carries, so the whole ramp is one declaration and the endpoint it reaches is the accent token above.
-`--heatmap-quiet` and `--heatmap-zero-unrecorded` are the same value on purpose: a measured day at the
-bottom of the scale has to start exactly where the field's floor is, or the ramp begins above a day that
-records nothing. `--heatmap-zero-recorded` then takes the next step - the border step - so that an ordered
-reading survives: nothing stored (quietest), recorded but empty, and measured. The derivation holds that
-order (`heatmapQuiet = heatmapZeroUnrecorded = borderSoft`, `heatmapZeroRecorded = border`), which is why
-these four tokens are not four independent choices.
+Una celda medida mezcla estos dos extremos en **OKLCH** con un peso que lleva su propio `--heatmap-quiet-share`,
+de modo que toda la rampa es una sola declaración y el extremo al que llega es el token de acento anterior.
+`--heatmap-quiet` y `--heatmap-zero-unrecorded` tienen el mismo valor a propósito: un día medido en el
+extremo inferior de la escala tiene que empezar exactamente donde está el suelo del campo, o la rampa empieza por encima de un día que
+no registra nada. `--heatmap-zero-recorded` toma entonces el paso siguiente - el paso de borde - para que una lectura
+ordenada sobreviva: nada almacenado (el más tenue), registrado pero vacío, y medido. La derivación mantiene ese
+orden (`heatmapQuiet = heatmapZeroUnrecorded = borderSoft`, `heatmapZeroRecorded = border`), por lo que
+estos cuatro tokens no son cuatro elecciones independientes.
 
-The two zero states are a **solid fill, never an outline**, and they form an ordered scale
-against the card rather than against the page. Both are required properties, not styling
-preferences:
+Los dos estados de cero son un **relleno sólido, nunca un contorno**, y forman una escala ordenada
+frente a la tarjeta y no frente a la página. Ambas son propiedades requeridas, no preferencias
+de estilo:
 
-- **Solid, because a grid is mostly zeros.** A quiet deployment has far more empty cells than
-  measured ones, and drawn as 1px outlines they turned the field into a wire mesh. A stroke also
-  draws attention to the *absence* of data, which is the loudest thing in a panel whose subject is
-  the handful of coloured cells. GitHub's empty state is a wall of quiet blocks, and that is what
-  this is.
-- **Ordered against the card.** The panel is drawn on the page's own ground (`--bg`, ADR 0103), and
-  both steps are a shade lighter than it on dark (darker on light), so the 4px gaps read as the card
-  showing through. The order carries the meaning: unrecorded (no information) is closest to the card
-  at ~1.17:1 (1.19:1 light), empty (a measurement of zero) a step further at ~1.35:1 (1.37:1), and a
-  measured day climbs from there to the accent at 6.74:1 (7.09:1). Each step must sit on the card's
-  side of the ink, never past it: a zero state louder than the ramp's floor would read as a measured
-  day.
+- **Sólido, porque una cuadrícula es en su mayoría ceros.** Un despliegue tranquilo tiene muchas más celdas vacías que
+  medidas, y dibujadas como contornos de 1px convertían el campo en una malla de alambre. Un trazo también
+  llama la atención sobre la *ausencia* de datos, que es lo más ruidoso en un panel cuyo tema es
+  el puñado de celdas coloreadas. El estado vacío de GitHub es un muro de bloques discretos, y esto es lo
+  mismo.
+- **Ordenado frente a la tarjeta.** El panel se dibuja sobre el fondo propio de la página (`--bg`, ADR 0103), y
+  ambos pasos son un tono más claro que él en oscuro (más oscuro en claro), de modo que los huecos de 4px se leen como la tarjeta
+  que se transparenta. El orden lleva el significado: sin registrar (sin información) es lo más cercano a la tarjeta
+  con ~1.17:1 (1.19:1 en claro), vacío (una medición de cero) un paso más lejos con ~1.35:1 (1.37:1), y un
+  día medido asciende desde ahí hasta el acento con 6.74:1 (7.09:1). Cada paso debe quedar del lado de la tarjeta
+  respecto de la tinta, nunca más allá: un estado de cero más fuerte que el suelo de la rampa se leería como un día
+  medido.
 
-Rules:
+Reglas:
 
-1. **The accent hue, because the reading a status colour would imply is wrong.** The ramp continues
-   the interface's own accent rather than introducing a second colour family, and it is deliberately
-   *not* a semantic one: "a lot of tokens" and "this credential is healthy" must not be the same
-   colour, or the grid implies a verdict it has no basis for. The probe asserts no measured cell's
-   fill equals `--success`, `--warn` or `--danger`.
-2. **Continuous, not stepped.** Four fixed shades painted every day between two of them identically,
-   which quantised away the day-to-day difference the panel exists to show. The ramp is mixed in
-   OKLCH rather than by interpolating in sRGB, where the midpoint of a light and a dark blue dips
-   through a desaturated grey.
-3. **Brightness is the square root of the day's share of the window's busiest day**, not the share
-   itself. See the ramp note above for why a linear mapping collapses the middle of the range and a
-   logarithmic one over-amplifies the bottom.
-4. **The ramp is relative to the window, not absolute.** A self-hosted deployment's daily volume
-   spans several orders of magnitude, so a fixed ladder would paint every cell of a busy install at
-   the ceiling and every quiet one at the floor. The cost is that the same shade means different
-   absolute volumes on two installs, which is why every cell states its counts in text.
-5. **Colour is redundant, and the key carries no quantities.** Every cell carries its date and both
-   counts in its accessible name and in its tooltip, so the shade is never the only encoding. The key
-   under the field is five swatches between "Less" and "More": it names the ramp's direction and
-   nothing else, because the shade is relative to the window and a labelled ladder would describe the
-   field's own range rather than any
-   fixed quantity. The numbers are one click away, which is where a reader who wants them goes. The
-   tooltip's token volume prints in the console's **Token Unit Style** — the same layer the KPI tiles
-   above it read — with the exact count on the value, while the request count keeps grouped digits
-   because it is not a token volume.
-6. **The tooltip opens on click, not hover.** On a field this dense a hover tooltip fires
-   continuously as the pointer crosses it and competes with the hover ring for the same gesture.
-   A click is deliberate, and it leaves the tooltip open to be read and followed. The drill-down is
-   **a link inside the tooltip**, not the cell itself: the day's request list is a place, so it can
-   be opened in a new tab and copied, and a stray click on a square cannot throw the operator out
-   of the dashboard.
-7. **Every cell is interactive.** Clicking one opens its tooltip, and a day with nothing recorded
-   says so — "no requests on this date" is the answer to the question a reader is asking, not a
-   reason to refuse it. The tooltip omits the two counts in that case rather than printing zeros:
-   nothing stored is not the same claim as a measured zero, and `Requests 0 / Tokens 0` would assert
-   a measurement the panel cannot make. A day with no traffic also has no drill-down link, because
-   there would be nothing to open.
-8. **Hover lifts the cell.** A `transform: scale()` — compositor-only, per §7 rule 1 — with the
-   ring, and `z-index` so the enlarged square is not clipped by its neighbours. Deliberately no
-   colour transition: §7 rule 7 forbids one, and a fade behind a fast sweep reads as lag. The
-   `prefers-reduced-motion` override drops the movement and keeps the ring and the cursor.
-9. **Every line of the tooltip clears WCAG AA on the popper's own surface** (measured, and
-   asserted from painted pixels in both themes). Two things this pins down, because both shipped
-   broken: the tooltip's fill is the palette surface in *both* themes - antd's `colorBgSpotlight`
-   was set to `--fg` for light, which put near-black text on a near-black box at a contrast ratio
-   of 1.0 - and the link uses its own step (`--heatmap-tip-link`) rather than either accent,
-   because the bright accent reads 3.4:1 on the dark surface and the deeper hover step reads
-   1.96:1 there while being the only legible one on the light surface.
-10. **The field scrolls only when it must.** A panel narrower than a year of target-size cells
-   scrolls inside itself with the scrollbar hidden — a bar inside a dashboard card is noise and touch
-   shows none — and it opens on today's column. Clipping instead would drop the older weeks silently.
-11. **The grid is DOM, not a chart mark** — see `docs/adr/0005-token-heatmap-as-a-dom-grid.md`.
+1. **El tono de acento, porque la lectura que implicaría un color de estado es errónea.** La rampa continúa
+   el acento propio de la interfaz en lugar de introducir una segunda familia de color, y deliberadamente
+   *no* es semántica: "muchos tokens" y "esta credencial está sana" no deben ser el mismo
+   color, o la cuadrícula implica un veredicto para el que no tiene base. La sonda comprueba que el
+   relleno de ninguna celda medida es igual a `--success`, `--warn` o `--danger`.
+2. **Continua, no escalonada.** Cuatro tonos fijos pintaban de forma idéntica todos los días comprendidos entre dos de ellos,
+   lo que cuantizaba la diferencia día a día que el panel existe para mostrar. La rampa se mezcla en
+   OKLCH en lugar de interpolar en sRGB, donde el punto medio entre un azul claro y uno oscuro cae
+   en un gris desaturado.
+3. **El brillo es la raíz cuadrada de la proporción del día respecto del día más ocupado de la ventana**, no la proporción
+   misma. Vea la nota de la rampa anterior para saber por qué una asignación lineal colapsa la parte media del rango y una
+   logarítmica sobreamplifica la parte baja.
+4. **La rampa es relativa a la ventana, no absoluta.** El volumen diario de un despliegue autoalojado
+   abarca varios órdenes de magnitud, de modo que una escala fija pintaría cada celda de una instalación ocupada en
+   el techo y cada una de una tranquila en el suelo. El coste es que el mismo tono significa volúmenes
+   absolutos distintos en dos instalaciones, por lo que cada celda enuncia sus recuentos en texto.
+5. **El color es redundante, y la clave no lleva cantidades.** Cada celda lleva su fecha y ambos
+   recuentos en su nombre accesible y en su tooltip, de modo que el tono nunca es la única codificación. La clave
+   bajo el campo son cinco muestras entre "Less" y "More": nombra la dirección de la rampa y
+   nada más, porque el tono es relativo a la ventana y una escala etiquetada describiría el rango propio
+   del campo y no ninguna cantidad
+   fija. Los números están a un clic, que es adonde va un lector que los quiere. El
+   volumen de tokens del tooltip se imprime en el **Token Unit Style** de la consola — la misma capa que leen los mosaicos de KPI
+   situados sobre él — con el recuento exacto en el valor, mientras que el recuento de solicitudes conserva dígitos agrupados
+   porque no es un volumen de tokens.
+6. **El tooltip se abre al hacer clic, no al pasar el cursor.** En un campo tan denso, un tooltip al pasar el cursor se dispara
+   continuamente al cruzarlo el puntero y compite con el anillo de hover por el mismo gesto.
+   Un clic es deliberado, y deja el tooltip abierto para leerlo y seguirlo. El detalle es
+   **un enlace dentro del tooltip**, no la celda misma: la lista de solicitudes del día es un lugar, así que puede
+   abrirse en una pestaña nueva y copiarse, y un clic accidental en un cuadrado no puede sacar al operador
+   del panel.
+7. **Toda celda es interactiva.** Al hacer clic se abre su tooltip, y un día sin nada registrado
+   lo dice — "no requests on this date" es la respuesta a la pregunta que se hace el lector, no un
+   motivo para rechazarla. El tooltip omite los dos recuentos en ese caso en lugar de imprimir ceros:
+   nada almacenado no es la misma afirmación que un cero medido, y `Requests 0 / Tokens 0` afirmaría
+   una medición que el panel no puede hacer. Un día sin tráfico tampoco tiene enlace de detalle, porque
+   no habría nada que abrir.
+8. **El hover eleva la celda.** Un `transform: scale()` — solo del compositor, según la regla 1 de §7 — con el
+   anillo, y `z-index` para que el cuadrado agrandado no quede recortado por sus vecinos. Deliberadamente sin
+   transición de color: la regla 7 de §7 la prohíbe, y un fundido tras un barrido rápido se lee como lag. La
+   anulación de `prefers-reduced-motion` elimina el movimiento y conserva el anillo y el cursor.
+9. **Cada línea del tooltip cumple WCAG AA sobre la superficie propia del popper** (medido, y
+   comprobado desde los píxeles pintados en ambos temas). Esto fija dos cosas, porque ambas se publicaron
+   rotas: el relleno del tooltip es la superficie de la paleta en *ambos* temas - `colorBgSpotlight` de antd
+   estaba fijado a `--fg` para el claro, lo que ponía texto casi negro sobre una caja casi negra con una razón de contraste
+   de 1.0 - y el enlace usa su propio paso (`--heatmap-tip-link`) en lugar de cualquiera de los acentos,
+   porque el acento brillante se lee a 3.4:1 sobre la superficie oscura y el paso de hover más profundo se lee
+   a 1.96:1 allí siendo el único legible sobre la superficie clara.
+10. **El campo se desplaza solo cuando debe.** Un panel más estrecho que un año de celdas de tamaño objetivo
+   se desplaza dentro de sí mismo con la barra de desplazamiento oculta — una barra dentro de una tarjeta del panel es ruido y el táctil
+   no muestra ninguna — y se abre en la columna de hoy. Recortar en su lugar descartaría en silencio las semanas más antiguas.
+11. **La cuadrícula es DOM, no una marca de gráfico** — véase `docs/adr/0005-token-heatmap-as-a-dom-grid.md`.
 
-### Categorical series palette
+### Paleta de series categóricas
 
-The dashboard's model panels colour a **category**, not a state. A model is whatever upstream name the
-deployment happens to serve, so there is no good/bad axis for a hue to mean - which makes this one of the
-places in the app where colour is decoration, and the reason §1's semantic-only rule carries an explicit
-exception rather than being quietly stretched. See `docs/adr/0006-categorical-series-palette.md`.
+Los paneles de modelos del panel colorean una **categoría**, no un estado. Un modelo es el nombre de upstream que el
+despliegue sirva, de modo que no hay eje bueno/malo al que un tono pueda referirse - lo que lo convierte en uno de los
+lugares de la aplicación donde el color es decoración, y la razón por la que la regla de solo semántica de §1 lleva una excepción
+explícita en lugar de estirarse en silencio. Vea `docs/adr/0006-categorical-series-palette.md`.
 
-The exception is scoped by **role**, not by hue: these six tokens belong to categorical marks. The
-status pips, the cache-rate scale, the token heatmap's ramp, the caller mask and every interactive
-colour are untouched and still mean exactly one thing.
+La excepción se acota por **rol**, no por tono: estos seis tokens pertenecen a marcas categóricas. Los
+indicadores de estado, la escala de tasa de caché, la rampa del mapa de calor de tokens, la máscara del llamador y todo color
+interactivo no se tocan y siguen significando exactamente una cosa.
 
-| Slot | Dark | Light | Family |
+| Ranura | Oscuro | Claro | Familia |
 | --- | --- | --- | --- |
-| `--series-1` | `#3b82f6` | `#2563eb` | blue |
-| `--series-2` | `#10b981` | `#059669` | emerald |
-| `--series-3` | `#8b5cf6` | `#7c3aed` | purple |
+| `--series-1` | `#3b82f6` | `#2563eb` | azul |
+| `--series-2` | `#10b981` | `#059669` | esmeralda |
+| `--series-3` | `#8b5cf6` | `#7c3aed` | púrpura |
 | `--series-4` | `#f43f5e` | `#e11d48` | coral |
-| `--series-5` | `#f59e0b` | `#b45309` | amber |
-| `--series-6` | `#06b6d4` | `#0891b2` | cyan |
-| `--series-track` | `#2c2c30` | `#dcdce1` | the trend's plot floor and the ring's unfilled track - the `border` step in each mode |
+| `--series-5` | `#f59e0b` | `#b45309` | ámbar |
+| `--series-6` | `#06b6d4` | `#0891b2` | cian |
+| `--series-track` | `#2c2c30` | `#dcdce1` | el suelo de trazado de la tendencia y la pista sin rellenar del anillo - el paso `border` de cada modo |
 
-The six slots are **per-mode constants, not derived tokens**: they are semantics rather than palette,
-so an operator's accent cannot rotate them (`docs/adr/0011-theme-modes-and-derived-palettes.md`). Every
-palette therefore inherits its mode's set through `derivePalette`, and `--series-track` is the mode's
-`border` step. The table shows the OMC Dark/OMC Light pair, which is also what `web/src/index.css`
-carries as the pre-hydration fallback; `scripts/test-chart-marks.ts` checks every registered palette for
-exactly six slots, graphical contrast on its own card surface, and adjacent-slot distance.
+Las seis ranuras son **constantes por modo, no tokens derivados**: son semántica y no paleta,
+de modo que el acento de un operador no puede rotarlas (`docs/adr/0011-theme-modes-and-derived-palettes.md`). Toda
+paleta hereda por tanto el conjunto de su modo mediante `derivePalette`, y `--series-track` es el paso
+`border` del modo. La tabla muestra el par OMC Dark/OMC Light, que es también lo que `web/src/index.css`
+lleva como respaldo previo a la hidratación; `scripts/test-chart-marks.ts` comprueba en cada paleta registrada
+exactamente seis ranuras, contraste gráfico sobre su propia superficie de tarjeta y distancia entre ranuras adyacentes.
 
-**The slot is the identity; the family survives a theme switch.** `seriesColor(mode, 0)` is the blue
-family in both themes and only the step changes, because the bright steps are illegible on a light
-card - the accent's own bright step reads 2.78:1 there, the same measurement that produced the accent
-ladder. A model therefore keeps its colour when the operator changes theme.
+**La ranura es la identidad; la familia sobrevive a un cambio de tema.** `seriesColor(mode, 0)` es la familia
+azul en ambos temas y solo cambia el paso, porque los pasos brillantes son ilegibles en una tarjeta
+clara - el paso brillante del propio acento se lee a 2.78:1 allí, la misma medición que produjo la escala
+de acento. Un modelo conserva por tanto su color cuando el operador cambia de tema.
 
-**Categorical colour and status colour are separate roles, not separate hues.** The constraint is not
-that a series hue avoids `success`/`warn`/`danger`; an amber line is not a warning when the legend
-beside it names a model. The constraint is that the two roles never rely on the same signal: the status
-tokens keep those hues exclusively, and both panels state their categories in text - the trend's legend
-names each group, and the ranked list prints each group's name, volume and share. Colour is never the
-only encoding.
+**El color categórico y el color de estado son roles distintos, no tonos distintos.** La restricción no es
+que un tono de serie evite `success`/`warn`/`danger`; una línea ámbar no es una advertencia cuando la leyenda
+junto a ella nombra un modelo. La restricción es que los dos roles nunca se apoyan en la misma señal: los tokens
+de estado conservan esos tonos en exclusiva, y ambos paneles enuncian sus categorías en texto - la leyenda de la tendencia
+nombra cada grupo, y la lista ordenada imprime el nombre, el volumen y la proporción de cada grupo. El color nunca es la
+única codificación.
 
-Rules, all measured and asserted by `scripts/test-chart-marks.ts`:
+Reglas, todas medidas y comprobadas por `scripts/test-chart-marks.ts`:
 
-1. **Every slot clears 3:1 against the card it is drawn on** (WCAG's bar for a graphical object, not
-the 4.5:1 body-text bar - these are 1.6px lines and 8px swatches). Measured across both themes the
-range is 4.01:1 to 7.92:1 on the dark card and 3.41:1 to 5.28:1 on the light one.
-2. **Adjacent legend entries are at least ΔE 25 apart in CIE Lab**, so no two neighbours read as one
-swatch. The sequence exists for that bound: it alternates warm and cool families, which also puts a
-warm hue into an ordinary two- or three-model window instead of reserving it for a long tail.
-3. **The runtime projection is what every palette is checked against.** `web/src/theme/palette.ts` is
-the only source of the six slots. `index.css` carries the dark and light sets as the pre-hydration
-fallback, and the suite compares that fallback with the derived palettes character for character; every
-other palette's slots are projected at runtime by `themePaletteCssVariables` and asserted against its own
-derivation. A token changed in one place and not the other fails rather than shipping a chart in a colour
-the legend does not show.
-4. **Colour is assigned from one shared ranking, not per panel.** The domain is a *key* per group -
-`model:<name>` or the folded discriminator - rather than the display label, so a real model whose name
-equals the remainder's translated label cannot take the remainder's colour. The range is then generated
-in rank order, which means a group's colour follows its rank: it is stable for as long as the ranking is,
-and it can change when the ranking does. What the shared ranking buys is that the trend's line and the
-ring's slice for one group are never two different hues - they are two views of one response - and the
-legend beside each panel always states which colour belongs to which model.
-5. **Six slots, and a seventh series would fold back to the first colour.** Nothing asks for more: the
-ranking keeps five named models plus one remainder. Colour is never the only encoding regardless - both
-panels print every group's name and the list prints every group's numbers.
+1. **Cada ranura alcanza 3:1 frente a la tarjeta sobre la que se dibuja** (el umbral de WCAG para un objeto gráfico, no el
+4.5:1 del texto de cuerpo - son líneas de 1.6px y muestras de 8px). Medido en ambos temas, el
+rango va de 4.01:1 a 7.92:1 sobre la tarjeta oscura y de 3.41:1 a 5.28:1 sobre la clara.
+2. **Las entradas adyacentes de la leyenda distan al menos ΔE 25 en CIE Lab**, de modo que dos vecinas no se lean como una
+sola muestra. La secuencia existe para ese límite: alterna familias cálidas y frías, lo que también pone
+un tono cálido en una ventana ordinaria de dos o tres modelos en lugar de reservarlo para una cola larga.
+3. **La proyección en tiempo de ejecución es contra lo que se comprueba cada paleta.** `web/src/theme/palette.ts` es
+la única fuente de las seis ranuras. `index.css` lleva los conjuntos oscuro y claro como respaldo previo a la
+hidratación, y la suite compara ese respaldo con las paletas derivadas carácter por carácter; las ranuras de cada
+otra paleta se proyectan en ejecución mediante `themePaletteCssVariables` y se comprueban contra su propia
+derivación. Un token cambiado en un lugar y no en el otro falla en lugar de publicar un gráfico en un color
+que la leyenda no muestra.
+4. **El color se asigna a partir de una clasificación compartida, no por panel.** El dominio es una *clave* por grupo -
+`model:<name>` o el discriminador plegado - y no la etiqueta mostrada, de modo que un modelo real cuyo nombre
+iguala la etiqueta traducida del resto no pueda tomar el color del resto. El rango se genera entonces
+en orden de clasificación, lo que significa que el color de un grupo sigue su posición: es estable mientras lo sea la clasificación,
+y puede cambiar cuando esta cambie. Lo que la clasificación compartida consigue es que la línea de la tendencia y el
+segmento del anillo de un mismo grupo nunca sean dos tonos distintos - son dos vistas de una misma respuesta - y
+la leyenda junto a cada panel siempre indica qué color corresponde a qué modelo.
+5. **Seis ranuras, y una séptima serie volvería al primer color.** Nada pide más: la
+clasificación conserva cinco modelos con nombre más un resto. El color nunca es la única codificación en cualquier caso - ambos
+paneles imprimen el nombre de cada grupo y la lista imprime los números de cada grupo.
 
-   The Lab and contrast bounds above are **limits rather than accessibility guarantees**: they rule out
-   identical or unreadable colours, and do not establish how the palette reads to a person with a
-   colour-vision deficiency. See ADR 0006 for why that claim is not made.
+   Los límites de Lab y de contraste anteriores son **límites y no garantías de accesibilidad**: descartan
+   colores idénticos o ilegibles, y no establecen cómo se lee la paleta para una persona con una
+   deficiencia de visión del color. Vea el ADR 0006 para saber por qué no se hace esa afirmación.
 
-### Routing lane palette
+### Paleta de carriles de enrutamiento
 
-The live routing map has a second categorical use of hue, and a stricter one. Each drawn model's lane
-into the gateway carries a `--route-*` slot, and unlike a chart legend there is no swatch key between
-the line and the eye: the lane begins at the row it belongs to and its name sits there. A green, amber
-or red line would therefore read as a verdict on the connection rather than as the model's identity -
-the ambiguity that made the lanes status-coloured in the first place. Every slot stays on the cool side
-of the wheel, and the status hues remain on the node surfaces, where a wash or a ring is unmistakably
-about the request rather than about the line.
+El mapa de enrutamiento en vivo tiene un segundo uso categórico del tono, y más estricto. El carril de cada modelo dibujado
+hacia la pasarela lleva una ranura `--route-*`, y a diferencia de la leyenda de un gráfico no hay clave de muestras entre
+la línea y el ojo: el carril empieza en la fila a la que pertenece y allí está su nombre. Una línea verde, ámbar
+o roja se leería por tanto como un veredicto sobre la conexión y no como la identidad del modelo -
+la ambigüedad que hizo que los carriles tuvieran color de estado en primer lugar. Cada ranura permanece en el lado frío
+del círculo cromático, y los tonos de estado permanecen en las superficies de los nodos, donde un velo o un anillo trata inequívocamente
+de la solicitud y no de la línea.
 
-| Slot | Dark | Light | Family |
+| Ranura | Oscuro | Claro | Familia |
 | --- | --- | --- | --- |
-| `--route-1` | `#3b82f6` | `#2563eb` | blue |
-| `--route-2` | `#8b5cf6` | `#7c3aed` | violet |
-| `--route-3` | `#06b6d4` | `#0891b2` | cyan |
-| `--route-4` | `#ec4899` | `#db2777` | pink |
-| `--route-5` | `#d946ef` | `#c026d3` | fuchsia |
-| `--route-6` | `#94a3b8` | `#475569` | slate |
+| `--route-1` | `#3b82f6` | `#2563eb` | azul |
+| `--route-2` | `#8b5cf6` | `#7c3aed` | violeta |
+| `--route-3` | `#06b6d4` | `#0891b2` | cian |
+| `--route-4` | `#ec4899` | `#db2777` | rosa |
+| `--route-5` | `#d946ef` | `#c026d3` | fucsia |
+| `--route-6` | `#94a3b8` | `#475569` | pizarra |
 
-`scripts/test-chart-marks.ts` asserts for every registered palette that all six routing slots are
-distinct, clear 3:1 against the card, are not one of that palette's `success`/`warn`/`danger` values,
-and stay at least ΔE 25 from their neighbours. They are per-mode constants for the same reason the
-series slots are, and `web/src/index.css` carries the OMC Dark/OMC Light pair as the pre-hydration
-fallback.
+`scripts/test-chart-marks.ts` comprueba en cada paleta registrada que las seis ranuras de enrutamiento son
+distintas, alcanzan 3:1 frente a la tarjeta, no son uno de los valores `success`/`warn`/`danger` de esa paleta,
+y distan al menos ΔE 25 de sus vecinas. Son constantes por modo por la misma razón que las
+ranuras de serie, y `web/src/index.css` lleva el par OMC Dark/OMC Light como respaldo previo a la
+hidratación.
 
-A credential's lane is not an identity: it is always the neutral `--fg-2`, and a lane whose credential
-is resting is dashed. Neither a lane nor the dot travelling on it ever takes a status hue; the verdict
-is drawn on the endpoint's surface (a tone-coloured wash and the port's ring) and stated in the row's
-text.
+El carril de una credencial no es una identidad: es siempre el neutro `--fg-2`, y un carril cuya credencial
+está en reposo es discontinuo. Ni un carril ni el punto que viaja por él toman nunca un tono de estado; el veredicto
+se dibuja en la superficie del extremo (un velo del color del tono y el anillo del puerto) y se enuncia en el texto
+de la fila.
 
-### Dashboard arrangement
+### Disposición del panel
 
-The dashboard is one four-column board of widgets - the six KPI tiles, the two model panels, live
-routing, token activity, credential quota and the provider list - and its arrangement is the
-operator's: the order, each widget's width and which widgets are hidden are one stored preference
-(`omc_dashboard_layout`, modelled in `web/src/types/dashboardLayout.ts`). The document lists every
-widget it knows; a widget a later release adds is missing from an older one and is placed after the
-widget that precedes it in the default order, and shown, so a new panel never arrives switched off.
+El panel es un tablero de cuatro columnas de widgets - los seis mosaicos de KPI, los dos paneles de modelos, el enrutamiento
+en vivo, la actividad de tokens, la cuota de credenciales y la lista de proveedores - y su disposición es
+del operador: el orden, el ancho de cada widget y qué widgets se ocultan son una sola preferencia almacenada
+(`omc_dashboard_layout`, modelada en `web/src/types/dashboardLayout.ts`). El documento lista todos los
+widgets que conoce; un widget que añade una versión posterior falta en una anterior y se coloca después del
+widget que lo precede en el orden por defecto, y se muestra, de modo que un panel nuevo nunca llega desactivado.
 
-- **Widths are columns of four.** Each widget offers only the widths it reads at: a KPI tile any of
-  them, the model panels, activity grid, quota list and provider list a half or wider, the routing
-  map three quarters or the full row. Below 1100px the board has two columns, so a quarter stays a
-  half and anything wider takes the whole row; a phone offers no width control because nothing it
-  chose would show.
-- **Arranging is a mode.** The header's grid button enters it; until then the board carries no
-  handles. Each cell becomes a dashed frame holding a toolbar - a drag handle, the widget's name,
-  step earlier and later, hide, and the width choice - over an `inert` picture of the widget, so a
-  drag cannot open a drill-down and the operator arranges what they will actually read. A drag is
-  armed from the handle only, and the drop marker is a 3px accent bar on the side the widget will
-  land (above or below a cell that spans the whole row). Hidden widgets wait in a tray above the
-  board, one restore button each.
-- **Nothing is stored until Done.** Arranging edits a draft: Cancel drops it, Restore default puts
-  the catalog back into it, and Done writes the whole document once and confirms in a toast. The
-  six KPI tiles are the only widgets a first load draws placeholders for, in the arranged order.
+- **Los anchos son columnas de cuatro.** Cada widget ofrece solo los anchos a los que se lee: un mosaico de KPI cualquiera de
+  ellos, los paneles de modelos, la cuadrícula de actividad, la lista de cuotas y la lista de proveedores la mitad o más, el mapa de
+  enrutamiento tres cuartos o la fila completa. Por debajo de 1100px el tablero tiene dos columnas, de modo que un cuarto sigue siendo
+  una mitad y todo lo más ancho ocupa la fila entera; un teléfono no ofrece control de ancho porque nada de lo que
+  eligiera se vería.
+- **Organizar es un modo.** El botón de cuadrícula del encabezado entra en él; hasta entonces el tablero no lleva
+  tiradores. Cada celda se convierte en un marco discontinuo con una barra de herramientas - un tirador de arrastre, el nombre del widget,
+  paso anterior y posterior, ocultar y la elección de ancho - sobre una imagen `inert` del widget, de modo que un
+  arrastre no pueda abrir un detalle y el operador organice lo que realmente leerá. Un arrastre se
+  arma solo desde el tirador, y el marcador de soltado es una barra de acento de 3px en el lado donde el widget
+  aterrizará (encima o debajo de una celda que ocupa toda la fila). Los widgets ocultos esperan en una bandeja sobre el
+  tablero, con un botón de restauración cada uno.
+- **No se almacena nada hasta Done.** Organizar edita un borrador: Cancel lo descarta, Restore default vuelve a poner
+  el catálogo en él, y Done escribe el documento completo una vez y lo confirma con un aviso. Los
+  seis mosaicos de KPI son los únicos widgets para los que una primera carga dibuja marcadores de posición, en el orden organizado.
 
-### Dashboard live routing
+### Enrutamiento en vivo del panel
 
-By default one wide card directly under the row the two model panels share, outside the window picker's reach: it always shows a
-rolling last minute, because it answers "which model is going to which credential right now", which a
-chosen span would turn into a report. There is no list of recent requests; that is the request list's.
+Por defecto, una tarjeta ancha situada justo bajo la fila que comparten los dos paneles de modelos, fuera del alcance del selector de ventana: siempre muestra
+el último minuto móvil, porque responde a "qué modelo va a qué credencial ahora mismo", algo que un
+intervalo elegido convertiría en un informe. No hay lista de solicitudes recientes; eso es de la lista de solicitudes.
 
 ```text
 ┌─ LIVE ROUTING  ● Live  [Last 60 s] ────────────────────────────────────────────────────────────────┐
@@ -790,66 +789,66 @@ chosen span would turn into a report. There is no list of recent requests; that 
 └────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**It is the console's one lit surface**, by the product's decision: everywhere else depth is borders
-and background shifts (§1, §4), but this map shows live traffic, and the depth is what makes it read as
-something running rather than a diagram. The exception is scoped to it and held to three rules: depth
-sits on the gateway (a raised `--elevated` plate with a faint accent gradient and an accent sheen
-along its top edge, lifted by an accent glow on the dark page and by a neutral contact shadow with a
-faint accent bloom on the light one, where an accent glow alone turns muddy), on the rows (`--elevated` with a low shadow, and a glowing edge only while lit) and on
-the travelling dot (a glow in its own colour), over a faint dot grid fading to the panel's edges; no
-shadow is ever animated - each glow is an overlay whose opacity alone changes; and colour still
-means something - the models' routing colours on their lanes, marks and ports, the neutral credential
-lanes, the accent on the gateway, and status colour on a node surface where something is exceptional.
+**Es la única superficie iluminada de la consola**, por decisión del producto: en todas las demás partes la profundidad son bordes
+y cambios de fondo (§1, §4), pero este mapa muestra tráfico en vivo, y la profundidad es lo que hace que se lea como
+algo en marcha y no como un diagrama. La excepción se limita a él y se somete a tres reglas: la profundidad
+se sitúa en la pasarela (una placa `--elevated` elevada con un tenue degradado de acento y un destello de acento
+a lo largo de su borde superior, elevada por un resplandor de acento en la página oscura y por una sombra de contacto neutra con un
+tenue halo de acento en la clara, donde un resplandor de acento solo se vuelve turbio), en las filas (`--elevated` con una sombra baja, y un borde luminoso solo mientras están iluminadas) y en
+el punto viajero (un resplandor de su propio color), sobre una tenue cuadrícula de puntos que se desvanece hacia los bordes del panel; ninguna
+sombra se anima jamás - cada resplandor es una superposición cuya opacidad es lo único que cambia; y el color sigue
+significando algo - los colores de enrutamiento de los modelos en sus carriles, marcas y puertos, los carriles de credencial
+neutros, el acento en la pasarela, y el color de estado en la superficie de un nodo donde algo es excepcional.
 
-- **The left column is only the model called** - the alias the caller named, else the model - with its
-  maker's mark, request count and mean latency. Volume is read from those counts and from the lanes'
-  width; the row prints no percentage and draws no share bar. No caller, client or key is drawn: the panel is about
-  where requests go. Each drawn model takes a categorical `--route-*` colour that it keeps for as long
-  as it stays on the panel; its port and its lane into the gateway carry it, and the name is always in
-  text beside it. The cool routing palette exists so a lane can never be read as a verdict (§2).
-- **The right column is the credential or provider that answered**, named as the request list names
-  it, through the same resolver: provider mark, provider, and the masked key or the OAuth account. The
-  state column says the one thing that is exceptional - `Rate limited`, `Quota exceeded` or `Cooling
-  down` with a countdown, in the warn tone - or else that it answered last (accent), or its count and
-  mean latency.
-- **The gateway** is the Shell-PAMC mark on its own small tinted tile, the product name `Shell-PAMC`, the
-  routing strategy CPA is configured with as a quiet chip, and the minute's attempts. A rail on each side is where the lanes dock, as long as
-  the fan of lanes it receives. While any request is on the map its rails and glow brighten, and they settle back over 600ms once the last one
-  has gone home.
-- **One lane per row.** A model has one lane into the gateway and a credential one lane out of it, the
-  lanes meeting the gateway side by side in their rows' order. Lanes per model and credential pair
-  tangled into a knot past a handful of each; which model went to which credential is what the
-  travelling requests show, in the model's colour. A credential's lane is always the neutral `--fg-2`,
-  and dashed while that credential rests; a lane never turns `--warn` or `--danger`, because a colour on
-  a line reads as a statement about the connection itself. The row's text and the node's wash carry the
-  verdict.
-- **Rows are ordered by name, never by volume**, so a count overtaking another does not reorder the
-  map under the reader. Volume decides only which seven models and seven credentials are drawn; the
-  rest are counted in a line below the column, and a resting credential is always drawn. Past four
-  rows in a column the rows tighten one step, never below a comfortable two-line row. When the panel itself is narrower than 940px
-  (`@container routingmap`, the rail open beside a laptop window), the lanes shorten and a
-  credential's state drops under its name instead of cutting the name to a letter.
-- **The header carries no counts**: the title, whether the panel is live, and the window. The rows
-  say how much went where, and the gateway how many attempts the minute held.
-- **The window rolls on the browser's clock.** An attempt belongs to the minute it finished in; when a
-  model's or credential's last attempt turns a minute old its row fades and drifts out toward its own
-  edge of the map, and the rows below close the gap. A model called for the first time in the minute
-  drifts in from the same edge (§7 rule 9).
-- **Light moves with the request, never ahead of it.** A row lights only when the travelling dot
-  docks in it, not when its record is read, and settles back over the glow beat; a lane brightens
-  behind the dot that crossed it and settles the same way (§7 rule 9). A row that has not been reached
-  by a dot - every row of the first read - stays at rest.
-- **An empty minute keeps the map's shape**: a dashed placeholder row on each side, joined to the
-  gateway by dashed lanes, says where models and credentials will appear, and leaves as the first
-  request's rows arrive.
-- **A phone does not show the panel.** The map needs its three columns to say anything, and a reduced
-  list of models and credentials would only repeat the request list, so below the phone breakpoint the
-  dashboard does not mount it - nor open its read and live stream.
+- **La columna izquierda es solo el modelo llamado** - el alias que nombró el llamador, o si no el modelo - con la marca
+  de su fabricante, el recuento de solicitudes y la latencia media. El volumen se lee en esos recuentos y en el ancho de los
+  carriles; la fila no imprime porcentaje ni dibuja barra de proporción. No se dibuja ningún llamador, cliente ni clave: el panel trata de
+  a dónde van las solicitudes. Cada modelo dibujado toma un color categórico `--route-*` que conserva mientras
+  permanezca en el panel; su puerto y su carril hacia la pasarela lo llevan, y el nombre siempre está en
+  texto a su lado. La paleta de enrutamiento fría existe para que un carril nunca pueda leerse como un veredicto (§2).
+- **La columna derecha es la credencial o proveedor que respondió**, nombrada como la nombra la lista de solicitudes,
+  mediante el mismo resolvedor: marca del proveedor, proveedor, y la clave enmascarada o la cuenta OAuth. La
+  columna de estado dice lo único excepcional - `Rate limited`, `Quota exceeded` o `Cooling
+  down` con una cuenta atrás, en el tono de advertencia - o si no que respondió la última (acento), o su recuento y
+  latencia media.
+- **La pasarela** es la marca de Shell-PAMC en su propio mosaico pequeño tintado, el nombre de producto `Shell-PAMC`, la
+  estrategia de enrutamiento con que está configurado CPA como un chip discreto, y los intentos del minuto. Un riel a cada lado es donde acoplan los carriles, tan largo como
+  el abanico de carriles que recibe. Mientras haya alguna solicitud en el mapa, sus rieles y el resplandor se intensifican, y se calman en 600ms cuando la última
+  ha vuelto a casa.
+- **Un carril por fila.** Un modelo tiene un carril hacia la pasarela y una credencial un carril desde ella, y los
+  carriles se encuentran con la pasarela uno junto a otro en el orden de sus filas. Los carriles por cada par de modelo y credencial
+  se enredaban en un nudo a partir de un puñado de cada uno; qué modelo fue a qué credencial es lo que muestran las
+  solicitudes viajeras, en el color del modelo. El carril de una credencial es siempre el neutro `--fg-2`,
+  y discontinuo mientras esa credencial reposa; un carril nunca se vuelve `--warn` ni `--danger`, porque un color en
+  una línea se lee como una afirmación sobre la propia conexión. El texto de la fila y el velo del nodo llevan el
+  veredicto.
+- **Las filas se ordenan por nombre, nunca por volumen**, de modo que un recuento que adelanta a otro no reordene el
+  mapa bajo el lector. El volumen solo decide qué siete modelos y siete credenciales se dibujan; el
+  resto se cuenta en una línea bajo la columna, y una credencial en reposo siempre se dibuja. Pasadas cuatro
+  filas en una columna, las filas se aprietan un paso, nunca por debajo de una fila cómoda de dos líneas. Cuando el propio panel es más estrecho que 940px
+  (`@container routingmap`, la barra lateral abierta junto a una ventana de portátil), los carriles se acortan y el estado de una
+  credencial baja bajo su nombre en lugar de recortar el nombre a una letra.
+- **El encabezado no lleva recuentos**: el título, si el panel está en vivo y la ventana. Las filas
+  dicen cuánto fue adonde, y la pasarela cuántos intentos contuvo el minuto.
+- **La ventana es móvil con el reloj del navegador.** Un intento pertenece al minuto en que terminó; cuando el último
+  intento de un modelo o credencial cumple un minuto, su fila se desvanece y se desplaza hacia su propio
+  borde del mapa, y las filas de debajo cierran el hueco. Un modelo llamado por primera vez en el minuto
+  entra desde el mismo borde (regla 9 de §7).
+- **La luz se mueve con la solicitud, nunca por delante de ella.** Una fila solo se ilumina cuando el punto viajero
+  acopla en ella, no cuando se lee su registro, y se calma durante el pulso del resplandor; un carril se intensifica
+  tras el punto que lo cruzó y se calma igual (regla 9 de §7). Una fila que ningún punto ha alcanzado
+  — toda fila de la primera lectura — permanece en reposo.
+- **Un minuto vacío conserva la forma del mapa**: una fila marcadora discontinua a cada lado, unida a la
+  pasarela por carriles discontinuos, indica dónde aparecerán modelos y credenciales, y se retira cuando llegan las filas de la primera
+  solicitud.
+- **Un teléfono no muestra el panel.** El mapa necesita sus tres columnas para decir algo, y una lista reducida
+  de modelos y credenciales solo repetiría la lista de solicitudes, así que por debajo del punto de ruptura de teléfono el
+  panel no lo monta, ni abre su lectura ni su flujo en vivo.
 
-### Dashboard model panels
+### Paneles de modelos del panel
 
-Two peer widgets, by default sharing the row under the KPI tiles and above live routing, both driven
-by the window picker. They are placed independently and read one shared query:
+Dos widgets pares, que por defecto comparten la fila bajo los mosaicos de KPI y sobre el enrutamiento en vivo, ambos dirigidos
+por el selector de ventana. Se colocan de forma independiente y leen una consulta compartida:
 
 ```text
 ┌─ Token trend ──────────────────┐ ┌─ Model usage ─────────────────────────┐
@@ -860,142 +859,140 @@ by the window picker. They are placed independently and read one shared query:
 └────────────────────────────────┘ └────────────────────────────────────────┘
 ```
 
-**The trend is a multi-series line, not an area.** The KPI tiles above use an area because their series
-is a fixed zero-filled grid where a quiet stretch is a *measured* zero and an area carries it down to
-the baseline. Here up to six groups share one plot, and six overlapping translucent fills compound into
-a mud that hides whichever model is underneath - which is the reading the panel exists to provide. Lines
-separate; fills compound.
+**La tendencia es una línea de múltiples series, no un área.** Los mosaicos de KPI de arriba usan un área porque su serie
+es una cuadrícula fija rellena de ceros donde un tramo tranquilo es un cero *medido* y un área lo lleva hasta
+la línea base. Aquí hasta seis grupos comparten un trazado, y seis rellenos translúcidos superpuestos se acumulan en
+un barro que oculta el modelo que queda debajo - que es justo la lectura que el panel existe para ofrecer. Las líneas
+se separan; los rellenos se acumulan.
 
-**The line is smoothed, and the curve is monotone.** `shapeField="smooth"` resolves to G2's `smooth`
-shape, which draws with `curveMonotoneX` - a monotone cubic, not a plain Catmull-Rom spline - and the
-KPI sparklines use the same shape. That distinction is the whole reason smoothing is safe here: these
-series are zero-filled, so most buckets sit exactly on the floor, and a non-monotone spline through them
-would overshoot *below* the axis between points, drawing a line where the data says zero. A monotone
-curve cannot leave the range spanned by its own neighbours, so the floor stays the floor. The probe
-asserts this from painted pixels: no series-coloured ink appears below the axis rule.
+**La línea es suave, y la curva es monótona.** `shapeField="smooth"` se resuelve en la forma `smooth` de G2,
+que dibuja con `curveMonotoneX` - un cúbico monótono, no una spline Catmull-Rom simple - y las
+minilíneas de KPI usan la misma forma. Esa distinción es toda la razón por la que suavizar es seguro aquí: estas
+series están rellenas de ceros, así que la mayoría de los cubos están exactamente en el suelo, y una spline no monótona que los atravesara
+se pasaría *por debajo* del eje entre puntos, dibujando una línea donde los datos dicen cero. Una curva monótona
+no puede salir del rango abarcado por sus vecinos, así que el suelo sigue siendo el suelo. La sonda
+comprueba esto desde los píxeles pintados: no aparece tinta del color de la serie bajo la regla del eje.
 
-**Measured zero buckets stay connected.** Each line includes every bucket in the shared grid,
-including long quiet stretches, so inactivity reads as a continuous baseline rather than missing data.
-The top-ranked group is painted last, so where lines overlap the first legend entry is on top.
-The shared tooltip names each item by its own series key and lists measured zeros explicitly.
+**Los cubos de cero medidos permanecen conectados.** Cada línea incluye todos los cubos de la cuadrícula compartida,
+incluidos los tramos tranquilos largos, de modo que la inactividad se lee como una línea base continua y no como datos ausentes.
+El grupo de mayor posición se pinta el último, de modo que donde las líneas se solapan la primera entrada de la leyenda queda encima.
+El tooltip compartido nombra cada elemento por su propia clave de serie y lista explícitamente los ceros medidos.
 
-**Chart canvases are supersampled.** Every dashboard chart is drawn at no less than 2x the CSS size
-(`web/src/charts/chartRender.ts`): on a 1x display a 1.75px line rasterised straight onto the pixel grid
-stepped visibly on every steep section. The browser scales the bitmap down, so the geometry is unchanged
-and only its edges are averaged.
+**Los canvas de los gráficos están sobremuestreados.** Todo gráfico del panel se dibuja a no menos de 2x el tamaño CSS
+(`web/src/charts/chartRender.ts`): en una pantalla 1x, una línea de 1.75px rasterizada directamente sobre la cuadrícula de píxeles
+se escalonaba visiblemente en cada tramo empinado. El navegador reduce el mapa de bits, de modo que la geometría no cambia
+y solo se promedian sus bordes.
 
-**Chart canvases follow their container.** G2's `autoFit` refits a chart only on a window resize, so
-`useChartPlugins` also observes each chart's own container and refits it when that box changes size for
-any other reason - the console font arriving after the first paint and re-measuring the text beside a
-chart is the common one. A canvas left at its first size kept the model ring inscribed in a smaller
-square than its frame, with the total beside the hole.
+**Los canvas de los gráficos siguen a su contenedor.** El `autoFit` de G2 reajusta un gráfico solo al cambiar el tamaño de la ventana, de modo que
+`useChartPlugins` también observa el contenedor propio de cada gráfico y lo reajusta cuando esa caja cambia de tamaño por
+cualquier otro motivo - la llegada de la fuente de la consola tras el primer pintado y la nueva medición del texto junto a
+un gráfico es el más común. Un canvas dejado en su primer tamaño mantenía el anillo del modelo inscrito en un
+cuadrado menor que su marco, con el total junto al agujero.
 
-**No y-axis.** The reading is the shape of each line against its own baseline - which models rose, and
-when - and the numbers are in the tooltip and in the usage list beside it. An axis would take the width
-the lines need to add a scale nothing on the card refers to. The plot floor and the x labels stay: the
-floor is what makes a quiet stretch read as zero rather than as absent data.
+**Sin eje y.** La lectura es la forma de cada línea frente a su propia línea base - qué modelos subieron y
+cuándo - y los números están en el tooltip y en la lista de uso contigua. Un eje quitaría el ancho
+que necesitan las líneas para añadir una escala a la que nada de la tarjeta se refiere. El suelo del trazado y las etiquetas del eje x permanecen: el
+suelo es lo que hace que un tramo tranquilo se lea como cero y no como datos ausentes.
 
-**The plot's chrome is the palette's ink, at the palette's own opacity.** The grid rules, the axis rule
-and the tooltip's crosshair are the one part of this mark the console does not draw itself: the runtime
-paints them from its own theme, which is one of the library's *light* themes unless the mark names the
-console's mode, and it multiplies the inks it *is* handed by that theme's opacity tokens (`alpha45` on
-the labels, the axis rule and the ticks, `alpha10` on the grid). A palette colour handed through either
-one is not the colour that reaches the card - a near-black grid on a dark card is one 8-bit step from the
-surface it is drawn on. So every rule is named from the palette *and* pinned to full opacity, and the
-theme's mode follows the console's: `--border-soft` for the grid, `--border` for the axis rule and its
-ticks, `--fg-2` for the labels, `--muted` for the crosshair. The browser probe reads both themes' painted
-pixels and matches the ink to the token, because the light card is exactly the surface on which a wrong
-ink still looks correct.
+**El marco del trazado es la tinta de la paleta, a la opacidad propia de la paleta.** Las reglas de la cuadrícula, la regla del eje
+y la mira del tooltip son la única parte de esta marca que la consola no dibuja por sí misma:
+el runtime las pinta desde su propio tema, que es uno de los temas *claros* de la biblioteca salvo que la marca nombre el
+modo de la consola, y multiplica las tintas que *recibe* por los tokens de opacidad de ese tema (`alpha45` en
+las etiquetas, la regla del eje y las marcas, `alpha10` en la cuadrícula). Un color de paleta pasado por cualquiera de
+ellos no es el color que llega a la tarjeta - una cuadrícula casi negra sobre una tarjeta oscura está a un paso de 8 bits de la
+superficie sobre la que se dibuja. Por eso cada regla se nombra desde la paleta *y* se fija a opacidad completa, y el modo del
+tema sigue al de la consola: `--border-soft` para la cuadrícula, `--border` para la regla del eje y sus
+marcas, `--fg-2` para las etiquetas, `--muted` para la mira. La sonda del navegador lee los píxeles pintados de ambos temas
+y hace coincidir la tinta con el token, porque la tarjeta clara es exactamente la superficie en la que una tinta equivocada aun así parece correcta.
 
-**Four x ticks, chosen by position.** The bucket grid runs to ~48 points; a tick per bucket printed the
-same instant forty-eight times across a half-width card. The first and last bucket are always among the
-four, because those are the two a reader places the window with. The label format follows the span -
-`HH:mm` within a day, `MM-DD` beyond it - which is the only place the window's extent is stated, and
-keeps the outermost label narrow enough to sit inside the card's gutter.
+**Cuatro marcas en x, elegidas por posición.** La cuadrícula de cubos llega a ~48 puntos; una marca por cubo imprimía el mismo
+instante cuarenta y ocho veces a lo ancho de una tarjeta de medio ancho. El primer y el último cubo están siempre entre las
+cuatro, porque son los dos con que un lector sitúa la ventana. El formato de la etiqueta sigue a la extensión:
+`HH:mm` dentro de un día, `MM-DD` más allá, que es el único lugar donde se enuncia la extensión de la ventana,
+y mantiene la etiqueta más externa lo bastante estrecha para caber en el canal de la tarjeta.
 
-**The legend is app-owned DOM.** It follows the console's type scale and chosen interface font.
-It also has to be the same colour assignment the usage list uses, which is only guaranteed if one
-ranked list produces both.
+**La leyenda es DOM propio de la aplicación.** Sigue la escala tipográfica de la consola y la fuente de interfaz elegida.
+Además tiene que ser la misma asignación de color que usa la lista de uso, lo cual solo está garantizado si una
+sola lista clasificada produce ambas.
 
-**The ring's centre is DOM**, and it is the window's own total rather than the KPI tile's. The two read
-on different cadences, so borrowing the tile's number would let the centre disagree with the slices
-drawn around it. Its percentages are derived from the same total, so the list, the ring and the centre
-cannot drift.
+**El centro del anillo es DOM**, y es el total propio de la ventana y no el del mosaico de KPI. Ambos se leen
+a cadencias distintas, así que tomar prestado el número del mosaico dejaría que el centro discrepara de los segmentos
+dibujados a su alrededor. Sus porcentajes derivan del mismo total, de modo que la lista, el anillo y el centro
+no pueden divergir.
 
-**The ranked list is the ring's legend and its values in one.** A separate library legend would print
-the same ranking a second time with no numbers, and a reader comparing two models needs the numbers: a
-slice's angle is a poor way to compare 5.9% against 4.6%. A share that rounds to zero is reported as
-under the smallest step rather than as `0%`, which would claim a model carried nothing.
+**La lista clasificada es a la vez la leyenda del anillo y sus valores.** Una leyenda de biblioteca aparte imprimiría
+la misma clasificación por segunda vez sin números, y un lector que compara dos modelos necesita los números: el ángulo de un
+segmento es una mala manera de comparar 5.9% con 4.6%. Una proporción que se redondea a cero se informa como
+inferior al paso más pequeño y no como `0%`, lo que afirmaría que un modelo no llevó nada.
 
-**A stretched card still centres its reading.** The two model cards share a grid row, so the taller
-trend card can leave the usage card with more height than its ring and list need. The usage body
-claims that remaining height and centres the row in it; leaving the body at its intrinsic height put
-the ring near the top of the card and made the unused space below look like a missing panel.
+**Una tarjeta estirada sigue centrando su lectura.** Las dos tarjetas de modelos comparten una fila de la cuadrícula, de modo que la
+tarjeta de tendencia, más alta, puede dejar a la de uso con más altura de la que necesitan su anillo y su lista. El cuerpo de uso
+reclama esa altura restante y centra la fila en ella; dejar el cuerpo con su altura intrínseca situaba
+el anillo cerca de la parte superior de la tarjeta e hacía que el espacio sin usar de debajo pareciera un panel ausente.
 
-**Both marks are native `@ant-design/charts` components** (`Line` and `Pie`) inside the existing lazily
-loaded `vendor-charts` chunk, and both morph between two revisions on §7's `roll` token (§7 rule 5).
-The ring is not a chart-runtime
-heatmap, so ADR 0005's DOM grid is untouched.
+**Ambas marcas son componentes nativos de `@ant-design/charts`** (`Line` y `Pie`) dentro del fragmento `vendor-charts`
+ya cargado de forma diferida, y ambas se transforman entre dos revisiones con el token `roll` de §7 (regla 5 de §7).
+El anillo no es un mapa de calor del runtime de gráficos,
+así que la cuadrícula DOM del ADR 0005 no se toca.
 
-**The usage list's columns are one grid, not one per row.** The tracks are declared on the list and the
-rows inherit them as a subgrid. Per-row tracks resolve against each row's own content, so one amount a
-character wider than its neighbours shifts that row's volume and share cells to the right and the
-numeric columns stop lining up down the card - and a column that does not line up cannot be compared
-downward, which is the whole reason the list is ranked. A subgrid rather than `display: contents`:
-dissolving the row to inherit the tracks also dissolves the row's own gap and separator, leaving the
-swatch against the name and the rule drawn in fragments between the columns.
+**Las columnas de la lista de uso son una sola cuadrícula, no una por fila.** Las pistas se declaran en la lista y las
+filas las heredan como subcuadrícula. Las pistas por fila se resuelven contra el contenido de cada fila, de modo que un importe un
+carácter más ancho que sus vecinos desplaza a la derecha las celdas de volumen y proporción de esa fila y las
+columnas numéricas dejan de alinearse a lo largo de la tarjeta - y una columna que no se alinea no puede compararse
+hacia abajo, que es toda la razón por la que la lista está clasificada. Una subcuadrícula y no `display: contents`:
+disolver la fila para heredar las pistas también disuelve el hueco y el separador propios de la fila, dejando la
+muestra pegada al nombre y la regla dibujada en fragmentos entre las columnas.
 
-**The ring yields width to the list, down to a floor, and the panels stack by the card's width.** The
-list's numeric columns cannot be abbreviated, so the name column loses that race whenever the ring
-insists on its full size - and a model name truncated to a handful of characters identifies nothing.
-The ring therefore shrinks before the name does, and once neither fits, the two stack. That decision is
-taken on the *card's* inline size via a container query, not on the viewport: the card is half the grid
-at some viewports and the full width at others, so a viewport breakpoint would stack the panels at a
-width where the row still fits and keep them side by side at one where it does not. The ring's frame is
-kept square by CSS through the whole range, because a frame clamped in one axis while the canvas keeps
-the other draws an ellipse.
+**El anillo cede ancho a la lista, hasta un mínimo, y los paneles se apilan según el ancho de la tarjeta.** Las
+columnas numéricas de la lista no pueden abreviarse, así que la columna de nombre pierde esa carrera siempre que el anillo
+insista en su tamaño completo - y un nombre de modelo truncado a un puñado de caracteres no identifica nada.
+Por eso el anillo se encoge antes que el nombre, y cuando ninguno cabe, ambos se apilan. Esa decisión
+se toma sobre el tamaño en línea de la *tarjeta* mediante una consulta de contenedor, no sobre el viewport: la tarjeta es la mitad de la cuadrícula
+en unos viewports y el ancho completo en otros, de modo que un punto de ruptura de viewport apilaría los paneles con un ancho
+donde la fila aún cabe y los mantendría lado a lado en uno donde no. El marco del anillo
+se mantiene cuadrado mediante CSS en todo el rango, porque un marco limitado en un eje mientras el canvas conserva
+el otro dibuja una elipse.
 
-**The ring hover states the group, its volume and its share**, matching the trend's tooltip rather than
-the share being left to the list alone. A slice is read as a fraction of the ring, so the percentage is
-part of what is being pointed at; it is derived from the same window total the centre reports, so the
-readout and the centre cannot disagree. The group's name comes from the datum through the mark's own
-tooltip items - the library's inferred item is built from the y channel, so every slice would otherwise
-be labelled after the field it plots.
+**El hover del anillo enuncia el grupo, su volumen y su proporción**, igual que el tooltip de la tendencia, en lugar de
+dejar la proporción solo a la lista. Un segmento se lee como una fracción del anillo, de modo que el porcentaje es
+parte de lo que se señala; deriva del mismo total de ventana que informa el centro, de modo que la
+lectura y el centro no pueden discrepar. El nombre del grupo procede del dato a través de los elementos propios de tooltip de la marca -
+el elemento inferido por la biblioteca se construye desde el canal y, de modo que cada segmento se
+etiquetaría con el nombre del campo que representa.
 
-### Caller-key display mask
+### Máscara de visualización de la clave del llamador
 
-The request list's Key column and the caller-key facet show a mask, never the
-key. The shape is a short head, a fixed bullet run, and a short tail:
-`sk-1234••••••••7890`. A key too short for edges to identify it is masked
-completely (`••••••••`) — exposing four of an eight-character key would give
-away half the secret while still failing to name it, so short keys are
-intentionally indistinguishable from one another. The filler is a constant
-length, so the mask never reveals the secret's length.
+La columna Key de la lista de solicitudes y la faceta de clave del llamador muestran una máscara, nunca la
+clave. La forma es una cabeza corta, una serie fija de viñetas y una cola corta:
+`sk-1234••••••••7890`. Una clave demasiado corta para que sus extremos la identifiquen se enmascara
+por completo (`••••••••`) — exponer cuatro de una clave de ocho caracteres revelaría
+la mitad del secreto sin llegar a nombrarla, así que las claves cortas son
+deliberadamente indistinguibles entre sí. El relleno tiene una longitud constante, así que la máscara nunca revela la longitud del secreto.
 
-- **One shape, both surfaces.** The key-management list computes its mask from the
-  value it holds, while the request list and the caller facet read the mask stored
-  with the event. Both render the same shape from the same thresholds, so a key
-  never looks like two different keys depending on which page it is read on: the
-  console's `web/src/utils/maskKey.ts` is kept branch for branch with the server's
-  `security.MaskSecret`. Every key this console generates (`sk-cpa-` plus 32 hex
-  characters) is 20 glyphs masked.
-- **The reveal toggle changes the ink, not the width.** The list prints the secret
-  inside a box whose width does not depend on the value in it, and the mask and the
-  secret are the same shape, so revealing a key moves nothing in the table. Masked
-  keys carry `--meta` and a revealed secret the console's full-contrast ink: the
-  colour says which of the two is on screen.
-- **Identity is the fingerprint.** Grouping, filtering and deduplication use the
-  keyed HMAC (`api_group_key`), which is also what the detail drawer shows. The
-  mask exists only for a human reading the list.
-- **Legacy masks are converted on read.** Rows ingested before the filler
-  changed still carry `xxxxxxx`; the list, detail and facet projections
-  normalize the filler and keep the visible edges. Nothing reconstructs a
-  secret, and a missing mask stays missing.
-- **Shape checking is not a security boundary.** A credential can contain the
-  filler, so `IsMask` only stops an obviously unmasked value from being written
-  to a display column; provenance comes from masking at ingestion.
+- **Una forma, ambas superficies.** La lista de gestión de claves calcula su máscara a partir del
+  valor que tiene, mientras que la lista de solicitudes y la faceta del llamador leen la máscara almacenada
+  con el evento. Ambas muestran la misma forma con los mismos umbrales, de modo que una clave
+  nunca parece dos claves distintas según la página en que se lea: el
+  `web/src/utils/maskKey.ts` de la consola se mantiene rama por rama con el `security.MaskSecret` del servidor.
+  Toda clave que genera esta consola (`sk-cpa-` más 32 caracteres hexadecimales)
+  son 20 glifos enmascarados.
+- **El interruptor de revelar cambia la tinta, no el ancho.** La lista imprime el secreto
+  dentro de una caja cuyo ancho no depende del valor que contiene, y la máscara y el
+  secreto tienen la misma forma, de modo que revelar una clave no mueve nada en la tabla. Las claves
+  enmascaradas llevan `--meta` y un secreto revelado la tinta de contraste completo de la consola: el
+  color dice cuál de los dos está en pantalla.
+- **La identidad es la huella.** La agrupación, el filtrado y la deduplicación usan el
+  HMAC con clave (`api_group_key`), que es también lo que muestra el panel de detalle. La
+  máscara existe solo para un humano que lee la lista.
+- **Las máscaras heredadas se convierten al leer.** Las filas ingeridas antes de que cambiara el
+  relleno aún llevan `xxxxxxx`; las proyecciones de lista, detalle y faceta
+  normalizan el relleno y conservan los extremos visibles. Nada reconstruye un
+  secreto, y una máscara ausente sigue ausente.
+- **Comprobar la forma no es un límite de seguridad.** Una credencial puede contener el
+  relleno, de modo que `IsMask` solo impide que un valor obviamente sin enmascarar se escriba
+  en una columna de visualización; la procedencia viene de enmascarar en la ingesta.
 
-## 3. Typography
+## 3. Tipografía
 
 ```text
 Font stack   "Sarasa Mono SC", "Sarasa UI SC", "Sarasa Term SC", "更纱黑体 SC",
@@ -1008,73 +1005,73 @@ Line height  1.5
 Tabular      font-variant-numeric: tabular-nums on all numeric data
 ```
 
-**The embedded font is complete, and a page fetches only what it draws.** The woff2 files
-under `web/src/assets/fonts/sarasa/` are the whole of Sarasa Mono SC cut into shards with
-`unicode-range` (ADR 0094), so any character the font has - in the console's copy, an Agent
-answer or a model name - is drawn in it rather than in a system font. Shard 000 (ASCII,
-Latin-1, common punctuation and every character in `web/src`) is declared in render-blocking
-CSS by `core.css`; the rest are registered by `web/src/theme/sarasaFont.ts`, an
-asynchronous chunk started at startup, and fetched only when a page draws one of their
-characters, which then swaps in from the fallback. `pnpm subset-font` regenerates the
-shards, the manifest, `core.css` and `shardUrls.ts`; copy added since then still renders in
-Sarasa, from a deferred shard.
+**La fuente incrustada está completa, y una página solo descarga lo que dibuja.** Los archivos woff2
+de `web/src/assets/fonts/sarasa/` son la totalidad de Sarasa Mono SC cortada en fragmentos con
+`unicode-range` (ADR 0094), de modo que cualquier carácter que tenga la fuente - en los textos de la consola, una respuesta del Agent
+o un nombre de modelo - se dibuja con ella y no con una fuente del sistema. El fragmento 000 (ASCII,
+Latin-1, puntuación común y todos los caracteres de `web/src`) se declara en el CSS
+que bloquea el renderizado desde `core.css`; el resto los registra `web/src/theme/sarasaFont.ts`, un
+fragmento asíncrono que se inicia al arrancar, y se descargan solo cuando una página dibuja uno de sus
+caracteres, que entonces sustituye a la fuente de respaldo. `pnpm subset-font` regenera los
+fragmentos, el manifiesto, `core.css` y `shardUrls.ts`; el texto añadido desde entonces sigue dibujándose en
+Sarasa, desde un fragmento diferido.
 
-**The typeface is two roles, and Sarasa is their default.** `--font-ui` (the root
-`font-family` and Ant Design's `fontFamily` token) and `--font-mono` (code, keys and
-aligned figures, and Ant Design's `fontFamilyCode`) are custom properties that
-`web/src/theme/fontLibrary.ts` overwrites on the root element from the `omc_fonts`
-preference. Components never name a family: they inherit, or read `var(--font-mono)`, so
-an operator's choice reaches every surface. The two that cannot use the cascade - the
-Monaco editor and canvas chart labels - read the resolved role with `currentFontStack`.
-Every role ends in the Sarasa stack, which draws any character a chosen family lacks
+**La tipografía son dos roles, y Sarasa es su valor por defecto.** `--font-ui` (el `font-family` raíz
+y el token `fontFamily` de Ant Design) y `--font-mono` (código, claves y
+cifras alineadas, y el `fontFamilyCode` de Ant Design) son propiedades personalizadas que
+`web/src/theme/fontLibrary.ts` sobrescribe en el elemento raíz a partir de la preferencia
+`omc_fonts`. Los componentes nunca nombran una familia: heredan, o leen `var(--font-mono)`, de modo que
+la elección de un operador llega a todas las superficies. Los dos que no pueden usar la cascada - el
+editor Monaco y las etiquetas de los gráficos en canvas - leen el rol resuelto con `currentFontStack`.
+Todo rol termina en la pila de Sarasa, que dibuja cualquier carácter que le falte a una familia elegida
 (ADR 0100).
 
-**The type scale is seven variables**, defined in `web/src/index.css`:
+**La escala tipográfica son siete variables**, definidas en `web/src/index.css`:
 
-| Token | Size | Usage |
+| Token | Tamaño | Uso |
 | --- | --- | --- |
-| `--text-2xs` | 10px | Eyebrows, badge codes, the densest table marks |
-| `--text-xs` | 11px | Meta lines, counts, column heads |
-| `--text-sm` | 12px | Data rows, logs, secondary copy |
-| `--text-md` | 13px | Labels, descriptions, notice and toast copy |
-| `--text-base` | 14px | Body (antd `fontSize`) |
-| `--text-lg` | 16px | Section headings, drawer and modal titles, the touch focus floor |
-| `--text-xl` | 20px | The page title, a counted tile's figure |
+| `--text-2xs` | 10px | Sobretítulos, códigos de insignia, las marcas de tabla más densas |
+| `--text-xs` | 11px | Líneas meta, recuentos, cabeceras de columna |
+| `--text-sm` | 12px | Filas de datos, registros, texto secundario |
+| `--text-md` | 13px | Etiquetas, descripciones, texto de avisos y toasts |
+| `--text-base` | 14px | Cuerpo (`fontSize` de antd) |
+| `--text-lg` | 16px | Encabezados de sección, títulos de panel lateral y modal, el umbral de foco táctil |
+| `--text-xl` | 20px | El título de página, la cifra de un mosaico contado |
 
-A stylesheet writes a size on this scale as its token and never as a fractional pixel value. A
-display numeral (the hero number, a KPI value) or an icon keeps a literal size, because it belongs
-to one surface. `pnpm check:style-tokens` enforces both, and that every `--text-*` reference
-resolves without a fallback.
+Una hoja de estilos escribe un tamaño de esta escala como su token y nunca como un valor de píxel fraccionario. Un
+numeral de exhibición (el número héroe, un valor de KPI) o un icono conserva un tamaño literal, porque pertenece
+a una sola superficie. `pnpm check:style-tokens` comprueba ambas cosas, y que toda referencia `--text-*`
+se resuelva sin valor de respaldo.
 
-| Level | Size / weight | Usage |
+| Nivel | Tamaño / peso | Uso |
 | --- | --- | --- |
-| Page title (`--text-xl`) | 20px / 600, letter-spacing −0.01em | One per page, the verdict or page name |
-| Section h2 | 16px / 600 | Dashboard sections |
-| Hero number | 42px / 700, letter-spacing −0.04em | The one big KPI |
-| KPI value | 28px / 700 | Stat cards |
-| Body | 14px / 400 | Default |
-| Data / mono | 12–13px | Tables, logs, code |
-| Caption | 12px / 500, reading case, `--muted` | Column heads, field labels, group names; log levels and unit marks keep their own case because they label data |
+| Título de página (`--text-xl`) | 20px / 600, letter-spacing −0.01em | Uno por página, el veredicto o el nombre de la página |
+| h2 de sección | 16px / 600 | Secciones del panel |
+| Número héroe | 42px / 700, letter-spacing −0.04em | El gran KPI |
+| Valor de KPI | 28px / 700 | Tarjetas de estadísticas |
+| Cuerpo | 14px / 400 | Por defecto |
+| Datos / mono | 12–13px | Tablas, registros, código |
+| Leyenda | 12px / 500, mayúsculas y minúsculas normales, `--muted` | Cabeceras de columna, etiquetas de campo, nombres de grupo; los niveles de registro y las marcas de unidad conservan su propia caja porque etiquetan datos |
 
-**Hierarchy rules:**
+**Reglas de jerarquía:**
 
-1. One page title per page — the dashboard title is the *verdict* (e.g. `Healthy.`),
-   other pages use the nav label. No duplicated subtitles restating it.
-2. No decorative subtitles. A page subtitle is one line naming the surface's subject
-   (`Manage upstream AI provider endpoints, protocol drivers, and models`) or it carries
-   live data (`Default CPA · Connected`, `3 auth files`) — never a restatement of the
-   title, an instruction, or marketing copy.
-   The same rule covers warning text: a state label (`CPA file logging disabled`) plus
-   an action (`Retry`) is the whole message. Sentences explaining *why* the switch
-   exists, or promising what another screen will do, are documentation pasted
-   into the UI — an operator who needs them is looking at the wrong product.
-3. No stacked translations: a localized UI never shows captions from another
-   language for the same thing (every registered language localizes fully; proper
-   nouns like "Provider" may remain English where that is the industry term).
-4. Body max width `1440px`; page padding 32px desktop / 24px tablet / 16px phone.
+1. Un título de página por página — el título del panel es el *veredicto* (p. ej. `Healthy.`),
+   las demás páginas usan la etiqueta de navegación. Sin subtítulos duplicados que lo repitan.
+2. Sin subtítulos decorativos. El subtítulo de una página es una línea que nombra el tema de la superficie
+   (`Manage upstream AI provider endpoints, protocol drivers, and models`) o lleva
+   datos en vivo (`Default CPA · Connected`, `3 auth files`) — nunca una repetición del
+   título, una instrucción ni texto de marketing.
+   La misma regla cubre el texto de advertencia: una etiqueta de estado (`CPA file logging disabled`) más
+   una acción (`Retry`) es el mensaje completo. Las frases que explican *por qué* existe el interruptor,
+   o que prometen lo que hará otra pantalla, son documentación pegada
+   en la interfaz — un operador que las necesita está mirando el producto equivocado.
+3. Sin traducciones apiladas: una interfaz localizada nunca muestra leyendas de otro
+   idioma para lo mismo (todo idioma registrado se localiza por completo; los nombres
+   propios como "Provider" pueden permanecer en inglés donde sea el término del sector).
+4. Ancho máximo del cuerpo `1440px`; relleno de página de 32px en escritorio / 24px en tableta / 16px en teléfono.
 
-The content widths that follow from those two numbers are the console's, and a page
-measures what every other page measures:
+Los anchos de contenido que se derivan de esos dos números son los de la consola, y una página
+mide lo mismo que mide toda otra página:
 
 ```text
 content area         viewport − 236 (the sider)
@@ -1083,24 +1080,24 @@ content column      1440 − 2×32 = 1376  (what the page owns)
 list frame          1376, its rows 1376 − 2×1 = 1374  (the frame is the list's container)
 ```
 
-- **One content column.** `.terminal-page` owns it. A page-level class must not
-declare its own `max-width`: a rule of equal specificity wins by source order
-(CSS module styles are injected after the stylesheet), so a page that sets
-`max-width: 100%` silently drops the 1440px cap and runs the full width of the
-content area — measured at 1684px on a 1920px viewport, i.e. 244px wider than
-every other surface. Where a page genuinely needs a different column it states
-the reason next to the rule. Two surfaces do: the configuration workbench (a 920px
-reading column between a nav track and a balancing gutter) and the conversation workspaces
-(a frame anchored to the viewport around a 760px reading column, §5).
-- **Lists do not change the column.** A list is its own frame and spans the
-content column; its width follows from the column, not from the viewport or from
-a column count. Measured at a 1920px viewport: every list frame is 1376 wide and
-at the same x, whether it stands alone (AI Providers, OAuth, key management, pricing) or is the
-body of a card whose head names it.
-- **A page's own surface is never wider than the page.** Sideways scrolling for a
-wide table happens inside the list's frame, so the column stays where the reader left it.
+- **Una sola columna de contenido.** `.terminal-page` la posee. Una clase a nivel de página no debe
+  declarar su propio `max-width`: una regla de igual especificidad gana por orden de fuente
+  (los estilos de módulos CSS se inyectan después de la hoja de estilos), de modo que una página que fija
+  `max-width: 100%` descarta en silencio el tope de 1440px y ocupa todo el ancho del
+  área de contenido — medido en 1684px en un viewport de 1920px, es decir 244px más ancho que
+  toda otra superficie. Cuando una página necesita realmente una columna distinta, enuncia
+  la razón junto a la regla. Dos superficies lo hacen: el banco de trabajo de configuración (una columna de lectura de 920px
+  entre una pista de navegación y un canal de equilibrio) y los espacios de trabajo de conversación
+  (un marco anclado al viewport alrededor de una columna de lectura de 760px, §5).
+- **Las listas no cambian la columna.** Una lista es su propio marco y abarca la
+  columna de contenido; su ancho se deriva de la columna, no del viewport ni de
+  un número de columnas. Medido en un viewport de 1920px: todo marco de lista mide 1376 y está
+  en la misma x, ya esté solo (AI Providers, OAuth, gestión de claves, precios) o sea el
+  cuerpo de una tarjeta cuyo encabezado lo nombra.
+- **La superficie propia de una página nunca es más ancha que la página.** El desplazamiento lateral de una
+  tabla ancha ocurre dentro del marco de la lista, de modo que la columna permanece donde la dejó el lector.
 
-## 4. Shape, spacing, elevation
+## 4. Forma, espaciado, elevación
 
 ```text
 radius-xs     2px    marks: bar ends, heatmap swatches, 16px logos
@@ -1119,25 +1116,25 @@ header        52px tall, inside the panel, no rule under it
 sider         236px (58px collapsed), on the canvas, no rule beside it
 ```
 
-**The scale nests.** A shape inside another takes the step below its frame, so an inner corner never
-reads rounder than the edge around it. `pnpm check:style-tokens` refuses a literal that is a step and a
-4px or 5px corner, which is a step nobody chose.
+**La escala se anida.** Una forma dentro de otra toma el paso inferior al de su marco, de modo que una esquina interior nunca
+parece más redondeada que el borde que la rodea. `pnpm check:style-tokens` rechaza un literal que sea un paso y una
+esquina de 4px o 5px, que es un paso que nadie eligió.
 
-**Elevation belongs to what floats.** Layout, cards and tables carry no shadow. A layer the reader
-summoned carries a hairline *and* a shadow: `--shadow-float` for menus, popovers, select and date
-panels and toasts; `--shadow-overlay` for dialogs and the desktop side sheet; `--shadow-raised` for the
-one-pixel lift of a switch knob, a segmented thumb, the empty-state sheet and the composer at rest.
-Dark mode carries its own, deeper set, because a light shadow does not read on a dark page. The modal
-and drawer mask (`--overlay-mask`) dims the page rather than hiding it. The dashboard's live routing
-map keeps its own lit depth, and its scope is stated with it (§2, Dashboard live routing).
-`--focus-ring: 0 0 0 2px var(--accent)` is the only ring, and it is never drawn on a text field: a browser
-matches `:focus-visible` on every focused `input`/`textarea`, and those sit inside controls (Input with an
-affix, Select, pickers, number fields) that already mark focus on their outer box with the accent border
-and halo. Ringing the inner field too drew a second rectangle inside the control. A control that fills a card
-clipped to its rounded edge - a disclosure head in the provider editor - draws the same ring inset,
-following the card's corners, because the outward ring would be cut to one stray stroke.
+**La elevación pertenece a lo que flota.** El layout, las tarjetas y las tablas no llevan sombra. Una capa que el lector
+invocó lleva una línea fina *y* una sombra: `--shadow-float` para menús, popovers, paneles de selección y de fecha y toasts;
+`--shadow-overlay` para diálogos y la hoja lateral de escritorio; `--shadow-raised` para el
+levantamiento de un píxel del botón de un interruptor, un pulgar segmentado, la hoja de estado vacío y el compositor en reposo.
+El modo oscuro lleva su propio conjunto, más profundo, porque una sombra clara no se lee sobre una página oscura. La máscara
+de modales y paneles laterales (`--overlay-mask`) atenua la página en lugar de ocultarla. El mapa de enrutamiento en vivo del panel
+conserva su propia profundidad iluminada, y su alcance se enuncia junto a ella (§2, Enrutamiento en vivo del panel).
+`--focus-ring: 0 0 0 2px var(--accent)` es el único anillo, y nunca se dibuja en un campo de texto: un navegador
+hace coincidir `:focus-visible` en todo `input`/`textarea` enfocado, y estos están dentro de controles (Input con
+afijo, Select, selectores, campos numéricos) que ya marcan el foco en su caja exterior con el borde de acento
+y el halo. Rodear también el campo interior dibujaba un segundo rectángulo dentro del control. Un control que llena una tarjeta
+recortada a su borde redondeado - una cabecera de disclosure en el editor de proveedores - dibuja el mismo anillo hacia dentro,
+siguiendo las esquinas de la tarjeta, porque el anillo hacia fuera se cortaría en un único trazo suelto.
 
-## 5. Layout skeleton
+## 5. Estructura del layout
 
 ```text
  canvas ─────────────────────────────────────────────────────
@@ -1151,346 +1148,346 @@ following the card's corners, because the outward ring would be cut to one stray
    236px                  1fr — rail and panel scroll independently
 ```
 
-The rail stands on `--canvas`; the header and the route content are one panel on `--bg`, with a 1px
-`--border` edge and the `lg` corner. At the phone breakpoint (900px) the panel loses its inset, edge
-and corner and becomes the screen.
+El carril se asienta sobre `--canvas`; la cabecera y el contenido de la ruta son un solo panel sobre `--bg`, con un borde
+`--border` de 1px y la esquina `lg`. En el punto de corte de teléfono (900px) el panel pierde su inset, borde
+y esquina y pasa a ser la pantalla.
 
-- `body { overflow: hidden }` — the shell is `100dvh`; sidebar and content
-  scroll independently (`overscroll-behavior: contain`).
-- Plugin SVG marks use the surrounding text colour in navigation, management cards/drawers
-  and hosted-page headings. They are unframed glyphs: theme, hover and selected-state colours
-  apply without a separate icon palette. Raster plugin marks keep their original colours.
-- Nav groups: Operate / Gateway / Observe / Control, with the plugins group - management, the
-  store, then each plugin's own page - before Control. Group labels 12px / 500 in reading
-  case, `--meta`. Items: a 16px icon in `--muted` + label in `--fg-2`, no subtitles, 32px rows with
-  the `md` corner. Hover is `--fg` washed 5% over the rail; the selected item is an 8% wash with
-  `--fg` text at 500 and its icon in `--fg`. The washes are foreground over whatever the rail
-  stands on, so the same rule reads on the canvas and on the phone sheet; a coloured bar or an
-  accent fill never marks the selection, because the rail is chrome and colour belongs to data.
-- The rail is the operator's: which of its entries a deployment shows is a stored preference
-  (`omc_nav_hidden`, holding the *hidden* routes, so an entry a later release adds arrives
-  already visible), set from the Shell-PAMC Settings page - one row that opens the rail's own panel,
-  rather than sixteen rows grown onto a page of one-line settings - and applied to the expanded
-  rail, the collapsed rail and the phone sheet from one filtered model. The panel lists the model
-  the rail draws, including the pages a running plugin registered, so the two cannot disagree
-  about which destinations exist. A group whose every entry is hidden goes with
-  them, the Shell-PAMC Settings entry itself is shown switched on and inert - a preference that could
-  hide its own surface would leave the console unable to undo it - and everything else on the
-  shell reads the unfiltered model, so a page opened by URL still names itself in the breadcrumb
-  and the document title.
-- The rail ends with its navigation: CPA connection and version are read on the
-  System Information page, not repeated in the shell.
+- `body { overflow: hidden }` — la carcasa es `100dvh`; la barra lateral y el contenido
+  se desplazan de forma independiente (`overscroll-behavior: contain`).
+- Las marcas SVG de plugins usan el color de texto circundante en la navegación, en las tarjetas y paneles laterales de gestión
+  y en los encabezados de páginas alojadas. Son glifos sin marco: los colores de tema, hover y estado seleccionado
+  se aplican sin una paleta de iconos aparte. Las marcas raster de plugins conservan sus colores originales.
+- Grupos de navegación: Operate / Gateway / Observe / Control, con el grupo de plugins - gestión, la
+  tienda, luego la página propia de cada plugin - antes de Control. Las etiquetas de grupo son 12px / 500 en caja
+  de lectura, `--meta`. Elementos: un icono de 16px en `--muted` + etiqueta en `--fg-2`, sin subtítulos, filas de 32px con
+  la esquina `md`. El hover es `--fg` atenuado al 5% sobre el carril; el elemento seleccionado es un velo del 8% con
+  texto `--fg` a 500 y su icono en `--fg`. Los velos son primer plano sobre aquello en lo que se asiente
+  el carril, de modo que la misma regla se lee sobre el canvas y sobre la hoja de teléfono; una barra de color o un
+  relleno de acento nunca marca la selección, porque el carril es chrome y el color pertenece a los datos.
+- El carril es del operador: cuáles de sus entradas muestra un despliegue es una preferencia almacenada
+  (`omc_nav_hidden`, que guarda las rutas *ocultas*, de modo que una entrada que añade una versión posterior llega
+  ya visible), establecida desde la página de ajustes de Shell-PAMC - una fila que abre el panel propio del carril,
+  en lugar de dieciséis filas añadidas a una página de ajustes de una línea - y aplicada al carril
+  expandido, al carril contraído y a la hoja de teléfono desde un mismo modelo filtrado. El panel lista el modelo
+  que dibuja el carril, incluidas las páginas que registró un plugin en ejecución, de modo que los dos no pueden discrepar
+  sobre qué destinos existen. Un grupo cuyas entradas están todas ocultas se va con
+  ellas, la propia entrada de ajustes de Shell-PAMC se muestra activada e inerte - una preferencia que pudiera
+  ocultar su propia superficie dejaría a la consola incapaz de deshacerla - y todo lo demás de la
+  carcasa lee el modelo sin filtrar, de modo que una página abierta por URL sigue nombrándose en las migas
+  y en el título del documento.
+- El carril termina con su navegación: la conexión y la versión de CPA se leen en la
+  página System Information, no se repiten en la carcasa.
 
-### OpenCode-inspired patterns
+### Patrones inspirados en OpenCode
 
-Shell-PAMC draws from OpenCode's minimalist, high-density, engineer-first console philosophy while preserving Shell-PAMC's warm charcoal palette, security boundaries, and technical architecture:
+Shell-PAMC se inspira en la filosofía de consola minimalista, de alta densidad y orientada a ingenieros de OpenCode, preservando la paleta de carbón cálido, los límites de seguridad y la arquitectura técnica de Shell-PAMC:
 
-1. **Open List Pattern**
-   - Lists of models, credentials, configuration items, etc., favor open rows over nested outer Card wrappers.
-   - Rows are separated by subtle 1px hairline dividers (`border-bottom: 1px solid var(--border-soft)`).
-   - Clear structure: entity name and identifier on the left, technical metadata / provider in the middle, and direct interactive controls on the right (e.g. switch toggles, action buttons).
-2. **Unified Credential Workspace Density**
-   - An identified `credential_quota` cooldown is explained by the existing CPA cooldown status tooltip, without a second red banner. Unrecognized cooldown reasons remain visible in the overview; the Quota tab retains the complete reason and action-failure diagnostics.
-   - OAuth sign-in, credential management and quota reading share one credential collection. The list presents a scan-first overview: identity, management state and metadata, quota condition, plan, observation age and the credential's own model family as its five-hour and weekly windows - each a labelled bar carrying its share, with its reset on the line below. A group's window is named from the period it covers when the provider sends no kind, so the row reads in the console's language whatever the provider labelled. The row carries one visible action beside its enable switch; models, editing, a quota refresh, a cooldown release, download and delete sit in the row menu, because a row is a reading and not a stack of buttons. A menu entry names its action and never the file name, which would stretch the menu to whatever the longest credential is called; the file name belongs to the confirmation, where it identifies the target. A refresh reports itself once, as a toast: a run without a failure is an acknowledgement that leaves on its own, and a run with a failing target is a report toast that lists each target's reason and stays until it is closed. Redeeming a banked reset credit is not a row action at all: it is irreversible and spends an entitlement, so only the Drawer's Quota tab offers it, beside the credit expiries it consumes. One Details action opens the complete reading - every family, credit, cooldown and diagnostic - in the credential Drawer. The overview floor is six complete credential records at 1440x900: the row is allowed its height, because reading a credential matters more than fitting as many of them as possible. The Drawer separates Quota, Configuration and Models into tabs; only the selected task is visible. Configuration drafts survive tab changes and remain guarded when closing from any tab. Safe fields and models are fetched only when their respective tabs are selected. Search stays visible, additional filters are disclosed on demand, and pagination owns page size. Provider tabs show populated families plus the selected family; empty providers remain available in Connect. Record boundaries are visible, status colors remain semantic, and model/group labels and ordering survive full quota rendering.  Full quota completeness is verified in the Quota tab, including six model/group windows, with no horizontal overflow in the list or Drawer at 320px. Compact window footers wrap long capacity estimates, including previous-cycle token-only values in full-digit style, within their own window rather than clipping digits or widening the page.
-3. **Task-Dependent Density**
-   - Monitoring and high-frequency telemetry (Dashboard, Live Logs, Request Records): High density, compact, tabular monospace alignment.
-   - Configuration and system operations (Config, Pricing, System Settings): More generous whitespace, 32–48px section spacing, and full-width 1px dividers.
-4. **Honest Card Boundaries**
-   - Cards are reserved for: core KPIs, key entity summaries, and peer comparisons.
-   - Never wrap a single isolated input or switch into an individual card box to avoid visual clutter.
-5. **Peer Comparison Panel**
-   - Multi-column horizontal comparison card pattern: clean outer grid + 1px hairline borders + inner dividers (primary comparison metrics on top, secondary sources and provider logos below).
-6. **Contextual Next Actions**
-   - Allow a single concise line describing the current target or guiding the next step (e.g. underlined links like `Learn more.` or `Documentation`).
-   - Avoid marketing boilerplate or lengthy guides inside UI cards.
-7. **Top Context Slot**
-   - The left side hosts the navigation toggle and the current group/page breadcrumb; product artwork belongs to the side rail or the phone navigation sheet;
-   - The right side houses five fixed-width actions: the project GitHub link, refresh, the theme mode control, the language menu, and sign out. **The mode control cycles and the language control is a menu**, and that asymmetry is deliberate. The theme was a menu while the console carried six palettes and a toggle could only answer "the other one"; the palettes now belong to the modes and are chosen on the Shell-PAMC Settings page, where each candidate repaints the whole console as it is picked, so the header's remaining question is light or dark - with follow-the-system as the third state, one icon per state (a sun, a moon, a desktop). The control's tooltip is its own name and deliberately not a sentence about its state; the states are named in words on the settings page's own row. The language stays a menu because four languages, one of which the reader may not read, is exactly the case a list answers: it names every choice by its **endonym** - its own name in its own script, never a translation. The settings page's language picker lists the same endonyms.
-   - The project GitHub link uses the existing local Octicons mark and opens `https://github.com/Bizasbot/Shell-PAMC` in a new tab with `noopener noreferrer`; it shows no tooltip — the mark names it and the unfolding count answers the hover — while its accessible name follows the reading language, and it remains available in the demonstration. At rest the link is the mark alone; pointed at or focused, it unfolds the project's star count before the mark over `base` — a star glyph and the count, exact below a thousand and truncated thousands with two decimals above (`1.23k`) — once the server has read one, and under reduced motion it still waits for the pointer or focus but appears at once, without the transition. It is the first control of a right-aligned row and the label leads, so unfolding widens it away from the others and the mark stays under the pointer; a device with no hover shows the count throughout. A hairline separates the link from the console's own actions. All five actions are one component, `web/src/components/common/HeaderAction.tsx`: 32px high, borderless at rest, the same hover and the same label treatment for the star count and the language code. **Every header action keeps one width in every reading language.** Labels are the one thing whose length changes with the language, so sign out is an icon button named by its tooltip, and the language trigger holds its code in a fixed slot. A control that resizes moves the actions beside it, which is a real defect rather than a cosmetic one: the pointer is already on one of them.
-   - On phones the action cluster keeps its full control widths with a 4px gap and 12px safe-area-aware edge padding; the navigation toggle does not shrink, and the current breadcrumb truncates with an ellipsis rather than overlapping actions. Connection status and version are the System Information page's, not the header's: this slot carries actions. Never display fabricated avatars, dummy balances, or mock workspace selectors before real capabilities exist.
-8. **Form Workbench & Setting Group Panels**
-   - **Full-width Toolbar & Viewport Anchoring**: The top action toolbar and its 1px bottom border span 100% of the viewport, with right-side actions (search / refresh / save) pinned to the far right (vertically aligned with the global header actions) to eliminate awkward empty gaps. The form workbench below maintains a three-track grid: 216px sticky section navigation + 920px reading width + 216px balancing gutter (used solely to center content on wide viewports), establishing an anchored layout that keeps forms focused and legible.
-   - **Setting Group Panels**: Related settings converge into **Setting Group Panels** (one 1px hairline enclosure on the panel's `--bg` ground with the `lg` corner, rows parted by a dashed rule inset 20px from the edge) rather than an endless flat list of inputs or fragmented cards. Three specialized structures are used:
-     1. **Form Grid**: Labels and descriptions on top, controls below; related short fields (such as Host and Port, retry counts and delays) sit side by side; short number inputs are bounded to 120px and picker selects to 280px, while a list field's tag editor fills its column and grows as its tags wrap, since it has no dropdown to open and no longest option to size against;
-     2. **Settings List**: Toggles and flags use in-card row lists with "title and description on left + Switch on right", bounded by the panel container;
-     3. **Managed Elsewhere**: A group whose field is edited on its own page (the proxy client API keys) states how much is configured and leads there with a single action, rather than carrying a second editor that could disagree with the first. It renders in search results too, so searching for that field finds the panel that names it;
-     4. **Progressive Disclosure Panel**: TLS sections host an enable switch in the group header; when disabled, only explanatory text is shown; when enabled, certificate and private key path fields expand smoothly, while preserving YAML data and disabling hidden controls when collapsed.
-   - **Sticky Action Toolbar**: Title, sync pill, mode switch (`Visual / Source`), and actions (search, refresh, save) converge into a single sticky bar. The Save button stays anchored to the far right.
-   - **Target Ergonomics**: High-frequency inline actions use discrete 32×32px square buttons (1px border and subtle background), providing ample click targets and tooltip feedback rather than bare icons.
-   - **Form Control Sizing**: Controls are sized to 38–40px height with 14px font size for comfortable editing; numeric inputs are left-aligned with 34px right padding to prevent steppers from obscuring values.
-   - **Monaco YAML Source Editor**:
-     - **Offline & Zero-CDN Constraint**: Injects locally bundled `monaco-editor` core with `editor.worker` and `yaml.worker`; never loads assets via CDN; disables remote schema requests (`enableSchemaRequest: false`);
-     - **On-demand Lazy Loading**: Dynamic import via `React.lazy` prevents bloat on initial page loads; Vite aliases prune unused language workers, bundling only `editor.worker` (274 KB) and `yaml.worker` (1017 KB);
-     - **Console Theme Integration**: Dedicated `omc-dark` and `omc-light` themes match the console's mono stack and 1px hairline borders, eliminating the jarring contrast of VS Code default themes;
-     - **Full IDE Capabilities**: YAML syntax highlighting, bracket matching, indentation guides, folding, `Ctrl+F` search/replace, native `Ctrl+S` interception, and explicit format/validation hints.
-   - **Floating Dirty Action Bar & Confirmation Semantics**:
-     - **Trigger**: Appears only when unsaved edits exist (`isDirty === true`), fully hidden otherwise; the top toolbar concurrently shows a Discard button;
-     - **Viewport Centered & Non-intrusive**: Centered dynamically within the content column based on `--app-sider-width`; outer container uses `pointer-events: none` to avoid blocking lower page interactions;
-     - **Quiet Tone**: 1px border, solid `--surface` background, the `lg` corner, and amber dirty indicator pip;
-     - **Confirmation Rules**: Save actions trigger a `ConfirmAction` (and `Ctrl+S`/`Cmd+S` triggers a confirmation modal); Discard actions revert immediately without confirmation, cleanly dismissing the dirty bar; Save is disabled with tooltip explanations when YAML has syntax errors or required fields are incomplete.
-   - **Modular Payload Rules Builder**:
-     - **Structured Collapsible Panels**: Replaces generic raw textareas with structured panels (Default rules, Default Raw rules, Override rules, Override Raw rules, Filter rules); all categories start collapsed, explicit disclosure choices survive external document updates, and a failed save opens the first invalid category;
-     - **Bi-directional Lossless AST Mapping**: Directly manipulates the YAML Document AST; models, protocols, typed parameters, raw fragments, and filter paths use dedicated controls; preserves non-payload configurations, ordering, and comments, round-tripping unknown fields (`_extra`);
-     - **Validation Timing (Pristine → Touched → Submitted)**: Avoids premature errors on initial open or rule addition; required fields remain neutral until blur (`onBlur`) or submit; errors clear immediately upon valid input;
-     - **Advanced Match Modal**: Supports protocol filtering (`from-protocol`), header matching (`headers`), path equality matching (`match`), path inequality matching (`not-match`), and path existence checks.
-   - **Architectural Rationale: Why Avoid @ant-design/pro-components**:
-     - ProComponents (`FooterToolbar`, `ProFormList`) bundle massive dependencies (`rc-field-form`) and heavy enterprise patterns;
-     - Adding them would introduce megabytes of bundle weight, conflicting with the single-binary zero-CDN offline mandate and introducing incompatible drop shadows;
-     - Dedicated native components integrate seamlessly with the YAML AST state stream, resulting in minimal bundle size, instant responsiveness, and high customization.
+1. **Patrón de lista abierta**
+   - Las listas de modelos, credenciales, elementos de configuración, etc., favorecen filas abiertas sobre contenedores Card externos anidados.
+   - Las filas se separan con divisores sutiles de línea fina de 1px (`border-bottom: 1px solid var(--border-soft)`).
+   - Estructura clara: nombre e identificador de la entidad a la izquierda, metadatos técnicos / proveedor en el centro y controles interactivos directos a la derecha (p. ej. interruptores, botones de acción).
+2. **Densidad unificada del espacio de trabajo de credenciales**
+   - Un enfriamiento `credential_quota` identificado se explica con el tooltip de estado de enfriamiento de CPA existente, sin un segundo banner rojo. Los motivos de enfriamiento no reconocidos permanecen visibles en la vista general; la pestaña Quota conserva el motivo completo y los diagnósticos de fallo de acciones.
+   - El inicio de sesión OAuth, la gestión de credenciales y la lectura de cuota comparten una misma colección de credenciales. La lista presenta una vista general para escanear primero: identidad, estado de gestión y metadatos, condición de cuota, plan, antigüedad de la observación y la propia familia de modelos de la credencial como sus ventanas de cinco horas y semanal - cada una una barra rotulada que lleva su proporción, con su restablecimiento en la línea inferior. La ventana de un grupo se nombra por el período que cubre cuando el proveedor no envía un tipo, de modo que la fila se lee en el idioma de la consola sea cual sea la etiqueta del proveedor. La fila lleva una acción visible junto a su interruptor de habilitar; los modelos, la edición, un refresco de cuota, la liberación de un enfriamiento, la descarga y el borrado van en el menú de la fila, porque una fila es una lectura y no una pila de botones. Una entrada de menú nombra su acción y nunca el nombre de archivo, que estiraría el menú hasta lo que se llame la credencial más larga; el nombre de archivo pertenece a la confirmación, donde identifica el destino. Un refresco se informa una sola vez, como toast: una ejecución sin fallos es un acuse que se va solo, y una ejecución con un destino fallido es un toast de informe que lista el motivo de cada destino y permanece hasta que se cierra. Canjear un crédito de restablecimiento acumulado no es en absoluto una acción de fila: es irreversible y gasta un derecho, de modo que solo la pestaña Quota del Drawer lo ofrece, junto a los vencimientos de crédito que consume. Una acción Details abre la lectura completa - cada familia, crédito, enfriamiento y diagnóstico - en el Drawer de la credencial. El suelo de la vista general son seis registros completos de credencial a 1440x900: a la fila se le permite su altura, porque leer una credencial importa más que meter tantas como sea posible. El Drawer separa Quota, Configuration y Models en pestañas; solo la tarea seleccionada es visible. Los borradores de configuración sobreviven a los cambios de pestaña y permanecen protegidos al cerrar desde cualquier pestaña. Los campos seguros y los modelos se obtienen solo cuando se seleccionan sus respectivas pestañas. La búsqueda permanece visible, los filtros adicionales se despliegan bajo demanda, y la paginación posee el tamaño de página. Las pestañas de proveedor muestran las familias pobladas más la familia seleccionada; los proveedores vacíos siguen disponibles en Connect. Los límites de registro son visibles, los colores de estado siguen siendo semánticos, y las etiquetas y el orden de modelos/grupos sobreviven al renderizado completo de cuota.  La completitud total de la cuota se verifica en la pestaña Quota, incluidas seis ventanas de modelo/grupo, sin desbordamiento horizontal en la lista ni en el Drawer a 320px. Los pies compactos de ventana ajustan las estimaciones largas de capacidad, incluidos los valores solo de tokens del ciclo anterior en estilo de dígitos completos, dentro de su propia ventana en lugar de recortar dígitos o ensanchar la página.
+3. **Densidad según la tarea**
+   - Monitorización y telemetría de alta frecuencia (Dashboard, Live Logs, Request Records): densidad alta, compacta, alineación tabular monoespaciada.
+   - Configuración y operaciones del sistema (Config, Pricing, System Settings): más espacio en blanco, espaciado de sección de 32–48px y divisores de ancho completo de 1px.
+4. **Límites honestos de las tarjetas**
+   - Las tarjetas se reservan para: KPI centrales, resúmenes de entidades clave y comparaciones entre pares.
+   - Nunca envolver una entrada o un interruptor aislado en su propia caja de tarjeta para evitar el desorden visual.
+5. **Panel de comparación entre pares**
+   - Patrón de tarjeta de comparación horizontal de varias columnas: cuadrícula exterior limpia + bordes de línea fina de 1px + divisores interiores (métricas principales de comparación arriba, fuentes secundarias y logotipos de proveedor debajo).
+6. **Siguientes acciones contextuales**
+   - Permitir una sola línea concisa que describa el destino actual o guíe el siguiente paso (p. ej. enlaces subrayados como `Learn more.` o `Documentation`).
+   - Evitar texto de marketing o guías extensas dentro de las tarjetas de la UI.
+7. **Ranura de contexto superior**
+   - El lado izquierdo aloja el conmutador de navegación y las migas del grupo/página actual; el arte de producto pertenece al carril lateral o a la hoja de navegación del teléfono;
+   - El lado derecho aloja cinco acciones de ancho fijo: el enlace de GitHub del proyecto, refrescar, el control de modo de tema, el menú de idioma y cerrar sesión. **El control de modo alterna y el control de idioma es un menú**, y esa asimetría es deliberada. El tema era un menú mientras la consola llevaba seis paletas y un conmutador solo podía responder «la otra»; las paletas pertenecen ahora a los modos y se eligen en la página de ajustes de Shell-PAMC, donde cada candidata repinta toda la consola al elegirse, de modo que la pregunta que le queda a la cabecera es claro u oscuro - con seguir al sistema como tercer estado, un icono por estado (un sol, una luna, un escritorio). El tooltip del control es su propio nombre y deliberadamente no una frase sobre su estado; los estados se nombran con palabras en la propia fila de la página de ajustes. El idioma sigue siendo un menú porque cuatro idiomas, uno de los cuales el lector puede no leer, es exactamente el caso que responde una lista: nombra cada opción por su **endónimo** - su propio nombre en su propia escritura, nunca una traducción. El selector de idioma de la página de ajustes lista los mismos endónimos.
+   - El enlace de GitHub del proyecto usa la marca Octicons local existente y abre `https://github.com/Bizasbot/Shell-PAMC` en una pestaña nueva con `noopener noreferrer`; no muestra tooltip — la marca lo nombra y el recuento que se despliega responde al hover — mientras que su nombre accesible sigue el idioma de lectura, y permanece disponible en la demostración. En reposo el enlace es solo la marca; al apuntarlo o enfocarlo, despliega el recuento de estrellas del proyecto antes de la marca durante `base` — un glifo de estrella y el recuento, exacto por debajo de mil y miles truncados con dos decimales por encima (`1.23k`) — una vez que el servidor ha leído uno, y con movimiento reducido sigue esperando al puntero o al foco pero aparece de inmediato, sin la transición. Es el primer control de una fila alineada a la derecha y la etiqueta va primero, de modo que al desplegarse se ensancha alejándose de los demás y la marca permanece bajo el puntero; un dispositivo sin hover muestra el recuento todo el tiempo. Una línea fina separa el enlace de las acciones propias de la consola. Las cinco acciones son un solo componente, `web/src/components/common/HeaderAction.tsx`: 32px de alto, sin borde en reposo, el mismo hover y el mismo tratamiento de etiqueta para el recuento de estrellas y el código de idioma. **Toda acción de la cabecera conserva un mismo ancho en todo idioma de lectura.** Las etiquetas son lo único cuya longitud cambia con el idioma, así que cerrar sesión es un botón de icono nombrado por su tooltip, y el disparador de idioma guarda su código en una ranura fija. Un control que cambia de tamaño mueve las acciones que tiene al lado, lo cual es un defecto real y no cosmético: el puntero ya está sobre una de ellas.
+   - En teléfonos el grupo de acciones conserva sus anchos de control completos con un hueco de 4px y un relleno de borde de 12px consciente del área segura; el conmutador de navegación no se encoge, y las migas actuales se truncan con puntos suspensivos en lugar de solaparse con las acciones. El estado de conexión y la versión son de la página System Information, no de la cabecera: esta ranura lleva acciones. Nunca mostrar avatares fabricados, saldos ficticios ni selectores de espacio de trabajo simulados antes de que existan las capacidades reales.
+8. **Banco de formularios y paneles de grupos de ajustes**
+   - **Barra de herramientas de ancho completo y anclaje al viewport**: La barra de acciones superior y su borde inferior de 1px abarcan el 100% del viewport, con las acciones del lado derecho (búsqueda / refrescar / guardar) fijadas al extremo derecho (alineadas verticalmente con las acciones de la cabecera global) para eliminar huecos vacíos incómodos. El banco de formularios inferior mantiene una cuadrícula de tres pistas: navegación de sección fija de 216px + ancho de lectura de 920px + canal de equilibrio de 216px (usado solo para centrar el contenido en viewports anchos), estableciendo un layout anclado que mantiene los formularios enfocados y legibles.
+   - **Paneles de grupos de ajustes**: Los ajustes relacionados convergen en **paneles de grupos de ajustes** (un recinto de línea fina de 1px sobre el fondo `--bg` del panel con la esquina `lg`, filas separadas por una regla discontinua con inset de 20px desde el borde) en lugar de una lista plana interminable de campos o tarjetas fragmentadas. Se usan tres estructuras especializadas:
+     1. **Cuadrícula de formulario**: Etiquetas y descripciones arriba, controles debajo; los campos cortos relacionados (como Host y Port, recuentos de reintentos y retrasos) se sitúan lado a lado; los campos numéricos cortos se acotan a 120px y los selects de selector a 280px, mientras que el editor de etiquetas de un campo de lista llena su columna y crece a medida que sus etiquetas se ajustan, ya que no tiene desplegable que abrir ni opción más larga con la que dimensionarse;
+     2. **Lista de ajustes**: Los interruptores y banderas usan listas de filas dentro de la tarjeta con «título y descripción a la izquierda + Switch a la derecha», acotadas por el contenedor del panel;
+     3. **Gestionado en otra parte**: Un grupo cuyo campo se edita en su propia página (las claves de API del cliente proxy) expresa cuánto está configurado y lleva allí con una sola acción, en lugar de llevar un segundo editor que podría discrepar del primero. También se renderiza en los resultados de búsqueda, de modo que buscar ese campo encuentra el panel que lo nombra;
+     4. **Panel de divulgación progresiva**: Las secciones TLS alojan un interruptor de habilitar en la cabecera del grupo; cuando está deshabilitado solo se muestra texto explicativo; cuando está habilitado, los campos de ruta del certificado y de la clave privada se expanden con suavidad, preservando los datos YAML y deshabilitando los controles ocultos cuando está plegado.
+   - **Barra de herramientas de acción fija**: El título, la píldora de sincronización, el conmutador de modo (`Visual / Source`) y las acciones (búsqueda, refrescar, guardar) convergen en una única barra fija. El botón Save permanece anclado al extremo derecho.
+   - **Ergonomía de los objetivos**: Las acciones en línea de alta frecuencia usan botones cuadrados discretos de 32×32px (borde de 1px y fondo sutil), que ofrecen amplios objetivos de clic y retroalimentación por tooltip en lugar de iconos desnudos.
+   - **Tamaño de los controles de formulario**: Los controles miden de 38 a 40px de alto con fuente de 14px para una edición cómoda; los campos numéricos se alinean a la izquierda con un relleno derecho de 34px para evitar que los pasos oculten los valores.
+   - **Editor de código YAML Monaco**:
+     - **Restricción sin conexión y sin CDN**: Inyecta el núcleo `monaco-editor` empaquetado localmente con `editor.worker` y `yaml.worker`; nunca carga recursos mediante CDN; desactiva las solicitudes remotas de esquema (`enableSchemaRequest: false`);
+     - **Carga diferida bajo demanda**: La importación dinámica mediante `React.lazy` evita el sobrepeso en las cargas iniciales de página; los alias de Vite eliminan los workers de lenguaje no usados, empaquetando solo `editor.worker` (274 KB) y `yaml.worker` (1017 KB);
+     - **Integración con el tema de la consola**: Los temas dedicados `omc-dark` y `omc-light` coinciden con la pila mono de la consola y los bordes de línea fina de 1px, eliminando el contraste brusco de los temas predeterminados de VS Code;
+     - **Capacidades completas de IDE**: resaltado de sintaxis YAML, emparejado de corchetes, guías de sangría, plegado, búsqueda/reemplazo con `Ctrl+F`, interceptación nativa de `Ctrl+S` y pistas explícitas de formato/validación.
+   - **Barra flotante de acción de cambios sin guardar y semántica de confirmación**:
+     - **Disparador**: Aparece solo cuando existen ediciones sin guardar (`isDirty === true`), totalmente oculta en caso contrario; la barra de herramientas superior muestra simultáneamente un botón Discard;
+     - **Centrada en el viewport y no intrusiva**: Se centra dinámicamente dentro de la columna de contenido según `--app-sider-width`; el contenedor exterior usa `pointer-events: none` para no bloquear las interacciones de la página inferior;
+     - **Tono discreto**: borde de 1px, fondo sólido `--surface`, la esquina `lg` e indicador ámbar de cambios sin guardar;
+     - **Reglas de confirmación**: Las acciones de guardado disparan un `ConfirmAction` (y `Ctrl+S`/`Cmd+S` dispara un modal de confirmación); las acciones de descarte revierten de inmediato sin confirmación, descartando limpiamente la barra de cambios; Save se deshabilita con explicaciones en tooltip cuando el YAML tiene errores de sintaxis o faltan campos obligatorios.
+   - **Constructor modular de reglas de payload**:
+     - **Paneles plegables estructurados**: Sustituye los textareas sin procesar genéricos por paneles estructurados (Default rules, Default Raw rules, Override rules, Override Raw rules, Filter rules); todas las categorías empiezan plegadas, las elecciones explícitas de despliegue sobreviven a las actualizaciones externas del documento, y un guardado fallido abre la primera categoría no válida;
+     - **Mapeo AST bidireccional sin pérdidas**: Manipula directamente el AST del documento YAML; los modelos, protocolos, parámetros tipados, fragmentos sin procesar y rutas de filtro usan controles dedicados; preserva las configuraciones que no son de payload, el orden y los comentarios, recorriendo de ida y vuelta los campos desconocidos (`_extra`);
+     - **Momento de validación (Pristine → Touched → Submitted)**: Evita errores prematuros al abrir o añadir una regla por primera vez; los campos obligatorios permanecen neutros hasta el blur (`onBlur`) o el envío; los errores se borran de inmediato con una entrada válida;
+     - **Modal de coincidencia avanzada**: Admite filtrado por protocolo (`from-protocol`), coincidencia de cabeceras (`headers`), coincidencia de igualdad de ruta (`match`), coincidencia de desigualdad de ruta (`not-match`) y comprobaciones de existencia de ruta.
+   - **Fundamento arquitectónico: por qué evitar @ant-design/pro-components**:
+     - ProComponents (`FooterToolbar`, `ProFormList`) empaquetan dependencias enormes (`rc-field-form`) y patrones empresariales pesados;
+     - Añadirlos introduciría megabytes de peso de bundle, en conflicto con el mandato de binario único, sin CDN y sin conexión, e introduciría sombras incompatibles;
+     - Los componentes nativos dedicados se integran sin fricción con el flujo de estado del AST YAML, lo que da un tamaño de bundle mínimo, respuesta instantánea y alta personalización.
 
-### Page chrome
+### Cabecera de página
 
-Every route opens with the same head, built by `PageHeader` (`web/src/components/common/`), so a
-reader moving between pages never sees the refresh control jump or resize:
+Toda ruta se abre con la misma cabecera, construida por `PageHeader` (`web/src/components/common/`), de modo que un
+lector que se mueve entre páginas nunca ve saltar ni cambiar de tamaño el control de refrescar:
 
-- **Title block left, actions right.** One `h1` (`.terminal-title`), and under it only a line that
-  carries live data (the OAuth workspace's counts, the AI provider list's provider, model, key and
-  header totals). A sentence describing what the page is for restates
-  the navigation label beside it and is not drawn.
-- **No echo copy.** A footnote restating a column's window, a hint under a field restating its label, a
-  notice explaining how the console stores something: each is documentation pasted into the surface.
-  What stays is a consequence the operator must see before acting - a removal that cannot be undone, a
-  changed secret that revokes clients - and it sits on the confirmation, where the action happens.
-- **Actions at the default control height (32px)**, wrapping as a group. The primary action, when
-  there is one, is the *last* action so it sits at the page's right edge; refresh comes first.
-- **The title row is pinned to the top** and drawn at the action row's 32px height, so every page's
-  title lands on the same line whether or not a line follows it; aligned to the bottom, a page with a
-  subtitle lifted its title six pixels above one without, and moving between them jumped.
-- **Secondary actions are glyphs** (`ToolButton`): a 32px square named by its tooltip and accessible
-  name. A row of labelled buttons is as wide as its words in the reading language and reflowed under
-  the pointer from page to page; squares do not. The page's primary action keeps its label - it is the
-  one a reader looks for by name - and so does a menu row: inside `ActionMenu` a `ToolButton` takes its
-  label back, because a glyph alone names nothing in a list.
-- **One refresh control** (`RefreshButton`): the header's own rotate glyph, a `ToolButton`; it keeps
-  its label only as a failed read's retry, where it is the page's way forward. A read in flight *spins the glyph* instead of
-  setting antd's `loading`, which swallows clicks and swaps the glyph for a spinner of another shape.
-  `SyncOutlined` is reserved for synchronisation jobs (the pricing catalogue, a quota refresh).
-- **Stacked blocks share one rhythm.** A page of alerts, panels and lists uses `.terminal-page-stack`
-  (16px between blocks, 24px under the head) rather than per-block margins.
-- **State is a pip and a word** (`StatusLabel`: success / warn / danger / accent / neutral), not a
-  filled tag. A column of coloured boxes carried no information the word did not.
-- **Row actions are quiet 28px squares** (`.row-actions` / `.row-action-btn`), 8px apart so the
-  touch rules' hit insets meet rather than overlap. At rest an action is its `--muted` glyph alone,
-  with no frame or fill - a framed button repeated down every row was the loudest thing in a list -
-  and the pointer brings up a `--fg` 7% wash under it with the glyph in `--fg`. A destructive action
-  shows the danger colour, over a 12% danger wash, only on hover - a column of red bins read as a
-  column of errors. Destructive actions confirm in a `ConfirmAction` whose confirming button is the danger one.
-  Installed plugin rows keep configuration directly accessible beside a matching overflow button;
-  repository/homepage links and uninstall live in that menu. The enable switch is separated from
-  the action pair by a quiet rule, and uninstall confirms against the same row. These controls use
-  the existing row-action sizing, palette and motion tokens. Cancel and Escape return
-  keyboard focus to the row action. The auth-provider capability badge says "Auth provider"; it does not label an unspecified login method as OAuth.
-  The OAuth connection picker shows plugin names without an OAuth suffix and a
-  "Plugin-managed" method tag. A plugin with a registered page offers "Open plugin page"
-  instead of OAuth Start; pageless providers resolve device/redirect controls only after
-  a successful explicit login request.
-- **Card heads** use `PanelTitle`: a muted glyph, the title, and the one control that acts on that
-  card alone.
-- **Table headers never wrap.** A squeezed column wraps its cells, not its name.
-- **One list surface.** Every wide list is drawn the way the OAuth credential list is: a 1px
-  `--border` frame with the `lg` corner, column names with no band of their own (the caption type:
-  12px, weight 500, reading case, `--muted`, 8px × 16px, over the same soft rule the rows use), rows
-  on `--bg` at 12px × 16px divided by `--border-soft` rules, and a `--fg` 3% hover wash; the row
-  whose record is open in a drawer takes a 6% wash, never an edge bar. The shared `.data-table` rule in `web/src/index.css` draws it
-  for `ResponsiveList`; a list that is the whole body of a card adds `.data-table-flush`, so the
-  card is the frame and no list sits in a frame inside a frame.
-- **A list summarised before it is listed opens with `StatTiles`** (`web/src/components/common/`):
-  a strip of counted tiles on `--bg` with a 1px `--border` frame and the `md` corner, a 12px label (a
-  `StatusLabel` for a toned tile, plain for the "everything" tile) over a 20px tabular count, which paints in its tone
-  only when non-zero. Each tile is also the list's filter (`aria-pressed`; the selected one takes
-  the accent frame and `--hover-inset`), and the ruled `Toolbar` of search and selects sits
-  directly under it. The audit trail's outcomes, the AI provider list's states and the key list's
-  use over the last 24 hours (all, used, idle) use it. The two Gateway lists are built from the same
-  parts: the summary under the title, the tiles, the ruled toolbar with the window's totals at its
-  end, a table whose rows open on a 36px wash tile and end in quiet row actions, and an `AppDrawer`
-  for the editor.
-- **Lists render through `ResponsiveList`**: a table on a wide viewport, labelled rows below 640px,
-  one empty state (a compact `EmptyState`), and no paginator for a single page.
-  A wide table scrolls sideways inside its own box and never vertically: the wheel over a list
-  scrolls the page, however many lists a page stacks.
-- **A counted filter over an open-ended set stays a `Select`** whose options carry the count (the
-  audit categories, the provider families): a strip of tiles or tabs is for a small closed set.
-- **A record opens in a Drawer.** A row is a reading; the full record - identifiers, the raw code
-  behind a sentence, recorded detail - opens from the row's Details action (or a click on the row)
-  in a Drawer, never by expanding the row in place, which pushed every row below it down the page.
-  Where the list is a sequence (requests, the audit trail), the Drawer steps to its neighbours.
-  On a phone a record whose row is one sentence and a verdict (the audit trail) is one tappable
-  row - the sentence and its state on the first line, the time and target under it, a chevron -
-  rather than a labelled field list with a separate Details button.
-- **A list grouped by a heading is one frame per group** (the price book's providers, the audit
-  trail's days), with the column names drawn once, above the first frame; later frames keep their
-  header row for assistive technology and clip it from view (`.data-table-head-hidden`).
-- **Code is shown in a `CodeFrame`**: a head naming the language with the copy action, then the code
-  in the console's own mono stack - never the browser's default `monospace`.
+- **Bloque de título a la izquierda, acciones a la derecha.** Un `h1` (`.terminal-title`), y debajo solo una línea que
+  lleva datos en vivo (los recuentos del espacio de trabajo OAuth, los totales de proveedores, modelos, claves y
+  cabeceras de la lista de proveedores de IA). Una frase que describa para qué sirve la página repite
+  la etiqueta de navegación que tiene al lado y no se dibuja.
+- **Sin texto eco.** Una nota al pie que repite la ventana de una columna, una pista bajo un campo que repite su etiqueta, un
+  aviso que explica cómo almacena algo la consola: cada una es documentación pegada en la superficie.
+  Lo que permanece es una consecuencia que el operador debe ver antes de actuar - una eliminación que no puede deshacerse, un
+  secreto cambiado que revoca clientes - y va en la confirmación, donde ocurre la acción.
+- **Acciones a la altura de control predeterminada (32px)**, que se ajustan en varias líneas como grupo. La acción primaria, cuando
+  la hay, es la *última* acción para que se sitúe en el borde derecho de la página; refrescar va primero.
+- **La fila del título está fijada arriba** y se dibuja con la altura de 32px de la fila de acciones, de modo que el título de toda página
+  cae en la misma línea tanto si le sigue una línea como si no; alineada abajo, una página con
+  subtítulo elevaba su título seis píxeles por encima de una sin él, y al moverse entre ellas saltaba.
+- **Las acciones secundarias son glifos** (`ToolButton`): un cuadrado de 32px nombrado por su tooltip y su nombre
+  accesible. Una fila de botones rotulados es tan ancha como sus palabras en el idioma de lectura y se recolocaba bajo
+  el puntero de una página a otra; los cuadrados no. La acción primaria de la página conserva su etiqueta - es la
+  que un lector busca por nombre - y también una fila de menú: dentro de `ActionMenu` un `ToolButton` recupera su
+  etiqueta, porque un glifo solo no nombra nada en una lista.
+- **Un único control de refrescar** (`RefreshButton`): el glifo de giro propio de la cabecera, un `ToolButton`; conserva
+  su etiqueta solo como reintento de una lectura fallida, donde es el camino a seguir de la página. Una lectura en curso *hace girar el glifo* en lugar de
+  establecer el `loading` de antd, que se traga los clics y cambia el glifo por un spinner de otra forma.
+  `SyncOutlined` se reserva para trabajos de sincronización (el catálogo de precios, un refresco de cuota).
+- **Los bloques apilados comparten un ritmo.** Una página de alertas, paneles y listas usa `.terminal-page-stack`
+  (16px entre bloques, 24px bajo la cabecera) en lugar de márgenes por bloque.
+- **El estado es un indicador y una palabra** (`StatusLabel`: success / warn / danger / accent / neutral), no una
+  etiqueta rellena. Una columna de cajas de colores no llevaba ninguna información que la palabra no llevara.
+- **Las acciones de fila son cuadrados discretos de 28px** (`.row-actions` / `.row-action-btn`), separados 8px para que los
+  insets de impacto de las reglas táctiles se encuentren en lugar de solaparse. En reposo una acción es solo su glifo `--muted`,
+  sin marco ni relleno - un botón enmarcado repetido en cada fila era lo más ruidoso de una lista -
+  y el puntero hace aparecer bajo ella un velo `--fg` del 7% con el glifo en `--fg`. Una acción destructiva
+  muestra el color de peligro, sobre un velo de peligro del 12%, solo al pasar el puntero - una columna de papeleras rojas se leía como una
+  columna de errores. Las acciones destructivas se confirman en un `ConfirmAction` cuyo botón de confirmar es el de peligro.
+  Las filas de plugins instalados mantienen la configuración directamente accesible junto a un botón de desbordamiento a juego;
+  los enlaces de repositorio/página de inicio y la desinstalación viven en ese menú. El interruptor de habilitar se separa del
+  par de acciones con una regla discreta, y la desinstalación se confirma contra la misma fila. Estos controles usan
+  el dimensionado de acción de fila, la paleta y los tokens de movimiento existentes. Cancel y Escape devuelven
+  el foco del teclado a la acción de la fila. La insignia de capacidad de proveedor de autenticación dice «Auth provider»; no rotula como OAuth un método de inicio de sesión no especificado.
+  El selector de conexión OAuth muestra los nombres de plugin sin sufijo OAuth y una
+  etiqueta de método «Plugin-managed». Un plugin con una página registrada ofrece «Open plugin page»
+  en lugar de OAuth Start; los proveedores sin página resuelven los controles de dispositivo/redirección solo tras
+  una solicitud de inicio de sesión explícita exitosa.
+- **Las cabeceras de tarjeta** usan `PanelTitle`: un glifo atenuado, el título y el único control que actúa sobre esa
+  tarjeta por sí sola.
+- **Las cabeceras de tabla nunca se ajustan.** Una columna comprimida ajusta sus celdas, no su nombre.
+- **Una sola superficie de lista.** Toda lista ancha se dibuja como la lista de credenciales OAuth: un marco `--border`
+  de 1px con la esquina `lg`, nombres de columna sin banda propia (la tipografía de leyenda:
+  12px, peso 500, caja de lectura, `--muted`, 8px × 16px, sobre la misma regla suave que usan las filas), filas
+  sobre `--bg` a 12px × 16px divididas por reglas `--border-soft`, y un velo de hover `--fg` del 3%; la fila
+  cuyo registro está abierto en un panel lateral toma un velo del 6%, nunca una barra de borde. La regla compartida `.data-table` de `web/src/index.css` la dibuja
+  para `ResponsiveList`; una lista que es todo el cuerpo de una tarjeta añade `.data-table-flush`, de modo que la
+  tarjeta es el marco y ninguna lista se sitúa en un marco dentro de un marco.
+- **Una lista resumida antes de listarse se abre con `StatTiles`** (`web/src/components/common/`):
+  una tira de mosaicos contados sobre `--bg` con un marco `--border` de 1px y la esquina `md`, una etiqueta de 12px (un
+  `StatusLabel` para un mosaico tonalizado, simple para el mosaico «todo») sobre un recuento tabular de 20px, que se pinta en su tono
+  solo cuando no es cero. Cada mosaico es también el filtro de la lista (`aria-pressed`; el seleccionado toma
+  el marco de acento y `--hover-inset`), y el `Toolbar` con regla de búsqueda y selects se sitúa
+  justo debajo. Lo usan los resultados del registro de auditoría, los estados de la lista de proveedores de IA y el
+  uso de la lista de claves en las últimas 24 horas (todas, usadas, inactivas). Las dos listas de Gateway se construyen con las mismas
+  piezas: el resumen bajo el título, los mosaicos, la barra de herramientas con regla con los totales de la ventana en su
+  extremo, una tabla cuyas filas se abren sobre un mosaico de velo de 36px y terminan en acciones de fila discretas, y un `AppDrawer`
+  para el editor.
+- **Las listas se renderizan mediante `ResponsiveList`**: una tabla en un viewport ancho, filas rotuladas por debajo de 640px,
+  un estado vacío (un `EmptyState` compacto) y ningún paginador para una sola página.
+  Una tabla ancha se desplaza lateralmente dentro de su propia caja y nunca verticalmente: la rueda sobre una lista
+  desplaza la página, por muchas listas que apile una página.
+- **Un filtro contado sobre un conjunto abierto sigue siendo un `Select`** cuyas opciones llevan el recuento (las
+  categorías de auditoría, las familias de proveedores): una tira de mosaicos o pestañas es para un conjunto pequeño y cerrado.
+- **Un registro se abre en un Drawer.** Una fila es una lectura; el registro completo - identificadores, el código sin procesar
+  detrás de una frase, detalle registrado - se abre desde la acción Details de la fila (o un clic en la fila)
+  en un Drawer, nunca expandiendo la fila en el lugar, lo que empujaba hacia abajo en la página cada fila posterior.
+  Cuando la lista es una secuencia (solicitudes, registro de auditoría), el Drawer avanza a sus vecinos.
+  En un teléfono un registro cuya fila es una frase y un veredicto (el registro de auditoría) es una fila tocable:
+  la frase y su estado en la primera línea, la hora y el destino debajo, un chevrón -
+  en lugar de una lista de campos rotulados con un botón Details aparte.
+- **Una lista agrupada por un encabezado es un marco por grupo** (los proveedores del libro de precios, los días
+  del registro de auditoría), con los nombres de columna dibujados una vez, sobre el primer marco; los marcos posteriores conservan su
+  fila de cabecera para la tecnología de asistencia y la recortan de la vista (`.data-table-head-hidden`).
+- **El código se muestra en un `CodeFrame`**: una cabecera que nombra el lenguaje con la acción de copiar, luego el código
+  en la pila mono propia de la consola - nunca el `monospace` predeterminado del navegador.
 
-### Feedback surfaces
+### Superficies de retroalimentación
 
-Every notification, failure and error reaches the operator through one of two surfaces, both in
-`web/src/components/feedback/` (ADR 0045). The choice is made by what the message describes, not by
-how serious it is:
+Toda notificación, fallo y error llega al operador mediante una de dos superficies, ambas en
+`web/src/components/feedback/` (ADR 0045). La elección depende de lo que describe el mensaje, no de
+su gravedad:
 
-| The message describes | Surface | Component |
+| El mensaje describe | Superficie | Componente |
 | --- | --- | --- |
-| The outcome of something the operator just did - saved, copied, refused, three of five refreshed | **Toast** | `useToast()` |
-| A region that could not be read - a chart, a list, a drawer's tab | **Inline, in the region's place, with Retry** | `LoadFailure` |
-| A condition that holds while the region is on screen - stale data, a feature switched off, a diagnostic about a record | **Inline, where it applies** | `Notice` |
-| A refusal the operator answers in place - a login, a form field, a rejected Agent message that carries its own Retry | **Inline, beside that input** | `Notice` / the form's own field error |
+| El resultado de algo que el operador acaba de hacer - guardado, copiado, rechazado, tres de cinco refrescados | **Toast** | `useToast()` |
+| Una región que no pudo leerse - un gráfico, una lista, la pestaña de un panel lateral | **En línea, en el lugar de la región, con Retry** | `LoadFailure` |
+| Una condición que se mantiene mientras la región está en pantalla - datos obsoletos, una función desactivada, un diagnóstico sobre un registro | **En línea, donde se aplica** | `Notice` |
+| Un rechazo que el operador responde en el lugar - un inicio de sesión, un campo de formulario, un mensaje del Agent rechazado que lleva su propio Retry | **En línea, junto a esa entrada** | `Notice` / el error de campo propio del formulario |
 
-- **One outcome, one surface.** A toast is never repeated as a banner, and a result never opens an
-  information-only dialog: `modal.confirm` asks before an action, a toast reports after it.
-- **A toast** is a floating panel like a menu: `--elevated` fill, a 1px `--border` edge and
-  `--shadow-float` (§4), the `lg` corner, one width (420px, antd's `Notification.width`
-  token) and an 18px icon. It opens at the top centre, never stacks into a collapsed pile, and holds
-  for 2s (a brief success), 3s (info or a success with detail), 4s (warning) or 5s (error); an
-  offered shortcut gets 6s, and hovering pauses the remaining timer instead of restarting it.
-  A shortcut must also be reachable from the page without a timer; a time-critical or exclusive
-  action requires a persistent surface. A second line carries the reason, with an upstream JSON
-  envelope read down to its status and sentence (`readableReason`).
-- **A report is a toast that stays.** A batch outcome with per-target reasons (a quota refresh, a
-  batch enable or delete, an upload) lists them under group headings - what needs attention first -
-  each target's full name on its own line with its reason under it, and stays until it is closed.
-  Ordinary notifications never evict a report; the next refresh replaces the report under the same key. A
-  long group of context (targets never eligible) is summarised one line per reason. Nothing in a toast
-  changes height after it opens: antd places toasts from the heights it measured on arrival, so a
-  group that expanded in place would slide under the toast below it.
-- **A load failure** names what could not be read, why, and offers Retry in place, so the operator
-  repairs the one panel without reloading the page around it. A failed re-read over data still on
-  screen is the warning tone above that data; a failed first read takes the data's place, and says so
-  once.
-- **A refusal with nothing to answer is a toast.** The Agent refuses a send, a replay or an
-  attachment through one keyed toast, so a repeat replaces the last one; a check for updates the
-  operator asked for reports its failure in a toast with the reason, and only an automatic check
-  states its failure in the versions card.
-- **A notice is a tinted wash, not a flagged banner.** It belongs to the region it describes, so
-  it is drawn like part of the page: its tone mixed 8% into `--bg` for the fill, a hairline of the
-  tone at 16%, and the `md` corner, with no bar on its edge. The tone's code takes the first line
-  (11px, 600, 0.02em) in the tone's colour - `INFO` `--accent`, `WARNING` `--warn`, `ERROR` `--danger`, `SUCCESS` `--success` - so it
-  never rests on colour; the headline follows at 13px on its own line at the full measure, with its
-  detail under it in `--fg-2`, and its tools at the trailing edge.
-- **A notice's action sits beside the sentence; its close control sits in the corner.** An action
-  is a quiet control of the callout rather than a button laid on it: 26px tall, no fill of its own,
-  a `--thread-hairline` edge and the `--thread-field-hover` step on hover, its glyph in `--muted`.
-  It keeps to the trailing edge: centred beside the sentence, or on the last line under it when
-  the sentence would be left less than 220px. The close control exists only when the condition
-  may be put away: a 26px square with the same hover step, pinned to the code's line in a 40px
-  trailing gutter. A closable notice always gives its action the last line, reaching into the
-  gutter so the action's trailing edge and the close glyph's are one edge, top corner to bottom
-  corner. Under `(pointer: coarse)` the close control gains a 6px hit-area inset.
-- **The tone's code is not translated.** It is the same four words in every reading language, the
-  way a log level or an HTTP status is: recognisable at a glance and searchable in a screenshot.
-  Everything after it is in the reader's language. An `icon` is for a notice that reports work in
-  flight or a class of risk; it sits before the code and never replaces it.
-  `Notice` draws itself: antd's `Alert` is not used anywhere.
-- `pnpm check:feedback` refuses antd `Alert`, `message` and `notification`, and information-only
-  `modal.*`/`Modal.*` dialogs, anywhere outside the feedback module. It also refuses antd's `Switch`
-  everywhere (Switch, below). All checks resolve Ant Design
-  bindings, including namespace imports, local aliases and `App.useApp()` results; comments, strings,
-  type-only imports and unrelated or shadowed bindings are ignored.
+- **Un resultado, una superficie.** Un toast nunca se repite como banner, y un resultado nunca abre un
+  diálogo solo informativo: `modal.confirm` pregunta antes de una acción, un toast informa después.
+- **Un toast** es un panel flotante como un menú: relleno `--elevated`, un borde `--border` de 1px y
+  `--shadow-float` (§4), la esquina `lg`, un ancho (420px, el token `Notification.width`
+  de antd) y un icono de 18px. Se abre arriba al centro, nunca se apila en un montón colapsado, y se mantiene
+  2s (un éxito breve), 3s (info o un éxito con detalle), 4s (advertencia) o 5s (error); un
+  atajo ofrecido recibe 6s, y el hover pausa el temporizador restante en lugar de reiniciarlo.
+  Un atajo también debe ser alcanzable desde la página sin temporizador; una acción crítica en el tiempo o exclusiva
+  requiere una superficie persistente. Una segunda línea lleva el motivo, con un sobre JSON
+  upstream leído hasta su estado y frase (`readableReason`).
+- **Un informe es un toast que permanece.** Un resultado por lotes con motivos por destino (un refresco de cuota, una
+  habilitación o borrado por lotes, una subida) los lista bajo encabezados de grupo - lo que necesita atención primero -
+  con el nombre completo de cada destino en su propia línea y su motivo debajo, y permanece hasta que se cierra.
+  Las notificaciones ordinarias nunca desalojan un informe; el siguiente refresco sustituye al informe bajo la misma clave. Un
+  grupo largo de contexto (destinos nunca elegibles) se resume en una línea por motivo. Nada en un toast
+  cambia de altura tras abrirse: antd coloca los toasts a partir de las alturas que midió al llegar, de modo que un
+  grupo que se expandiera en el lugar se deslizaría bajo el toast inferior.
+- **Un fallo de carga** nombra lo que no pudo leerse, por qué, y ofrece Retry en el lugar, de modo que el operador
+  repara el único panel sin recargar la página a su alrededor. Una relectura fallida sobre datos aún en
+  pantalla es el tono de advertencia sobre esos datos; una primera lectura fallida ocupa el lugar de los datos, y lo dice
+  una vez.
+- **Un rechazo sin nada que responder es un toast.** El Agent rechaza un envío, una repetición o un
+  adjunto mediante un toast con clave, de modo que una repetición sustituye al último; una comprobación de actualizaciones que el
+  operador pidió informa de su fallo en un toast con el motivo, y solo una comprobación automática
+  enuncia su fallo en la tarjeta de versiones.
+- **Un aviso es un velo tintado, no un banner con bandera.** Pertenece a la región que describe, de modo que
+  se dibuja como parte de la página: su tono mezclado al 8% en `--bg` para el relleno, una línea fina del
+  tono al 16%, y la esquina `md`, sin barra en su borde. El código del tono ocupa la primera línea
+  (11px, 600, 0,02em) en el color del tono - `INFO` `--accent`, `WARNING` `--warn`, `ERROR` `--danger`, `SUCCESS` `--success` - de modo que
+  nunca descansa en el color; el titular sigue a 13px en su propia línea con todo el ancho, con su
+  detalle debajo en `--fg-2`, y sus herramientas en el borde final.
+- **La acción de un aviso se sitúa junto a la frase; su control de cierre, en la esquina.** Una acción
+  es un control discreto del aviso en lugar de un botón puesto encima: 26px de alto, sin relleno propio,
+  un borde `--thread-hairline` y el paso `--thread-field-hover` al pasar el puntero, con su glifo en `--muted`.
+  Se mantiene en el borde final: centrada junto a la frase, o en la última línea debajo de ella cuando
+  a la frase le quedarían menos de 220px. El control de cierre existe solo cuando la condición
+  puede descartarse: un cuadrado de 26px con el mismo paso de hover, fijado a la línea del código en un canal final
+  de 40px. Un aviso cerrable siempre da a su acción la última línea, llegando hasta el
+  canal de modo que el borde final de la acción y el del glifo de cierre sean un mismo borde, de esquina superior a esquina
+  inferior. Bajo `(pointer: coarse)` el control de cierre gana un inset de área de impacto de 6px.
+- **El código del tono no se traduce.** Son las mismas cuatro palabras en todo idioma de lectura, como lo son
+  un nivel de log o un estado HTTP: reconocibles de un vistazo y buscables en una captura de pantalla.
+  Todo lo que sigue está en el idioma del lector. Un `icon` es para un aviso que informa de trabajo en
+  curso o de una clase de riesgo; se sitúa antes del código y nunca lo sustituye.
+  `Notice` se dibuja a sí mismo: el `Alert` de antd no se usa en ninguna parte.
+- `pnpm check:feedback` rechaza `Alert`, `message` y `notification` de antd, y los diálogos
+  `modal.*`/`Modal.*` solo informativos, en cualquier lugar fuera del módulo de feedback. También rechaza el `Switch` de antd
+  en todas partes (Switch, más abajo). Todas las comprobaciones resuelven los enlaces de Ant Design,
+  incluidas las importaciones de espacio de nombres, los alias locales y los resultados de `App.useApp()`; se ignoran los comentarios, las cadenas,
+  las importaciones solo de tipos y los enlaces no relacionados u ocultos.
 
-#### Auto-dismiss rationale
+#### Justificación del cierre automático
 
-There is no universal duration shared by established design systems. Ant Design's message
-implementation
-uses 3 seconds for brief feedback; [Fluent's toast guidance](https://fluent2.microsoft.design/components/web/react/core/toast/usage)
-uses 7 seconds for no-action notifications; [React Spectrum](https://react-spectrum.adobe.com/Toast.html)
-uses a minimum of 5 seconds and keeps actionable toasts until dismissed. These are different
-products' policies, not interchangeable accessibility guarantees (sources checked 2026-09-30).
+No existe una duración universal compartida por los sistemas de diseño establecidos. La implementación de message de Ant Design
+usa 3 segundos para retroalimentación breve; [la guía de toasts de Fluent](https://fluent2.microsoft.design/components/web/react/core/toast/usage)
+usa 7 segundos para notificaciones sin acción; [React Spectrum](https://react-spectrum.adobe.com/Toast.html)
+usa un mínimo de 5 segundos y mantiene los toasts accionables hasta que se descartan. Son políticas de productos
+distintos, no garantías de accesibilidad intercambiables (fuentes comprobadas el 2026-09-30).
 
-This console uses 2 seconds only for glanceable success acknowledgements, preserves at least
-3 seconds for a second line, and gives warning/error outcomes 4/5 seconds. Optional shortcuts get
-6 seconds rather than prolonging every acknowledgement. Their destinations remain available through
-ordinary page controls: OAuth credentials through the provider collection and plugin settings through
-the settings panel. [WCAG Timing Adjustable](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html)
-permits temporary notices when equivalent information or functionality is available without a timer;
-hover alone is not a substitute for that alternative. Important per-target reports remain persistent,
-pending work closes only when it settles, and callers can explicitly select persistence or override
-the default duration. Lifetime changes do not change the entry/exit motion budget.
+Esta consola usa 2 segundos solo para acuses de éxito que se captan de un vistazo, conserva al menos
+3 segundos para una segunda línea, y da a los resultados de advertencia/error 4/5 segundos. Los atajos opcionales reciben
+6 segundos en lugar de prolongar todos los acuses. Sus destinos siguen disponibles mediante los
+controles ordinarios de la página: las credenciales OAuth mediante la colección de proveedores y los ajustes de plugins mediante
+el panel de ajustes. [WCAG Timing Adjustable](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html)
+permite avisos temporales cuando hay información o funcionalidad equivalente disponible sin temporizador;
+el hover por sí solo no sustituye esa alternativa. Los informes importantes por destino siguen siendo persistentes,
+el trabajo pendiente se cierra solo cuando se resuelve, y los llamadores pueden elegir explícitamente la persistencia o sustituir
+la duración predeterminada. Los cambios de duración no cambian el presupuesto de movimiento de entrada/salida.
 
-### Shared primitives
 
-The patterns every page needs are one component each, in `web/src/components/common/`. A page
-supplies content and layout width; what is inside the frame is not restyled per page.
+### Primitivas compartidas
 
-- **`AppDrawer` - a side panel.** It opens from the trailing edge at one of three widths, each
-  capped at the viewport so a phone gets a full-width sheet: `narrow` 420px (a filter form, a short
-  list), `medium` 600px (an editor, one record), `wide` 760px (a record with tabs, a table or a
-  document). The close control sits at the trailing end of the head and is always named. The footer
-  is two slots - `footerStart` for a state note or a reset, `footer` for the actions that finish the
-  work, at the trailing edge - and wraps instead of squeezing. Closing, it keeps the title, body and
-  footer it last showed open until it has slid away, so a caller that closes it by clearing its
-  selection does not send it out blank; its body holds a stable scrollbar gutter, so a section
-  unfolding past the panel's height does not narrow every card mid-fold. The phone navigation sheet
-  and the time-range sheet are not side panels and keep antd's `Drawer`.
-- **`SearchInput` - a filter-as-you-type field.** The search glyph in `--muted`, the text, and a
-  clear control. `label` is its accessible name and its placeholder unless a longer placeholder is
-  given; `onChange` receives the text. Width is the caller's.
-- **`EmptyState` - a region that holds nothing.** A centred column: a mark, the state in one line,
-  optionally one further line and one action. The mark is a 44px sheet on `--bg` with the `md`
-  corner and `--shadow-raised`, carrying three shortening 2px rules in `--border` - the rows that are
-  not there - with a second `--surface` sheet fanned 9° behind it. It is drawn in CSS from the page's
-  own layers in place of Ant Design's illustrated tray: the console's only pictures are the shapes its
-  pages are made of. The title is 14px / 500 in `--fg`, the further line 13px `--muted`. `block` (48px
-  vertical padding, with the mark) stands in for a list or a page section; `compact` (20px, no mark) sits inside a panel, a picker or a drawer section.
-  Loading is `PageLoading` and failure is `LoadFailure`; neither is an empty state.
-- **`SectionHeading` - the head of a section**, at three weights: `section` (`--text-lg` / 600) opens
-  a part of a page, `group` (`--text-base` / 600) a panel, a settings group or a drawer section, and
-  `label` (`--text-xs` / 600, `--muted`, reading case) a short run of fields or facts. It takes
-  an optional count in tabular numerals after the title, one description line (not on a `label`) and
-  an `extra` control at the trailing edge. The element (`h2`-`h4`, `div`) follows the document
-  outline, independent of the weight. The frame around a head stays with its caller.
-- **`Tag` - a short fact about a row**: a type, a state, a count. 22px tall, `--radius-sm`,
-  `--text-sm`, tabular numerals; `small` is 18px, `--radius-sm`, `--text-xs`. It carries no margin -
-  spacing is the row's gap, and no edge - a row of outlined facts read as a strip of boxes. Five
-  tones: `neutral` (`--fg-2` on a 6% wash of the ink) and `success`, `warn`, `danger`, `accent`, each
-  the tone's ink on a 12% tint. A tone states health or emphasis and nothing else; a brand colour is a
-  per-site custom property, not a sixth tone. `ToggleTag` is the pressable form, for a small set of
-  mutually exclusive filters: muted and unfilled at rest, an 8% wash when pressed.
-- **`ConfirmAction` - a confirmation anchored to its trigger**, for an action that is cheap to
-  confirm and local to a row. The cancel label is fixed; the confirming button is named for the
-  action (`confirmLabel`) and `isDanger` colours it for a deletion. A decision that needs a paragraph
-  or a typed name is a modal, not this. The trigger's tooltip is passed as `tooltip`, never wrapped
-  around the trigger by the caller: it steps aside while the confirmation is open, where a tooltip
-  left up covered the confirmation's own buttons.
-- **`SelectionBar` - what can be done with the ticked rows.** It is rendered only while something is
-  selected. The leading side holds the count (a live region), an optional qualifying note and the
-  controls that change the selection; the actions sit at the trailing edge and wrap below on a
-  narrow screen. `framed` is a strip of its own above a list; `inline` is a row inside the list's
-  frame.
-- **`Toolbar` - the row above a list**: search, then the filters that narrow it, then `end`, the
-  controls that act on the whole result, pushed to the trailing edge. It wraps instead of scrolling
-  and owns only the gap (8px between lines, 12px between controls); each control owns its width.
-  `ruled` sets the row between two `--border-soft` hairlines in `--muted` `--text-md`, for a log or
-  an audit list whose filters would otherwise run into the rows.
-- **`Panel` - the framed surface content sits on**: `--surface`, one `--border` edge, and an inset of
-  20px that the stylesheet lowers to 16px on a phone (12px on a dashboard tile). The inset is not a
-  prop: an inline padding outranks the phone rule. `title` and `extra` draw a ruled header; a panel
-  whose heading needs a description or a count opens its body with a `SectionHeading` instead.
-- **`FactList` - a label/value list.** A description list with the label in `--muted` at the leading
-  edge and the value right-aligned in tabular numerals, rows divided by `--border-soft`. `strong`
-  draws values at 600 in `--fg`; `quiet` at reading weight in `--fg-2`, for a record's detail where
-  every value is of equal standing.
-- **`CopyButton` - a button that copies a value** and acknowledges it in place: the glyph becomes a
-  check mark for 1.5s, and only a failure raises a toast.
-- **`Pager` - page navigation for a list whose length is known.** Small controls, nothing at all
-  when the list fits on one page, and no page-size menu - page size is a view preference and sits
-  with the list's other view controls. `numbered` lists the pages; `stepped` is previous, the page
-  out of the count, next, for a phone or a narrow column. A list paged by cursor has no total and
-  keeps its own footer.
-- **`Meter` - a reading as a share of a track**: 4px tall (`thick`: 8px), `--radius-xs`, on
-  `--border`. The fill takes the token of the band the reading falls in, or `--fg-2` for a share
-  with no health to state, and does not animate. Given a `label` it is a `meter` to assistive
-  technology; beside the same figure in text it is hidden so the figure is not read twice.
-- **`Count` - how many rows a label stands for**: `--meta`, tabular numerals, `--text-sm`, or
-  `--text-xs` (`small`) inside a filter segment or a chip.
+Los patrones que toda página necesita son un componente cada uno, en `web/src/components/common/`. Una página
+aporta el contenido y el ancho del layout; lo que hay dentro del marco no se re-estiliza por página.
 
-`pnpm check:feedback` refuses the antd component each of these replaces: `Empty`, `Tag`,
-`Descriptions` and `Progress` everywhere, `Drawer` outside `AppDrawer` and the two sheets above,
-`Popconfirm` outside `ConfirmAction`, `Card` outside `Panel`, and `Pagination` outside `Pager`.
+- **`AppDrawer` - un panel lateral.** Se abre desde el borde final en uno de tres anchos, cada uno
+  limitado al viewport, de modo que un teléfono recibe una hoja a todo el ancho: `narrow` 420px (un formulario de filtros, una lista
+  corta), `medium` 600px (un editor, un registro), `wide` 760px (un registro con pestañas, una tabla o un
+  documento). El control de cierre está en el extremo final de la cabecera y siempre tiene nombre. El pie
+  tiene dos ranuras - `footerStart` para una nota de estado o un restablecimiento, `footer` para las acciones que concluyen el
+  trabajo, en el borde final - y se ajusta en varias líneas en lugar de comprimirse. Al cerrarse, conserva el título, el cuerpo y el
+  pie que mostró por última vez hasta que termina de deslizarse, de modo que un llamador que lo cierra borrando su
+  selección no lo hace salir en blanco; su cuerpo mantiene un canal de barra de desplazamiento estable, de modo que una sección
+  que se despliega más allá de la altura del panel no estrecha todas las tarjetas a mitad del despliegue. La hoja de navegación del teléfono
+  y la hoja del rango de tiempo no son paneles laterales y conservan el `Drawer` de antd.
+- **`SearchInput` - un campo de filtro mientras se escribe.** El glifo de búsqueda en `--muted`, el texto y un
+  control de borrado. `label` es su nombre accesible y su placeholder salvo que se dé un placeholder más largo;
+  `onChange` recibe el texto. El ancho lo decide el llamador.
+- **`EmptyState` - una región que no contiene nada.** Una columna centrada: una marca, el estado en una línea,
+  opcionalmente una línea más y una acción. La marca es una hoja de 44px sobre `--bg` con la esquina `md`
+  y `--shadow-raised`, que lleva tres reglas de 2px cada vez más cortas en `--border` - las filas que
+  no están - con una segunda hoja `--surface` inclinada 9° detrás. Se dibuja en CSS con las capas propias de la
+  página en lugar de la bandeja ilustrada de Ant Design: las únicas imágenes de la consola son las formas de las que
+  están hechas sus páginas. El título es 14px / 500 en `--fg`, la línea adicional 13px `--muted`. `block` (48px
+  de relleno vertical, con la marca) sustituye a una lista o a una sección de página; `compact` (20px, sin marca) va dentro de un panel, un selector o una sección de panel lateral.
+  La carga es `PageLoading` y el fallo es `LoadFailure`; ninguno es un estado vacío.
+- **`SectionHeading` - la cabecera de una sección**, en tres pesos: `section` (`--text-lg` / 600) abre
+  una parte de una página, `group` (`--text-base` / 600) un panel, un grupo de ajustes o una sección de panel lateral, y
+  `label` (`--text-xs` / 600, `--muted`, caja de lectura) una serie corta de campos o datos. Admite
+  un recuento opcional en numerales tabulares tras el título, una línea de descripción (no en un `label`) y
+  un control `extra` en el borde final. El elemento (`h2`-`h4`, `div`) sigue el esquema del documento,
+  independientemente del peso. El marco alrededor de una cabecera queda a cargo de su llamador.
+- **`Tag` - un dato breve sobre una fila**: un tipo, un estado, un recuento. 22px de alto, `--radius-sm`,
+  `--text-sm`, numerales tabulares; `small` es 18px, `--radius-sm`, `--text-xs`. No lleva margen -
+  el espaciado es el hueco de la fila - ni borde: una fila de datos con contorno se leía como una tira de cajas. Cinco
+  tonos: `neutral` (`--fg-2` sobre un velo del 6% de la tinta) y `success`, `warn`, `danger`, `accent`, cada uno
+  con la tinta del tono sobre un tinte del 12%. Un tono expresa salud o énfasis y nada más; un color de marca es una
+  propiedad personalizada por sitio, no un sexto tono. `ToggleTag` es la forma pulsable, para un conjunto pequeño de
+  filtros mutuamente excluyentes: atenuado y sin relleno en reposo, con un velo del 8% al pulsarse.
+- **`ConfirmAction` - una confirmación anclada a su disparador**, para una acción barata de
+  confirmar y local a una fila. La etiqueta de cancelar es fija; el botón de confirmar lleva el nombre de la
+  acción (`confirmLabel`) y `isDanger` lo colorea para un borrado. Una decisión que necesita un párrafo
+  o un nombre escrito es un modal, no esto. El tooltip del disparador se pasa como `tooltip`, nunca lo envuelve
+  el llamador alrededor del disparador: se aparta mientras la confirmación está abierta, porque un tooltip
+  que se quedaba encima tapaba los botones de la propia confirmación.
+- **`SelectionBar` - qué se puede hacer con las filas marcadas.** Se renderiza solo mientras hay algo
+  seleccionado. El lado inicial contiene el recuento (una región en vivo), una nota calificativa opcional y los
+  controles que cambian la selección; las acciones están en el borde final y bajan a otra línea en una
+  pantalla estrecha. `framed` es una tira propia sobre una lista; `inline` es una fila dentro del marco de la
+  lista.
+- **`Toolbar` - la fila sobre una lista**: búsqueda, luego los filtros que la acotan, luego `end`, los
+  controles que actúan sobre todo el resultado, empujados al borde final. Se ajusta en varias líneas en lugar de desplazarse
+  y solo posee el hueco (8px entre líneas, 12px entre controles); cada control posee su ancho.
+  `ruled` coloca la fila entre dos líneas finas `--border-soft` en `--muted` `--text-md`, para un registro o
+  una lista de auditoría cuyos filtros se confundirían con las filas.
+- **`Panel` - la superficie enmarcada sobre la que se asienta el contenido**: `--surface`, un borde `--border` y un relleno de
+  20px que la hoja de estilos baja a 16px en un teléfono (12px en un mosaico del panel). El relleno no es una
+  prop: un padding en línea prevalece sobre la regla del teléfono. `title` y `extra` dibujan una cabecera con regla; un panel
+  cuyo encabezado necesita una descripción o un recuento abre su cuerpo con un `SectionHeading`.
+- **`FactList` - una lista de etiqueta/valor.** Una lista de descripción con la etiqueta en `--muted` en el borde
+  inicial y el valor alineado a la derecha en numerales tabulares, filas separadas por `--border-soft`. `strong`
+  dibuja los valores a 600 en `--fg`; `quiet` con peso de lectura en `--fg-2`, para el detalle de un registro en el que
+  todos los valores tienen la misma categoría.
+- **`CopyButton` - un botón que copia un valor** y lo confirma en el lugar: el glifo se convierte en una
+  marca de verificación durante 1,5s, y solo un fallo muestra un toast.
+- **`Pager` - navegación de páginas para una lista de longitud conocida.** Controles pequeños, nada en absoluto
+  cuando la lista cabe en una página, y sin menú de tamaño de página: el tamaño de página es una preferencia de vista y va
+  con los demás controles de vista de la lista. `numbered` lista las páginas; `stepped` es anterior, la página
+  sobre el total, siguiente, para un teléfono o una columna estrecha. Una lista paginada por cursor no tiene total y
+  conserva su propio pie.
+- **`Meter` - una lectura como parte de una pista**: 4px de alto (`thick`: 8px), `--radius-xs`, sobre
+  `--border`. El relleno toma el token de la banda en que cae la lectura, o `--fg-2` para una proporción
+  sin salud que expresar, y no se anima. Con un `label` es un `meter` para la tecnología de asistencia; junto a la misma cifra en texto
+  se oculta para que la cifra no se lea dos veces.
+- **`Count` - cuántas filas representa una etiqueta**: `--meta`, numerales tabulares, `--text-sm`, o
+  `--text-xs` (`small`) dentro de un segmento de filtro o un chip.
+
+`pnpm check:feedback` rechaza el componente antd que cada uno de estos sustituye: `Empty`, `Tag`,
+`Descriptions` y `Progress` en todas partes, `Drawer` fuera de `AppDrawer` y las dos hojas anteriores,
+`Popconfirm` fuera de `ConfirmAction`, `Card` fuera de `Panel` y `Pagination` fuera de `Pager`.
 
 ### Switch
 
-Every on/off control is `web/src/components/common/Switch.tsx`; antd's `Switch` is not used, and
-`pnpm check:feedback` refuses its import (`raw-switch`). The control is the console's own pill:
+Todo control de encendido/apagado es `web/src/components/common/Switch.tsx`; el `Switch` de antd no se usa, y
+`pnpm check:feedback` rechaza su importación (`raw-switch`). El control es la píldora propia de la consola:
 
 ```text
 size      track     knob     use
@@ -1499,568 +1496,568 @@ small     30×17     13px     a list row, a table cell, a toolbar
 touch     44×24     20px     both sizes under `(pointer: coarse)`
 ```
 
-- **A pill with a concentric knob.** The knob is a circle 2px inside the track, so the two outlines
-  stay concentric at every size; the travel and both state marks are derived from three numbers.
-- **The knob is a raised disc.** It is the page's lightest ink - `--bg` on a light palette, `--fg` on a
-  dark one - with `--shadow-raised`, so it reads as the same object on either.
-- **Off is a pale wash; on is a fill.** Off is `--fg` washed 16% (24% hovered); on fills the track
-  with `--success`.
-- **The state is written on the track.** The stretch the knob is not covering carries a bar in
-  `--accent-on` when on and a `--fg-2` ring when off. Side, fill and mark agree, so the reading never
-  rests on colour: a pale track beside a light knob does not reach a control's contrast floor alone.
-- **Disabled** is 45% opacity. **Pending** (`loading`) holds the state, refuses input, reports
-  `aria-busy`, hollows the knob and drops the marks, at full strength so a write in flight does
-  not read as unavailable; it is a static mark, not a spinner.
-- **Motion**: the knob slides by `transform` in `base` on the decelerating curve and leans 2px toward
-  its next side while pressed; the track and mark colours change in `fast`.
-- The element is a native `<button role="switch">`, so a wrapping `<label>`, `htmlFor`, Space/Enter,
-  the shared focus ring and `Form.Item valuePropName="checked"` need no wiring. It is controlled:
-  `checked` and `onChange(checked)`. A switch with no visible label of its own carries `aria-label`.
+- **Una píldora con una perilla concéntrica.** La perilla es un círculo 2px dentro de la pista, de modo que los dos contornos
+  permanecen concéntricos en todo tamaño; el recorrido y ambas marcas de estado se derivan de tres números.
+- **La perilla es un disco elevado.** Es la tinta más clara de la página - `--bg` en una paleta clara, `--fg` en una
+  oscura - con `--shadow-raised`, de modo que se lee como el mismo objeto en ambas.
+- **Apagado es un velo pálido; encendido es un relleno.** Apagado es `--fg` atenuado al 16% (24% con hover); encendido rellena la pista
+  con `--success`.
+- **El estado está escrito en la pista.** El tramo que la perilla no cubre lleva una barra en
+  `--accent-on` al estar encendido y un anillo `--fg-2` al estar apagado. Lado, relleno y marca coinciden, de modo que la lectura nunca
+  depende del color: una pista pálida junto a una perilla clara no alcanza por sí sola el umbral de contraste de un control.
+- **Deshabilitado** es 45% de opacidad. **Pendiente** (`loading`) mantiene el estado, rechaza la entrada, informa
+  `aria-busy`, vacía la perilla y quita las marcas, a plena intensidad para que una escritura en curso no
+  se lea como no disponible; es una marca estática, no un spinner.
+- **Movimiento**: la perilla se desliza con `transform` en `base` sobre la curva de desaceleración y se inclina 2px hacia
+  su siguiente lado mientras se pulsa; los colores de la pista y de las marcas cambian en `fast`.
+- El elemento es un `<button role="switch">` nativo, de modo que un `<label>` envolvente, `htmlFor`, Espacio/Enter,
+  el anillo de foco compartido y `Form.Item valuePropName="checked"` no necesitan cableado. Es controlado:
+  `checked` y `onChange(checked)`. Un switch sin etiqueta visible propia lleva `aria-label`.
 
-### Time range control
+### Control de rango de tiempo
 
-One button names the window (`Last 1 hour`, or `08-11 – open-ended`); the rest lives on one
-surface it opens. The dashboard and the request list share the control
-(`web/src/components/common/timeRange/`) and differ only in what a custom range resolves to.
+Un botón nombra la ventana (`Last 1 hour`, o `08-11 – open-ended`); el resto vive en una
+superficie que él abre. El panel y la lista de solicitudes comparten el control
+(`web/src/components/common/timeRange/`) y difieren solo en aquello a lo que se resuelve un rango personalizado.
 
-**The surface opens on the presets alone, and the custom range is one level down.** A short
-list of relative windows is what the reader wants almost every time; a calendar they did not
-ask for is a screenful of attention spent on nothing. The list's last row, set apart by a
-rule and carrying a caret, opens the custom range beside the list; pressing it again folds
-it away. It opens there directly only when the committed window is already a custom one,
-because a reader reopening that window came to adjust it.
+**La superficie se abre solo con los preajustes, y el rango personalizado está un nivel más abajo.** Una lista corta
+de ventanas relativas es lo que el lector quiere casi siempre; un calendario que no pidió
+es una pantalla de atención gastada en nada. La última fila de la lista, separada por una
+regla y con un signo de despliegue, abre el rango personalizado junto a la lista; al pulsarla de nuevo
+se pliega. Se abre allí directamente solo cuando la ventana confirmada ya es personalizada,
+porque un lector que reabre esa ventana vino a ajustarla.
 
-A preset is a complete answer and applies on the press. A custom range is two presses on
-the calendar and, on the request list, two times - so it is staged and committed with
-**Apply**. Committing each press would query a half-chosen window and move the data under
-the pointer.
+Un preajuste es una respuesta completa y se aplica al pulsar. Un rango personalizado son dos pulsaciones sobre
+el calendario y, en la lista de solicitudes, dos horas - por eso se prepara y se confirma con
+**Apply**. Confirmar cada pulsación consultaría una ventana a medio elegir y movería los datos bajo
+el puntero.
 
-**The calendar is drawn inline, in the console's own tokens.** It is part of the picker's own panel rather than a second floating layer: a calendar that
-floats beside the panel that asked for it reads as two controls and cannot become a sheet. Days sit on a seven-column grid with no column gap, so a range is one
-unbroken band per week: the band is a 16% mix of `--accent`, the two picked days are filled
-`--accent` with `--accent-on` text, today carries a 1px `--border` ring and the accent as its
-text colour, and days after today are disabled, because every window ends at or before now.
-The grid is always six weeks tall, so stepping a month never moves the controls beneath it.
-Two months are shown on a desktop, where a range across a month boundary is the common
-custom case, and one in the sheet. While the end is still to be picked, the hovered day
-previews the band, and the field the next press will set carries the accent border.
+**El calendario se dibuja en línea, con los tokens propios de la consola.** Forma parte del panel del selector en lugar de ser una segunda capa flotante: un calendario que
+flota junto al panel que lo pidió se lee como dos controles y no puede convertirse en una hoja. Los días se asientan en una cuadrícula de siete columnas sin hueco entre columnas, de modo que un rango es una banda
+ininterrumpida por semana: la banda es una mezcla del 16% de `--accent`, los dos días elegidos se rellenan
+con `--accent` y texto `--accent-on`, hoy lleva un anillo `--border` de 1px y el acento como color
+de texto, y los días posteriores a hoy están deshabilitados, porque toda ventana termina en el instante actual o antes.
+La cuadrícula siempre mide seis semanas de alto, de modo que cambiar de mes nunca mueve los controles que tiene debajo.
+En escritorio se muestran dos meses, donde un rango que cruza el límite de un mes es el caso
+personalizado más común, y uno en la hoja. Mientras falta elegir el final, el día bajo el puntero
+previsualiza la banda, y el campo que fijará la siguiente pulsación lleva el borde de acento.
 
-**Two presses make a range; a third starts a new one.** A press before the start swaps the
-ends, so the order never matters, and a single press followed by Apply is that one day.
-**Until now** leaves the end open: the calendar then only moves the start.
+**Dos pulsaciones hacen un rango; una tercera empieza uno nuevo.** Una pulsación anterior al inicio intercambia
+los extremos, de modo que el orden nunca importa, y una sola pulsación seguida de Apply es ese único día.
+**Until now** deja el final abierto: el calendario entonces solo mueve el inicio.
 
-| Page | Granularity | A picked end means |
+| Página | Granularidad | Un final elegido significa |
 | --- | --- | --- |
-| Dashboard | Day | *Through* that day, so `08-09 → 08-21` includes the 21st |
-| Request list | Minute (`HH:mm`, 24-hour, typed) | Through that minute, and never past now |
+| Panel | Día | *Hasta* ese día inclusive, de modo que `08-09 → 08-21` incluye el 21 |
+| Lista de solicitudes | Minuto (`HH:mm`, 24 horas, escrito) | Hasta ese minuto, y nunca más allá de ahora |
 
-The time is a typed field rather than the browser's own time control, which follows the
-browser locale into a 12-hour clock while every other time in the console is 24-hour. The
-panel names the console's zone offset beside Apply, because the dates are civil dates in that
-zone and not in the browser's.
+La hora es un campo escrito en lugar del control de hora propio del navegador, que sigue la
+configuración regional del navegador hacia un reloj de 12 horas mientras que toda otra hora de la consola es de 24 horas. El
+panel nombra el desfase de la zona de la consola junto a Apply, porque las fechas son fechas civiles en esa
+zona y no en la del navegador.
 
-**Below the 900px breakpoint the surface is a bottom sheet.** A popover anchored to a toolbar
-button has neither the width for a calendar nor a thumb's reach. The sheet shows one level at
-a time - the presets, or the custom range under a row that leads back to them - draws days
-at 40px and preset rows at 44px, puts Cancel and Apply at full width along the bottom edge,
-and is a Drawer-class overlay: the platform's Back dismisses it (§8).
+**Por debajo del punto de corte de 900px la superficie es una hoja inferior.** Un popover anclado a un botón de barra de herramientas
+no tiene ni el ancho para un calendario ni el alcance de un pulgar. La hoja muestra un nivel a
+la vez - los preajustes, o el rango personalizado bajo una fila que lleva de vuelta a ellos -, dibuja los días
+a 40px y las filas de preajustes a 44px, pone Cancel y Apply a todo el ancho en el borde inferior,
+y es una superposición de clase Drawer: el Back de la plataforma la descarta (§8).
 
-Three kinds of window, and only the first two move:
+Tres tipos de ventana, y solo los dos primeros se mueven:
 
-| Chosen | Behaviour |
+| Elegido | Comportamiento |
 | --- | --- |
-| Preset (Last N) | Sliding: re-resolved against `now` on every poll, so the newest bucket keeps appearing. |
-| Custom, **Until now** | Growing (open-ended): fixed start, end tracks `now`. Polled like a preset. |
-| Custom, closed range | Frozen: shown exactly as picked, never polled. |
+| Preajuste (Last N) | Deslizante: se resuelve de nuevo contra `now` en cada sondeo, de modo que sigue apareciendo el cubo más reciente. |
+| Personalizado, **Until now** | Creciente (abierto): inicio fijo, el final sigue a `now`. Se sondea como un preajuste. |
+| Personalizado, rango cerrado | Congelado: se muestra exactamente como se eligió, nunca se sondea. |
 
-The choice is stored on the server, not in the browser: a reload, a service
-restart and a container rebuild must all bring back the window the operator was
-looking at. A date picker that is not in use never sits in the toolbar.
+La elección se guarda en el servidor, no en el navegador: una recarga, un reinicio del
+servicio y una reconstrucción del contenedor deben devolver la ventana que el operador estaba
+mirando. Un selector de fechas que no está en uso nunca ocupa la barra de herramientas.
 
-The trigger is a field, not a button: it takes a filled select's well, inset, chevron and
-height, and in the request toolbar it shares one size with the model and provider fields
-beside it. The selected preset is marked the way the side rail marks its page — a soft
-wash and the text weight. A closed custom range turns the trigger's fill and text to the
-accent: it is a fixed fact, and must not be taken for a window that is still moving. Polling is paced to the resolution being
-served — `bucket / 12`, clamped to 5s–120s — because refreshing faster than the
-grid can change costs queries and buys nothing. There is no "live" switch: the
-shortest preset **is** live. It is fifteen minutes at one bucket per minute, so
-the pacing rule lands on its five-second floor by itself; five minutes was too
-narrow to read as a trend and an hour too coarse to feel like it was moving.
+El disparador es un campo, no un botón: toma el fondo, el hundimiento, el chevrón y la
+altura de un select relleno, y en la barra de herramientas de solicitudes comparte un mismo tamaño con los campos de modelo y proveedor
+que tiene al lado. El preajuste seleccionado se marca como el carril lateral marca su página: un velo
+suave y el peso del texto. Un rango personalizado cerrado vuelve el relleno y el texto del disparador
+del color de acento: es un hecho fijo, y no debe confundirse con una ventana que todavía se mueve. El sondeo se
+ajusta a la resolución que se sirve — `bucket / 12`, acotado a 5s–120s — porque refrescar más rápido de lo que puede
+cambiar la cuadrícula cuesta consultas y no aporta nada. No hay interruptor «en vivo»: el
+preajuste más corto **es** en vivo. Son quince minutos a un cubo por minuto, de modo que
+la regla de ritmo cae por sí sola en su suelo de cinco segundos; cinco minutos era demasiado
+estrecho para leerse como tendencia y una hora demasiado grueso para sentirse en movimiento.
 
-### Conversation workspaces
+### Espacios de trabajo de conversación
 
-**The thread uses a restrained shape and fill scale** (ADR 0081, refined by ADR 0086). A conversation is read as a document
-with a few objects resting on it, so an element is rounded by what it is, and grouped by a fill
-where the console would draw a box. The radii sit on the console's corner scale (§4): controls take
-the control step, printed matter and floating surfaces the steps above it, and the composer, bubbles
-and cards the card step:
+**El hilo usa una escala de formas y rellenos contenida** (ADR 0081, refinada por ADR 0086). Una conversación se lee como un documento
+con unos pocos objetos apoyados en él, de modo que un elemento se redondea según lo que es, y se agrupa con un relleno
+donde la consola dibujaría una caja. Los radios se sitúan en la escala de esquinas de la consola (§4): los controles toman
+el paso de control, el material impreso y las superficies flotantes los pasos superiores, y el compositor, las burbujas
+y las tarjetas el paso de tarjeta:
 
-| Token | Value | What takes it |
+| Token | Valor | Quién lo toma |
 | --- | --- | --- |
-| `--radius-document` | 8px | printed matter: a figure, a table, a code frame, a mono argument chip |
-| `--radius-control` | 6px | what is pressed inside the thread: a call row, a picker trigger, a chip, a card's buttons |
-| `--radius-surface` | 10px | a field panel or a floating list: a card's change list, a failure note, a popover |
-| `--radius-thread` | 12px | the composer, the operator's bubble, the question panel, an approval card, a suggestion |
-| `--thread-field` / `--thread-field-hover` | `--fg` at 5% / 8% | a borderless grouping fill, and its hover |
-| `--thread-hairline` | `--fg` at 12% | the one edge an object resting on the page may have |
+| `--radius-document` | 8px | material impreso: una figura, una tabla, un marco de código, un chip de argumento monoespaciado |
+| `--radius-control` | 6px | lo que se pulsa dentro del hilo: una fila de llamada, un disparador de selector, un chip, los botones de una tarjeta |
+| `--radius-surface` | 10px | un panel de campos o una lista flotante: la lista de cambios de una tarjeta, una nota de fallo, un popover |
+| `--radius-thread` | 12px | el compositor, la burbuja del operador, el panel de preguntas, una tarjeta de aprobación, una sugerencia |
+| `--thread-field` / `--thread-field-hover` | `--fg` al 5% / 8% | un relleno de agrupación sin borde, y su hover |
+| `--thread-hairline` | `--fg` al 12% | el único borde que puede tener un objeto apoyado en la página |
 
-Their pre-hydration defaults are declared in `web/src/index.css`; `THREAD_RADII` and
-`THREAD_FILL_SHARES` in `web/src/theme/palette.ts` own the radii and foreground percentages and `themePaletteCssVariables` in
-`web/src/theme/themeConfig.ts` projects the fill and radius tokens for every preset and custom palette. They apply inside the conversation workspaces and to the approval card
-wherever it is drawn; HTML conversation exports read the same `THREAD_RADII` constants.
-Rows are separated by spacing and a hover fill, never by a rule between each; a state colours its
-notice faintly and adds no edge bar. The composer is the one object that sits above the thread: the
-panel's ground, a hairline and `--shadow-raised`, deepening to `--shadow-float` while it has focus,
-with a firmer edge rather than an accent ring; the `/` and `@` lists float with `--shadow-float`. Motion stays within §7's budget, with a press scaling a pressed
-object by 2-4% over `--motion-fast`.
+Sus valores predeterminados previos a la hidratación se declaran en `web/src/index.css`; `THREAD_RADII` y
+`THREAD_FILL_SHARES` en `web/src/theme/palette.ts` poseen los radios y los porcentajes de primer plano, y `themePaletteCssVariables` en
+`web/src/theme/themeConfig.ts` proyecta los tokens de relleno y de radio para cada paleta predefinida y personalizada. Se aplican dentro de los espacios de trabajo de conversación y a la tarjeta de aprobación
+dondequiera que se dibuje; las exportaciones HTML de conversaciones leen las mismas constantes `THREAD_RADII`.
+Las filas se separan con espaciado y un relleno al pasar el puntero, nunca con una regla entre cada una; un estado colorea su
+aviso con suavidad y no añade barra de borde. El compositor es el único objeto que se sitúa sobre el hilo: el
+fondo del panel, una línea fina y `--shadow-raised`, que se profundiza a `--shadow-float` mientras tiene foco,
+con un borde más firme en lugar de un anillo de acento; las listas `/` y `@` flotan con `--shadow-float`. El movimiento se mantiene dentro del presupuesto de §7, con una pulsación que escala un objeto
+pulsado entre un 2 y un 4% durante `--motion-fast`.
 
-The Agent (`/agent`) is a conversation workspace. The frame, the transcript, the composer, the
-reasoning disclosure, the code blocks and the side drawers live in `web/src/components/workspace`,
-so the conversation surface keeps one resizer, one composer and one way of drawing an answer.
+El Agent (`/agent`) es un espacio de trabajo de conversación. El marco, la transcripción, el compositor, el
+desplegable de razonamiento, los bloques de código y los paneles laterales viven en `web/src/components/workspace`,
+de modo que la superficie de conversación conserva un único redimensionador, un único compositor y una única manera de dibujar una respuesta.
 
-**The frame spans the content area, and the conversation centres its own column.** Like the
-configuration workbench, the head's rule and the panel's edge are anchored to the viewport; capping
-the frame at the page column would float the panel mid-screen on a wide display. Inside the main
-column the transcript, the notices and the composer share one reading width
-(`--workspace-column`, 760px): long enough for a code block, short enough to read prose without
-losing the line. The scroll box itself stays full width so its scrollbar sits at the pane's edge.
+**El marco abarca el área de contenido, y la conversación centra su propia columna.** Como el
+banco de trabajo de configuración, la regla de la cabecera y el borde del panel están anclados al viewport; limitar
+el marco a la columna de la página dejaría el panel flotando a media pantalla en un display ancho. Dentro de la columna
+principal, la transcripción, los avisos y el compositor comparten un único ancho de lectura
+(`--workspace-column`, 760px): suficientemente largo para un bloque de código, suficientemente corto para leer prosa sin
+perder la línea. La caja de desplazamiento en sí conserva todo el ancho, de modo que su barra de desplazamiento queda en el borde del panel.
 
-**What a message is sent with is chosen in the composer.** Key and model are one
-decision - the model list is whatever the gateway serves to that key - so they are one chip: it
-names the model, and its list ends with the client key. A key is named by its alias, and by its
-mask only when it has none (§7, "Naming is a first-class action"); the key view shows both, which
-is where two similar names are told apart. A model is led by its maker's mark, on the chip, in the
-list and under the empty-state wordmark, and by a neutral box when the maker is not
-recognised; the name stays the call point. Both foot rows lead with a third chip, the
-inference endpoint (ADR 0088): the chip carries a neutral plug mark and the short name (Chat,
-Responses, Messages), and its list the endpoint's full name with its path in mono. The chips sit
-in the composer at every width, so which model and endpoint a message will reach is never hidden
-in a menu or a head row; on a phone's foot the model's name is the one that shortens. The three
-chips state their values in one ink and weight (`--fg`, regular), and a chip that cannot be
-changed - during a run, or while an Agent turn waits on a decision - gives value, mark
-and caret to `--meta` together, with a maker's mark at half opacity.
+**Con qué se envía un mensaje se elige en el compositor.** La clave y el modelo son una sola
+decisión - la lista de modelos es lo que el gateway sirve a esa clave -, así que son un solo chip: nombra
+el modelo, y su lista termina con la clave de cliente. Una clave se nombra por su alias, y por su
+máscara solo cuando no tiene (§7, «Nombrar es una acción de primera clase»); la vista de claves muestra ambos, que
+es donde se distinguen dos nombres parecidos. Un modelo va encabezado por la marca de su fabricante, en el chip, en la
+lista y bajo el wordmark del estado vacío, y por una caja neutra cuando no se reconoce al fabricante;
+el nombre sigue siendo el punto de llamada. Ambas filas de pie comienzan con un tercer chip, el
+endpoint de inferencia (ADR 0088): el chip lleva una marca neutra de enchufe y el nombre corto (Chat,
+Responses, Messages), y su lista el nombre completo del endpoint con su ruta en monoespaciado. Los chips se sitúan
+en el compositor a cualquier ancho, de modo que a qué modelo y endpoint llegará un mensaje nunca queda oculto
+en un menú o en una fila de cabecera; en el pie de un teléfono, el nombre del modelo es el que se acorta. Los tres
+chips expresan sus valores con una misma tinta y peso (`--fg`, regular), y un chip que no puede
+cambiarse - durante una ejecución, o mientras un turno del Agent espera una decisión - pasa su valor, marca
+y signo de despliegue a `--meta` a la vez, con la marca del fabricante a media opacidad.
 
-**An action's name is a tooltip only for a pointer that can rest.** Icon actions in the
-conversation workspaces name themselves through `LabelTip`, which draws nothing where the primary
-pointer cannot hover: on a touch screen the browser keeps a hover at the last place touched, so a
-label opened over whatever the layout moved there - Send, once a tapped example raised the
-keyboard. A tooltip that says more than the control's name (a measurement's meaning) stays an
-ordinary Tooltip, since a tap is how a touch reader asks for it.
+**El nombre de una acción es un tooltip solo para un puntero que puede reposar.** Las acciones de icono de los
+espacios de trabajo de conversación se nombran mediante `LabelTip`, que no dibuja nada donde el puntero
+primario no puede hacer hover: en una pantalla táctil el navegador mantiene un hover en el último lugar tocado, de modo que una
+etiqueta se abría sobre lo que el layout hubiera movido allí - Send, cuando un ejemplo tocado levantó
+el teclado. Un tooltip que dice más que el nombre del control (el significado de una medición) sigue siendo un
+Tooltip ordinario, ya que un toque es la manera en que un lector táctil lo pide.
 
-**The panel is resizable and it is a Drawer on a phone.** The separator is a keyboard-operable ARIA
-window splitter (arrows step it, Home and End jump to its bounds, a double click restores the
-default), and a drag writes the width to the panel directly and commits it once on release, so
-dragging does not re-render the transcript. The panel never takes more than half the viewport.
-Below 900px it becomes a Drawer joined to the platform Back gesture through `useOverlayHistory`. No
-breakpoint is added.
+**El panel es redimensionable y en un teléfono es un Drawer.** El separador es un divisor de ventana ARIA
+operable con teclado (las flechas lo mueven, Inicio y Fin saltan a sus límites, un doble clic restaura el
+valor predeterminado), y un arrastre escribe el ancho directamente en el panel y lo confirma una vez al soltar, de modo que
+arrastrar no vuelve a renderizar la transcripción. El panel nunca ocupa más de la mitad del viewport.
+Por debajo de 900px pasa a ser un Drawer unido al gesto Back de la plataforma mediante `useOverlayHistory`. No se
+añade ningún punto de corte.
 
-**The transcript follows the newest message.** The thread viewport (assistant-ui's) keeps a growing
-answer in view while the reader is at the bottom, and a reader who scrolls up keeps their place
-while content arrives below. Scrolling away raises a "back to latest" control, which travels
-smoothly unless the reader asked for reduced motion. A run starting, and a conversation opening,
-return the reader to the newest message.
+**La transcripción sigue al mensaje más nuevo.** El viewport del hilo (el de assistant-ui) mantiene a la vista una respuesta
+en crecimiento mientras el lector está al final, y un lector que se desplaza hacia arriba conserva su lugar
+mientras llega contenido por debajo. Alejarse del final muestra un control «volver a lo último», que se desplaza
+suavemente salvo que el lector haya pedido movimiento reducido. Al iniciarse una ejecución y al abrirse una conversación,
+el lector vuelve al mensaje más nuevo.
 
-**A message's anatomy.** The operator's message is a filled `--surface` block with a 1px border,
-aligned to the end of the column. An answer is borderless and uses the full column: a head naming
-the model and a status pip, the reasoning as an unframed disclosure (open
-while reasoning streams and following its newest output until the reader scrolls away, folded when reasoning finishes and closed for an answer that already finished, the reader's own after that;
-its caret turns with the `fast` motion token). The Agent's disclosure reads "Thinking…" while the
-reasoning is written and "Thought process" once it settles, so the separate activity line names a
-phase only when nothing in the answer does; a live phase label carries the work-in-flight highlight of ADR 0080. The
-Markdown answer and a foot complete the message. The foot states measurements - first content, duration,
-tokens, TPS - with missing observations left out rather than shown as zero, and carries its actions
-as muted icon buttons with accessible names. Copy acknowledges itself by turning its glyph into a
-check mark; only a failed copy raises a toast.
+**Anatomía de un mensaje.** El mensaje del operador es un bloque relleno `--surface` con un borde de 1px,
+alineado al final de la columna. Una respuesta no tiene borde y usa toda la columna: una cabecera que nombra
+el modelo y un indicador de estado, el razonamiento como un desplegable sin marco (abierto
+mientras el razonamiento se emite y siguiendo su salida más nueva hasta que el lector se aleja, plegado cuando el razonamiento termina y cerrado para una respuesta que ya terminó, y después el del propio lector;
+su signo de despliegue gira con el token de movimiento `fast`). El desplegable del Agent dice «Thinking…» mientras el
+razonamiento se escribe y «Thought process» una vez que se asienta, de modo que la línea de actividad separada nombra
+una fase solo cuando nada en la respuesta lo hace; una etiqueta de fase en vivo lleva el resaltado de trabajo en curso del ADR 0080. La
+respuesta en Markdown y un pie completan el mensaje. El pie expresa mediciones - primer contenido, duración,
+tokens, TPS - dejando fuera las observaciones ausentes en lugar de mostrarlas como cero, y lleva sus acciones
+como botones de icono atenuados con nombres accesibles. Copiar se confirma a sí mismo convirtiendo su glifo en una
+marca de verificación; solo una copia fallida muestra un toast.
 
-**Model output is drawn in the console's type, not the library's.** `@ant-design/x-markdown`'s own
-element styles are switched off. Tables sit in a bordered frame with a `--surface` header row and
-hairline rows, and a column the author right-aligned keeps that alignment in its header. A fenced
-block has a head naming its language with a copy action, and is highlighted only for an allowlisted
-set of languages and only once its fence has closed: an unknown or still-streaming fence is plain
-monospaced text. The syntax theme is the palette's ink - keys and keywords `--accent`, text `--fg`,
-literals `--fg-2`, punctuation `--muted`, comments `--meta` - and deliberately does not borrow the
-semantic hues, because a string is not a success. Raw HTML is escaped, links open outside the
-console, and an image is rendered as a link rather than fetched.
+**La salida del modelo se dibuja con la tipografía de la consola, no con la de la biblioteca.** Los estilos
+de elementos propios de `@ant-design/x-markdown` están desactivados. Las tablas se asientan en un marco con borde, con una fila de cabecera `--surface` y
+filas con líneas finas, y una columna que el autor alineó a la derecha conserva esa alineación en su cabecera. Un bloque
+delimitado tiene una cabecera que nombra su lenguaje con una acción de copia, y se resalta solo para un
+conjunto de lenguajes permitidos y solo una vez cerrada su valla: una valla desconocida o aún en emisión es texto
+monoespaciado plano. El tema de sintaxis es la tinta de la paleta - claves y palabras clave `--accent`, texto `--fg`,
+literales `--fg-2`, puntuación `--muted`, comentarios `--meta` - y deliberadamente no toma prestados los
+tonos semánticos, porque una cadena no es un éxito. El HTML sin procesar se escapa, los enlaces se abren fuera de la
+consola, y una imagen se renderiza como enlace en lugar de descargarse.
 
-**The composer is one gate.** Enter and the send button reach the same submission, decided on the
-runtime's live state, and the send button reads as blocked (`--border` fill, `--meta` glyph,
-`aria-disabled`) whenever sending is not possible, with the reason on its tooltip when the page has
-one to give. Send and stop occupy one action slot and are one shape: a 32px circle filled with
-`--accent-hover`, its glyph in `--accent-on` - an up arrow to send, a 10px rounded square to stop;
-hover deepens the fill to `--accent-active`. It is the only filled shape in the frame and the
-console's one round button, and it takes the same fill as every other primary action so that the
-chosen palette colours it. While a turn runs with an empty draft it shows stop;
-in the Agent, entering a draft replaces stop with "Queue", and queueing clears the draft and
-restores stop. Queued messages wait in a tray resting on the frame - the frame's hairline, open
-where it meets the box, on `--thread-field` - under one `--muted` line that counts them and says
-they go out when the current answer finishes; each is a row with an up arrow in `--meta`, its
-text on one ellipsized line and a remove control, arriving with the 4px rise. The model and the
-reasoning effort stay choosable during a run, because they belong to the next message; only a
-turn waiting on a decision pins them, and a pinned chip takes the disabled ink. Beneath the composer one line states the boundary
-the operator is about to cross: the Agent's names
-what must be allowed before a message can leave.
+**El compositor es una sola puerta.** Enter y el botón de enviar llegan al mismo envío, decidido según el estado en vivo
+del runtime, y el botón de enviar se lee como bloqueado (relleno `--border`, glifo `--meta`,
+`aria-disabled`) siempre que enviar no es posible, con el motivo en su tooltip cuando la página
+tiene uno que dar. Enviar y detener ocupan una misma ranura de acción y son una misma forma: un círculo de 32px relleno de
+`--accent-hover`, con su glifo en `--accent-on` - una flecha hacia arriba para enviar, un cuadrado redondeado de 10px para detener;
+el hover profundiza el relleno a `--accent-active`. Es la única forma rellena del marco y el
+único botón redondo de la consola, y toma el mismo relleno que toda otra acción primaria, de modo que la
+paleta elegida lo colorea. Mientras un turno se ejecuta con un borrador vacío muestra detener;
+en el Agent, escribir un borrador sustituye detener por «Queue», y encolar borra el borrador y
+restablece detener. Los mensajes en cola esperan en una bandeja apoyada en el marco - la línea fina del marco, abierta
+donde se une con la caja, sobre `--thread-field` - bajo una línea `--muted` que los cuenta y dice
+que salen cuando termina la respuesta actual; cada uno es una fila con una flecha hacia arriba en `--meta`, su
+texto en una sola línea con puntos suspensivos y un control de quitar, y llega con la subida de 4px. El modelo y el
+esfuerzo de razonamiento siguen siendo elegibles durante una ejecución, porque pertenecen al mensaje siguiente; solo un
+turno que espera una decisión los fija, y un chip fijado toma la tinta de deshabilitado. Bajo el compositor una línea expresa el límite
+que el operador está a punto de cruzar: la del Agent nombra
+lo que debe permitirse antes de que un mensaje pueda salir.
 
-**`/` runs commands and `@` completes names.** In the Agent, `/` opens the page's commands, and
-every row does something: `/ui` and `/text` set how the next answer is presented,
-and the rest are the page's own actions - stop, retry, edit, new conversation, export as HTML or
-image, open the capability directory or the connection guide. A command is listed only while it
-can run, so an empty conversation offers no retry and an idle one no stop, and no row is a canned
-question. `@` completes a name the operator would otherwise copy from another page - a model, a client
-key alias, a capability. The list opens upward from the frame's top edge on `--elevated` with a
-hairline border and no shadow, one row per entry: a 16px `--muted` icon for a command, the name in
-mono, what it is in `--muted`, the highlighted row on `--border-soft`. Arrow keys move, Enter picks, Escape closes; while a row is
-highlighted Enter belongs to the list and cannot send. On a phone or a coarse pointer a row is 44px
-high, and the list is never taller than the room the pane has above the box, so under a software
-keyboard it scrolls within itself instead of running past the pane's top edge. A mention lands as the bare name. Up on an
-empty box recalls the messages already sent, newest first. Neither has a button: the placeholder
-names both keys.
+**`/` ejecuta comandos y `@` completa nombres.** En el Agent, `/` abre los comandos de la página, y
+cada fila hace algo: `/ui` y `/text` establecen cómo se presenta la siguiente respuesta,
+y el resto son las acciones propias de la página - detener, reintentar, editar, nueva conversación, exportar como HTML o
+imagen, abrir el directorio de capacidades o la guía de conexión. Un comando se lista solo mientras
+puede ejecutarse, de modo que una conversación vacía no ofrece reintentar y una inactiva no ofrece detener, y ninguna fila es una pregunta
+enlatada. `@` completa un nombre que el operador copiaría de otra página - un modelo, un alias de clave
+de cliente, una capacidad. La lista se abre hacia arriba desde el borde superior del marco sobre `--elevated` con un
+borde de línea fina y sin sombra, una fila por entrada: un icono `--muted` de 16px para un comando, el nombre en
+monoespaciado, lo que es en `--muted`, la fila resaltada sobre `--border-soft`. Las flechas mueven, Enter elige, Escape cierra; mientras una fila está
+resaltada, Enter pertenece a la lista y no puede enviar. En un teléfono o con un puntero grueso una fila mide 44px
+de alto, y la lista nunca es más alta que el espacio que el panel tiene sobre la caja, de modo que bajo un teclado de software
+se desplaza dentro de sí misma en lugar de pasar el borde superior del panel. Una mención aterriza como el nombre desnudo. Flecha arriba en una
+caja vacía recupera los mensajes ya enviados, el más nuevo primero. Ninguno tiene botón: el placeholder
+nombra ambas teclas.
 
-**The frame holds what a message is made of and sent with, and nothing that only reports.** The
-Agent's foot has five controls: a 28px round `+` that attaches and the endpoint chip at the start,
-and the effort chip, the model chip and the send slot at the end. Readings sit under the frame, on the note's line. What the next
-message carries beyond its text sits above the input as 24px hairline chips on `--bg`, each with
-its own remove: an edit of the newest message in `--fg-2`, a presentation (`/ui`, `/text`) in
-`--accent` with an accent border. The chip leaves when the message is sent, and the sent message
-shows the presentation as a 26px `--accent` hairline chip above its bubble.
+**El marco contiene aquello de lo que se compone un mensaje y con lo que se envía, y nada que solo informe.** El
+pie del Agent tiene cinco controles: un `+` redondo de 28px que adjunta y el chip del endpoint al inicio,
+y el chip de esfuerzo, el chip de modelo y la ranura de envío al final. Las lecturas van bajo el marco, en la línea de la nota. Lo que el siguiente
+mensaje lleva además de su texto se sitúa sobre el campo de entrada como chips de línea fina de 24px sobre `--bg`, cada uno con
+su propio quitar: una edición del mensaje más reciente en `--fg-2`, una presentación (`/ui`, `/text`) en
+`--accent` con borde de acento. El chip se va cuando se envía el mensaje, y el mensaje enviado
+muestra la presentación como un chip de línea fina `--accent` de 26px sobre su burbuja.
 
-**The composer's edges meet the answers'.** The transcript reserves a scrollbar gutter
-(`--workspace-gutter`, 8px, zero on touch), which shifts its centred column by half of it; the
-composer is offset by the same half so the two share their left and right edges.
+**Los bordes del compositor coinciden con los de las respuestas.** La transcripción reserva un canal para la barra de desplazamiento
+(`--workspace-gutter`, 8px, cero en táctil), que desplaza su columna centrada la mitad de ese valor; el
+compositor se desplaza la misma mitad, de modo que ambos comparten sus bordes izquierdo y derecho.
 
-**How full the context is, as a ring and its figure.** Under the Agent's composer, at the end of the note's line, a 14px ring
-- a 2px `--border` track with the used share drawn over it from twelve o'clock - and a percentage in
-small mono state the share of the model's context window the conversation occupied when the last
-turn ended. Both rest in `--meta` and turn `--warn` at 75% and `--danger` at 90%; the figure stays
-because an arc that small cannot show which side of a threshold it is on. The tooltip gives both
-token counts and says the window is reference information. It is absent when the gateway reported no input
-count or the reference catalog lists no window for the model: a guess would read as a measurement.
+**Cuán lleno está el contexto, como un anillo y su cifra.** Bajo el compositor del Agent, al final de la línea de la nota, un anillo de 14px
+- una pista `--border` de 2px con la parte usada dibujada encima desde las doce en punto - y un porcentaje en
+mono pequeño expresan la parte de la ventana de contexto del modelo que ocupaba la conversación cuando terminó el último
+turno. Ambos reposan en `--meta` y pasan a `--warn` al 75% y a `--danger` al 90%; la cifra permanece
+porque un arco tan pequeño no puede mostrar de qué lado de un umbral está. El tooltip da ambos
+recuentos de tokens y dice que la ventana es información de referencia. Está ausente cuando el gateway no informó un recuento de
+entrada o el catálogo de referencia no lista ventana para el modelo: una suposición se leería como una medición.
 
-**The composer starts at one line.** It grows to ten lines on desktop. At the 640px phone
-breakpoint the box grows to five lines, send sits beside the
-input instead of in a foot row, and the foot row appears only for a control that needs it (the
-endpoint, effort and model chips); frame and note
-tighten with it. On a phone the conversation already shares its height with the keyboard, and the
-desktop layout left it a strip between two bars. On desktop the action remains in the foot row. User message text has no paragraph margins
-inside its padded bubble, so one line does not acquire a second layer of vertical spacing.
+**El compositor empieza con una línea.** Crece hasta diez líneas en escritorio. En el punto de corte de teléfono de
+640px la caja crece hasta cinco líneas, el envío se sitúa junto al
+campo de entrada en lugar de en una fila de pie, y la fila de pie aparece solo para un control que la necesita (los chips de
+endpoint, esfuerzo y modelo); el marco y la nota
+se ajustan con ello. En un teléfono la conversación ya comparte su altura con el teclado, y el
+layout de escritorio le dejaba una franja entre dos barras. En escritorio la acción permanece en la fila de pie. El texto del mensaje del usuario no tiene márgenes de párrafo
+dentro de su burbuja con relleno, de modo que una línea no adquiere una segunda capa de espaciado vertical.
 
-**The transcript scrolls only vertically.** Code blocks and tables scroll sideways inside their own
-frames - a table never breaks inside a word to fit, so a figure stays whole on a phone - and
-every other element is bounded by the column (a capability step's digest is one
-ellipsized line, never the width of its text), and the column is bounded by the scroll box, so a
-sideways swipe on a touch screen never drags the conversation. An answer always uses the full
-column.
+**La transcripción se desplaza solo verticalmente.** Los bloques de código y las tablas se desplazan lateralmente dentro de sus propios
+marcos - una tabla nunca parte una palabra para caber, de modo que una cifra permanece entera en un teléfono - y
+todo otro elemento queda acotado por la columna (el resumen de un paso de capacidad es una
+línea con puntos suspensivos, nunca el ancho de su texto), y la columna queda acotada por la caja de desplazamiento, de modo que un
+deslizamiento lateral en una pantalla táctil nunca arrastra la conversación. Una respuesta siempre usa toda la
+columna.
 
-**Streaming is published on a cadence.** The run loop coalesces deltas onto 40ms and every settled
-turn keeps its object identity, so the memoised transcript re-renders the answer that is growing
-and skips every one above it.
+**La emisión se publica a un ritmo.** El bucle de ejecución agrupa los deltas en intervalos de 40ms y todo turno
+asentado conserva su identidad de objeto, de modo que la transcripción memoizada vuelve a renderizar la respuesta que crece
+y omite todas las que tiene por encima.
 
 #### Agent
 
-The drawer beside the conversation holds the capability directory or the connection guide; a call's own details open in the conversation, under the call (ADR 0084). The directory is the registry itself - the same list the model is offered -
-grouped read / write / destructive in that fixed order, each group marked with a pip (`--meta`,
-`--warn`, `--danger`). It is an open list, one hairline row per capability with its description
-clamped to two lines and expanded on selection, because a card per entry made the borders louder
-than the names. A row reads in the console language: a localized title in `--fg`, the capability
-identifier beside it in small mono `--meta`, and a localized description; the filter matches both.
-An expanded row adds the registry's own description beneath a hairline rule, labelled as what the
-model is told, because that is the text the model decides from. A capability the console has no
-copy for reads as its identifier and registry description.
+El panel lateral junto a la conversación contiene el directorio de capacidades o la guía de conexión; los detalles de una llamada se abren en la conversación, bajo la llamada (ADR 0084). El directorio es el registro mismo - la misma lista que se ofrece al modelo -
+agrupado en lectura / escritura / destructivo en ese orden fijo, cada grupo marcado con un indicador (`--meta`,
+`--warn`, `--danger`). Es una lista abierta, una fila de línea fina por capacidad con su descripción
+limitada a dos líneas y expandida al seleccionarla, porque una tarjeta por entrada hacía los bordes más ruidosos
+que los nombres. Una fila se lee en el idioma de la consola: un título localizado en `--fg`, el identificador
+de la capacidad a su lado en mono pequeño `--meta`, y una descripción localizada; el filtro coincide con ambos.
+Una fila expandida añade la descripción propia del registro bajo una regla de línea fina, rotulada como lo que se
+le dice al modelo, porque ese es el texto con el que el modelo decide. Una capacidad para la que la consola no tiene
+texto propio se lee como su identificador y la descripción del registro.
 
-**A turn is drawn in the order it happened.** A model may reason, say something, call
-capabilities, reason again and answer, so a turn is a sequence of segments - reasoning, answer text,
-capability calls - rather than fixed slots for each kind. The server records the sequence as the
-turn's parts, and the browser rebuilds the same parts from the stream, so the live turn and the
-stored one are identical. Reasoning disclosures point right when collapsed and down when expanded.
-Each stretch of reasoning is its own disclosure where it occurred;
-consecutive reasoning and capability calls form one timeline (ADR 0084): a summary line in `--muted` -
-a steps icon, "Used N capabilities", any failures counted in `--danger`, and a turning caret - with
-the steps under it on a 1px `--thread-hairline` rail that runs through each step's 14px mark. The
-timeline is open while it is the end of a running answer or a call in it waits on the operator, and
-folds to its summary once the answer has moved past it; folded mid-run, the summary reads
-"Working…" with the work-in-flight highlight. The reader's own toggle wins either way. A turn resumed after an approval grows in place below its earlier segments
-rather than appearing as a second answer, and copying the answer takes every text segment, without
-the reasoning.
+**Un turno se dibuja en el orden en que ocurrió.** Un modelo puede razonar, decir algo, llamar a
+capacidades, razonar de nuevo y responder, de modo que un turno es una secuencia de segmentos - razonamiento, texto de respuesta,
+llamadas a capacidades - en lugar de ranuras fijas para cada tipo. El servidor registra la secuencia como las
+partes del turno, y el navegador reconstruye las mismas partes a partir de la emisión, de modo que el turno en vivo y el
+almacenado son idénticos. Los desplegables de razonamiento apuntan a la derecha al plegarse y hacia abajo al expandirse.
+Cada tramo de razonamiento es su propio desplegable donde ocurrió;
+el razonamiento y las llamadas a capacidades consecutivos forman una línea de tiempo (ADR 0084): una línea de resumen en `--muted` -
+un icono de pasos, «Used N capabilities», los fallos contados en `--danger`, y un signo de despliegue que gira - con
+los pasos debajo sobre un riel de `--thread-hairline` de 1px que atraviesa la marca de 14px de cada paso. La
+línea de tiempo está abierta mientras es el final de una respuesta en ejecución o una llamada en ella espera al operador, y
+se pliega a su resumen una vez que la respuesta ha pasado de largo; plegada a mitad de ejecución, el resumen dice
+«Working…» con el resaltado de trabajo en curso. El propio conmutador del lector prevalece en ambos casos. Un turno reanudado tras una aprobación crece en su lugar bajo sus segmentos anteriores
+en lugar de aparecer como una segunda respuesta, y copiar la respuesta toma todos los segmentos de texto, sin
+el razonamiento.
 
-**A capability call is a disclosure.** Its row is a mark in the status hue (a `--success` check, a
-`--danger` cross, a 5px `--meta` dot at rest; a spinner in `--accent` while running, a `--warn`
-attention glyph when the call waits on the operator or its outcome is partial, expired or
-unconfirmed), the localized title in `--fg-2` - carrying the work-in-flight highlight of ADR 0080
-while the call runs - the arguments in brief as an ellipsized mono chip on `--thread-field`, the
-status in words only when it is not a plain success, the duration in tabular figures and a caret.
-The row appears the moment the call is announced, before it has a result. Opening it unfolds, under
-the row and aligned to its text, a `--thread-field` panel: the identifier in mono, the status and
-the start time, then the full arguments and the receipt the model was given as code blocks capped
-at 280px. Both the timeline and this panel open by a grid row growing within `base`. A failed call
-states its code and detail beneath the row whether or not it is open.
+**Una llamada a una capacidad es un desplegable.** Su fila es una marca en el tono del estado (una marca de verificación `--success`, una
+cruz `--danger`, un punto `--meta` de 5px en reposo; un spinner en `--accent` mientras se ejecuta, un glifo de atención `--warn`
+cuando la llamada espera al operador o su resultado es parcial, expiró o no está
+confirmado), el título localizado en `--fg-2` - con el resaltado de trabajo en curso del ADR 0080
+mientras la llamada se ejecuta -, los argumentos en resumen como un chip mono con puntos suspensivos sobre `--thread-field`, el
+estado en palabras solo cuando no es un éxito simple, la duración en cifras tabulares y un signo de despliegue.
+La fila aparece en el momento en que se anuncia la llamada, antes de tener un resultado. Al abrirla se despliega, bajo
+la fila y alineado con su texto, un panel `--thread-field`: el identificador en mono, el estado y
+la hora de inicio, luego los argumentos completos y el recibo que se dio al modelo como bloques de código limitados
+a 280px. Tanto la línea de tiempo como este panel se abren mediante una fila de cuadrícula que crece dentro de `base`. Una llamada fallida
+expone su código y detalle bajo la fila esté o no abierta.
 
-A database query is the same disclosure without a receipt block: its status, SQL arguments and
-timing are inspectable, its rows stay on the server, and data selected for an explicit display
-belongs in the final answer's figure.
+Una consulta a base de datos es el mismo desplegable sin bloque de recibo: su estado, sus argumentos SQL y su
+duración son inspeccionables, sus filas permanecen en el servidor, y los datos seleccionados para una presentación explícita
+pertenecen a la figura de la respuesta final.
 
-**Display calls are part of the answer.** A `render_ui` call, or a stored legacy display, is drawn outside
-the chain at its own place among the answer parts, where the answer reads. New calls default to
-`frame: none`: a component on the conversation ground, with no frame or title bar, retaining an
-accessible title and quiet controls. Explicit `frame: card` draws a hairline `--border` frame under
-a title in `--fg` 600; stored displays retain their original framing (ADR 0082, 0087). A stored panel (`render_view`, ADR 0079) holds blocks, each drawn only
-from tokens: `stats` as tiles on one `--border-soft` hairline grid (label `--muted` 12px with an
-optional 13px icon, value 20px 600 tabular, change toned by `--success` / `--warn` / `--danger`);
-`fields` as label/value rows on `--border-soft` rules; `callout` as a 2px toned left rule on a 7-8%
-tint of the same tone; `steps` as 9px marks on a `--border` rail (filled `--success` done, ringed
-`--accent` active, hollow pending, filled `--danger` failed); `meters` as a 4px `--series-track`
-bar filled by `--accent` or the tone; `links` as 28px hairline buttons that take `--accent` on
-hover. Icons are 1.5px-stroke Lucide outlines in `currentColor`; an unresolved name is a small
-neutral circle of the same box. A generated UI (`render_ui`, with stored `render_canvas` views kept readable, ADR 0072) is the figure frame around a
-borderless sandboxed frame on `--surface`, with four quiet icon actions: view source (the same
-button, as an eye, returns to the rendered UI), save as image, download HTML, full screen. Its
-markup is composed from the frame's own components - stacks, fitting grids, cards, stats, toned
-badges and callouts, key-value lists, fields, tabs and a pickable node-and-arrow diagram - styled
-with the console's tokens and all fluid (ADR 0085). While the model is still writing it, the
-draft component draws the markup so far without executing model scripts. Card drafts show a
-dashed frame, title and "Drawing…" mark; inline drafts retain the accessible title and status
-without visible card chrome, and the finished canvas takes its place at the height
-the draft had reached. Its
-height follows its content between 48px and 16384px, measured to include overflowing content
-without using the viewport as a minimum, so it can both grow and shrink after local interactions.
-Normal content scrolls with the transcript, and the frame's document never draws a scrollbar of
-its own: a bar that appeared while the frame caught up took width from the canvas and redrew it.
-Content above the cap, and the full-screen view, still scroll by wheel, touch and keys. Component surfaces and diagram nodes use `--radius-surface` (10px);
-controls use `--radius-control` (6px), including in streamed previews and HTML exports. Charts and tables inside it are drawn by the console's kit (ADR 0073) from the theme
-variables the frame is given, so they follow the palette in both schemes: marks on the series
-palette, `--border` grid rules, `--muted` tick and legend text formatted the way the console
-formats tokens, money, durations and shares; a table with `--muted` 12px heads that sort on click,
-`--border-soft` row rules and right-aligned tabular figures. Full screen fixes the same figure over
-the viewport on `--surface` without a border, the frame filling what the title bar leaves; Escape,
-the same button or the platform's Back gesture returns it, and a dashed hairline box holds its
-place in the answer meanwhile. The saved image is the frame's own document at 2x. While a display call's
-arguments arrive it is a draft figure in that position; a refused call remains an ordinary call row.
+**Las llamadas de presentación forman parte de la respuesta.** Una llamada `render_ui`, o una presentación heredada almacenada, se dibuja fuera
+de la cadena en su propio lugar entre las partes de la respuesta, donde la respuesta se lee. Las llamadas nuevas usan por defecto
+`frame: none`: un componente sobre el fondo de la conversación, sin marco ni barra de título, que conserva un
+título accesible y controles discretos. Un `frame: card` explícito dibuja un marco de línea fina `--border` bajo
+un título en `--fg` 600; las presentaciones almacenadas conservan su marco original (ADR 0082, 0087). Un panel almacenado (`render_view`, ADR 0079) contiene bloques, cada uno dibujado solo
+con tokens: `stats` como mosaicos en una cuadrícula de línea fina `--border-soft` (etiqueta `--muted` de 12px con un
+icono opcional de 13px, valor de 20px 600 tabular, cambio tonalizado por `--success` / `--warn` / `--danger`);
+`fields` como filas etiqueta/valor sobre reglas `--border-soft`; `callout` como una regla izquierda tonalizada de 2px sobre un tinte del 7-8%
+del mismo tono; `steps` como marcas de 9px sobre un riel `--border` (relleno `--success` hecho, con anillo
+`--accent` activo, hueco pendiente, relleno `--danger` fallido); `meters` como una barra `--series-track` de 4px
+rellena con `--accent` o el tono; `links` como botones de línea fina de 28px que toman `--accent` al
+pasar el puntero. Los iconos son contornos Lucide de trazo 1,5px en `currentColor`; un nombre sin resolver es un pequeño
+círculo neutro de la misma caja. Una UI generada (`render_ui`, con las vistas `render_canvas` almacenadas que se mantienen legibles, ADR 0072) es el marco de figura alrededor de un
+marco aislado sin borde sobre `--surface`, con cuatro acciones de icono discretas: ver código fuente (el mismo
+botón, como un ojo, devuelve a la UI renderizada), guardar como imagen, descargar HTML, pantalla completa. Su
+marcado se compone con los propios componentes del marco - pilas, cuadrículas ajustables, tarjetas, estadísticas, insignias
+tonalizadas y avisos, listas clave-valor, campos, pestañas y un diagrama de nodos y flechas seleccionable - con estilos
+de los tokens de la consola y todo fluido (ADR 0085). Mientras el modelo todavía lo escribe, el
+componente de borrador dibuja el marcado hasta ese momento sin ejecutar scripts del modelo. Los borradores de tarjeta muestran un
+marco discontinuo, un título y una marca «Drawing…»; los borradores en línea conservan el título accesible y el estado
+sin el marco visible de tarjeta, y el lienzo terminado ocupa su lugar a la altura
+que había alcanzado el borrador. Su
+altura sigue a su contenido entre 48px y 16384px, medida para incluir el contenido desbordado
+sin usar el viewport como mínimo, de modo que puede tanto crecer como encogerse tras interacciones locales.
+El contenido normal se desplaza con la transcripción, y el documento del marco nunca dibuja una barra de desplazamiento
+propia: una barra que aparecía mientras el marco se ponía al día quitaba ancho al lienzo y lo volvía a dibujar.
+El contenido por encima del tope, y la vista de pantalla completa, siguen desplazándose con rueda, tacto y teclas. Las superficies de componentes y los nodos de diagrama usan `--radius-surface` (10px);
+los controles usan `--radius-control` (6px), también en las vistas previas emitidas y las exportaciones HTML. Los gráficos y tablas que contiene los dibuja el kit de la consola (ADR 0073) a partir de las variables
+de tema que se le dan al marco, de modo que siguen la paleta en ambos esquemas: marcas en la paleta
+de series, reglas de cuadrícula `--border`, texto de marcas y leyenda `--muted` con el formato que la consola
+da a tokens, dinero, duraciones y proporciones; una tabla con cabeceras `--muted` de 12px que ordenan al hacer clic,
+reglas de fila `--border-soft` y cifras tabulares alineadas a la derecha. La pantalla completa fija la misma figura sobre
+el viewport en `--surface` sin borde, con el marco llenando lo que deja la barra de título; Escape,
+el mismo botón o el gesto Back de la plataforma la devuelve, y una caja de línea fina discontinua mantiene su
+lugar en la respuesta entretanto. La imagen guardada es el propio documento del marco a 2x. Mientras llegan los
+argumentos de una llamada de presentación es una figura borrador en esa posición; una llamada rechazada sigue siendo una fila de llamada ordinaria.
 
-A finished answer's foot states its status, duration and start time, its rounds and calls, and the
-tokens the gateway reported, and carries copy and "export this answer" (HTML) as muted icon
-actions. The newest answer's foot leads those with retry and edit when its turn changed nothing;
-editing returns the message's words to the composer under an "editing" chip with a dismiss.
-A text file attached to a message (ADR 0074) is a 28px hairline chip of name and remove in the
-composer, and a 26px chip of paperclip, name and `--meta` size above the sent bubble. The head's Export menu saves the whole conversation as an HTML page, a PNG image or JSON.
+El pie de una respuesta terminada expresa su estado, duración y hora de inicio, sus rondas y llamadas, y los
+tokens que informó el gateway, y lleva copiar y «export this answer» (HTML) como acciones de icono
+atenuadas. El pie de la respuesta más reciente las antecede con reintentar y editar cuando su turno no cambió nada;
+editar devuelve las palabras del mensaje al compositor bajo un chip «editing» con descarte.
+Un archivo de texto adjunto a un mensaje (ADR 0074) es un chip de línea fina de 28px con nombre y quitar en el
+compositor, y un chip de 26px con clip, nombre y tamaño `--meta` sobre la burbuja enviada. El menú Export de la cabecera guarda toda la conversación como una página HTML, una imagen PNG o JSON.
 
-**An exported conversation is the workspace, not a report about it.** The HTML page and the PNG are
-drawn from the resolved palette and the embedded mono face (`web/src/agent/conversationStyles.ts`), so
-an export in an operator's own palette is in that palette. The page keeps the workspace's anatomy -
-the 760px reading column, the right-aligned operator bubble on the thread field at the 8px thread radius, the 7px status pip, quiet
-12px heads and feet - under a head of wordmark, hairline and title, and a one-line masthead (model,
-turns, tokens, export time). Reasoning and the capability chain are disclosures with a rotating
-chevron, the chain indented and the reasoning set on the page in `--fg-2`; a code block is a `--surface` frame whose head names the language;
-a display view is a `--surface` figure: a panel block by block, a canvas as the sandboxed frame it
-is in the workspace. A failure is a note on an 8% `--danger` fill at 10px. The PNG is
-the same document as an 840px card at 2x with 40px margins: controls, carets and reasoning are left
-out and the capability chain is shown open, because a picture has nothing to click.
+**Una conversación exportada es el espacio de trabajo, no un informe sobre él.** La página HTML y el PNG se
+dibujan a partir de la paleta resuelta y la tipografía mono incrustada (`web/src/agent/conversationStyles.ts`), de modo que
+una exportación en la paleta propia de un operador queda en esa paleta. La página conserva la anatomía del espacio de trabajo -
+la columna de lectura de 760px, la burbuja del operador alineada a la derecha sobre el campo del hilo con el radio de hilo de 8px, el indicador de estado de 7px, cabeceras y pies discretos
+de 12px - bajo una cabecera de wordmark, línea fina y título, y un titular de una línea (modelo,
+turnos, tokens, hora de exportación). El razonamiento y la cadena de capacidades son desplegables con un
+chevrón giratorio, la cadena sangrada y el razonamiento compuesto en la página en `--fg-2`; un bloque de código es un marco `--surface` cuya cabecera nombra el lenguaje;
+una vista de presentación es una figura `--surface`: un panel bloque a bloque, un lienzo como el marco aislado que
+es en el espacio de trabajo. Un fallo es una nota sobre un relleno `--danger` al 8% con 10px. El PNG es
+el mismo documento como una tarjeta de 840px a 2x con márgenes de 40px: los controles, signos de despliegue y el razonamiento se omiten
+y la cadena de capacidades se muestra abierta, porque una imagen no tiene nada que pulsar.
 
-**A prepared operation is decided where it was raised** (ADR 0043): a card under the call, on
-`--surface` with one `--thread-hairline` edge at the thread radius (the edge takes `--danger` at
-45% for a destructive capability). It names the capability's permission as a tag, leads with a sentence on
-what Allow and Deny do and the localized description, then the target in mono and a form-shaped
-change as label/value rows on a field panel (anything deeper stays JSON), and ends with one decision, Deny or Allow;
-deciding continues the run (ADR 0035). A destructive capability draws Allow in the danger hue and
-adds a "cannot be undone" line; nothing is typed to confirm. At the 640px phone breakpoint the card
-tightens its padding and Deny and Allow share the row as equal 40px-high targets, as they do on the
-authorization screen. Private input and the OAuth hand-off
-appear on the card when the capability needs them. While a decision is open the composer refuses to
-send and says so in a `--warn` line inside its frame, with a "Show" link that brings the card into
-view and focuses it.
+**Una operación preparada se decide donde se planteó** (ADR 0043): una tarjeta bajo la llamada, sobre
+`--surface` con un borde `--thread-hairline` al radio de hilo (el borde toma `--danger` al
+45% para una capacidad destructiva). Nombra el permiso de la capacidad como una etiqueta, comienza con una frase sobre
+lo que hacen Allow y Deny y la descripción localizada, luego el destino en mono y un
+cambio con forma de formulario como filas etiqueta/valor en un panel de campos (todo lo más profundo queda en JSON), y termina con una decisión, Deny o Allow;
+decidir continúa la ejecución (ADR 0035). Una capacidad destructiva dibuja Allow en el tono de peligro y
+añade una línea «cannot be undone»; no se escribe nada para confirmar. En el punto de corte de teléfono de 640px la tarjeta
+ajusta su relleno y Deny y Allow comparten la fila como objetivos iguales de 40px de alto, como en la
+pantalla de autorización. La entrada privada y el traspaso de OAuth
+aparecen en la tarjeta cuando la capacidad los necesita. Mientras hay una decisión abierta, el compositor se niega a
+enviar y lo dice en una línea `--warn` dentro de su marco, con un enlace «Show» que lleva la tarjeta a
+la vista y le da foco.
 
-**Selected text can be asked about.** Selecting part of an answer raises a small toolbar on
-`--elevated` with "Ask about this" - the portal styles itself from theme tokens, because it renders outside Ant Design's variable scope; the quote then sits inside the composer's frame above the input,
-in `--muted` with a remove control, and is sent as a Markdown quote ahead of the question.
+**Se puede preguntar sobre el texto seleccionado.** Seleccionar parte de una respuesta muestra una pequeña barra de herramientas sobre
+`--elevated` con «Ask about this» - el portal se estiliza a partir de los tokens de tema, porque se renderiza fuera del ámbito de variables de Ant Design; la cita se sitúa entonces dentro del marco del compositor sobre el campo de entrada,
+en `--muted` con un control de quitar, y se envía como una cita Markdown antes de la pregunta.
 
-A question the agent asks (`ask_question`) takes the composer's place instead of opening a dialog,
-because the answer above it is often what the operator reads to reply. It follows the shape the
-coding agents converged on (Claude Code's AskUserQuestion, Codex's request_user_input, OpenCode's
-question tool). The panel keeps the composer's frame with the accent hue on it. Several questions
-are one tab each plus a Review tab, and a tab carries a `--success` check once its question is
-answered, so the row is also the progress; a single question has no tabs and shows its short
-chip beside the text. Each option is a full-width row with its number as a key cap, the label, and
-its consequence in muted text beneath; the chosen row takes the accent edge, a light accent tint and
-a filled key cap. "Something else…" is always the last row and opens its answer field inside the
-row when chosen; in a single-choice question it replaces the options rather than adding to one. A
-digit picks a row and Enter moves on (the hint and key caps' shortcut hint are hidden without a
-keyboard); a single choice advances by itself, several choices wait for Next. The Review tab lists
-every question with its answer, each one a link back to its tab, and Submit sends them; Skip
-declines them all. Only the question scrolls, so the actions stay in view. The chain step and the
-turn footer for a pending question read "Awaiting your answer".
+Una pregunta que formula el agente (`ask_question`) ocupa el lugar del compositor en lugar de abrir un diálogo,
+porque la respuesta que tiene encima suele ser lo que el operador lee para contestar. Sigue la forma en que
+convergieron los agentes de programación (AskUserQuestion de Claude Code, request_user_input de Codex, la herramienta
+question de OpenCode). El panel conserva el marco del compositor con el tono de acento. Varias preguntas
+son una pestaña cada una más una pestaña Review, y una pestaña lleva una marca de verificación `--success` una vez respondida su pregunta,
+de modo que la fila es también el progreso; una sola pregunta no tiene pestañas y muestra su chip corto
+junto al texto. Cada opción es una fila de ancho completo con su número como tecla, la etiqueta, y
+su consecuencia en texto atenuado debajo; la fila elegida toma el borde de acento, un tinte ligero de acento y
+una tecla rellena. «Something else…» es siempre la última fila y abre su campo de respuesta dentro de la
+fila cuando se elige; en una pregunta de elección única sustituye a las opciones en lugar de añadirse a una. Un
+dígito elige una fila y Enter avanza (la pista y la pista de atajo de las teclas se ocultan sin
+teclado); una elección única avanza por sí misma, varias elecciones esperan a Next. La pestaña Review lista
+cada pregunta con su respuesta, cada una un enlace de vuelta a su pestaña, y Submit las envía; Skip
+las rechaza todas. Solo se desplaza la pregunta, de modo que las acciones permanecen a la vista. El paso de la cadena y el
+pie del turno para una pregunta pendiente dicen «Awaiting your answer».
 
-Sending needs no separate grant. The line beneath the composer states that a message, and the Shell-PAMC
-data the agent reads to answer it, go to the selected CPA model and its upstream (ADR 0027); sending
-is the act that line describes. Model and reasoning effort use the same 28px quiet chip,
-shadowless hairline popover on `--surface`, and named option rows (ADR 0077). A surface opens
-above its trigger, or below when the room above is under 280px and the room below is larger, and
-is capped to the room on that side less a 12px margin, so its list scrolls rather than leaving the
-window. A re-read keeps the list it is re-reading, and until the remembered target has been read
-the model chip holds a 104px placeholder instead of naming a choice. The model surface
-is 304px wide, bounded to the viewport; its list leads each call point with its maker's mark,
-adds search beyond eight names, and offers the client key as a secondary footer action that
-opens a key list in the same surface. The reasoning surface is 180px wide, with model default
-first followed by parameter names with secondary localized descriptions. Its text trigger shows the
-current parameter name (`Low`, `High`, `Max`, `xHigh`) in `--fg` at regular 400 weight.
-These display spellings are consistent across languages; request values retain their original casing.
-The current row uses `--selected-inset`,
-`--fg` and 600 weight. Model rows also use an ink-colored check. Reasoning rows pair the
-primary parameter name on the left with its localized description in `--muted` at the trailing
-edge. Identical descriptions are omitted. Desktop rows are 36px; phone and coarse-pointer
-rows are 44px. One roving tab stop follows the selected choice; arrows, Home and End browse
-without changing the request. Enter, Space or click confirms and closes; Escape closes
-without changing the value. Both return focus to the chip. Existing theme tokens are reused.
-A stored conversation's first load is a thread-shaped placeholder at the column's width. A display
-call is drawn where the model made it, between the text before and after it (ADR 0082); one the
-model is still writing is a draft figure in that place - the figure's frame
-with a dashed edge, its title once the arguments hold it, and a `--thread-field` stage holding the
-generation loader (a three-by-three field of `--fg` dots with a lit run travelling through it)
-over its label - which the settled figure replaces in place. Figures, drafts, call rows and
-follow-up questions arrive with opacity and a 4px rise inside `base`. An inline view (`frame: none`, the default for new calls) has no edge, ground or
-title bar: its canvas sits on `--bg` and its controls rest at 45% opacity until hovered or
-focused. Reasoning is written straight on the page in `--fg-2` 12.5px with no frame; while it
-arrives it is a 168px window that keeps to its newest line after Markdown commits and viewport
-reflows. The top edge fades only while following and only when history is hidden above it; short
-text and manual scrollback retain full ink. Scrolling to the bottom resumes following, and reopening
-a live disclosure shows the newest line (320px once settled and reopened). Answer text that is still
-streaming arrives from `--accent` at 20% opacity and reaches the ink over `base`, so only the
-newest few words are ever tinted, with a 2px `--accent` caret
-pulsing after its last word; both stop with the stream, and reduced motion removes them (ADR 0080).
-The operator's message enters the transcript the moment it is
-sent and the composer clears; a message the server refuses before accepting it returns to an empty
-composer. The model's reasoning streams into the live turn as the same reasoning disclosure
-the workspace uses, open while it is being written, and stays with the stored turn, kept apart from
-the answer. The key, model and effort are the operator's choice and are remembered across reloads;
-New conversation replaces the transcript and nothing else. Failure is stated
-as a sentence with its code beneath it, and a run the operator stopped reads as stopped rather than
-failed. A live run carries one activity line: the generation loader at mark size and how long the
-run has taken, because a spinner cannot tell working from stuck. A phase is named where it is
-drawn - the reasoning disclosure reads "Thinking…" while it is written, a running call's row
-carries its title - so the line itself names one only when nothing in the answer does: waiting on
-the model, or retrying it. The elapsed time counts on the browser's clock; a run rejoined after
-leaving the page starts from the server's stamp brought onto that clock by the response's `Date`
-header, so a browser whose clock trails its server never shows a stalled zero. The line follows
-the reasoning body in normal document flow with the answer's 12px gap. Round counts remain in
-settled-turn measurements, not the live activity line.
-The Agent's page actions sit together at the conversation's top trailing corner: New conversation
-first, labelled and hairline-edged, once there is a conversation to replace, then a short rule and
-quiet icon actions for export, the capability directory and the connection guide. A phone keeps
-the icon and drops the label, and while its software keyboard is up the cluster and the room kept
-clear for it go to the conversation: every action is also a `/` command, and the cluster returns
-with the keyboard's departure. The Agent's head carries one labelled button, New conversation,
-and quiet icon actions for export and the side panel, whose icon is
-`--accent` while the panel is open. The empty conversation offers example questions as
-keyboard-reachable buttons that fill the composer without sending, and under them one `--meta` line
-of `kbd` hints - `/` for commands, `@` for names, Up for the last message - which a phone leaves out. On a phone
-the first screen is given air instead of being filled from the top: the greeting starts 13dvh down
-(never under the page actions), stands 32px clear of the composer, and the example questions are a
-borderless list of 48px rows parted by `--thread-hairline` rules 24px under the composer's note, so
-the composer is the only framed box on the screen. Under a software keyboard the top offset is given back. The newest answer may end with up
-to three follow-up questions the model offered, each a slip with a `--thread-hairline` edge at the
-thread radius that fills with `--thread-field` on hover; choosing one fills the composer without
-sending, and they leave with the next message.
+Enviar no necesita una autorización aparte. La línea bajo el compositor expresa que un mensaje, y los datos de Shell-PAMC
+que el agente lee para responderlo, van al modelo CPA seleccionado y a su upstream (ADR 0027); enviar
+es el acto que esa línea describe. El modelo y el esfuerzo de razonamiento usan el mismo chip discreto de 28px,
+un popover de línea fina sin sombra sobre `--surface`, y filas de opción con nombre (ADR 0077). Una superficie se abre
+sobre su disparador, o debajo cuando el espacio de arriba es inferior a 280px y el de abajo es mayor, y
+se limita al espacio de ese lado menos un margen de 12px, de modo que su lista se desplaza en lugar de salirse de la
+ventana. Una relectura conserva la lista que está releyendo, y hasta que se ha leído el destino recordado
+el chip de modelo mantiene un marcador de 104px en lugar de nombrar una elección. La superficie de modelos
+mide 304px de ancho, acotada al viewport; su lista encabeza cada punto de llamada con la marca de su fabricante,
+añade búsqueda a partir de ocho nombres, y ofrece la clave de cliente como acción secundaria de pie que
+abre una lista de claves en la misma superficie. La superficie de razonamiento mide 180px de ancho, con el valor predeterminado del modelo
+primero seguido de los nombres de parámetro con descripciones secundarias localizadas. Su disparador de texto muestra el
+nombre del parámetro actual (`Low`, `High`, `Max`, `xHigh`) en `--fg` con peso regular 400.
+Estas grafías de visualización son coherentes entre idiomas; los valores de solicitud conservan su capitalización original.
+La fila actual usa `--selected-inset`,
+`--fg` y peso 600. Las filas de modelo usan además una marca de verificación del color de la tinta. Las filas de razonamiento emparejan el
+nombre del parámetro principal a la izquierda con su descripción localizada en `--muted` en el borde
+final. Las descripciones idénticas se omiten. Las filas de escritorio miden 36px; las de teléfono y puntero grueso
+miden 44px. Una sola parada de tabulador itinerante sigue la elección seleccionada; las flechas, Inicio y Fin navegan
+sin cambiar la solicitud. Enter, Espacio o clic confirman y cierran; Escape cierra
+sin cambiar el valor. Ambos devuelven el foco al chip. Se reutilizan los tokens de tema existentes.
+La primera carga de una conversación almacenada es un marcador con forma de hilo al ancho de la columna. Una llamada
+de presentación se dibuja donde el modelo la hizo, entre el texto anterior y posterior (ADR 0082); una que el
+modelo todavía está escribiendo es una figura borrador en ese lugar - el marco de la figura
+con borde discontinuo, su título una vez que los argumentos lo contienen, y un escenario `--thread-field` que contiene el
+indicador de generación (una cuadrícula de tres por tres de puntos `--fg` con un tramo iluminado que la recorre)
+sobre su etiqueta - que la figura asentada sustituye en su lugar. Las figuras, borradores, filas de llamada y
+preguntas de seguimiento llegan con opacidad y una subida de 4px dentro de `base`. Una vista en línea (`frame: none`, el valor predeterminado de las llamadas nuevas) no tiene borde, fondo ni
+barra de título: su lienzo se sitúa sobre `--bg` y sus controles reposan al 45% de opacidad hasta recibir hover o
+foco. El razonamiento se escribe directamente en la página en `--fg-2` 12,5px sin marco; mientras
+llega es una ventana de 168px que se mantiene en su línea más reciente tras confirmarse el Markdown y los reflujos del viewport.
+El borde superior se desvanece solo mientras se sigue y solo cuando hay historial oculto encima; el texto
+corto y el retroceso manual conservan la tinta completa. Desplazarse hasta el final reanuda el seguimiento, y reabrir
+un desplegable en vivo muestra la línea más reciente (320px una vez asentado y reabierto). El texto de respuesta que aún
+se emite llega desde `--accent` al 20% de opacidad y alcanza la tinta durante `base`, de modo que solo las
+últimas palabras están teñidas, con un cursor `--accent` de 2px
+que pulsa tras su última palabra; ambos se detienen con la emisión, y el movimiento reducido los elimina (ADR 0080).
+El mensaje del operador entra en la transcripción en el momento
+en que se envía y el compositor se vacía; un mensaje que el servidor rechaza antes de aceptarlo vuelve a un compositor
+vacío. El razonamiento del modelo se emite en el turno en vivo como el mismo desplegable de razonamiento
+que usa el espacio de trabajo, abierto mientras se escribe, y permanece con el turno almacenado, separado de
+la respuesta. La clave, el modelo y el esfuerzo son elección del operador y se recuerdan entre recargas;
+Nueva conversación sustituye la transcripción y nada más. El fallo se expresa
+como una frase con su código debajo, y una ejecución que el operador detuvo se lee como detenida y no como
+fallida. Una ejecución en vivo lleva una línea de actividad: el indicador de generación a tamaño de marca y cuánto
+lleva la ejecución, porque un spinner no puede distinguir trabajar de atascarse. Una fase se nombra donde se
+dibuja - el desplegable de razonamiento dice «Thinking…» mientras se escribe, la fila de una llamada en ejecución
+lleva su título -, de modo que la línea en sí nombra una solo cuando nada en la respuesta lo hace: esperar al
+modelo, o reintentarlo. El tiempo transcurrido cuenta con el reloj del navegador; una ejecución a la que se vuelve a unir tras
+abandonar la página parte de la marca del servidor llevada a ese reloj mediante la cabecera `Date` de la respuesta,
+de modo que un navegador cuyo reloj va por detrás de su servidor nunca muestra un cero estancado. La línea sigue
+al cuerpo del razonamiento en el flujo normal del documento con el hueco de 12px de la respuesta. Los recuentos de rondas permanecen en
+las mediciones del turno asentado, no en la línea de actividad en vivo.
+Las acciones de página del Agent se agrupan en la esquina final superior de la conversación: Nueva conversación
+primero, rotulada y con borde de línea fina, una vez que hay una conversación que sustituir, luego una regla corta y
+acciones de icono discretas para exportar, el directorio de capacidades y la guía de conexión. Un teléfono conserva
+el icono y quita la etiqueta, y mientras su teclado de software está levantado el grupo y el espacio mantenido
+libre para él pasan a la conversación: toda acción es también un comando `/`, y el grupo vuelve
+cuando el teclado se va. La cabecera del Agent lleva un botón rotulado, Nueva conversación,
+y acciones de icono discretas para exportar y el panel lateral, cuyo icono es
+`--accent` mientras el panel está abierto. La conversación vacía ofrece preguntas de ejemplo como
+botones alcanzables con teclado que rellenan el compositor sin enviar, y bajo ellas una línea `--meta`
+de pistas `kbd` - `/` para comandos, `@` para nombres, Flecha arriba para el último mensaje - que un teléfono omite. En un teléfono
+la primera pantalla recibe aire en lugar de llenarse desde arriba: el saludo empieza 13dvh más abajo
+(nunca bajo las acciones de página), queda a 32px del compositor, y las preguntas de ejemplo son una
+lista sin borde de filas de 48px separadas por reglas `--thread-hairline` a 24px bajo la nota del compositor, de modo que
+el compositor es la única caja enmarcada de la pantalla. Bajo un teclado de software se devuelve el desplazamiento superior. La respuesta más reciente puede terminar con hasta
+tres preguntas de seguimiento que ofreció el modelo, cada una una pastilla con borde `--thread-hairline` al
+radio de hilo que se rellena con `--thread-field` al pasar el puntero; elegir una rellena el compositor sin
+enviar, y se van con el siguiente mensaje.
 
-### Model-row disclosure
+### Despliegue de la fila de modelo
 
-Adding a provider custom model creates a collapsed row: its request model and optional alias are immediately editable, while image capability and reasoning-effort controls open only through the row's disclosure action. Existing row expansion is preserved.
+Añadir un modelo personalizado de proveedor crea una fila plegada: su modelo de solicitud y su alias opcional son editables de inmediato, mientras que los controles de capacidad de imagen y esfuerzo de razonamiento se abren solo mediante la acción de despliegue de la fila. Se conserva la expansión de filas existente.
 
-The row's head stands on the card itself rather than a `--surface` band, because the two name fields are filled wells and a well on its own colour has no edge. Its body - and every other disclosure in the provider editor, a key's body and a section's - unfolds through the shared `Fold` (`components/common/Fold.tsx`): the grid 0fr/1fr technique over `base`, the content fading with it, and one chevron that turns rather than two icons swapped. A body mounts the first time it opens and stays, so closing folds it away instead of cutting it; the caller's padding and rule sit inside the clipping row, so a card folded shut is exactly as tall as before it opened. Thinking levels are tiles drawn as washes - 4% of the ink at rest, 7% under the pointer, a 12% accent tint once picked - so eight tiles do not draw sixteen outlines.
+La cabecera de la fila se asienta sobre la propia tarjeta en lugar de sobre una banda `--surface`, porque los dos campos de nombre son pozos rellenos y un pozo sobre su propio color no tiene borde. Su cuerpo - y todo otro desplegable del editor de proveedores, el cuerpo de una clave y el de una sección - se despliega mediante el `Fold` compartido (`components/common/Fold.tsx`): la técnica de cuadrícula 0fr/1fr durante `base`, con el contenido desvaneciéndose con ella, y un solo chevrón que gira en lugar de dos iconos intercambiados. Un cuerpo se monta la primera vez que se abre y permanece, de modo que cerrarlo lo pliega en lugar de cortarlo; el relleno y la regla del llamador se sitúan dentro de la fila recortada, de modo que una tarjeta plegada mide exactamente lo mismo que antes de abrirse. Los niveles de razonamiento son mosaicos dibujados como velos - 4% de la tinta en reposo, 7% bajo el puntero, un tinte de acento del 12% una vez elegido - de modo que ocho mosaicos no dibujan dieciséis contornos.
 
-## 6. antd theme wiring (themeConfig.ts)
+## 6. Cableado del tema de antd (themeConfig.ts)
 
-Non-obvious decisions, keep these when editing:
+Decisiones no obvias, conservarlas al editar:
 
-Dashboard KPI, model-trend and model-donut tooltip rows share `web/src/charts/chartTooltip.ts`: content-sized columns, 8px decorative swatches and 6px gutters keep each marker, optional name, value and optional share together. Timestamp headings do not stretch those tracks; names align on the left and numeric edges on the right across rows. Full names and exact values remain available in escaped titles. Existing palette, font and motion tokens are unchanged.
+Las filas de tooltip de KPI del panel, de tendencia de modelos y de dona de modelos comparten `web/src/charts/chartTooltip.ts`: columnas dimensionadas por contenido, muestras decorativas de 8px y canales de 6px mantienen juntos cada marcador, nombre opcional, valor y proporción opcional. Los encabezados de marca de tiempo no estiran esas pistas; los nombres se alinean a la izquierda y los bordes numéricos a la derecha en todas las filas. Los nombres completos y los valores exactos siguen disponibles en títulos escapados. La paleta, la tipografía y los tokens de movimiento existentes no cambian.
 
-- `colorPrimary: accentHover` (`#0579bd` in OMC Dark, `#004a73` in OMC Light) — filled controls
-  use the deeper step; `colorInfo/colorLink: accent` (`#00a2fb` / `#005d8f`). This is why buttons
-  don't glow antd-blue while links stay recognizable.
-- Layout: `bodyBg` and `siderBg` are `canvas`, `headerBg` is `bg`, `headerHeight` 52.
-- Menu: transparent item fills, `itemHeight` 32, `itemBorderRadius` 8, `itemColor = fg2`,
-  `itemSelectedColor = fg`, `activeBarBorderWidth: 0`. The rail's hover and selected washes are
-  the stylesheet's (§5), because they are foreground over whatever the rail stands on.
-- Radii: `borderRadius` and `borderRadiusSM` 6, `borderRadiusOuter` 8, `borderRadiusLG` 12, so a
-  card, a table header and a dialog take the `lg` corner from Ant Design itself; Dropdown, Select and
-  Popover panels take 10 with 6px rows; Tooltip 8.
-- Modal & Drawer: `1px solid var(--border)`, `--shadow-overlay` from the stylesheet, the `lg`
-  corner; a desktop right-hand Drawer is inset 8px from the window like the content panel. Simple
-  single-task dialogs use a clean uninterrupted body ("Title → Field/Content →
-  Right-aligned Actions") without decorative header/footer hairline dividers;
-  only complex Drawers retain section dividers.
-- Table: `headerBg = surface` with no header split lines; the header type and the row rules are
-  the list surface in §5 (`.data-table`).
-- All shadow tokens set to `'none'`: elevation is the stylesheet's `--shadow-*` set (§4), which
-  follows the palette's mode without the theme being rebuilt. Motion tokens are §7's ladder
-  (`motionDurationFast` 0.12s, `Mid` 0.18s, `Slow` 0.24s) with the decelerating `motionEaseOut`.
-- Components pinned: Button 32/28px with `primaryColor = accentOn` and `Input` active ring
-  `accent22`, Select optionSelectedBg = hover at weight 500, Tag defaultBg = bg. The button label is pinned
-  because Ant Design defaults it to `colorTextLightSolid`, so a palette with a light accent fill
-  would otherwise draw white on it. `createThemeConfig` takes the *resolved* palette rather than an id,
-  so the antd tokens are a projection of the same object the stylesheet, the charts and the Monaco theme
-  read, and an operator's own palette reaches Ant Design through the same path a registered one does.
-- Button, secondary (default): a foreground wash, not an outline. `defaultBg`, `defaultHoverBg` and
-  `defaultActiveBg` are `--fg` at 6%, 10% and 13% over `transparent`, every `default*BorderColor` is
-  `transparent`, and every `default*Color` is `fg`: the fill deepening is the acknowledgement, and the
-  accent stays a link and a selection. A dashed button keeps a `--border` dashed edge on a
-  transparent fill (the stylesheet's `.ant-btn-variant-dashed`), because it draws the slot the next
-  item will fill. `scripts/test-theme-presets.ts` composites each state's wash over `--bg` the way the
-  browser paints `color-mix` and measures the label against it in every registered palette and an
-  accent sweep of operator palettes; a field's hover edge stays `muted`, because the accent is a
-  field's focus state.
-- Dashboard KPI cards use `@ant-design/charts` (`Area`) to render one trend per tile.
-  **The mark is an area, and that is a data-shape decision, not a style one.** The
-  backend zero-fills a fixed bucket grid (`fillDashboardBuckets`), so a quiet window
-  is mostly *zero* buckets — six hours resolves to 36 buckets of ten minutes, and a
-  real window can carry traffic in under a fifth of them. A zero here is a measured
-  value, not a missing one, and a bar mark draws each of those zeros as an invisible
-  gap between floating marks, which reads as "no data" — the one thing it does not
-  mean. An area carries the series down to its baseline, so an empty stretch renders
-  as the axis and stays distinguishable from an unmeasured period.
-  The mark is two paths on purpose: the fill is fill-only and the trend is a separate
-  stroke, because a stroked area closes its path along the baseline and would paint a
-  horizontal rule across the plot floor. `y.nice` is disabled and `domainMin` pinned to
-  zero for the same reason — a lifted domain would float an empty window above its axis.
-  The charting runtime is isolated in a separate `vendor-charts` chunk and loaded lazily
-  (`React.lazy` dynamic `import()`) so only the dashboard route pays for it, keeping the
-  initial login shell compact. The resolved palette is bridged into the chart
-  config (`sparkColor(resolved.palette, tone)`), the marks morph between two revisions on
-  §7's `roll` token with a reduced-motion escape (`chartMotion.ts`, §7 rule 5), and the hover
-  readout uses G2's shared tooltip interaction and `web/src/charts/chartTooltip.ts`,
-  the same escaped content renderer as Token Trend. G2 owns bucket hit-testing,
-  crosshairs and overlay positioning; `.omc-tip` shares palette styling across charts.
-  KPI card bodies stretch within each grid row and their captions absorb spare space,
-  keeping the plots bottom-aligned even when cost notes wrap. Model token trends retain
-  measured zero buckets as continuous baseline segments rather than missing observations.
-  **Each tile plots its own metric**, and the six marks must stay visually distinct:
-  Requests plots request counts, RPM those counts per minute, Tokens plots token
-  volume, TPM that volume per minute, Cache rate plots the cache reads behind the
-  rate, and Total cost plots priced spend per bucket. The cache-rate tile plots the
-  *numerator* rather than the ratio on purpose: a rate needs both its terms and the
-  series carries only cache reads, so plotting the ratio would invent a denominator
-  from total tokens and overstate the rate whenever output tokens were large.
-  Rates are per minute because the bucket width is not one minute at every range
-  (`dashboardBucketWidth` snaps it to a friendly step), so dividing by the bucket's
-  own minutes is what makes an RPM readout an RPM.
-  The `dashboard-charts` probe asserts the six tiles paint six *distinct* pixel
-  patterns; without that check a tile wired back to another tile's series passes
-  every per-tile assertion. `dashboard-chart-motion` is its sibling for the motion:
-  it drives a revision with motion allowed and again after switching the preference
-  in place, and asserts the marks paint intermediate frames in the first case and
-  none in the second.
-- **The tile numbers are one readout layer, and they roll per §7 rule 8.** Each value is
-  derived from the formatter that already owns that reading — `formatTokens` and its
-  `zh`/`full` styles, `formatCacheRate`, the compact token rate, the plain count — and an
-  `Intl`-backed one reads its number and unit word back out of that formatter's own parts
-  rather than rounding a second time. The animated digits are therefore the printed digits:
-  31,750 cannot arrive as `31.8K` and settle as `32K`. The unit word travels beside the
-  number, and a tile whose unit word changes prints the new reading in place instead of
-  rolling, because sliding 1.2 into 900 while `B` becomes `M` shows digits that never
-  described the window. The exact count stays on the tile's `title`, which the readout's
-  accessible reading matches.
+- `colorPrimary: accentHover` (`#0579bd` en OMC Dark, `#004a73` en OMC Light) — los controles rellenos
+  usan el paso más profundo; `colorInfo/colorLink: accent` (`#00a2fb` / `#005d8f`). Por eso los botones
+  no brillan con el azul de antd mientras los enlaces siguen siendo reconocibles.
+- Layout: `bodyBg` y `siderBg` son `canvas`, `headerBg` es `bg`, `headerHeight` 52.
+- Menu: rellenos de elemento transparentes, `itemHeight` 32, `itemBorderRadius` 8, `itemColor = fg2`,
+  `itemSelectedColor = fg`, `activeBarBorderWidth: 0`. Los velos de hover y de selección del carril son
+  los de la hoja de estilos (§5), porque son primer plano sobre aquello en lo que se asiente el carril.
+- Radios: `borderRadius` y `borderRadiusSM` 6, `borderRadiusOuter` 8, `borderRadiusLG` 12, de modo que una
+  tarjeta, una cabecera de tabla y un diálogo toman la esquina `lg` del propio Ant Design; los paneles de Dropdown, Select y
+  Popover toman 10 con filas de 6px; Tooltip 8.
+- Modal y Drawer: `1px solid var(--border)`, `--shadow-overlay` de la hoja de estilos, la esquina
+  `lg`; un Drawer de escritorio a la derecha se inserta 8px desde la ventana como el panel de contenido. Los diálogos
+  simples de una sola tarea usan un cuerpo limpio e ininterrumpido («Título → Campo/Contenido →
+  Acciones alineadas a la derecha») sin líneas divisorias decorativas de cabecera/pie;
+  solo los Drawers complejos conservan divisores de sección.
+- Table: `headerBg = surface` sin líneas divisorias de cabecera; el tipo de la cabecera y las reglas de fila son
+  la superficie de lista de §5 (`.data-table`).
+- Todos los tokens de sombra se fijan en `'none'`: la elevación es el conjunto `--shadow-*` de la hoja de estilos (§4), que
+  sigue el modo de la paleta sin reconstruir el tema. Los tokens de movimiento son la escala de §7
+  (`motionDurationFast` 0.12s, `Mid` 0.18s, `Slow` 0.24s) con el `motionEaseOut` de desaceleración.
+- Componentes fijados: Button 32/28px con `primaryColor = accentOn` e `Input` con anillo activo
+  `accent22`, Select optionSelectedBg = hover con peso 500, Tag defaultBg = bg. La etiqueta del botón se fija
+  porque Ant Design la predetermina a `colorTextLightSolid`, de modo que una paleta con relleno de acento claro
+  dibujaría de otro modo blanco sobre él. `createThemeConfig` toma la paleta *resuelta* en lugar de un id,
+  de modo que los tokens de antd son una proyección del mismo objeto que leen la hoja de estilos, los gráficos y el tema de Monaco,
+  y la paleta propia de un operador llega a Ant Design por el mismo camino que una registrada.
+- Button, secundario (predeterminado): un velo de primer plano, no un contorno. `defaultBg`, `defaultHoverBg` y
+  `defaultActiveBg` son `--fg` al 6%, 10% y 13% sobre `transparent`, todo `default*BorderColor` es
+  `transparent`, y todo `default*Color` es `fg`: la profundización del relleno es el acuse de recibo, y el
+  acento sigue siendo un enlace y una selección. Un botón discontinuo conserva un borde discontinuo `--border` sobre un
+  relleno transparente (el `.ant-btn-variant-dashed` de la hoja de estilos), porque dibuja la ranura que llenará el siguiente
+  elemento. `scripts/test-theme-presets.ts` compone el velo de cada estado sobre `--bg` como lo
+  pinta el navegador con `color-mix` y mide la etiqueta contra él en cada paleta registrada y en un
+  barrido de acentos de paletas de operador; el borde de hover de un campo permanece `muted`, porque el acento es el
+  estado de foco del campo.
+- Las tarjetas KPI del panel usan `@ant-design/charts` (`Area`) para renderizar una tendencia por mosaico.
+  **La marca es un área, y es una decisión sobre la forma de los datos, no de estilo.** El
+  backend rellena con ceros una cuadrícula fija de cubos (`fillDashboardBuckets`), de modo que una ventana tranquila
+  son sobre todo cubos *cero* — seis horas se resuelven en 36 cubos de diez minutos, y una
+  ventana real puede tener tráfico en menos de una quinta parte de ellos. Un cero aquí es un valor medido,
+  no uno ausente, y una marca de barra dibuja cada uno de esos ceros como un hueco invisible entre
+  marcas flotantes, lo que se lee como «sin datos» — lo único que no
+  significa. Un área lleva la serie hasta su línea base, de modo que un tramo vacío se renderiza
+  como el eje y sigue siendo distinguible de un período no medido.
+  La marca son dos trazados a propósito: el relleno es solo relleno y la tendencia es un trazo aparte,
+  porque un área con trazo cierra su trazado a lo largo de la línea base y pintaría una
+  regla horizontal por el suelo del gráfico. `y.nice` está desactivado y `domainMin` fijado a
+  cero por la misma razón — un dominio elevado haría flotar una ventana vacía sobre su eje.
+  El runtime de gráficos está aislado en un chunk `vendor-charts` aparte y se carga de forma diferida
+  (`React.lazy` con `import()` dinámico) para que solo la ruta del panel lo pague, manteniendo
+  compacta la carcasa inicial de inicio de sesión. La paleta resuelta se transfiere a la configuración
+  del gráfico (`sparkColor(resolved.palette, tone)`), las marcas se transforman entre dos revisiones con el token
+  `roll` de §7 con una salida para movimiento reducido (`chartMotion.ts`, regla 5 de §7), y la lectura al pasar el puntero
+  usa la interacción de tooltip compartida de G2 y `web/src/charts/chartTooltip.ts`,
+  el mismo renderizador de contenido escapado que Token Trend. G2 se encarga de la detección de impactos por cubo,
+  las líneas de cruz y el posicionamiento de la superposición; `.omc-tip` comparte el estilo de paleta entre gráficos.
+  Los cuerpos de las tarjetas KPI se estiran dentro de cada fila de la cuadrícula y sus leyendas absorben el espacio sobrante,
+  manteniendo los gráficos alineados abajo incluso cuando las notas de costo se ajustan en varias líneas. Las tendencias de tokens por modelo conservan
+  los cubos cero medidos como segmentos continuos de línea base en lugar de observaciones ausentes.
+  **Cada mosaico representa su propia métrica**, y las seis marcas deben seguir siendo visualmente distintas:
+  Requests representa recuentos de solicitudes, RPM esos recuentos por minuto, Tokens representa el volumen
+  de tokens, TPM ese volumen por minuto, Cache rate representa las lecturas de caché detrás de la
+  tasa, y Total cost representa el gasto tarifado por cubo. El mosaico de tasa de caché representa el
+  *numerador* y no la razón a propósito: una tasa necesita ambos términos y la
+  serie lleva solo lecturas de caché, de modo que representar la razón inventaría un denominador
+  a partir del total de tokens y sobreestimaría la tasa siempre que los tokens de salida fueran muchos.
+  Las tasas son por minuto porque el ancho del cubo no es de un minuto en todo rango
+  (`dashboardBucketWidth` lo ajusta a un paso cómodo), de modo que dividir por los minutos propios
+  del cubo es lo que hace que una lectura de RPM sea un RPM.
+  La sonda `dashboard-charts` comprueba que los seis mosaicos pinten seis patrones de píxeles *distintos*;
+  sin esa comprobación, un mosaico recableado a la serie de otro pasa
+  todas las aserciones por mosaico. `dashboard-chart-motion` es su hermana para el movimiento:
+  conduce una revisión con movimiento permitido y otra tras cambiar la preferencia
+  en el lugar, y comprueba que las marcas pintan fotogramas intermedios en el primer caso y
+  ninguno en el segundo.
+- **Los números de los mosaicos son una sola capa de lectura, y ruedan según la regla 8 de §7.** Cada valor se
+  deriva del formateador que ya posee esa lectura — `formatTokens` y sus estilos
+  `zh`/`full`, `formatCacheRate`, la tasa compacta de tokens, el recuento simple — y uno respaldado por
+  `Intl` lee su número y su palabra de unidad de las propias partes de ese formateador
+  en lugar de redondear una segunda vez. Los dígitos animados son por tanto los dígitos impresos:
+  31,750 no puede llegar como `31.8K` y asentarse como `32K`. La palabra de unidad viaja junto al
+  número, y un mosaico cuya palabra de unidad cambia imprime la nueva lectura en su lugar en vez de
+  rodar, porque deslizar 1,2 hacia 900 mientras `B` pasa a `M` muestra dígitos que nunca
+  describieron la ventana. El recuento exacto permanece en el `title` del mosaico, con el que coincide la lectura
+  accesible de la lectura.
 
-## 7. Motion
+## 7. Movimiento
 
-Drawer wrappers transition only their transform. Width and maximum width adopt the current
-viewport immediately, including during opening motion; resizing never interpolates a sheet
-past the viewport. Under reduced motion the wrapper transition is disabled entirely.
+Los contenedores de Drawer hacen transición solo de su transform. El ancho y el ancho máximo adoptan el viewport
+actual de inmediato, incluso durante el movimiento de apertura; redimensionar nunca interpola una hoja
+más allá del viewport. Con movimiento reducido, la transición del contenedor se desactiva por completo.
 
 ```text
 hover / state colour   ≤ fast — the acknowledgement must land with the pointer (rule 7)
@@ -2080,1097 +2077,1096 @@ ease    cubic-bezier(0.2, 0, 0, 1)      state changes and leaving panels (--ease
 ease-out cubic-bezier(0.16, 1, 0.3, 1)  entrances: most of the move lands in the first third (--ease-out)
 ```
 
-**The table is the budget, and the stylesheet is held to it.** `web/src/index.css` mirrors `fast`,
-`float`, `base` and `slow` as `--motion-fast`, `--motion-float`, `--motion-base` and `--motion-slow`
-for every CSS transition and animation the console owns;
-`scripts/test-theme-presets.ts` parses both, asserts `fast`, `base` and `slow` equal the Ant Design
-tokens above and pins the ladder itself, so the two spellings of one budget cannot drift apart again. `roll` and `route` are the only tokens with an
-exception attached, both scoped to the dashboard: `roll` by rules 5 and 8, `route`, `land`, `glow`, `enter`,
-`exit` and `presence` by rule 9. The rule-9 tokens are JavaScript-only (`MOTION_ROUTE`,
-`MOTION_ROUTE_LAND`, `MOTION_ROUTE_GLOW`, `MOTION_ROUTE_ENTER`, `MOTION_ROUTE_EXIT` and
-`MOTION_ROUTE_PRESENCE` in `themeConfig.ts`) and drive Web Animations rather than a stylesheet; the
-gateway's 600ms settle is the routing panel's own `--motion-route-cool`. `scroll` is a JavaScript-only token
-(`MOTION_SCROLL` in `themeConfig.ts`) for the input glide below; no stylesheet animates a scroll.
-The separate `--motion-live-text` token (`MOTION_LIVE_TEXT`) is a 900ms linear loop for short
-work-in-flight labels, not a state-transition budget. `themePaletteCssVariables` and the root
-stylesheet project the same period for every palette, pinned by the theme logic suite.
+**La tabla es el presupuesto, y la hoja de estilos se ciñe a ella.** `web/src/index.css` replica `fast`,
+`float`, `base` y `slow` como `--motion-fast`, `--motion-float`, `--motion-base` y `--motion-slow`
+para toda transición y animación CSS que posee la consola;
+`scripts/test-theme-presets.ts` analiza ambos, comprueba que `fast`, `base` y `slow` igualan los tokens de Ant Design
+anteriores y fija la propia escala, de modo que las dos grafías de un mismo presupuesto no puedan volver a divergir. `roll` y `route` son los únicos tokens con una
+excepción asociada, ambas acotadas al panel: `roll` por las reglas 5 y 8, `route`, `land`, `glow`, `enter`,
+`exit` y `presence` por la regla 9. Los tokens de la regla 9 son solo de JavaScript (`MOTION_ROUTE`,
+`MOTION_ROUTE_LAND`, `MOTION_ROUTE_GLOW`, `MOTION_ROUTE_ENTER`, `MOTION_ROUTE_EXIT` y
+`MOTION_ROUTE_PRESENCE` en `themeConfig.ts`) y gobiernan Web Animations en lugar de una hoja de estilos; el
+asentamiento de 600ms del gateway es el `--motion-route-cool` propio del panel de enrutamiento. `scroll` es un token solo de JavaScript
+(`MOTION_SCROLL` en `themeConfig.ts`) para el deslizamiento de entrada descrito más abajo; ninguna hoja de estilos anima un desplazamiento.
+El token aparte `--motion-live-text` (`MOTION_LIVE_TEXT`) es un bucle lineal de 900ms para etiquetas breves de
+trabajo en curso, no un presupuesto de transición de estado. `themePaletteCssVariables` y la hoja de estilos
+raíz proyectan el mismo período para toda paleta, fijado por la suite de lógica del tema.
 
-### The budget is enforced, not documented
+### El presupuesto se aplica, no solo se documenta
 
-`pnpm check:motion` reads every stylesheet and every inline `transition:` in a component, and fails
-on four things: a duration that is not a `--motion-*` token (or a `var()` fallback, which is never
-applied and is how a wrong value hid for months), a transition on a layout property or on `all`, a
-keyframe animation with no `prefers-reduced-motion` counterpart, and a hover transitioning colour
-outside `fast`. The exceptions are listed in the checker's `EXCEPTIONS` table with the reason each is
-one, and an exception that stops matching a rule is itself a failure — the list cannot rot into
-things that were once true. Three kinds exist. A `layout` exception waives rule 1 for a disclosure,
-where a reflow is the point and the alternative is an accordion that snaps open. A `duration`
-exception waives the token requirement for a loop whose period is how long one cycle takes rather
-than a transition between two states: the heatmap's re-read bar, the icon spinner, the generation
-loader, the streaming caret, the loading bar's waiting activity and the first-load placeholders'
-breath. §7 handles those by freezing or removing them under reduced motion rather than by shortening them.
-A `reduced` exception waives the reduced-motion counterpart for one selector whose motion is the
-reading rather than decoration, or whose end the library waits for: the live routing map's lane flow
-(ADR 0102 records why the whole trip plays under the preference), and a dialog's entrance and exit,
-which rc-dialog finishes on `animationend` - it moves focus in when the entrance ends and unmounts the
-wrapper when the exit ends - so they cross-fade over `fast` instead of being removed.
+`pnpm check:motion` lee cada hoja de estilos y cada `transition:` en línea de un componente, y falla
+por cuatro cosas: una duración que no es un token `--motion-*` (o un respaldo de `var()`, que nunca se
+aplica y es como se ocultó un valor erróneo durante meses), una transición sobre una propiedad de layout o sobre `all`, una
+animación de keyframes sin su contraparte `prefers-reduced-motion`, y un hover que transiciona el color
+fuera de `fast`. Las excepciones se listan en la tabla `EXCEPTIONS` del verificador con el motivo por el que cada una lo
+es, y una excepción que deja de coincidir con una regla es en sí un fallo — la lista no puede pudrirse hasta convertirse en
+cosas que alguna vez fueron ciertas. Existen tres tipos. Una excepción `layout` exime la regla 1 para un desplegable,
+donde el reflujo es el objetivo y la alternativa es un acordeón que se abre de golpe. Una excepción `duration`
+exime del requisito de token a un bucle cuyo período es lo que dura un ciclo en lugar de
+una transición entre dos estados: la barra de relectura del mapa de calor, el spinner de icono, el indicador
+de generación, el cursor de emisión, la actividad de espera de la barra de carga y la
+respiración de los marcadores de primera carga. §7 los trata congelándolos o quitándolos con movimiento reducido en lugar de acortarlos.
+Una excepción `reduced` exime de la contraparte de movimiento reducido a un selector cuyo movimiento es
+la lectura y no decoración, o cuyo final espera la biblioteca: el flujo de carriles del mapa de enrutamiento en vivo
+(el ADR 0102 registra por qué todo el trayecto se reproduce bajo la preferencia), y la entrada y salida de un diálogo,
+que rc-dialog concluye en `animationend` - mueve el foco hacia dentro cuando termina la entrada y desmonta el
+contenedor cuando termina la salida -, de modo que hacen un fundido cruzado durante `fast` en lugar de quitarse.
 `scripts/check-motion.test.mjs`
-exercises every rule in both directions on a fixture tree and asserts the repository itself is clean.
-Enforcing the reduced-motion rule immediately paid for itself: antd animates its floating panels in
-with a zoom under reduced motion as well, and the panel has to be pinned to its settled state rather
-than merely un-animated, because rc-motion holds the enter state inline until the animation ends.
-That surface is asserted in the browser now, not only in the declaration.
+ejercita cada regla en ambos sentidos sobre un árbol de prueba y comprueba que el propio repositorio está limpio.
+Aplicar la regla de movimiento reducido se pagó de inmediato: antd anima sus paneles flotantes
+con un zoom también bajo movimiento reducido, y el panel debe fijarse a su estado asentado en lugar de
+simplemente des-animarse, porque rc-motion mantiene el estado de entrada en línea hasta que termina la animación.
+Esa superficie se comprueba ahora en el navegador, no solo en la declaración.
 
-**Entrances fade and settle; nothing flies.** Ant Design zooms a panel in from 80% (a dialog from
-20%, out of the pointer) and stretches a menu down from 80% of its height; the stylesheet replaces
-those keyframes. A summoned panel fades in over `float` while settling the last 4% toward its
-origin, a menu or select panel also drops its last 4px toward its control, a dialog rises 8px into
-place over `slow`, and a leaving panel fades over `fast` - all on `--ease-out`, opacity and
-transform only. No bounce and no overshoot: the reader sees the result arrive, not travel. Under
-reduced motion a panel is pinned to its settled state, and a dialog keeps only an opacity fade:
-removing its animation would leave focus behind it on open and a transparent wrapper over the page
-on close.
+**Las entradas se desvanecen y se asientan; nada vuela.** Ant Design hace zoom de un panel desde el 80% (un diálogo desde
+el 20%, fuera del puntero) y estira un menú hacia abajo desde el 80% de su altura; la hoja de estilos sustituye
+esos keyframes. Un panel invocado se desvanece durante `float` mientras asienta el último 4% hacia su
+origen, un panel de menú o select baja además sus últimos 4px hacia su control, un diálogo sube 8px hasta su
+lugar durante `slow`, y un panel que sale se desvanece durante `fast` - todo con `--ease-out`, solo opacity y
+transform. Sin rebote ni sobrepaso: el lector ve llegar el resultado, no viajar. Con
+movimiento reducido un panel se fija a su estado asentado, y un diálogo conserva solo un fundido de opacidad:
+quitar su animación dejaría el foco tras él al abrirse y un contenedor transparente sobre la página
+al cerrarse.
 
-**Feedback that follows the hand.** A button gives a little under a press (`scale(0.97)`) and
-returns on release, so a click is felt before what it starts has answered; a field never does,
-which is why the time window, drawn as a field, is exempt. A side sheet decelerates into place on
-`--ease-out` and accelerates away, instead of antd's symmetric `ease`. A palette change - the
-header's mode button, a mode or palette choice in Shell-PAMC Settings - cross-fades the whole page over
-`slow` through the View Transitions API, one composited layer rather than every element easing its
-own colours; for the two frames the repaint takes, `data-theme-switching` on the root holds every
-element's own transition off, so nothing smears behind the fade. Under reduced motion, or without the
-API, the change lands at once. A virtual list's scrollbar (the request list, a select's options)
-takes the same quiet wash as the page's own, through `--rc-virtual-list-scrollbar-bg`. antd's click
-wave and its space between two Chinese characters of a button label are both off: no platform
-control draws either.
+**Retroalimentación que sigue a la mano.** Un botón cede un poco bajo una pulsación (`scale(0.97)`) y
+vuelve al soltar, de modo que un clic se siente antes de que lo que inicia haya respondido; un campo nunca lo hace,
+por lo que la ventana de tiempo, dibujada como un campo, está exenta. Una hoja lateral desacelera hasta su lugar con
+`--ease-out` y acelera al irse, en lugar del `ease` simétrico de antd. Un cambio de paleta - el
+botón de modo de la cabecera, una elección de modo o de paleta en los ajustes de Shell-PAMC - hace un fundido cruzado de toda la página durante
+`slow` mediante la View Transitions API, una sola capa compuesta en lugar de que cada elemento suavice
+sus propios colores; durante los dos fotogramas que tarda el repintado, `data-theme-switching` en la raíz mantiene apagada la
+transición propia de cada elemento, de modo que nada se difumina tras el fundido. Con movimiento reducido, o sin la
+API, el cambio se aplica de golpe. La barra de desplazamiento de una lista virtual (la lista de solicitudes, las opciones de un select)
+toma el mismo velo discreto que la de la propia página, mediante `--rc-virtual-list-scrollbar-bg`. La onda de clic de antd
+y su espacio entre dos caracteres chinos de la etiqueta de un botón están ambos desactivados: ningún control de la
+plataforma dibuja ninguno.
 
-### Motion is restraint, not decoration
+### El movimiento es contención, no decoración
 
-The interface is quiet. Motion exists only to make
-state changes feel continuous and **hand-following** (responsive direct manipulation) — never to impress.
-When fluidity and flourish compete, keep fluidity; when flourish and
-performance compete, drop the flourish.
+La interfaz es silenciosa. El movimiento existe solo para hacer que los cambios de estado se sientan continuos y
+**que sigan a la mano** (manipulación directa receptiva) — nunca para impresionar.
+Cuando compiten fluidez y floritura, se conserva la fluidez; cuando compiten floritura y
+rendimiento, se descarta la floritura.
 
-Hard rules:
+Reglas estrictas:
 
-1. **Animate compositor-only properties** — `opacity` and `transform`. Never
-   `width`, `height`, `top`, `margin` or anything that triggers layout or
-   repaint of a large subtree.
-2. **Keep the animated area tiny.** A 2px progress bar is acceptable; dimming or
-   fading a whole grid is not — it forces the browser to composite the entire
-   page on every refresh. The one exception is a first-load placeholder frame,
-   which exists only while nothing has ever loaded and so never animates over
-   content (ADR 0052).
-3. **No gradient shimmer.** antd's `Skeleton active` and similar sweeping
-   gradients cost frames and clash with the flat aesthetic. Placeholders are the
-   console's own flat blocks (`Placeholder.tsx`), and they *breathe*: an opacity
-   cycle, staggered one `base` per row, frozen under reduced motion (ADR 0052).
-   The one swept highlight is on a short text label for work still running in the
-   Agent: a 3.2em `--fg` glint crosses the label's own ink on the 900ms linear
-   `--motion-live-text` loop, both painted by one background clipped to the glyphs, so it
-   repaints one line and each glyph is drawn once at full weight (ADR 0080). Reduced motion and unsupported text masking leave plain readable text.
-4. **Suppress spinner flash.** A request that resolves quickly must never paint a
-   loading indicator at all (the loading bar waits 200ms before painting).
-   Background auto-refresh must not paint a loading state at all; a reading that
-   changed may still say so, which is rules 8 and 5 and nothing else.
-5. **A mark sweeps between revisions instead of hard-cutting.** An AntV mark morphs to its
-   new geometry over `roll`, and fades rather than grows when a series enters or leaves.
-   A plot that hard-cuts every few seconds reads as a redraw rather than as new data - and
-   beside a tile whose number now rolls (rule 8), a snapping line was the one element still
-   saying "this replaced itself". The marks are the dashboard's own, so this covers both the
-   six KPI sparklines and the model panels, which re-read on a query of their own.
-   Two limits keep this a morph rather than a draw-in: it exists **only because the
-   library reuses the chart instance** (the wrapper hands the new spec to the same runtime,
-   so an update interpolates, while a remount is a draw-in and stays forbidden), and a
-   canvas cannot be
-   reached by CSS, so the reduced-motion switch is app-owned
-   (`usePrefersReducedMotion` in `web/src/hooks/`) and must stay wired: the library has no
-   handling of its own and its default update animation is a 900ms spring, which would
-   animate hardest for the reader who asked for none. The cost is stated rather than hidden:
-   a canvas mark is redrawn frame by frame instead of being composited, so rule 1 is *not*
-   satisfied by these eight marks, and 240ms on surfaces this small is the whole of what the
-   exception buys. See ADR 0008.
-6. **Acknowledge actions immediately.** Button `loading` and optimistic
-   affordances appear on the interaction itself, not after a transition. The
-   progress bar follows rule 4 instead: it waits 200ms to suppress fast-request
-   flashes.
-7. **A hover lands within the fast token.** A hover is the interface acknowledging the
-   pointer, so it must land as the pointer arrives — a transition longer than
-   `fast` (120ms) is a drag, not an acknowledgement, and the rule was written after antd's
-   `motionDurationSlow` default of 0.3s on menu-item hover, submenu expand and the sider
-   collapse. The rail's own entries transition on `fast` in the stylesheet for the same reason,
-   whatever Ant Design's menu would spend. The bound is on the *duration*, not on the property
-   (ADR 0009, ADR 0103): a short softening is the acknowledgement, and anything longer is the drag. Two narrower rules stand inside it: a
-   hover may never animate a layout property, and the one element that scales under the
-   pointer (the heatmap mark) may not fade its colour, because the fade would smear behind
-   the scale it is meant to accompany.
-8. **The dashboard's numbers may travel.** The six dashboard KPI numbers roll to
-   their new value over `roll` (`MOTION_ROLL` in `themeConfig.ts`), for the reason that names
-   the whole exception: those tiles change under a poll the reader did not ask for, a number
-   that swaps in place is indistinguishable from a number that was already there, and the
-   sweep is what says "this reading moved" without the page moving. Rule 5 gives the marks
-   drawn from those numbers the same token, and rule 9 lets a stored request travel the routing
-   map; nothing else in the console moves on a poll. For
-   the digits the exception is cheap and scoped -
-   glyphs transforming inside a 34px-tall box, so rules 1 and 2 hold as written, and a change
-   of *unit* prints in place, because rolling 1.2 into 900 under a swapping unit word would
-   show digits that never described the window. `prefers-reduced-motion` removes it and the
-   value still updates. See ADR 0007 for the token and ADR 0008 for what rule 5 costs.
-9. **A stored request travels the routing map, and comes back** - Magpie's motion. When the
-   dashboard's live routing panel reads a request it has not shown, a glowing 9px dot in the model's
-   colour emerges from the model's port, travels its lane into the gateway and the credential's lane
-   out of it, moved on animation frames along each lane as it is drawn at that moment and eased in and
-   out over one `route` beat per hop (`MOTION_ROUTE`). The light passes through nodes rather than
-   resting on them: the dot fades in over the first fifth of each hop and sinks into the next port over
-   the last fifth, and the node it sinks into lights - its edge glows and its port sends out a ring -
-   rising quickly and settling back over the `glow` beat (`MOTION_ROUTE_GLOW`); a lane brightens behind
-   the dot that crossed it and settles the same way. A node lit again while it still glows rises from
-   the light it has, so a second request never blinks it dark first. The request waits in the
-   credential for a beat scaled from the attempt's real latency (120-480ms); then a wash in the
-   answer's tone spreads across the credential from its port, and the dot - still in the model's
-   colour - flies back through the gateway home to the model, or, on a refusal, back to the gateway and
-   on to the next credential CPA tried. A lane and the flow on it never take `--success`, `--warn` or
-   `--danger`: the verdict is a surface on the node, not a property of the connection (see §2's routing
-   lane palette). While a dot is on a lane or waits at its end, the lane's dashes flow in the direction
-   it travels, and while any dot is on the map the gateway's glow and rails brighten.
-   Rows arrive drifting a few pixels in from their own edge of the map as they fade in
-   (`MOTION_ROUTE_ENTER`), the rows of the first paint one after another; they leave the same way,
-   quicker and accelerating (`MOTION_ROUTE_EXIT`), and only then do the rows around them close the gap,
-   sliding by FLIP measured against the whole map so a column re-centring slides too
-   (`MOTION_ROUTE_PRESENCE`). Nothing scales or bounces. While rows move, the lanes are redrawn each
-   frame so none detaches from its row. This is the one motion that runs on a live signal rather than
-   on the reader's action, and it is allowed for the reason rule 8 is: a count that changes in place
-   does not say *which way* the request went, which is the reading the panel exists for. It is scoped
-   hard: opacity and transforms, except the lane flow, which animates the dash offset of the few lanes
-   in use and is the map's one loop; no shadow animates - every glow is an overlay whose opacity
-   changes; at most eight requests replay from one read, 70ms apart, and at most sixteen are on the map
-   at once, a burst past it being skipped rather than queued; the first read replays nothing, because
-   opening the dashboard is not the moment those requests ran, and neither does a request that
-   finished while the page was hidden - the live stream is closed then, so the read on return carries
-   them, and they are counted on the rows instead. Hiding the page ends every trip on the map: a
-   hidden page runs no animation frames, so a trip left running would complete every missed hop in a
-   frame each on return and replay the time away at speed. The trip is the one motion the console starts
-   on its own that plays in full under `prefers-reduced-motion`: a lane's flow, a dot's travel and a
-   row's entrance are the reading itself, and Windows' "Animation effects" switch - which many readers
-   turn off for speed rather than for vestibular reasons - is reported by Chromium as that query. The
-   map therefore keeps its animation for every reader; ADR 0102 records the scoped exception and the
-   trade-off. Counts never animate.
+1. **Animar propiedades solo de compositor** — `opacity` y `transform`. Nunca
+   `width`, `height`, `top`, `margin` ni nada que dispare layout o
+   repintado de un subárbol grande.
+2. **Mantener diminuta el área animada.** Una barra de progreso de 2px es aceptable; atenuar o
+   desvanecer toda una cuadrícula no lo es — obliga al navegador a componer la página
+   entera en cada refresco. La única excepción es un marco marcador de primera carga,
+   que existe solo mientras nada se ha cargado nunca y por eso nunca se anima sobre
+   contenido (ADR 0052).
+3. **Sin destello degradado.** El `Skeleton active` de antd y barridos degradados similares
+   cuestan fotogramas y chocan con la estética plana. Los marcadores son los
+   bloques planos propios de la consola (`Placeholder.tsx`), y *respiran*: un ciclo de
+   opacidad, escalonado un `base` por fila, congelado con movimiento reducido (ADR 0052).
+   El único destello barrido está en una etiqueta de texto breve para trabajo aún en curso en el
+   Agent: un brillo `--fg` de 3,2em cruza la propia tinta de la etiqueta en el bucle lineal de 900ms
+   `--motion-live-text`, ambos pintados con un solo fondo recortado a los glifos, de modo que
+   repinta una línea y cada glifo se dibuja una vez con todo su peso (ADR 0080). El movimiento reducido y un enmascarado de texto no compatible dejan texto simple legible.
+4. **Suprimir el destello del spinner.** Una solicitud que se resuelve rápido nunca debe pintar
+   un indicador de carga en absoluto (la barra de carga espera 200ms antes de pintar).
+   El refresco automático en segundo plano no debe pintar un estado de carga en absoluto; una lectura que
+   cambió aún puede decirlo, que son las reglas 8 y 5 y nada más.
+5. **Una marca se desliza entre revisiones en lugar de cortarse de golpe.** Una marca de AntV se transforma a su
+   nueva geometría durante `roll`, y se desvanece en lugar de crecer cuando una serie entra o sale.
+   Un gráfico que se corta de golpe cada pocos segundos se lee como un redibujado y no como datos nuevos - y
+   junto a un mosaico cuyo número ahora rueda (regla 8), una línea que saltaba era el único elemento que aún
+   decía «esto se sustituyó a sí mismo». Las marcas son las propias del panel, de modo que esto cubre tanto los
+   seis sparklines de KPI como los paneles de modelos, que releen con una consulta propia.
+   Dos límites hacen que esto sea una transformación y no un trazado de entrada: existe **solo porque la
+   biblioteca reutiliza la instancia del gráfico** (el wrapper entrega la nueva especificación al mismo runtime,
+   de modo que una actualización interpola, mientras que un remontaje es un trazado de entrada y sigue prohibido), y un
+   canvas no es
+   alcanzable por CSS, por lo que el interruptor de movimiento reducido es propio de la app
+   (`usePrefersReducedMotion` en `web/src/hooks/`) y debe seguir cableado: la biblioteca no tiene
+   manejo propio y su animación de actualización por defecto es un resorte de 900ms, que
+   animaría con más fuerza justo para el lector que no pidió ninguna. El costo se enuncia en lugar de ocultarse:
+   una marca de canvas se redibuja fotograma a fotograma en lugar de componerse, de modo que la regla 1 *no* se
+   cumple con estas ocho marcas, y 240ms en superficies tan pequeñas es todo lo que
+   compra la excepción. Véase el ADR 0008.
+6. **Acusar recibo de las acciones de inmediato.** El `loading` de un botón y las
+   affordances optimistas aparecen en la propia interacción, no tras una transición. La
+   barra de progreso sigue en cambio la regla 4: espera 200ms para suprimir los
+   destellos de solicitudes rápidas.
+7. **Un hover aterriza dentro del token fast.** Un hover es la interfaz acusando recibo del
+   puntero, por lo que debe aterrizar cuando llega el puntero — una transición más larga que
+   `fast` (120ms) es un arrastre, no un acuse de recibo, y la regla se escribió tras el valor predeterminado de antd
+   `motionDurationSlow` de 0.3s en el hover de elementos de menú, la expansión de submenús y el
+   colapso del sider. Las entradas propias del carril hacen transición en `fast` en la hoja de estilos por la misma razón,
+   sea cual sea lo que gastaría el menú de Ant Design. El límite está en la *duración*, no en la propiedad
+   (ADR 0009, ADR 0103): un breve suavizado es el acuse de recibo, y cualquier cosa más larga es el arrastre. Dos reglas más estrechas valen dentro de ella: un
+   hover nunca puede animar una propiedad de layout, y el único elemento que escala bajo el
+   puntero (la marca del mapa de calor) no puede desvanecer su color, porque el desvanecimiento se difuminaría tras
+   la escala a la que debe acompañar.
+8. **Los números del panel pueden viajar.** Los seis números KPI del panel ruedan hasta
+   su nuevo valor durante `roll` (`MOTION_ROLL` en `themeConfig.ts`), por la razón que da nombre
+   a toda la excepción: esos mosaicos cambian por un sondeo que el lector no pidió, un número
+   que se intercambia en el lugar es indistinguible de uno que ya estaba allí, y el
+   barrido es lo que dice «esta lectura se movió» sin que la página se mueva. La regla 5 da a las marcas
+   dibujadas a partir de esos números el mismo token, y la regla 9 deja que una solicitud almacenada viaje por el mapa
+   de enrutamiento; nada más en la consola se mueve con un sondeo. Para
+   los dígitos la excepción es barata y acotada -
+   glifos que se transforman dentro de una caja de 34px de alto, de modo que las reglas 1 y 2 se cumplen tal como están escritas, y un cambio
+   de *unidad* se imprime en el lugar, porque rodar 1,2 hacia 900 bajo una palabra de unidad que cambia
+   mostraría dígitos que nunca describieron la ventana. `prefers-reduced-motion` lo elimina y el
+   valor sigue actualizándose. Véase el ADR 0007 para el token y el ADR 0008 para lo que cuesta la regla 5.
+9. **Una solicitud almacenada viaja por el mapa de enrutamiento, y regresa** - el movimiento de Magpie. Cuando el
+   panel de enrutamiento en vivo del panel lee una solicitud que no ha mostrado, un punto brillante de 9px en el
+   color del modelo emerge del puerto del modelo, recorre su carril hacia el gateway y el carril de la credencial
+   que sale de él, movido en fotogramas de animación a lo largo de cada carril tal como se dibuja en ese momento y suavizado a la entrada y a la salida
+   durante un pulso `route` por salto (`MOTION_ROUTE`). La luz atraviesa los nodos en lugar de
+   reposar en ellos: el punto aparece en el primer quinto de cada salto y se hunde en el siguiente puerto durante
+   el último quinto, y el nodo en el que se hunde se ilumina - su borde brilla y su puerto emite un anillo -,
+   subiendo rápido y volviendo a asentarse durante el pulso `glow` (`MOTION_ROUTE_GLOW`); un carril se aviva tras
+   el punto que lo cruzó y se asienta del mismo modo. Un nodo que se ilumina de nuevo mientras aún brilla sube desde
+   la luz que tiene, de modo que una segunda solicitud nunca lo apaga primero. La solicitud espera en la
+   credencial un pulso escalado a partir de la latencia real del intento (120-480ms); luego un velo en el
+   tono de la respuesta se extiende por la credencial desde su puerto, y el punto - aún en el color
+   del modelo - vuela de vuelta por el gateway hasta el modelo, o, en un rechazo, de vuelta al gateway y
+   a la siguiente credencial que CPA probó. Un carril y el flujo sobre él nunca toman `--success`, `--warn` ni
+   `--danger`: el veredicto es una superficie del nodo, no una propiedad de la conexión (véase la paleta de carriles de enrutamiento
+   de §2). Mientras un punto está en un carril o espera en su extremo, las rayas del carril fluyen en la dirección
+   en que viaja, y mientras haya cualquier punto en el mapa el brillo y los rieles del gateway se avivan.
+   Las filas llegan flotando unos píxeles desde su propio borde del mapa mientras se desvanecen hacia dentro
+   (`MOTION_ROUTE_ENTER`), las filas de la primera pintura una tras otra; se van del mismo modo,
+   más rápido y acelerando (`MOTION_ROUTE_EXIT`), y solo entonces las filas de alrededor cierran el hueco,
+   deslizándose por FLIP medido contra todo el mapa, de modo que una columna que se recentra también se desliza
+   (`MOTION_ROUTE_PRESENCE`). Nada escala ni rebota. Mientras las filas se mueven, los carriles se redibujan en cada
+   fotograma para que ninguno se separe de su fila. Es el único movimiento que se ejecuta con una señal en vivo y no
+   con la acción del lector, y se permite por la razón de la regla 8: un recuento que cambia en el lugar
+   no dice *en qué dirección* fue la solicitud, que es la lectura para la que existe el panel. Está acotado
+   con rigor: opacidad y transformaciones, salvo el flujo de carriles, que anima el desfase de las rayas de los pocos carriles
+   en uso y es el único bucle del mapa; ninguna sombra se anima - todo brillo es una superposición cuya opacidad
+   cambia; como máximo ocho solicitudes se reproducen desde una lectura, con 70ms de separación, y como máximo dieciséis están en el mapa
+   a la vez, omitiéndose una ráfaga que lo supere en lugar de ponerse en cola; la primera lectura no reproduce nada, porque
+   abrir el panel no es el momento en que se ejecutaron esas solicitudes, ni tampoco una solicitud que
+   terminó mientras la página estaba oculta - el flujo en vivo se cierra entonces, de modo que la lectura al volver las incluye,
+   y se cuentan en las filas. Ocultar la página termina todo trayecto del mapa: una
+   página oculta no ejecuta fotogramas de animación, de modo que un trayecto dejado en marcha completaría cada salto perdido en un
+   fotograma cada uno al volver y reproduciría el tiempo perdido a toda velocidad. El trayecto es el único movimiento que la consola inicia
+   por sí misma que se reproduce completo bajo `prefers-reduced-motion`: el flujo de un carril, el viaje de un punto y la
+   entrada de una fila son la lectura misma, y el interruptor «Efectos de animación» de Windows - que muchos lectores
+   apagan por velocidad y no por motivos vestibulares - lo informa Chromium como esa consulta. El
+   mapa conserva por tanto su animación para todo lector; el ADR 0102 registra la excepción acotada y la
+   contrapartida. Los recuentos nunca se animan.
 
-   The map learns of a request when CPA stores its record, which is when it finished: CPA reports
-   nothing about a request while it runs. The trip therefore starts as soon as the record is read and
-   is kept short (about a second and a half door to door) so it reads as the request that just happened.
+   El mapa se entera de una solicitud cuando CPA guarda su registro, que es cuando terminó: CPA no informa
+   nada de una solicitud mientras se ejecuta. El trayecto por tanto empieza en cuanto se lee el registro y
+   se mantiene corto (alrededor de un segundo y medio de puerta a puerta) para que se lea como la solicitud que acaba de ocurrir.
 
-### Never hard-swap a view
+### Nunca cambiar una vista de golpe
 
-**A painted frame must never go blank between two states.** This applies to
-every transition: route changes from the sidebar, dashboard window presets,
-custom range changes, manual refresh and background refetch.
+**Un marco ya pintado nunca debe quedar en blanco entre dos estados.** Esto se aplica a
+toda transición: cambios de ruta desde la barra lateral, preajustes de ventana del panel,
+cambios de rango personalizado, refresco manual y relectura en segundo plano.
 
-| Situation | Required behaviour |
+| Situación | Comportamiento requerido |
 | --- | --- |
-| Route change | Content sits in a keyed `.route-transition` that fades in over `base` (180ms) with a 3px rise, and the scroll position resets with the new page. |
-| Query key change (preset, range, filter) | `placeholderData: keepPreviousData` — the previous result stays on screen while the next one loads. |
-| Any request in flight | The app-wide 2px `.data-progress` bar, painted after a 200ms delay, whose fill hints at counted work and whose short activity marker reports waiting (below). Regions are never dimmed or unmounted. |
-| First load with no data yet | Render the real page frame with placeholders drawn at the content's geometry, not a bare full-page spinner swap. |
-| Error after data existed | Keep the stale data visible and surface a warning; only replace the page when nothing was ever loaded. |
-| Auto-refresh poll | The view does not move, though a reading and a mark may. The poll is not a view change, so it must not reset pagination, remount the list, expand a collapsed header, or relabel the data as "previous results". Three things may move: a dashboard KPI number rolling to its new value, any dashboard chart mark morphing to its own new revision - the six KPI sparklines, and the model trend and usage ring, which re-read on their own endpoint rather than on the tiles' (rules 8 and 5) - and a newly stored request travelling the routing map (rule 9). |
+| Cambio de ruta | El contenido se sitúa en un `.route-transition` con clave que aparece con fundido durante `base` (180ms) con una subida de 3px, y la posición de desplazamiento se restablece con la nueva página. |
+| Cambio de clave de consulta (preajuste, rango, filtro) | `placeholderData: keepPreviousData` — el resultado anterior permanece en pantalla mientras se carga el siguiente. |
+| Cualquier solicitud en curso | La barra `.data-progress` de 2px de toda la app, pintada tras un retraso de 200ms, cuyo relleno sugiere el trabajo contado y cuyo breve marcador de actividad informa de la espera (más abajo). Las regiones nunca se atenúan ni se desmontan. |
+| Primera carga sin datos todavía | Renderizar el marco real de la página con marcadores dibujados con la geometría del contenido, no un cambio brusco a un spinner de página completa. |
+| Error tras haber existido datos | Mantener visibles los datos obsoletos y mostrar una advertencia; reemplazar la página solo cuando nunca se cargó nada. |
+| Sondeo de autorrefresco | La vista no se mueve, aunque una lectura y una marca sí puedan. El sondeo no es un cambio de vista, por lo que no debe restablecer la paginación, remontar la lista, expandir una cabecera plegada ni reetiquetar los datos como «resultados anteriores». Tres cosas pueden moverse: un número KPI del panel que rueda hasta su nuevo valor, cualquier marca de gráfico del panel que se transforma a su propia nueva revisión - los seis sparklines de KPI, y la tendencia de modelos y el anillo de uso, que releen en su propio endpoint y no en el de los mosaicos (reglas 8 y 5) - y una solicitud recién almacenada que viaja por el mapa de enrutamiento (regla 9). |
 
-`prefers-reduced-motion` removes the fade, drops the bar's pending estimate (it
-steps only when a task settles) and freezes the placeholders' breath, but the
-no-blank rule still applies — fall back to a static loading state.
+`prefers-reduced-motion` elimina el fundido, quita la estimación pendiente de la barra (solo
+avanza cuando se resuelve una tarea) y congela la respiración de los marcadores, pero la
+regla de no dejar en blanco sigue vigente — se recurre a un estado de carga estático.
 
-### Loading feedback: rough progress, waiting activity and content-shaped placeholders
+### Retroalimentación de carga: progreso aproximado, actividad de espera y marcadores con la forma del contenido
 
-ADRs 0052 and 0054 record the task accounting, placeholder treatment and separate activity signal.
+Los ADR 0052 y 0054 registran la contabilidad de tareas, el tratamiento de los marcadores y la señal de actividad independiente.
 
-**The fill hints at progress; the marker reports waiting.** Every query read the reader waits on and
-every module download behind a Suspense boundary is a task (`web/src/utils/loadProgress.ts`,
-`web/src/utils/progressTasks.ts`). A query read counts when nothing is on screen for it yet (a first
-load, a new key, a retry after a failure), when an action invalidated data that last read
-successfully, or when a query nobody polls is re-read (a refresh button). A polled query re-reading
-the data it already shows - including the poll after a failed one - is background refresh and never
-counts. The rule is read from the query (`isQueryProgressWork` in `web/src/utils/progressSources.ts`),
-so a poll needs no opt-in; because an interval tick and a manual `refetch()` look the same there, a
-refresh that must report waiting on a polled query invalidates it. `meta: { silent: true }` remains
-for reads the query cannot classify: a live read that moves to a new key per signal, and background
-reads silent even on their first load. A settled task counts in full; a pending task earns capped
-exponential credit toward 85% of its share. This is a rough estimate, not a measurable remaining
-duration or byte percentage. The fill never moves backwards, including when new work joins.
+**El relleno sugiere el progreso; el marcador informa de la espera.** Toda lectura de consulta que el lector espera y
+toda descarga de módulo tras un límite Suspense es una tarea (`web/src/utils/loadProgress.ts`,
+`web/src/utils/progressTasks.ts`). Una lectura de consulta cuenta cuando aún no hay nada en pantalla para ella (una primera
+carga, una clave nueva, un reintento tras un fallo), cuando una acción invalidó datos que se leyeron por última vez
+con éxito, o cuando se relee una consulta que nadie sondea (un botón de refrescar). Una consulta sondeada que relee
+los datos que ya muestra - incluido el sondeo posterior a uno fallido - es refresco en segundo plano y nunca
+cuenta. La regla se lee de la consulta (`isQueryProgressWork` en `web/src/utils/progressSources.ts`),
+de modo que un sondeo no necesita adhesión explícita; como un tic de intervalo y un `refetch()` manual se ven igual ahí, un
+refresco que deba informar de la espera en una consulta sondeada la invalida. `meta: { silent: true }` se mantiene
+para lecturas que la consulta no puede clasificar: una lectura en vivo que pasa a una clave nueva por señal, y lecturas en segundo plano
+silenciosas incluso en su primera carga. Una tarea resuelta cuenta por completo; una tarea pendiente gana crédito
+exponencial acotado hacia el 85% de su parte. Es una estimación aproximada, no una duración restante
+ni un porcentaje de bytes medibles. El relleno nunca retrocede, ni siquiera cuando se suma trabajo nuevo.
 
-The 2px track keeps its 18% accent tint. Its fill uses the accent at 65% opacity. Inside the fill's
-front edge, a clipped activity window is at most 64px and 16% of the track width; its solid accent
-segment is at most 16px and 25% of that window. The segment travels on a 1200ms linear CSS cycle,
-fading in and out at the wrap. It keeps moving when the estimated fill holds. It signals a pending
-client wait, not an upstream heartbeat or additional completed work. Only transforms and opacity
-animate; there are no per-frame React renders or layout measurements.
+La pista de 2px conserva su tinte de acento del 18%. Su relleno usa el acento al 65% de opacidad. Dentro del
+borde delantero del relleno, una ventana de actividad recortada mide como máximo 64px y el 16% del ancho de la pista; su segmento
+sólido de acento mide como máximo 16px y el 25% de esa ventana. El segmento viaja en un ciclo CSS lineal de 1200ms,
+apareciendo y desapareciendo al dar la vuelta. Sigue moviéndose cuando el relleno estimado se detiene. Señala una
+espera pendiente del cliente, no un latido del upstream ni trabajo completado adicional. Solo se animan transformaciones y opacidad;
+no hay renderizados de React por fotograma ni mediciones de layout.
 
-`web/src/utils/progressController.ts` owns the clock-injected lifecycle. Source notifications do
-not reset the drawing clock or restart the activity cycle. The bar waits 200ms before painting.
-When the last task settles, activity stops and the fill closes within one resolved `--motion-base`
-beat, then holds full for one `base` beat and fades over another. Content does not wait for this
-animation. Settlement includes failures and cancellation; the bar ending is not a success verdict.
+`web/src/utils/progressController.ts` posee el ciclo de vida con reloj inyectado. Las notificaciones de las fuentes no
+restablecen el reloj de dibujo ni reinician el ciclo de actividad. La barra espera 200ms antes de pintar.
+Cuando se resuelve la última tarea, la actividad se detiene y el relleno se cierra dentro de un pulso
+`--motion-base` resuelto, luego se mantiene completo durante un pulso `base` y se desvanece durante otro. El contenido no espera a esta
+animación. La resolución incluye fallos y cancelación; que la barra termine no es un veredicto de éxito.
 
-The localized `progressbar` omits `aria-valuenow`: assistive technology must not announce an estimate
-as a measured percentage. `aria-busy` remains true only while counted tasks are pending. Reduced
-motion removes the activity loop and pending credit, stops drawing frames and updates from task
-events; switching it live preserves the batch and never moves the fill backwards. A completed bar
-hides immediately on that switch, including a cancelled fade. Hidden documents suspend drawing,
-the show timer and activity; pending work resumes from its actual state, while completed work is
-retired without a replay. Neither palette derivation nor theme token mapping changes.
+La `progressbar` localizada omite `aria-valuenow`: la tecnología de asistencia no debe anunciar una estimación
+como un porcentaje medido. `aria-busy` sigue siendo verdadero solo mientras haya tareas contadas pendientes. El movimiento
+reducido elimina el bucle de actividad y el crédito pendiente, deja de dibujar fotogramas y se actualiza a partir de los eventos
+de las tareas; cambiarlo en vivo conserva el lote y nunca mueve el relleno hacia atrás. Una barra completada
+se oculta de inmediato con ese cambio, incluido un desvanecimiento cancelado. Los documentos ocultos suspenden el dibujo,
+el temporizador de mostrar y la actividad; el trabajo pendiente se reanuda desde su estado real, mientras que el trabajo completado se
+retira sin repetición. Ni la derivación de la paleta ni el mapeo de tokens del tema cambian.
 
-| Where | What it counts |
+| Dónde | Qué cuenta |
 | --- | --- |
-| Under the console header (`DataProgress`) | The page's queries, and route, editor and drawer module downloads |
-| Under the shell placeholder's header (`ShellLoading`) | The stored-preferences read and the shell's own download |
-| The sign-in page's top edge | The session check and the sign-in request |
+| Bajo la cabecera de la consola (`DataProgress`) | Las consultas de la página, y las descargas de módulos de ruta, editor y panel lateral |
+| Bajo la cabecera del marcador de la carcasa (`ShellLoading`) | La lectura de preferencias almacenadas y la descarga de la propia carcasa |
+| El borde superior de la página de inicio de sesión | La comprobación de sesión y la solicitud de inicio de sesión |
 
-**Placeholders are drawn at the content's geometry.** The kit in
-`web/src/components/common/Placeholder.tsx` is the shared placeholder vocabulary;
-`web/src/components/common/ContentPlaceholder.tsx` composes page-only paragraph/table
-shapes behind the route import, keeping them out of the sign-in entry;
-antd `Skeleton` and page-level `Spin` are not used for a first load. Blocks fill
-with `--border`, use `--radius-sm`, and line heights match the glyph height of
-the copy they stand for (title 18px, body 10px, meta 8px).
+**Los marcadores se dibujan con la geometría del contenido.** El kit de
+`web/src/components/common/Placeholder.tsx` es el vocabulario compartido de marcadores;
+`web/src/components/common/ContentPlaceholder.tsx` compone formas de párrafo y tabla exclusivas de páginas
+tras la importación de la ruta, manteniéndolas fuera de la entrada de inicio de sesión;
+`Skeleton` de antd y `Spin` a nivel de página no se usan en una primera carga. Los bloques se rellenan
+con `--border`, usan `--radius-sm`, y las alturas de línea coinciden con la altura de glifo del
+texto que representan (título 18px, cuerpo 10px, meta 8px).
 
-| Surface | Placeholder |
+| Superficie | Marcador |
 | --- | --- |
-| Shell (`ShellLoading`) | The real wordmark, the rail at its 28px label / 36px item rhythm and group sizes, the header's crumbs and actions, and a page frame |
-| A lazy route (`RouteLoading`) | The page head (title, subtitle) and a framed list of six rows |
-| A list (`PageLoading variant="block"`) | Rows of mark, name, meta line and trailing state at the list's 64px row height |
-| The request list | Table rows at the list's 44px row height (`TablePlaceholder`) |
-| Dashboard | Each tile's label, readout and sparkline in the real tile grid |
-| Drawers, panels, editors | Paragraph lines (`ParagraphPlaceholder`) |
-| Custom icon library | The library's own artwork tiles |
+| Carcasa (`ShellLoading`) | El wordmark real, el carril con su ritmo de etiqueta de 28px / elemento de 36px y los tamaños de grupo, las migas y acciones de la cabecera, y un marco de página |
+| Una ruta diferida (`RouteLoading`) | La cabecera de la página (título, subtítulo) y una lista enmarcada de seis filas |
+| Una lista (`PageLoading variant="block"`) | Filas de marca, nombre, línea meta y estado final con la altura de fila de 64px de la lista |
+| La lista de solicitudes | Filas de tabla con la altura de fila de 44px de la lista (`TablePlaceholder`) |
+| Panel | La etiqueta, la lectura y el sparkline de cada mosaico en la cuadrícula real de mosaicos |
+| Paneles laterales, paneles, editores | Líneas de párrafo (`ParagraphPlaceholder`) |
+| Biblioteca de iconos personalizados | Los mosaicos de arte propios de la biblioteca |
 
-A placeholder region carries the localized `common.loading` status name; the
-blocks are `aria-hidden`. A Suspense fallback inside a page uses
-`SuspenseFallback` so its download is counted.
+Una región de marcador lleva el nombre de estado localizado `common.loading`; los
+bloques son `aria-hidden`. Un fallback de Suspense dentro de una página usa
+`SuspenseFallback` para que su descarga se cuente.
 
-### Live tail: follow at the top, hold when reading
+### Cola en vivo: seguir arriba, mantener al leer
 
-A polling list is a live tail, and a live tail has to answer one question: does
-the reader want to be carried along, or are they reading?
+Una lista sondeada es una cola en vivo, y una cola en vivo tiene que responder una pregunta: ¿quiere
+el lector que lo lleven consigo, o está leyendo?
 
-- **At the top** (within a few pixels) the reader is following. New records appear
-  immediately; the newest is always the first row.
-- **Scrolled away** the reader is reading. The rows on screen are held exactly as
-  they are, the poll keeps running in the background, and a pill above the footer
-  reports `N new records` — clicking it applies the backlog and returns to the top.
-  Scrolling back to the top by hand resumes the follow, so the pill is never the
-  only way out.
+- **Arriba del todo** (a pocos píxeles) el lector está siguiendo. Los registros nuevos aparecen
+  de inmediato; el más reciente es siempre la primera fila.
+- **Alejado** el lector está leyendo. Las filas en pantalla se mantienen exactamente como
+  están, el sondeo sigue ejecutándose en segundo plano, y una píldora sobre el pie
+  informa `N new records` — al pulsarla se aplica el atraso y se vuelve arriba.
+  Volver arriba a mano reanuda el seguimiento, de modo que la píldora nunca es la
+  única salida.
 
-The pill replaces the plain back-to-top button when there is a backlog, because
-the two are the same gesture. Jumping the reader to the top on every poll — or
-reordering the rows under the cursor — is the failure mode this exists to
-prevent: it is what Grafana, Datadog, Sentry and Vercel logs all refuse to do.
+La píldora sustituye al botón simple de volver arriba cuando hay atraso, porque
+ambos son el mismo gesto. Llevar al lector arriba en cada sondeo — o
+reordenar las filas bajo el cursor — es el modo de fallo que esto existe para
+evitar: es lo que se niegan a hacer los registros de Grafana, Datadog, Sentry y Vercel.
 
-Two supporting rules keep the follow honest:
+Dos reglas de apoyo mantienen honesto el seguimiento:
 
-1. **Pagination survives a poll.** The view scope is the filters plus the page
-   the reader chose; the auto-refresh counter is deliberately outside it. It used
-   to be inside, which silently reset every reader to page one.
-2. **The list is ordered by request time, newest first**, so the column the
-   reader sorts by eye is the column the list is sorted on. See
-   `docs/architecture.md` for the keyset cursor and index this order needs.
-   "Arrived" is a separate question and is answered separately: the pill counts
-   records *recorded* since the reader stopped following, because a request that
-   ran for an hour is new while sorting far below the first page.
+1. **La paginación sobrevive a un sondeo.** El alcance de la vista son los filtros más la página
+   que eligió el lector; el contador de autorrefresco queda deliberadamente fuera. Antes
+   estaba dentro, lo que restablecía en silencio a todo lector a la página uno.
+2. **La lista se ordena por hora de solicitud, la más reciente primero**, de modo que la columna que el
+   lector ordena a ojo es la columna por la que se ordena la lista. Véase
+   `docs/architecture.md` para el cursor keyset y el índice que necesita este orden.
+   «Llegado» es otra pregunta y se responde por separado: la píldora cuenta
+   los registros *grabados* desde que el lector dejó de seguir, porque una solicitud que
+   duró una hora es nueva aunque se ordene muy por debajo de la primera página.
 
-### Scroll: a gesture moves, a correction lands
+### Desplazamiento: un gesto se mueve, una corrección aterriza
 
-The list itself scrolls, so its scrolls carry two different intentions and they
-must not share a behaviour:
+La propia lista se desplaza, de modo que sus desplazamientos llevan dos intenciones distintas y
+no deben compartir comportamiento:
 
-| Intent | Scrolls | Behaviour |
+| Intención | Desplazamientos | Comportamiento |
 | --- | --- | --- |
-| Gesture | Back to top, applying the `N new records` backlog | Animated, unless `prefers-reduced-motion` |
-| Correction | Pinning row one after the header collapses, resetting on page change | Instant |
+| Gesto | Volver arriba, aplicando el atraso de `N new records` | Animado, salvo `prefers-reduced-motion` |
+| Corrección | Fijar la fila uno tras plegarse la cabecera, restablecer al cambiar de página | Instantáneo |
 
-A correction is not a weaker gesture, it is a different job. Collapsing the header
-and paging both need row one on screen *before* the next statement runs, and the
-list re-measures after committing new rows — so a correction that is still gliding
-is a correction that has not landed, and the reader sees a position nobody asked
-for in between. `web/src/utils/smoothScroll.ts` names the two intents and owns the
-schedule.
+Una corrección no es un gesto más débil, es otro trabajo. Plegar la cabecera
+y paginar necesitan la fila uno en pantalla *antes* de que se ejecute la siguiente sentencia, y la
+lista vuelve a medir tras confirmar filas nuevas — de modo que una corrección que aún se desliza
+es una corrección que no ha aterrizado, y el lector ve entretanto una posición que nadie pidió.
+`web/src/utils/smoothScroll.ts` nombra las dos intenciones y posee el
+calendario.
 
-**The animation is driven in JavaScript, not by CSS.** Setting `scroll-behavior:
-smooth` on the list holder looks like the natural implementation and does not
-work: the list is virtualized, so the virtualizer owns that element, keeps writing
-`scrollTop` on its own schedule, and wins. Measured against the real list the
-holder never moved at all. So `animateScrollToTop` interpolates frame by frame and
-pushes every frame through Listy's own `scrollTo`, which leaves exactly one
-authority over the offset and no fight to lose. The schedule is a pure function of
-elapsed time rather than an accumulator, so a dropped or late frame cannot make the
-gesture drift or overshoot, and the last frame writes `0` explicitly — a
-return-to-top that arrives *approximately* at the top has not returned to the top.
+**La animación se conduce en JavaScript, no con CSS.** Poner `scroll-behavior:
+smooth` en el contenedor de la lista parece la implementación natural y no
+funciona: la lista está virtualizada, de modo que el virtualizador posee ese elemento, sigue escribiendo
+`scrollTop` según su propio calendario, y gana. Medido contra la lista real, el
+contenedor no se movió en absoluto. Por eso `animateScrollToTop` interpola fotograma a fotograma e
+inyecta cada fotograma a través del propio `scrollTo` de Listy, lo que deja exactamente una
+autoridad sobre el desfase y ninguna pelea que perder. El calendario es una función pura del
+tiempo transcurrido y no un acumulador, de modo que un fotograma perdido o tardío no puede hacer que el
+gesto derive o se pase, y el último fotograma escribe `0` explícitamente — un
+retorno arriba que llega *aproximadamente* arriba no ha vuelto arriba.
 
-An animated return to the top emits scroll events the whole way up, so the page
-holds the collapse state until it arrives (bounded by a deadline, in case the
-reader interrupts it and it never does). Without that, the early frames — which
-still carry a large `scrollTop` — would re-collapse the header on the first frame
-of the very gesture that was expanding it.
+Un retorno animado arriba emite eventos de desplazamiento durante todo el ascenso, de modo que la página
+mantiene el estado de plegado hasta que llega (acotado por un plazo, por si el
+lector lo interrumpe y nunca llega). Sin eso, los primeros fotogramas — que
+aún llevan un `scrollTop` grande — volverían a plegar la cabecera en el primer fotograma
+del propio gesto que la estaba expandiendo.
 
-### Wheel and keys glide; a finger is never smoothed
+### La rueda y las teclas se deslizan; un dedo nunca se suaviza
 
-Native option popups (`overflow-y: auto`, including the Agent model picker) retain browser-owned wheel scrolling even when they share the list library's holder structure. Their scroll listener mirrors offsets through deferred React state, so a second offset writer can undo progress. Only a holder with hidden overflow and that structure receives synthetic wheel steps; structural similarity alone does not establish virtual scrolling.
+Los popups de opciones nativos (`overflow-y: auto`, incluido el selector de modelo del Agent) conservan el desplazamiento de rueda gestionado por el navegador incluso cuando comparten la estructura de contenedor de la biblioteca de listas. Su listener de desplazamiento refleja los desfases mediante estado diferido de React, de modo que un segundo escritor de desfase puede deshacer el avance. Solo un contenedor con desbordamiento oculto y esa estructura recibe pasos de rueda sintéticos; la mera similitud estructural no establece desplazamiento virtual.
 
-A notched mouse wheel delivers a scroll as 100px jumps, and whether the browser animates them is the
-operating system's call — Windows readers who switch "Animation effects" off get steps, and the
-virtualized request list stepped on every Windows desk because it applies wheel deltas itself. A
-trackpad, a phone and macOS deliver a stream that already glides. So the console smooths the *step*
-and leaves the *stream* alone (`web/src/utils/scrollSmoothing.ts`, ADR 0046):
+Una rueda de ratón con muescas entrega un desplazamiento como saltos de 100px, y que el navegador los anime es una
+decisión del sistema operativo — los lectores de Windows que apagan «Efectos de animación» obtienen pasos, y la
+lista virtualizada de solicitudes daba pasos en todo escritorio de Windows porque aplica ella misma los deltas de rueda. Un
+trackpad, un teléfono y macOS entregan un flujo que ya se desliza. Por eso la consola suaviza el *paso*
+y deja en paz el *flujo* (`web/src/utils/scrollSmoothing.ts`, ADR 0046):
 
-| Input | Behaviour |
+| Entrada | Comportamiento |
 | --- | --- |
-| Wheel notch (line/page mode, or a pixel-mode notch off Apple platforms) | Glides over `scroll` to exactly where it would have jumped |
-| Arrow keys, Page Up/Down, Space, Home, End outside an editable control or widget | Glide over `scroll` |
-| Trackpad, Apple-platform pixel wheels, touch | Never glided. A finger on the request list moves it directly (§8) |
-| Ctrl/⌘, Shift or Alt wheel; horizontal wheel | Native (zoom, sideways scroll) |
-| Programmatic scroll (a correction, `scrollIntoView`) | Native; it also stops any glide on that scroller |
+| Muesca de rueda (modo línea/página, o una muesca en modo píxel fuera de plataformas Apple) | Se desliza durante `scroll` exactamente hasta donde habría saltado |
+| Flechas, Re Pág/Av Pág, Espacio, Inicio, Fin fuera de un control o widget editable | Se deslizan durante `scroll` |
+| Trackpad, ruedas en píxeles de plataformas Apple, táctil | Nunca se deslizan. Un dedo sobre la lista de solicitudes la mueve directamente (§8) |
+| Rueda con Ctrl/⌘, Mayús o Alt; rueda horizontal | Nativa (zoom, desplazamiento lateral) |
+| Desplazamiento programático (una corrección, `scrollIntoView`) | Nativo; también detiene cualquier deslizamiento en ese desplazable |
 
-Each notch retargets the glide from where it is, so a turning wheel accelerates rather than queueing;
-the glide follows the nearest scroller under the pointer that can still move, and stops chaining at a
-scroller that contains its overscroll, as the native scroll does. A virtualized list (the request
-list, a Select's option popup) is moved through its own wheel handling, one step per frame, because
-it owns its offset. It applies a step on its next frame and shows it once React commits, two frames
-behind on a light page, so an offset anywhere between where the glide started and where it has asked
-to be is that lag; only an offset outside that span counts as a correction and stops the glide.
+Cada muesca reorienta el deslizamiento desde donde está, de modo que una rueda que sigue girando acelera en lugar de encolarse;
+el deslizamiento sigue al desplazable más cercano bajo el puntero que aún pueda moverse, y deja de encadenar en un
+desplazable que contiene su sobredesplazamiento, como hace el desplazamiento nativo. Una lista virtualizada (la lista de
+solicitudes, el popup de opciones de un Select) se mueve mediante su propio manejo de rueda, un paso por fotograma, porque
+posee su desfase. Aplica un paso en su siguiente fotograma y lo muestra cuando React confirma, dos fotogramas
+por detrás en una página ligera, de modo que un desfase en cualquier punto entre donde empezó el deslizamiento y donde se ha pedido
+llegar es ese retraso; solo un desfase fuera de ese tramo cuenta como corrección y detiene el deslizamiento.
 
-**A glide never adds lag to the reader's hand** (ADR 0047). Every glide moves on its first frame;
-a virtualized list gets its first step from inside the input event, so it starts on the frame its own
-jump would have; and a notch that arrives while the list is still catching up neither costs it a
-frame nor starts over from where the list has got to. A wheel that keeps turning moves the list on
-every frame until it lands.
+**Un deslizamiento nunca añade retraso a la mano del lector** (ADR 0047). Todo deslizamiento se mueve en su primer fotograma;
+una lista virtualizada recibe su primer paso desde dentro del evento de entrada, de modo que empieza en el fotograma en que lo haría su propio
+salto; y una muesca que llega mientras la lista aún se está poniendo al día ni le cuesta un
+fotograma ni vuelve a empezar desde donde ha llegado la lista. Una rueda que sigue girando mueve la lista en
+cada fotograma hasta que aterriza.
 
-A component that turns a notch into something else — the request list collapsing its header on the
-first notch — says so with `consumeWheel`, since `preventDefault` from a React handler is ignored.
+Un componente que convierte una muesca en otra cosa — la lista de solicitudes plegando su cabecera en la
+primera muesca — lo declara con `consumeWheel`, pues `preventDefault` desde un manejador de React se ignora.
 
-The glide is on by default and is **not** switched off by `prefers-reduced-motion`: it is the
-reader's own input following their hand, as inertial scrolling stays on under Reduce Motion on
-macOS and iOS, and on Windows the reduced-motion signal is the same switch that removed the
-browser's glide. The Shell-PAMC Settings page's **Smooth scrolling** row (`On` / `Follow system` / `Off`,
-the `omc_scroll_smoothing` preference) hands the decision to that signal or turns the glide off.
-The return-to-top gesture above is page-initiated travel and keeps honouring reduced motion.
+El deslizamiento está activado por defecto y **no** lo desactiva `prefers-reduced-motion`: es la
+propia entrada del lector siguiendo su mano, igual que el desplazamiento inercial sigue activo con Reducir movimiento en
+macOS e iOS, y en Windows la señal de movimiento reducido es el mismo interruptor que quitó el
+deslizamiento del navegador. La fila **Smooth scrolling** de la página de ajustes de Shell-PAMC (`On` / `Follow system` / `Off`,
+la preferencia `omc_scroll_smoothing`) entrega la decisión a esa señal o apaga el deslizamiento.
+El gesto de volver arriba descrito antes es un recorrido iniciado por la página y sigue respetando el movimiento reducido.
 
-### Nothing expensive rides along with the scroll
+### Nada costoso viaja con el desplazamiento
 
-Scrolling this list is the interaction the page is used through, and the cost of a
-frame is paid on every frame. Two things are therefore not allowed on any element
-that is on screen while the list scrolls:
+Desplazar esta lista es la interacción mediante la que se usa la página, y el costo de un
+fotograma se paga en cada fotograma. Por eso dos cosas no se permiten en ningún elemento
+que esté en pantalla mientras la lista se desplaza:
 
-| Not allowed | Why |
+| No permitido | Por qué |
 | --- | --- |
-| `backdrop-filter` | The compositor must re-read the pixels behind the element as those pixels change underneath it — the worst possible case for a blur, because a scroll changes them every frame. Chrome on Windows commonly resolves this in software rather than on the GPU, which is why the same build scrolls smoothly on macOS and heavily on Windows. |
-| `box-shadow` | Paint cost grows with the blur radius and the area covered, and it repaints when the element moves. The console's shadows belong to summoned layers (§4), which never ride along with a scroll. |
+| `backdrop-filter` | El compositor debe releer los píxeles tras el elemento a medida que esos píxeles cambian bajo él — el peor caso posible para un desenfoque, porque un desplazamiento los cambia en cada fotograma. Chrome en Windows suele resolverlo por software y no en la GPU, por lo que la misma compilación se desplaza con fluidez en macOS y con pesadez en Windows. |
+| `box-shadow` | El costo de pintado crece con el radio de desenfoque y el área cubierta, y se repinta cuando el elemento se mueve. Las sombras de la consola pertenecen a capas invocadas (§4), que nunca viajan con un desplazamiento. |
 
-The floating back-to-top pill is the case that matters: it appears *precisely* when
-the reader is scrolling. It is an opaque `--surface` with a 1px border, which reads
-against a busy list without either effect.
+La píldora flotante de volver arriba es el caso que importa: aparece *justo* cuando
+el lector se está desplazando. Es un `--surface` opaco con un borde de 1px, que se lee
+contra una lista cargada sin ninguno de los dos efectos.
 
-The same rule governs the entry animation: a scroll-adjacent element animates only
-`opacity` and `transform`, never a property that forces layout or a repaint.
+La misma regla gobierna la animación de entrada: un elemento adyacente al desplazamiento anima solo
+`opacity` y `transform`, nunca una propiedad que fuerce layout o un repintado.
 
-### Naming is a first-class action, not a hidden setting
+### Nombrar es una acción de primera clase, no un ajuste oculto
 
-Gateway keys are identified by masks (`sk-5Yalm••••••••odar`). A mask is
-unreadable and, because it keeps only a short head and tail, ambiguous: two keys
-can share one. So a key's **name** is the primary identifier and the mask is the
-identifier of last resort.
+Las claves del gateway se identifican mediante máscaras (`sk-5Yalm••••••••odar`). Una máscara es
+ilegible y, como conserva solo un inicio y un final cortos, ambigua: dos claves
+pueden compartir una. Por eso el **nombre** de una clave es el identificador principal y la máscara es el
+identificador de último recurso.
 
-The key-management table therefore reads name → key → use → actions. The name comes
-first because it is what the operator recognises and what every other surface will
-show. Where a key is unnamed the cell says so rather than sitting blank, because a
-blank cell reads as missing data instead of a name nobody has set yet.
+Por tanto, la tabla de gestión de claves se lee nombre → clave → uso → acciones. El nombre va
+primero porque es lo que el operador reconoce y lo que mostrará toda otra superficie. Cuando una clave no tiene nombre, la celda lo dice en lugar de quedar en blanco, porque una
+celda en blanco se lee como un dato ausente y no como un nombre que nadie ha puesto aún.
 
-Three rules keep the two identifiers from being confused:
+Tres reglas evitan que se confundan los dos identificadores:
 
-| Rule | Why |
+| Regla | Por qué |
 | --- | --- |
-| A name is a **label**, never an identity | The stored fingerprint stays the filter value. A filter that means something different from what it displays is the ambiguity the name exists to remove. Renaming must not change what a saved filter or a drill-down link selects, and duplicate names are allowed because a label need not be unique. |
-| Every surface that prints a caller prints the name | List, detail, facet options and applied chips resolve it from the same key, so the dropdown and the rows it filters cannot name a key differently. |
-| Unnamed falls back to the mask, never to a fingerprint | The fingerprint is a hashed identity; printing it would name a filter in a form the operator never chose. |
+| Un nombre es una **etiqueta**, nunca una identidad | La huella almacenada sigue siendo el valor del filtro. Un filtro que significa algo distinto de lo que muestra es la ambigüedad que el nombre existe para eliminar. Renombrar no debe cambiar lo que selecciona un filtro guardado o un enlace de profundización, y se permiten nombres duplicados porque una etiqueta no necesita ser única. |
+| Toda superficie que imprime un llamador imprime el nombre | La lista, el detalle, las opciones de faceta y los chips aplicados lo resuelven desde la misma clave, de modo que el desplegable y las filas que filtra no pueden nombrar una clave de manera distinta. |
+| Sin nombre se recurre a la máscara, nunca a una huella | La huella es una identidad con hash; imprimirla nombraría un filtro de una forma que el operador nunca eligió. |
 
-**Counts must state their scope.** Per-key request counts and last-used times come
-from Shell-PAMC's own stored events in one window, not from CPA and not from the
-key's whole life. The table says so next to them: a count that reads as a lifetime
-total would be a fact the system does not have. A key with no matching records
-shows "not linked" rather than a fabricated `0` or an invented creation date — CPA
-publishes no creation date, so any such column would be a guess rendered as data.
+**Los recuentos deben enunciar su alcance.** Los recuentos de solicitudes por clave y las horas de último uso proceden
+de los propios eventos almacenados de Shell-PAMC en una ventana, no de CPA ni de
+toda la vida de la clave. La tabla lo dice junto a ellos: un recuento que se lee como un total de toda la vida
+sería un dato que el sistema no tiene. Una clave sin registros coincidentes
+muestra «not linked» en lugar de un `0` fabricado o una fecha de creación inventada — CPA
+no publica fecha de creación, de modo que cualquier columna así sería una conjetura presentada como dato.
 
-**Three actions in the open, the rest behind the overflow.** A row's reveal, copy
-and edit controls are square buttons the operator can see, because they are the ones
-that take the key itself in hand and a secret reachable only through a menu sits one
-click further from the operation that needs it. Following a key's traffic and
-removing the key live in the overflow menu, since neither is about reading it.
-Removal is the list's only irreversible action — CPA accepts a key by presence in
-`api-keys` and the console keeps no copy of the value — so its confirmation says the
-value cannot be recovered and must be copied first (ADR 0010).
+**Tres acciones a la vista, el resto tras el desbordamiento.** Los controles de revelar, copiar
+y editar de una fila son botones cuadrados que el operador puede ver, porque son los que
+ponen la propia clave en la mano y un secreto alcanzable solo a través de un menú queda un
+clic más lejos de la operación que lo necesita. Seguir el tráfico de una clave y
+eliminarla viven en el menú de desbordamiento, ya que ninguna trata de leerla.
+La eliminación es la única acción irreversible de la lista — CPA acepta una clave por su presencia en
+`api-keys` y la consola no guarda copia del valor — de modo que su confirmación dice que el
+valor no puede recuperarse y debe copiarse antes (ADR 0010).
 
-**The list is one container.** The head row, its rule and the list are one surface,
-because a card holding another card holding a toolbar is exactly the nesting the
-open-list rule exists to prevent. The head carries the surface's name, how many keys
-are configured, the search box and every action that applies to the list as a whole,
-and it wraps rather than scrolls so the controls keep their width in every reading
-language. A single line under the list states the window its counts cover.
+**La lista es un solo contenedor.** La fila de cabecera, su regla y la lista son una sola superficie,
+porque una tarjeta que contiene otra tarjeta que contiene una barra de herramientas es exactamente el anidamiento que la regla
+de lista abierta existe para evitar. La cabecera lleva el nombre de la superficie, cuántas claves
+están configuradas, el cuadro de búsqueda y toda acción que se aplica a la lista en conjunto,
+y se ajusta en varias líneas en lugar de desplazarse, de modo que los controles conservan su ancho en todo idioma
+de lectura. Una sola línea bajo la lista enuncia la ventana que cubren sus recuentos.
 
-**One dataset, rendered responsively.** The list is a table above 640px and labelled rows at
-640px and below, and the width decides — never a control the operator has to find. The
-two renderings are derived from one column array
-(`web/src/components/common/phoneRowFields.ts`), so a column added to the table reaches the row
-and a value cannot be formatted two ways. The measurement that fixed the threshold, and the
-alternatives it was chosen over, are in ADR 0012.
+**Un conjunto de datos, renderizado de forma adaptable.** La lista es una tabla por encima de 640px y filas rotuladas a
+640px y por debajo, y lo decide el ancho — nunca un control que el operador tenga que encontrar. Las
+dos representaciones se derivan de un solo arreglo de columnas
+(`web/src/components/common/phoneRowFields.ts`), de modo que una columna añadida a la tabla llega a la fila
+y un valor no puede formatearse de dos maneras. La medición que fijó el umbral, y las
+alternativas frente a las que se eligió, están en el ADR 0012.
 
-## 8. Small viewports and touch
+## 8. Viewports pequeños y táctil
 
-The console is operated from a phone as well as from a desktop, and a phone is not a small
-desktop. It has no hover, its pointer is a finger rather than a 1px cursor, its viewport
-changes height while the reader scrolls, and on Android it has a hardware Back button that
-has to mean something. None of those four facts was expressed anywhere in the system, which
-is what this section records.
+La consola se opera desde un teléfono además de desde un escritorio, y un teléfono no es un escritorio
+pequeño. No tiene hover, su puntero es un dedo y no un cursor de 1px, su viewport
+cambia de altura mientras el lector se desplaza, y en Android tiene un botón Back de hardware que
+tiene que significar algo. Ninguno de esos cuatro hechos estaba expresado en ninguna parte del sistema, que
+es lo que registra esta sección.
 
-### Two viewport breakpoints and one container threshold
+### Dos puntos de corte de viewport y un umbral de contenedor
 
-| Threshold | Kind | What it decides |
+| Umbral | Tipo | Qué decide |
 | --- | --- | --- |
-| `900px` | viewport | The shell changes shape: the rail becomes a sheet, page head and grid columns stack. |
-| `640px` | viewport | The device is a phone: list surfaces render labelled rows instead of a table, and controls take their touch sizes. |
-| `920px` | container (`reqstream`) | The request list's own width no longer fits its columns, so each record becomes a stacked record of three lines. |
+| `900px` | viewport | La carcasa cambia de forma: el carril se convierte en una hoja, la cabecera de página y las columnas de la cuadrícula se apilan. |
+| `640px` | viewport | El dispositivo es un teléfono: las superficies de lista renderizan filas rotuladas en lugar de una tabla, y los controles toman sus tamaños táctiles. |
+| `920px` | contenedor (`reqstream`) | El ancho propio de la lista de solicitudes ya no cabe en sus columnas, por lo que cada registro pasa a ser un registro apilado de tres líneas. |
 
-The third is a container query rather than a viewport breakpoint, and deliberately so: that
-list sits inside the page's content column, so the same viewport holds a different list width
-depending on whether the rail is open. "Do the columns still fit" is a question about the box
-the columns are in, and only the container can answer it. The same reasoning governs the
-dashboard's `@container modelusage (max-width: 500px)` panel stack and the live routing map's
-`@container routingmap (max-width: 940px)` narrow layout.
+El tercero es una consulta de contenedor y no un punto de corte de viewport, y deliberadamente: esa
+lista se sitúa dentro de la columna de contenido de la página, de modo que el mismo viewport contiene un ancho de lista distinto
+según el carril esté abierto o no. «¿Siguen cabiendo las columnas?» es una pregunta sobre la caja
+en la que están las columnas, y solo el contenedor puede responderla. El mismo razonamiento gobierna la
+pila de paneles `@container modelusage (max-width: 500px)` del panel y el layout estrecho
+`@container routingmap (max-width: 940px)` del mapa de enrutamiento en vivo.
 
-Above that threshold the request list **folds columns rather than scrolling sideways**. The grid
-has a floor - the sum of every column's width - and a window narrower than the floor used to get a
-horizontal scrollbar, which moved the cost and token figures off screen and made every hover a
-scroll. The list now measures its own width and hides columns, one at a time, until the rest fit:
-user agent first, then the caller's key, speed, cache rate and mode. The columns that say what the
-request was and what it cost - time, result, provider, model, latency, tokens, cost - never fold;
-speed sits before latency, so latency and tokens - the two figures with a second line - read as one
-pair;
-they stay until the list becomes stacked records. This adds no threshold: the fold points are the
-measured widths of the columns the operator currently has (`foldRequestColumns` in
-`web/src/components/usage/requestColumns.ts`), so a resized column moves them. A folded column is
-absent from the header and the rows alike, its value is still in the record's detail drawer, and an
-export draws every column regardless, because a sheet is not bound by the window.
+Por encima de ese umbral la lista de solicitudes **pliega columnas en lugar de desplazarse lateralmente**. La cuadrícula
+tiene un suelo - la suma del ancho de todas las columnas - y una ventana más estrecha que el suelo antes obtenía una
+barra de desplazamiento horizontal, que sacaba de pantalla las cifras de costo y tokens y convertía cada hover en un
+desplazamiento. Ahora la lista mide su propio ancho y oculta columnas, una a una, hasta que el resto cabe:
+primero el user agent, luego la clave del llamador, la velocidad, la tasa de caché y el modo. Las columnas que dicen qué fue la
+solicitud y cuánto costó - hora, resultado, proveedor, modelo, latencia, tokens, costo - nunca se pliegan;
+la velocidad va antes de la latencia, de modo que la latencia y los tokens - las dos cifras con una segunda línea - se leen como un
+par;
+permanecen hasta que la lista pasa a registros apilados. Esto no añade ningún umbral: los puntos de pliegue son los
+anchos medidos de las columnas que el operador tiene actualmente (`foldRequestColumns` en
+`web/src/components/usage/requestColumns.ts`), de modo que una columna redimensionada los mueve. Una columna plegada está
+ausente tanto de la cabecera como de las filas, su valor sigue en el panel de detalle del registro, y una
+exportación dibuja todas las columnas de todos modos, porque una hoja no está limitada por la ventana.
 
-Three thresholds with three distinct meanings is the budget. A fourth number needs a reason
-stated beside it, and two rules that compute the same thing at slightly different widths are
-a defect: the request list carried a viewport `@media (max-width: 920px)` block duplicating
-its container query, and it could only ever fire where the container already had (the
-container is at most `viewport − 64px`), so it was removed rather than left as an unexplained
-second breakpoint.
+Tres umbrales con tres significados distintos es el presupuesto. Un cuarto número necesita un motivo
+enunciado junto a él, y dos reglas que calculan lo mismo con anchos ligeramente distintos son
+un defecto: la lista de solicitudes llevaba un bloque `@media (max-width: 920px)` de viewport que duplicaba
+su consulta de contenedor, y solo podía dispararse donde el contenedor ya lo había hecho (el
+contenedor mide como máximo `viewport − 64px`), de modo que se eliminó en lugar de dejarlo como un segundo
+punto de corte sin explicar.
 
-### A stacked request record is three lines, in the text colours
+### Un registro de solicitud apilado son tres líneas, en los colores de texto
 
-Below the container threshold a record is three lines of two facts each (ADR 0096):
+Por debajo del umbral de contenedor un registro son tres líneas de dos datos cada una (ADR 0096):
 
-| Line | Leading | Trailing | Tone |
+| Línea | Inicio | Final | Tono |
 | --- | --- | --- | --- |
-| 1 | model, the substituted or routed model beside it, then the reasoning effort badge and mode marks | cost | primary: `--text-base`, weight 600 |
-| 2 | provider and account | total tokens | `--fg-2`, weight 400 |
-| 3 | time, the control that copies the request id, verdict | latency | `--muted`, `--text-sm` |
+| 1 | modelo, el modelo sustituido o enrutado a su lado, luego la insignia de esfuerzo de razonamiento y las marcas de modo | costo | primario: `--text-base`, peso 600 |
+| 2 | proveedor y cuenta | tokens totales | `--fg-2`, peso 400 |
+| 3 | hora, el control que copia el id de la solicitud, veredicto | latencia | `--muted`, `--text-sm` |
 
-A record in a list is there to be recognised; the detail drawer, one tap away, is where it is
-read. First-token time, the token breakdown, the cache rate, speed, the credential kind, the
-caller's key and the client label are therefore not drawn in a stacked record. A phone-wide
-record that repeats every table column in small type cannot be scanned, however few pixels it
-takes.
+Un registro en una lista está para ser reconocido; el panel de detalle, a un toque de distancia, es donde se
+lee. El tiempo hasta el primer token, el desglose de tokens, la tasa de caché, la velocidad, el tipo de credencial, la
+clave del llamador y la etiqueta del cliente no se dibujan por tanto en un registro apilado. Un
+registro del ancho de un teléfono que repite toda columna de la tabla en letra pequeña no puede escanearse, por pocos píxeles que
+ocupe.
 
-It is the table row's own DOM. The cells that hold two facts (time and id, total and breakdown,
-latency and first token) dissolve with `display: contents`, and the line breaks are those cells'
-pseudo-elements. Each line has one cell with a zero flex basis that gives way first, so a line is
-cut short rather than wrapped; the record is the same height at 320px and at 390px. The checkbox
-is placed in the record's left padding, so the three lines share one left edge and the model and
-provider marks form one column.
+Es el propio DOM de la fila de la tabla. Las celdas que contienen dos datos (hora e id, total y desglose,
+latencia y primer token) se disuelven con `display: contents`, y los saltos de línea son los
+pseudoelementos de esas celdas. Cada línea tiene una celda con base flex cero que cede primero, de modo que una línea se
+recorta en lugar de ajustarse; el registro tiene la misma altura a 320px y a 390px. La casilla de verificación
+se sitúa en el relleno izquierdo del registro, de modo que las tres líneas comparten un borde izquierdo y las marcas de modelo y
+proveedor forman una columna.
 
-**Hue is for the exception.** In the table each mark's tint has a column to itself. Folded into
-a few lines, a success fill, an effort hue and a credential kind land in one glance and none
-reads as a signal. A stacked record is therefore drawn in the text colours, and three things
-keep a hue: the verdict's pip, a failed verdict in full, and the reasoning effort badge, which
-is drawn exactly as the table draws it because it is the one mark that explains a record's cost
-and latency at a glance. The badge is never cut short: on its line the model's name gives way.
-The table above the threshold is unchanged.
+**El tono es para la excepción.** En la tabla el tinte de cada marca tiene una columna para él solo. Plegados en
+unas pocas líneas, un relleno de éxito, un tono de esfuerzo y un tipo de credencial llegan de un vistazo y ninguno
+se lee como una señal. Un registro apilado se dibuja por tanto en los colores de texto, y tres cosas
+conservan un tono: el indicador del veredicto, un veredicto fallido completo, y la insignia de esfuerzo de razonamiento, que
+se dibuja exactamente como la dibuja la tabla porque es la única marca que explica de un vistazo el costo y la
+latencia de un registro. La insignia nunca se recorta: en su línea cede el nombre del modelo.
+La tabla por encima del umbral no cambia.
 
-### A page never moves sideways
+### Una página nunca se mueve lateralmente
 
-The console scrolls inside its content pane, and on a phone that pane scrolls vertically only.
-Content wider than a phone scrolls inside its own frame: a code block, a wide table, the token
-heatmap, and a strip of choices that cannot wrap (the price book's filters, the configuration
-page's section nav) swipes within the strip with `overscroll-behavior-x: contain`. Anything else
-is bounded by its column. A sideways swipe that moves the whole page or the whole conversation is a
-defect, and the phone-list and narrow-workspace probes measure the content pane's own
-`scrollWidth`, not only the document's.
+La consola se desplaza dentro de su panel de contenido, y en un teléfono ese panel se desplaza solo verticalmente.
+El contenido más ancho que un teléfono se desplaza dentro de su propio marco: un bloque de código, una tabla ancha, el mapa
+de calor de tokens, y una tira de opciones que no puede ajustarse (los filtros del libro de precios, la navegación de secciones de la
+página de configuración) se desliza dentro de la tira con `overscroll-behavior-x: contain`. Todo lo demás
+queda acotado por su columna. Un deslizamiento lateral que mueve toda la página o toda la conversación es un
+defecto, y las sondas de lista de teléfono y de espacio de trabajo estrecho miden el propio `scrollWidth` del panel de contenido,
+no solo el del documento.
 
-### The request list is the page's one scroller, and it follows the finger
+### La lista de solicitudes es el único desplazable de la página, y sigue al dedo
 
-On a phone, or wherever a finger is the main pointer, the request page is exactly the content pane
-and the list is the only thing on it that scrolls. A page around the list that could scroll took
-over every drag that started on the filters and every drag that reached the end of the list, then
-bounced at its own end, or reloaded the page when pulled down at the top. Over the list the browser
-keeps only sideways panning and zoom (`touch-action: pan-x pinch-zoom`).
+En un teléfono, o dondequiera que un dedo sea el puntero principal, la página de solicitudes es exactamente el panel de contenido
+y la lista es lo único que hay en ella que se desplaza. Una página alrededor de la lista que pudiera desplazarse se
+apropiaba de todo arrastre que empezaba en los filtros y de todo arrastre que llegaba al final de la lista,
+y luego rebotaba en su propio final, o recargaba la página al tirar hacia abajo arriba del todo. Sobre la lista el navegador
+conserva solo el paneo lateral y el pellizco de zoom (`touch-action: pan-x pinch-zoom`).
 
-The request list starts with a 72px virtual-row estimate, projected through Listy's
-component token (22px font height plus twice 25px block padding). Its wrapper padding
-is overridden to zero by `web/src/pages/UsageEventsPage.css`: this projection supplies
-a sizing hint, while the existing row CSS owns visible spacing. Actual item and
-group-header heights are still measured, including the taller phone rows.
+La lista de solicitudes empieza con una estimación de fila virtual de 72px, proyectada mediante el
+token de componente de Listy (22px de altura de fuente más dos veces 25px de relleno de bloque). El relleno de su contenedor
+se anula a cero en `web/src/pages/UsageEventsPage.css`: esta proyección aporta
+una pista de tamaño, mientras que el CSS de fila existente posee el espaciado visible. Las alturas reales de elementos y
+de cabeceras de grupo se siguen midiendo, incluidas las filas más altas del teléfono.
 
-Each row declares `contain: layout style`. The list measures every mounted row after
-each commit, and without containment measuring one row lays out the rows around it;
-nothing a row draws depends on its neighbours, so the boundary costs no geometry. A row
-is therefore the containing block for anything positioned inside it: row-level popups
-belong to the list (the shared tooltip) or to a portal, never to an absolutely
-positioned child that must escape the row.
+Cada fila declara `contain: layout style`. La lista mide cada fila montada tras
+cada confirmación, y sin contención medir una fila recalcula el layout de las filas que la rodean;
+nada de lo que dibuja una fila depende de sus vecinas, por lo que el límite no cuesta geometría. Una fila
+es por tanto el bloque contenedor de todo lo posicionado dentro de ella: los popups a nivel de fila
+pertenecen a la lista (el tooltip compartido) o a un portal, nunca a un hijo posicionado de forma
+absoluta que deba escapar de la fila.
 
-The list is virtualized, so the browser cannot scroll it for a finger, and the library's own touch
-emulation ran up to four times ahead of the finger: it restarted a fixed-interval coast after every
-move, and that coast kept firing while the finger was still down. The console moves the list itself
+La lista está virtualizada, de modo que el navegador no puede desplazarla para un dedo, y la propia emulación táctil de la biblioteca
+corría hasta cuatro veces por delante del dedo: reiniciaba una inercia de intervalo fijo tras cada
+movimiento, y esa inercia seguía disparándose mientras el dedo seguía apoyado. La consola mueve la lista por sí misma
 (`web/src/components/usage/requestListTouch.ts`, ADR 0048):
 
-- **The list moves exactly as far as the finger**, drawn on the frame the finger moved.
-- **A flick coasts** at the speed the finger left with, slowing at iOS's normal rate, and a finger
-  that rested before lifting does not coast.
-- **A tap on a coasting list only stops it**, as on any native scroller; it does not open the row
-  under it. A tap elsewhere, on the pagination or the back-to-top pill, stops the coast and still
-  acts.
-- **The header folds and unfolds with the wheel's gestures.** The first drag up folds it away and
-  leaves row one in place, as the first notch does. A deliberate pull down past the top of the list
-  (48px) unfolds it, as the top bounce does; arriving at the top does not. Folding is what makes room
-  on a phone, where the unfolded filters take most of the screen; the pull is the only way back to
-  them that a finger has, since the back-to-top pill is not shown at the top. A page that is loading
-  or found nothing has no list to pull, so a drag there never folds the header, and a header folded
-  before the list went away unfolds on a 48px pull down anywhere on the page.
-- **The fold slides, and the list answers it once.** The header folds over `--motion-base` from
-  its own height, and the list fills the height that frees, so every frame of the fold resizes the
-  list's box. What made that drop frames - a wheel rocking across the top of the list stuttered at
-  each change of direction - was everything that answered each frame: the page re-rendered to pass
-  the list a new height, and the virtual list measured every mounted row again. Now nothing does.
-  A list about to grow takes the fold's end height in one step when the fold starts, read from the
-  transition's own end keyframes; a list about to shrink keeps its height until the fold lands,
-  and its host clips the surplus (`useRequestListHeight`). The fold and the back-to-top pill are
-  held outside the page's render (`viewFlag.ts`), so a flip re-renders the header wrapper and its
-  button and nothing else. Measured on the dev server over twelve rocks: about 20 frames over 25ms
-  before, about 10 now, and a third less script; the same fold with no transition at all measures
-  6, which is the price of the slide.
+- **La lista se mueve exactamente lo que el dedo**, dibujada en el fotograma en que se movió el dedo.
+- **Un golpe de dedo continúa por inercia** a la velocidad con que lo dejó el dedo, frenando al ritmo normal de iOS, y un dedo
+  que reposó antes de levantarse no continúa.
+- **Un toque sobre una lista en inercia solo la detiene**, como en cualquier desplazable nativo; no abre la fila
+  que hay debajo. Un toque en otro sitio, en la paginación o en la píldora de volver arriba, detiene la inercia y aun así
+  actúa.
+- **La cabecera se pliega y se despliega con los gestos de la rueda.** El primer arrastre hacia arriba la pliega
+  y deja la fila uno en su sitio, como hace la primera muesca. Un tirón deliberado hacia abajo pasada la parte superior de la lista
+  (48px) la despliega, como hace el rebote superior; llegar arriba no lo hace. Plegar es lo que hace sitio
+  en un teléfono, donde los filtros desplegados ocupan la mayor parte de la pantalla; el tirón es la única manera de volver a
+  ellos que tiene un dedo, ya que la píldora de volver arriba no se muestra arriba del todo. Una página que está cargando
+  o que no encontró nada no tiene lista que tirar, de modo que un arrastre allí nunca pliega la cabecera, y una cabecera plegada
+  antes de que la lista desapareciera se despliega con un tirón de 48px hacia abajo en cualquier parte de la página.
+- **El pliegue se desliza, y la lista responde una sola vez.** La cabecera se pliega durante `--motion-base` desde
+  su propia altura, y la lista llena la altura que se libera, de modo que cada fotograma del pliegue redimensiona la
+  caja de la lista. Lo que hacía perder fotogramas - una rueda oscilando por la parte superior de la lista tartamudeaba en
+  cada cambio de dirección - era todo lo que respondía a cada fotograma: la página se volvía a renderizar para pasar
+  a la lista una altura nueva, y la lista virtual volvía a medir cada fila montada. Ahora nada de eso ocurre.
+  Una lista a punto de crecer toma la altura final del pliegue en un solo paso cuando el pliegue empieza, leída de los
+  keyframes finales de la propia transición; una lista a punto de encogerse conserva su altura hasta que el pliegue aterriza,
+  y su anfitrión recorta el excedente (`useRequestListHeight`). El pliegue y la píldora de volver arriba se
+  mantienen fuera del renderizado de la página (`viewFlag.ts`), de modo que un cambio vuelve a renderizar el contenedor de la cabecera y su
+  botón y nada más. Medido en el servidor de desarrollo en doce oscilaciones: unos 20 fotogramas de más de 25ms
+  antes, unos 10 ahora, y un tercio menos de script; el mismo pliegue sin transición alguna mide
+  6, que es el precio del deslizamiento.
 
-### The phone's navigation is the rail, in a sheet
+### La navegación del teléfono es el carril, en una hoja
 
-There is no bottom bar and no phone-specific menu. The sheet carries the rail's own two parts —
-brand and grouped nav — because a phone does not have less to navigate, it has less room to show
-it in, and a second navigation would be a second place for the grouping to drift.
+No hay barra inferior ni menú específico del teléfono. La hoja lleva las dos partes del propio carril —
+marca y navegación agrupada — porque un teléfono no tiene menos que navegar, tiene menos espacio para mostrarlo,
+y una segunda navegación sería un segundo lugar donde la agrupación podría divergir.
 
-**The sheet is bounded in `vw` as well as `px`** (`min(320px, 86vw)`). At a 320px viewport a fixed
-320px sheet leaves no page visible behind the mask, and the reader loses the sense that this is a
-layer over where they were — which is also what tells them Back will put it away.
+**La hoja está acotada en `vw` además de en `px`** (`min(320px, 86vw)`). En un viewport de 320px una hoja fija
+de 320px no deja página visible tras la máscara, y el lector pierde la sensación de que esto es una
+capa sobre donde estaba — que es también lo que le dice que Back la retirará.
 
-A bottom tab bar was considered and rejected: it costs 56px of vertical space plus the home-indicator
-inset on every screen, in a console whose subject is dense tables, and it cannot express four groups
-of seventeen destinations without a "More" that reintroduces the sheet anyway.
+Se consideró y se rechazó una barra de pestañas inferior: cuesta 56px de espacio vertical más el inset del indicador de inicio
+en cada pantalla, en una consola cuyo tema son las tablas densas, y no puede expresar cuatro grupos
+de diecisiete destinos sin un «More» que reintroduce la hoja de todos modos.
 
-### A finger has no hover
 
-Every affordance is drawn where it can be reached. A control revealed only by `:hover` sits at
-`opacity: 0` for the whole life of a touch session, so a row marked interactive by a hover
-arrow is a row with no visible affordance at all. Reveal-on-hover rules therefore carry a
-`@media (hover: none)` counterpart that draws them permanently (`.provider-jump-arrow`,
-`.req-id-quick-copy`), and the console has no rule that hides meaning behind a hover.
+### Un dedo no tiene hover
 
-A tooltip is not an affordance either: it may *name* a control, never be the only way to
-reach one. Where a control's name is short enough to matter on a phone, the name is drawn.
+Toda affordance se dibuja donde puede alcanzarse. Un control revelado solo por `:hover` permanece en
+`opacity: 0` durante toda la vida de una sesión táctil, de modo que una fila marcada como interactiva por una flecha
+de hover es una fila sin ninguna affordance visible. Por eso las reglas de revelar al pasar el puntero llevan una
+contraparte `@media (hover: none)` que las dibuja de forma permanente (`.provider-jump-arrow`,
+`.req-id-quick-copy`), y la consola no tiene ninguna regla que oculte significado tras un hover.
 
-### The tap floor is a hit area, not a drawn size
+Un tooltip tampoco es una affordance: puede *nombrar* un control, nunca ser la única manera de
+alcanzarlo. Cuando el nombre de un control es suficientemente corto como para importar en un teléfono, el nombre se dibuja.
 
-`space scale 4 · 8 · 12 · 16 · 20 · 24 · 32 · 48px` (§4) is what the console's density *is*.
-Enlarging every 28px control would trade a reachability defect for a layout one, so the hit
-area grows while the control keeps its drawn size:
+### El suelo táctil es un área de impacto, no un tamaño dibujado
 
-**The scope is controls that are small in both dimensions.** A control that is *wide* — a labelled
-button, or any of the console's 32px-tall buttons, which is antd's own height everywhere — is aimable
-even when it is short, so it keeps its box. Requiring 40px of height from every button would be
-asserting a change the design system deliberately does not make.
+`space scale 4 · 8 · 12 · 16 · 20 · 24 · 32 · 48px` (§4) es lo que *es* la densidad de la consola.
+Agrandar todo control de 28px cambiaría un defecto de alcance por uno de layout, de modo que el área de
+impacto crece mientras el control conserva su tamaño dibujado:
 
-| Situation | Treatment |
+**El alcance son los controles que son pequeños en ambas dimensiones.** Un control *ancho* — un botón
+rotulado, o cualquiera de los botones de 32px de alto de la consola, que es la altura propia de antd en todas partes — se puede apuntar
+incluso siendo bajo, de modo que conserva su caja. Exigir 40px de altura a todo botón sería
+afirmar un cambio que el sistema de diseño deliberadamente no hace.
+
+| Situación | Tratamiento |
 | --- | --- |
-| Icon buttons and the console's own dense controls — `.config-key-action`, antd's icon-only variant, the drawer close button, pagination steps, the clear affordance | `::before { inset: -4px }` under `(pointer: coarse)`, leaving ~3px of slop beyond the drawn box once the 1px border is accounted for |
-| Tabs and segmented items, which sit edge to edge | grow on the vertical axis only — a horizontal inset would steal the neighbour's taps |
-| `Switch` (40×22, or 32×18 in rows) | grows to 44×24: it sits beside other row controls, so the floor is real dimensions rather than an inset |
-| Number-input steppers (measured 1×19px) | hidden: a control a finger cannot hit is worse than an absent one, and the numeric keypad remains |
-| The request list's column resizer | hidden: a drag near a header edge means "scroll", never "resize a column" |
-| An action cluster whose gap is under 8px | the gap widens, so two 4px insets meet instead of overlapping |
+| Botones de icono y los controles densos propios de la consola — `.config-key-action`, la variante solo-icono de antd, el botón de cierre del panel lateral, los pasos de paginación, la affordance de borrado | `::before { inset: -4px }` bajo `(pointer: coarse)`, dejando ~3px de holgura más allá de la caja dibujada una vez contado el borde de 1px |
+| Pestañas y elementos segmentados, que se sitúan borde con borde | crecen solo en el eje vertical — un inset horizontal robaría los toques del vecino |
+| `Switch` (40×22, o 32×18 en filas) | crece a 44×24: se sitúa junto a otros controles de la fila, de modo que el suelo son dimensiones reales y no un inset |
+| Pasos de los campos numéricos (medidos 1×19px) | ocultos: un control que un dedo no puede pulsar es peor que uno ausente, y el teclado numérico permanece |
+| El redimensionador de columnas de la lista de solicitudes | oculto: un arrastre cerca del borde de una cabecera significa «desplazar», nunca «redimensionar una columna» |
+| Un grupo de acciones cuyo hueco es inferior a 8px | el hueco se ensancha, de modo que dos insets de 4px se encuentran en lugar de solaparse |
 
-**The selector list is a maintenance surface, and its failure mode is silent.** The first version named
-only antd's icon-only variant, which missed the console's own dense controls — the key list's reveal,
-copy, edit and overflow buttons are plain `<button>`s, so they never received a hit area at all. What
-found them was the browser probe's metric being tightened to accept only the control and its
-descendants: the looser metric had counted an *ancestor* as a hit, which is exactly what a point just
-outside an unexpanded button lands on. A control added to the list must be icon-sized; adding a wide
-one would steal its neighbour's taps.
+**La lista de selectores es una superficie de mantenimiento, y su modo de fallo es silencioso.** La primera versión nombraba
+solo la variante solo-icono de antd, lo que dejaba fuera los controles densos propios de la consola — los botones de revelar,
+copiar, editar y desbordamiento de la lista de claves son `<button>` simples, de modo que nunca recibieron un área de impacto. Lo
+que los encontró fue que la métrica de la sonda del navegador se ajustó para aceptar solo el control y sus
+descendientes: la métrica más laxa había contado a un *ancestro* como impacto, que es exactamente donde cae un punto justo
+fuera de un botón sin expandir. Un control añadido a la lista debe tener tamaño de icono; añadir uno ancho
+robaría los toques de su vecino.
 
-The cost is stated rather than hidden: in an action cluster whose gap is 4px, two adjacent 4px
-insets overlap by 4px and the DOM-later control wins that band. That is accepted because the
-band is narrower than the finger contact area the inset exists for, and because those clusters
-re-space their actions when their surface gains a phone row layout.
+El costo se enuncia en lugar de ocultarse: en un grupo de acciones cuyo hueco es de 4px, dos insets de 4px adyacentes
+se solapan 4px y el control posterior en el DOM gana esa banda. Se acepta porque la
+banda es más estrecha que el área de contacto del dedo para la que existe el inset, y porque esos grupos
+reespacian sus acciones cuando su superficie gana un layout de fila de teléfono.
 
-### 16px is the focus floor
+### 16px es el suelo del foco
 
-iOS Safari zooms the entire page when a focused field's font size is under 16px, and the design
-system's base size is 14px — so every text control in the console triggered it. The zoom is the
-browser's fix for an unreadable field, so the *field* changes, not the page's scale: under
-`(pointer: coarse)` every focusable text control takes `font-size: 16px`.
+iOS Safari hace zoom de toda la página cuando el tamaño de fuente de un campo enfocado es inferior a 16px, y el tamaño
+base del sistema de diseño es 14px — así que todo control de texto de la consola lo provocaba. El zoom es el
+arreglo del navegador para un campo ilegible, por lo que cambia el *campo*, no la escala de la página: bajo
+`(pointer: coarse)` todo control de texto enfocable toma `font-size: 16px`.
 
-The declaration carries `!important`, which is deliberate rather than lazy. antd injects its
-component styles into the document at runtime, after the stylesheet, so an equal-specificity
-rule loses on source order; and this stylesheet's own field wrappers raise specificity above
-it again. The console's wrappers no longer restate the 14px token (antd's component rule
-already applies it, so desktop is unchanged), and what remains is one device-level floor that
-is meant to outrank the component layer.
+La declaración lleva `!important`, lo cual es deliberado y no pereza. antd inyecta los estilos de sus
+componentes en el documento en tiempo de ejecución, después de la hoja de estilos, de modo que una regla de igual
+especificidad pierde por orden de fuente; y los propios contenedores de campo de esta hoja de estilos vuelven a elevar la especificidad por encima
+de ella. Los contenedores de la consola ya no repiten el token de 14px (la regla de componente de antd
+ya lo aplica, de modo que el escritorio no cambia), y lo que queda es un suelo a nivel de dispositivo que
+está pensado para prevalecer sobre la capa de componentes.
 
-The *displayed* text of a Select is deliberately left at its token size. The browser reads the
-size of the element it focuses, and that is the control's search input, not its label; growing
-the label as well would trade the console's density for a zoom that is already prevented.
+El texto *mostrado* de un Select se deja deliberadamente en su tamaño de token. El navegador lee el
+tamaño del elemento que enfoca, y ese es el campo de búsqueda del control, no su etiqueta; agrandar
+también la etiqueta cambiaría la densidad de la consola por un zoom que ya está evitado.
 
-Pinch-zoom is never disabled. `maximum-scale=1` and `user-scalable=no` are absent on purpose,
-because double-tap and pinch zoom are how a reader enlarges a dense table.
+El zoom por pellizco nunca se desactiva. `maximum-scale=1` y `user-scalable=no` están ausentes a propósito,
+porque el doble toque y el zoom por pellizco son como un lector agranda una tabla densa.
 
-### Content-first phone tools
+### Herramientas de teléfono centradas en el contenido
 
-At `640px` and below the shell header is one 48px row (`--app-header-height`; 52px above):
-navigation, the ellipsised current page name, refresh and a labelled More trigger. The click-open tools menu shows the current theme and language,
-repository and sign-out; demo mode keeps its marker and write restrictions. Menu rows are at least
-44px high. Back or Escape dismisses the menu and restores its trigger focus; an action opening a
-modal gives focus to that modal. The `900px` navigation-sheet breakpoint is unchanged.
+A `640px` y por debajo, la cabecera de la carcasa es una sola fila de 48px (`--app-header-height`; 52px por encima):
+navegación, el nombre de la página actual con puntos suspensivos, refrescar y un disparador More rotulado. El menú de herramientas, que se abre con un clic, muestra el tema e idioma actuales,
+el repositorio y el cierre de sesión; el modo demo conserva su marcador y sus restricciones de escritura. Las filas del menú miden al menos
+44px de alto. Back o Escape descartan el menú y restauran el foco de su disparador; una acción que abre un
+modal da el foco a ese modal. El punto de corte de hoja de navegación de `900px` no cambia.
 
-`PageHeader.mobileActions` explicitly chooses primary phone actions and an `ActionMenu` for secondary
-tools; desktop `actions` stay unchanged. **The top bar names the page, so the page does not repeat
-it** (ADR 0096): the `h1` stays in the document for the outline and assistive technology and is not
-drawn, a live subtitle and the actions take its row, and a head that held only the title takes no
-room. Content has 12px horizontal padding, and page/header/card gaps use the existing 8/12/16px
-scale.
+`PageHeader.mobileActions` elige explícitamente las acciones principales del teléfono y un `ActionMenu` para las herramientas
+secundarias; las `actions` de escritorio no cambian. **La barra superior nombra la página, así que la página no la repite**
+(ADR 0096): el `h1` permanece en el documento para el esquema y la tecnología de asistencia y no se
+dibuja, un subtítulo en vivo y las acciones ocupan su fila, y una cabecera que solo contenía el título no ocupa
+espacio. El contenido tiene 12px de relleno horizontal, y los huecos de página/cabecera/tarjeta usan la escala
+existente de 8/12/16px.
 
-**Counts and tiles keep their row.** `StatTiles` stays one strip of narrower tiles, a label too
-long for its tile cut rather than wrapped. The dashboard grid keeps two columns and its wide tiles
-span both. A list row's controls share its headline's line when both fit and fall to a line of
-their own, still at the trailing edge, when the headline needs the width. An OAuth credential is
-four lines: identity, state and its switch, traffic and the record's tools, the quota reading.
+**Los recuentos y mosaicos conservan su fila.** `StatTiles` sigue siendo una tira de mosaicos más estrechos, con una etiqueta demasiado
+larga para su mosaico recortada en lugar de ajustada. La cuadrícula del panel conserva dos columnas y sus mosaicos anchos
+abarcan ambas. Los controles de una fila de lista comparten la línea de su titular cuando caben ambos y pasan a una línea
+propia, aún en el borde final, cuando el titular necesita el ancho. Una credencial OAuth son
+cuatro líneas: identidad, estado y su interruptor, tráfico y las herramientas del registro, la lectura de cuota.
 
-**The request filters are two rows.** Search and the way into the full filter panel hold the first.
-The window, the verdict, the model and provider facets, the grouping and the model view are one
-strip that swipes inside itself and bleeds to the page edge, so a control cut off by the edge says
-there is more that way. The page head is one row of state and tools: auto refresh, the ingest
-verdict (the one item that gives way), the fold toggle and refresh. The window's bounds are not
-printed beside the window control that already states them. The list runs to the screen's edges. Additional provider and audit filters use
-`FilterDisclosure`, whose summary keeps the selected state visible. Existing responsive row lists,
-request-list inertia and conversation scroll ownership remain unchanged. The shared conversation frame bounds its phone height to the usable viewport, keeping input and Send above the software keyboard.
+**Los filtros de solicitudes son dos filas.** La búsqueda y la entrada al panel de filtros completo ocupan la primera.
+La ventana, el veredicto, las facetas de modelo y proveedor, la agrupación y la vista de modelo son una sola
+tira que se desliza dentro de sí misma y sangra hasta el borde de la página, de modo que un control cortado por el borde
+dice que hay más en esa dirección. La cabecera de la página es una fila de estado y herramientas: autorrefresco, el veredicto
+de ingesta (el único elemento que cede), el conmutador de pliegue y refrescar. Los límites de la ventana no se
+imprimen junto al control de ventana que ya los enuncia. La lista llega hasta los bordes de la pantalla. Los filtros adicionales de proveedor y auditoría usan
+`FilterDisclosure`, cuyo resumen mantiene visible el estado seleccionado. Las listas de filas adaptables existentes,
+la inercia de la lista de solicitudes y la propiedad del desplazamiento de la conversación permanecen sin cambios. El marco de conversación compartido acota su altura de teléfono al viewport utilizable, manteniendo el campo de entrada y Send sobre el teclado de software.
 
-The phone configuration toolbar is not sticky: status and mode share one row, visual search has its
-own row, and backup/reload live in the tools menu. Category navigation retains local horizontal
-scrolling. Group titles and descriptions remain; the redundant category heading is omitted. Only a
-dirty draft shows the bottom `ConfigDirtyBar`; its measured height reserves content space so the
-last field remains reachable. Validation, single confirmation and revision conflict behaviour remain
-owned by the draft/save flow.
+La barra de herramientas de configuración del teléfono no es fija: el estado y el modo comparten una fila, la búsqueda visual tiene
+la suya, y la copia de seguridad y la recarga viven en el menú de herramientas. La navegación por categorías conserva el
+desplazamiento horizontal local. Los títulos y descripciones de grupo permanecen; se omite el encabezado redundante de categoría. Solo un
+borrador modificado muestra la `ConfigDirtyBar` inferior; su altura medida reserva espacio de contenido para que el
+último campo siga siendo alcanzable. La validación, la confirmación única y el comportamiento ante conflictos de revisión siguen a cargo
+del flujo de borrador/guardado.
 
-### The source editor is a phone surface too
+### El editor de código fuente también es una superficie de teléfono
 
-Monaco renders text and widgets with DOM and owns wrapping, gutter and scrolling geometry itself.
-Configure those options through the editor API rather than trying to force them with CSS.
+Monaco renderiza texto y widgets con DOM y posee por sí mismo la geometría de ajuste de línea, medianil y desplazamiento.
+Configure esas opciones mediante la API del editor en lugar de intentar forzarlas con CSS.
 
-| Option | On a phone | Why |
+| Opción | En un teléfono | Por qué |
 | --- | --- | --- |
-| `fontSize` / `lineHeight` | 16 / 24; desktop 13 / 21 | Legibility and the iOS input focus floor |
-| `wordWrap` | `on` by default; visible toggle | Long URLs and indentation must remain readable; disabling it scrolls only the editor |
-| `lineNumbersMinChars` | 2 | Keep line identity without a desktop-width gutter |
-| Folding, decorations, minimap, overview ruler and indent guides | disabled | Preserve the narrow text column |
-| `wrappingIndent` | `none` | Continuations must not inherit a deeply indented column |
+| `fontSize` / `lineHeight` | 16 / 24; escritorio 13 / 21 | Legibilidad y el suelo de foco de entrada de iOS |
+| `wordWrap` | `on` por defecto; conmutador visible | Las URL largas y la sangría deben seguir siendo legibles; desactivarlo desplaza solo el editor |
+| `lineNumbersMinChars` | 2 | Conservar la identidad de línea sin un medianil del ancho de escritorio |
+| Plegado, decoraciones, minimapa, regla de vista general y guías de sangría | desactivados | Preservar la columna estrecha de texto |
+| `wrappingIndent` | `none` | Las continuaciones no deben heredar una columna con sangría profunda |
 
-Find, wrap and focused editing are direct actions. Format, copy and statistics live in the phone
-source tools menu; desktop shortcuts remain on desktop. A manual wrap choice lasts for the source
-session, including rotation and focus changes; leaving Source resets it. Without a manual choice,
-the default follows the current phone breakpoint.
+Buscar, ajustar y la edición enfocada son acciones directas. Formatear, copiar y estadísticas viven en el menú de herramientas
+de código fuente del teléfono; los atajos de escritorio permanecen en el escritorio. Una elección manual de ajuste dura toda la sesión
+de código fuente, incluidas la rotación y los cambios de foco; salir de Source la restablece. Sin una elección manual,
+el valor predeterminado sigue el punto de corte actual de teléfono.
 
-Focused editing fixes the **same source container** inside the usable viewport rather than mounting
-another editor. Draft, undo stack, selection and scroll survive entry and exit. Background application
-siblings become inert; body-level dialog portals remain usable. Back exits focus after closing any
-inner menu, confirmation or conflict dialog. The entry button regains focus after exit.
-`useVisibleViewport` follows keyboard resize and caret panning through `visualViewport` resize/scroll,
-with layout viewport fallback and pinch-zoom left to the browser. The editor and dirty actions fit
-inside those bounds; their observers/listeners are effect-owned and cleaned under StrictMode.
+La edición enfocada fija el **mismo contenedor de código fuente** dentro del viewport utilizable en lugar de montar
+otro editor. El borrador, la pila de deshacer, la selección y el desplazamiento sobreviven a la entrada y la salida. Los hermanos
+de la aplicación en segundo plano pasan a inertes; los portales de diálogo a nivel de body siguen siendo utilizables. Back sale del foco tras cerrar cualquier
+menú interno, confirmación o diálogo de conflicto. El botón de entrada recupera el foco tras salir.
+`useVisibleViewport` sigue el redimensionado del teclado y el paneo del cursor mediante los eventos resize/scroll de `visualViewport`,
+con respaldo al viewport de layout y el zoom por pellizco dejado al navegador. El editor y las acciones de borrador modificado caben
+dentro de esos límites; sus observadores y listeners son propiedad del efecto y se limpian bajo StrictMode.
 
-### A sheet slides opaque
+### Una hoja se desliza opaca
 
-antd starts a drawer's panel at 70% opacity and fades it in over the slide. On a phone a sheet is
-the width of the screen, so the page it covers stays readable through it for the whole slide: two
-layers of text on one surface. Drawer wrapper dimensions update immediately; only transform
-transitions normally, and reduced motion disables the wrapper transition entirely. The panel's opacity is held at 1 for every drawer, and the mask
-keeps its fade. A panel on its way out keeps drawing what it held: the request detail drawer
-remembers the record it showed, so what leaves is the record and not an emptied sheet.
+antd inicia el panel de un drawer al 70% de opacidad y lo desvanece hacia dentro durante el deslizamiento. En un teléfono una hoja tiene
+el ancho de la pantalla, de modo que la página que cubre sigue siendo legible a través de ella durante todo el deslizamiento: dos
+capas de texto en una misma superficie. Las dimensiones del contenedor del Drawer se actualizan de inmediato; solo transform
+hace transición normalmente, y el movimiento reducido desactiva por completo la transición del contenedor. La opacidad del panel se mantiene en 1 para todo drawer, y la máscara
+conserva su desvanecimiento. Un panel que se va sigue dibujando lo que contenía: el panel de detalle de solicitud
+recuerda el registro que mostró, de modo que lo que sale es el registro y no una hoja vaciada.
 
-### The viewport is not a fixed rectangle
+### El viewport no es un rectángulo fijo
 
-- `viewport-fit=cover` is declared in `web/index.html`, which is what makes
-  `env(safe-area-inset-*)` resolve at all. The insets are applied to chrome that touches a
-  screen edge (header, rail, sheet), never to a scroll container — a scroller given a bottom
-  inset scrolls its own last line out from under itself.
-- Heights that decide how much data fits use `dvh`, not `vh`: the mobile URL bar changes
-  `100vh` continuously, so a `vh`-sized logs tail grows and shrinks under the reader while
-  they scroll. `vh` stays first in each pair as the fallback.
-- `touch-action: manipulation` is applied to controls, where it removes the double-tap delay
-  the reader feels as lag. It is deliberately *not* applied to the page.
+- `viewport-fit=cover` se declara en `web/index.html`, que es lo que hace que
+  `env(safe-area-inset-*)` se resuelva en absoluto. Los insets se aplican al chrome que toca el borde de una
+  pantalla (cabecera, carril, hoja), nunca a un contenedor de desplazamiento — un desplazable con un inset
+  inferior desplaza su propia última línea fuera de debajo de sí mismo.
+- Las alturas que deciden cuántos datos caben usan `dvh`, no `vh`: la barra de URL móvil cambia
+  `100vh` continuamente, de modo que una cola de registros dimensionada en `vh` crece y se encoge bajo el lector mientras
+  este se desplaza. `vh` permanece primero en cada par como respaldo.
+- `touch-action: manipulation` se aplica a los controles, donde elimina el retraso del doble toque
+  que el lector siente como lag. Deliberadamente *no* se aplica a la página.
 
-### Back dismisses the overlay, and it is the platform's own Back
+### Back descarta la superposición, y es el Back propio de la plataforma
 
-The console does not implement a swipe gesture, and the reason is not effort. iOS Safari and
-Android predictive back already own the screen edges: a JavaScript edge-swipe either loses the
-gesture to the browser or fights it, and it can only ever approximately follow the finger. The
-platform's Back is native, so joining it means the hardware button, the browser's back arrow and
-the edge gesture all dismiss an overlay at native frame rate with nothing to reconcile.
+La consola no implementa un gesto de deslizamiento, y la razón no es el esfuerzo. iOS Safari y
+el back predictivo de Android ya poseen los bordes de la pantalla: un deslizamiento de borde en JavaScript pierde el
+gesto frente al navegador o pelea con él, y solo puede seguir al dedo de forma aproximada. El
+Back de la plataforma es nativo, de modo que unirse a él significa que el botón de hardware, la flecha atrás del navegador y
+el gesto de borde descartan una superposición a la tasa de fotogramas nativa sin nada que reconciliar.
 
-**The contract.** Any Drawer- or Modal-class overlay is one history entry. Opening it pushes an
-entry that keeps the same URL and the router's own bookkeeping, marked with the overlay's id;
-the platform Back pops that entry, and the pop dismisses the topmost overlay. The route never
-changes, so Back on an open overlay cannot navigate. `useOverlayHistory`
-(`web/src/hooks/useOverlayHistory.ts`) is the whole wiring, and its policy lives in
+**El contrato.** Toda superposición de clase Drawer o Modal es una entrada de historial. Abrirla empuja una
+entrada que conserva la misma URL y la contabilidad propia del router, marcada con el id de la superposición;
+el Back de la plataforma extrae esa entrada, y la extracción descarta la superposición más alta. La ruta nunca
+cambia, de modo que Back sobre una superposición abierta no puede navegar. `useOverlayHistory`
+(`web/src/hooks/useOverlayHistory.ts`) es todo el cableado, y su política vive en
 `web/src/hooks/overlayHistory.ts`:
 
 ```tsx
 useOverlayHistory({ isOpen, onClose });
 ```
 
-**The boundary is Drawer and Modal.** Popovers, dropdowns, selects and tooltips are not
-overlays: they are opened by a click that also says what they are for, they close on the same
-gesture that opened them, and giving each one a history entry would make Back traverse the
-toolbar instead of the page.
+**El límite es Drawer y Modal.** Los popovers, dropdowns, selects y tooltips no son
+superposiciones: los abre un clic que también dice para qué sirven, se cierran con el mismo
+gesto que los abrió, y dar a cada uno una entrada de historial haría que Back recorriera la
+barra de herramientas en lugar de la página.
 
-Four consequences are designed for rather than discovered, and each is pinned by
-`scripts/test-overlay-history.ts` and the `overlay-back` browser scenario:
+Cuatro consecuencias están previstas en el diseño y no descubiertas, y cada una está fijada por
+`scripts/test-overlay-history.ts` y el escenario de navegador `overlay-back`:
 
-| Situation | Behaviour | Why |
+| Situación | Comportamiento | Por qué |
 | --- | --- | --- |
-| A router navigation happened after the overlay opened | The sentinel is abandoned, not consumed | History entries cannot be removed, so consuming it would traverse the entry that was just written - the filter drawer's Apply closing over its own filters |
-| The overlay is closed by its own UI | Its sentinel is consumed, so no dead entry is left | Otherwise the reader's next Back spends itself on an entry that holds nothing |
-| The overlay's page unmounts while it is open | The sentinel is abandoned in place | A dead entry costs one Back press at most and never a wrong navigation |
-| The overlay refuses to close (an unsaved-edit confirmation) | Its sentinel is re-armed | Without this the next Back would leave the page out from under an open editor |
-| The reader goes *forward* after a Back | Nothing reopens | A forward press is spent; reopening overlays on it would resurrect a dialog the reader dismissed |
+| Ocurrió una navegación del router después de abrir la superposición | El centinela se abandona, no se consume | Las entradas de historial no pueden eliminarse, de modo que consumirlo recorrería la entrada que acaba de escribirse - el Apply del panel de filtros cerrándose sobre sus propios filtros |
+| La superposición se cierra con su propia UI | Su centinela se consume, de modo que no queda ninguna entrada muerta | De lo contrario el siguiente Back del lector se gasta en una entrada que no contiene nada |
+| La página de la superposición se desmonta mientras está abierta | El centinela se abandona en su lugar | Una entrada muerta cuesta como mucho una pulsación de Back y nunca una navegación equivocada |
+| La superposición se niega a cerrar (una confirmación de edición sin guardar) | Su centinela se rearma | Sin esto el siguiente Back sacaría al lector de la página dejando un editor abierto |
+| El lector va *hacia adelante* tras un Back | No se reabre nada | Una pulsación hacia adelante se gasta; reabrir superposiciones con ella resucitaría un diálogo que el lector descartó |
 
-`prefers-reduced-motion` is not involved: the platform owns the animation, which is one more
-reason this is the right mechanism rather than a JS gesture.
+`prefers-reduced-motion` no interviene: la plataforma posee la animación, que es una razón más
+para que este sea el mecanismo correcto y no un gesto en JS.
 
-### What a phone layout is
+### Qué es un layout de teléfono
 
-A phone layout is a second *rendering* of one list, never a second list. The dataset, the
-filters, the URL and the actions are the same; only the arrangement changes, and the width is
-what changes it — never a control the operator has to find, and never a mode that has to be
-remembered. ADR 0012 records the threshold, its measurement and its alternatives.
+Un layout de teléfono es una segunda *representación* de una lista, nunca una segunda lista. El conjunto de datos, los
+filtros, la URL y las acciones son los mismos; solo cambia la disposición, y lo que la cambia es el ancho
+— nunca un control que el operador tenga que encontrar, y nunca un modo que haya que
+recordar. El ADR 0012 registra el umbral, su medición y sus alternativas.
 
-## 9. Checklist for new UI
-- [ ] Colors only via the resolved palette / CSS vars; semantic colors carry meaning
-- [ ] A *relationship* between two colors (a hover step, a divider, the surface a tooltip sits on) is
-      part of the derivation in `web/src/theme/palette.ts`, not a literal in a component and not a second
-      formula - an operator's own palette has to inherit it
-- [ ] A continuous scale (cache rate) reads from its own tokens, never a
-      per-component hex, and stays ≥ 4.5:1 against its own badge fill
-- [ ] No gradients; a shadow only on a summoned layer; corners from the 2 · 6 · 8 · 12 scale, one step below the frame
-- [ ] Fonts from the roles only: `--font-ui` for names, prose and figures, `--font-mono` for identifiers, keys, paths and code (never a new font-family)
-- [ ] The page opens with `PageHeader`; a refresh is `RefreshButton`; a state is `StatusLabel`; a list is `ResponsiveList`
-- [ ] An action's outcome is a `useToast` toast; a failed read is a `LoadFailure` with Retry in the region's place; a condition is a `Notice` (§5, Feedback surfaces)
-- [ ] One page title; subtitles only with live data; no duplicated translations
-- [ ] Nav position marked by 2px `--fg` left tick rule, not a filled block or semantic color
-- [ ] Settings and management favor open section lists over heavy card wrappers
-- [ ] Cards reserved for KPIs, summaries, and peer comparisons
-- [ ] An on/off control is `Switch` from `components/common/Switch`, never antd's (§5, Switch)
-- [ ] Status shown with pip + text, never color alone
-- [ ] Numbers tabular; empty states say what's missing (no fake data or invented workspace/account placeholders)
-- [ ] A name is a label, not an identity: renaming never changes what a filter selects, and an unnamed value falls back to something recognisable rather than a hash
-- [ ] Any count states its window and source; a missing observation is never rendered as a fabricated zero or date
-- [ ] "Nothing to show" distinguishes its reasons: blocked (cannot serve it),
-      loading (no answer yet), empty (a live source with nothing in it). One
-      shared message makes a working page look broken.
-- [ ] Wheel scrolls only the hovered column; page never scrolls body-wide
-- [ ] Nothing is reachable only by hover: a reveal-on-hover rule carries a `(hover: none)` counterpart
+## 9. Lista de verificación para nueva UI
+- [ ] Colores solo mediante la paleta resuelta / variables CSS; los colores semánticos llevan significado
+- [ ] Una *relación* entre dos colores (un paso de hover, un divisor, la superficie sobre la que se asienta un tooltip) es
+      parte de la derivación en `web/src/theme/palette.ts`, no un literal en un componente ni una segunda
+      fórmula - la paleta propia de un operador tiene que heredarla
+- [ ] Una escala continua (tasa de caché) se lee de sus propios tokens, nunca de un hex
+      por componente, y se mantiene ≥ 4,5:1 frente al relleno de su propia insignia
+- [ ] Sin degradados; una sombra solo en una capa invocada; esquinas de la escala 2 · 6 · 8 · 12, un paso por debajo del marco
+- [ ] Tipografías solo de los roles: `--font-ui` para nombres, prosa y cifras, `--font-mono` para identificadores, claves, rutas y código (nunca una nueva font-family)
+- [ ] La página abre con `PageHeader`; un refresco es `RefreshButton`; un estado es `StatusLabel`; una lista es `ResponsiveList`
+- [ ] El resultado de una acción es un toast de `useToast`; una lectura fallida es un `LoadFailure` con Retry en el lugar de la región; una condición es un `Notice` (§5, Superficies de retroalimentación)
+- [ ] Un solo título de página; subtítulos solo con datos en vivo; sin traducciones duplicadas
+- [ ] Posición de navegación marcada con una regla-marca izquierda de 2px `--fg`, no un bloque relleno ni un color semántico
+- [ ] Los ajustes y la gestión favorecen listas de sección abiertas sobre contenedores de tarjeta pesados
+- [ ] Tarjetas reservadas para KPI, resúmenes y comparaciones entre pares
+- [ ] Un control de encendido/apagado es `Switch` de `components/common/Switch`, nunca el de antd (§5, Switch)
+- [ ] Estado mostrado con indicador + texto, nunca solo con color
+- [ ] Números tabulares; los estados vacíos dicen qué falta (sin datos falsos ni marcadores inventados de espacio de trabajo o cuenta)
+- [ ] Un nombre es una etiqueta, no una identidad: renombrar nunca cambia lo que selecciona un filtro, y un valor sin nombre recurre a algo reconocible en lugar de un hash
+- [ ] Todo recuento enuncia su ventana y su fuente; una observación ausente nunca se renderiza como un cero o una fecha fabricados
+- [ ] «Nada que mostrar» distingue sus motivos: bloqueado (no puede servirlo),
+      cargando (aún sin respuesta), vacío (una fuente en vivo sin nada). Un
+      mensaje compartido hace que una página que funciona parezca rota.
+- [ ] La rueda desplaza solo la columna sobre la que está el puntero; la página nunca se desplaza en todo el body
+- [ ] Nada es alcanzable solo con hover: una regla de revelar al pasar el puntero lleva una contraparte `(hover: none)`
       (§8)
-- [ ] A control a finger must hit is at least ~40px after its hit area, and a focusable text control is
-      at least 16px; both are achieved without moving the drawn size (§8)
-- [ ] A new threshold is one of the two viewport breakpoints or a container query on the box the layout
-      is actually about, and it states which (§8)
+- [ ] Un control que un dedo debe pulsar mide al menos ~40px tras su área de impacto, y un control de texto enfocable mide
+      al menos 16px; ambos se logran sin cambiar el tamaño dibujado (§8)
+- [ ] Un nuevo umbral es uno de los dos puntos de corte de viewport o una consulta de contenedor sobre la caja de la que
+      trata realmente el layout, y enuncia cuál (§8)
 
-### Cost & Usage provider grouping
+### Agrupación de proveedores en Cost & Usage
 
-The price book uses the existing console tokens and table/phone-row primitives. Provider headings carry the shared provider mark and display name, authentication kind and routing priority; model rows carry text identities and inline pricing actions. One global 20-row page bounds the rendered memberships across groups. A single sticky footer shows the visible entry range and page navigation; phones use a read-only compact page indicator with 40px previous/next targets. Search and provider/mode filters remain above the list, with the sync control in the page header. The upstream model picker uses bounded 12-row pages. No new palette, typography, spacing or motion tokens are introduced.
+El libro de precios usa los tokens existentes de la consola y las primitivas de tabla y fila de teléfono. Los encabezados de proveedor llevan la marca compartida del proveedor y su nombre visible, el tipo de autenticación y la prioridad de enrutamiento; las filas de modelo llevan identidades de texto y acciones de precio en línea. Una única página global de 20 filas acota las pertenencias renderizadas entre grupos. Un único pie fijo muestra el rango de entradas visible y la navegación de páginas; los teléfonos usan un indicador de página compacto de solo lectura con objetivos anterior/siguiente de 40px. La búsqueda y los filtros de proveedor/modo permanecen sobre la lista, con el control de sincronización en la cabecera de la página. El selector de modelos upstream usa páginas acotadas de 12 filas. No se introducen nuevos tokens de paleta, tipografía, espaciado ni movimiento.
 
-### Time zone picker
+### Selector de zona horaria
 
-The shared `TimeZoneSelect` follows the console's existing settings rows and color tokens. The selected value names the actual IANA zone. Options use two aligned columns: a wrapping zone name on the left and a right-aligned, tabular UTC offset on the right. The server zone is pinned first with a secondary localized source label below its name. The field and popup share a width, capped by the viewport; narrow layouts use the settings row's full width. The description is only “Used for timestamps and calendar-day totals.”
+El `TimeZoneSelect` compartido sigue las filas de ajustes y los tokens de color existentes de la consola. El valor seleccionado nombra la zona IANA real. Las opciones usan dos columnas alineadas: un nombre de zona con ajuste de línea a la izquierda y un desfase UTC tabular alineado a la derecha. La zona del servidor se fija primero con una etiqueta secundaria localizada de origen bajo su nombre. El campo y el popup comparten ancho, limitado por el viewport; los layouts estrechos usan el ancho completo de la fila de ajustes. La descripción es solo «Used for timestamps and calendar-day totals.».
 
-The list uses fixed 64-pixel virtual rows, with space reserved for the selection indicator on every row so offsets do not shift when selected. Search accepts zone/city names, spaces in place of underscores, and UTC offsets. Offset labels reflect the current date, including fractional offsets and daylight saving. Existing typography, palette and motion tokens remain unchanged.
+La lista usa filas virtuales fijas de 64 píxeles, con espacio reservado para el indicador de selección en todas las filas para que los desfases no se desplacen al seleccionar. La búsqueda acepta nombres de zona/ciudad, espacios en lugar de guiones bajos y desfases UTC. Las etiquetas de desfase reflejan la fecha actual, incluidos los desfases fraccionarios y el horario de verano. La tipografía, la paleta y los tokens de movimiento existentes no cambian.
 
-### Live elapsed labels and Stop
+### Etiquetas de tiempo transcurrido en vivo y Stop
 
-Agent activity and running capability rows use isolated `LiveElapsed`
-labels. A shared visible-only animation-frame clock quantizes milliseconds to 10ms and seconds
-to 0.1s; a formatted external-store snapshot limits second-scale label renders to 10Hz without
-rerendering the page or transcript. Hidden documents and settled labels schedule no frames.
-Stop is the composer's send slot with a square glyph (see "The composer is one gate"); it uses the
-existing `--accent-hover` / `--accent-on` tokens and no shadow. This changes component usage, not the palette or token mapping.
+La actividad del Agent y las filas de capacidades en ejecución usan etiquetas `LiveElapsed`
+aisladas. Un reloj de fotogramas de animación compartido, solo visible, cuantiza los milisegundos a 10ms y los segundos
+a 0,1s; una instantánea formateada de almacén externo limita los renderizados de etiquetas a escala de segundos a 10Hz sin
+volver a renderizar la página ni la transcripción. Los documentos ocultos y las etiquetas asentadas no programan fotogramas.
+Stop es la ranura de envío del compositor con un glifo cuadrado (véase «El compositor es una sola puerta»); usa los
+tokens existentes `--accent-hover` / `--accent-on` y ninguna sombra. Esto cambia el uso de componentes, no la paleta ni el mapeo de tokens.
 
-### Custom icon picker
+### Selector de icono personalizado
 
-The existing icon modal has Built-in and Custom segments. The built-in catalog keeps its category filters and lazy artwork loading. The library header pairs its title/count with Add icon; editor headers pair Back with the action title. The custom library has name search, full-width empty/search-empty states and artwork cards with separate selection, edit and delete targets. New/edit forms replace the grid within the same modal: a named file/Base64 source sits alongside a specimen preview at 64px and a provider-list preview at 24px, with a single save footer. File imports support a keyboard-accessible choose button and drag/drop; only server-validated artwork enables saving. The preview becomes a compact stacked panel on narrow screens, and the modal body scrolls within the viewport. Saving returns to the library without assigning the icon. Deletion opens a dedicated confirmation view with the artwork, reference count and default-reset impact; Cancel receives initial focus, and confirmed deletion removes the asset and restores every assignment to its default or placeholder. Returning from editing or deletion restores focus to Add icon. In-flight writes prevent dismissal and tab switching. The modal retains its explicit layer above the provider drawer. Existing palette, typography, spacing and motion tokens are unchanged.
+El modal de iconos existente tiene los segmentos Built-in y Custom. El catálogo integrado conserva sus filtros de categoría y la carga diferida de ilustraciones. La cabecera de la biblioteca empareja su título/recuento con Add icon; las cabeceras del editor emparejan Back con el título de la acción. La biblioteca personalizada tiene búsqueda por nombre, estados vacío/búsqueda vacía a ancho completo y tarjetas de ilustración con objetivos separados de selección, edición y borrado. Los formularios nuevo/editar sustituyen la cuadrícula dentro del mismo modal: una fuente con nombre de archivo/Base64 se sitúa junto a una vista previa de espécimen a 64px y una vista previa de lista de proveedores a 24px, con un único pie de guardado. Las importaciones de archivo admiten un botón de elegir accesible por teclado y arrastrar y soltar; solo una ilustración validada por el servidor habilita el guardado. La vista previa se convierte en un panel compacto apilado en pantallas estrechas, y el cuerpo del modal se desplaza dentro del viewport. Guardar vuelve a la biblioteca sin asignar el icono. Borrar abre una vista de confirmación dedicada con la ilustración, el recuento de referencias y el impacto del restablecimiento predeterminado; Cancel recibe el foco inicial, y el borrado confirmado elimina el recurso y restaura cada asignación a su valor predeterminado o marcador. Al volver de editar o borrar se restaura el foco en Add icon. Las escrituras en curso impiden descartar y cambiar de pestaña. El modal conserva su capa explícita sobre el panel lateral de proveedores. La paleta, tipografía, espaciado y tokens de movimiento existentes no cambian.
 
+### Superficie de inicio de sesión
 
-### Sign-in surface
+`web/src/components/common/AuthGate.tsx` sigue la columna única centrada con la que inician sesión la mayoría de las consolas de operador
+(Cloudflare, Vercel, Grafana). Es una columna de 360px sobre el `--bg` propio de la página: sin tarjeta,
+sin textura, y sin regla bajo la cabecera de 56px, que contiene solo los menús de tema e idioma a la
+derecha. La columna contiene el wordmark de 28px, centrado (el único dibujo de la marca en la página, decorativo
+porque el título también nombra el producto), el título de 22px/700, centrado, el campo de clave rotulado y
+un botón primario de ancho completo, ambos en el tamaño grande de antd (40px). No hay antetítulo, subtítulo ni
+nota al pie. La etiqueta del campo ya dice qué introducir, y la regla 2 de §3 prohíbe una línea que la repita
+o que instruya. Una clave rechazada permanece en línea como un `Notice` sobre el campo. La comprobación de sesión dibuja el esquema de la
+columna como marcadores con la geometría propia del formulario. La comprobación de sesión y la solicitud de inicio de sesión
+dibujan la barra de progreso aproximado con su actividad de espera a lo largo del borde superior de la página.
 
-`web/src/components/common/AuthGate.tsx` follows the centred single column most operator consoles
-sign in with (Cloudflare, Vercel, Grafana). It is a 360px column on the page's own `--bg`: no card,
-no texture, and no rule under the 56px header, which holds only the theme and language menus at the
-right. The column holds the 28px wordmark, centred (the page's only drawing of the brand, decorative
-because the title also names the product), the 22px/700 title, centred, the labelled key field and
-a full-width primary button, both at antd's large size (40px). There is no eyebrow, subtitle or
-footnote. The field's label already says what to enter, and §3 rule 2 bars a line that restates it
-or instructs. A refused key stays inline as a `Notice` above the field. The session check draws the
-column's outline as placeholders at the form's own geometry. The session check and the sign-in
-request draw the rough-progress bar with its waiting activity along the page's top edge.
+### Superficie de recuperación de error de ruta
 
-### Route error recovery surface
+`web/src/components/common/RouteErrorPage.tsx` usa el wordmark de 22px consciente del tema de la consola
+y el indicador de peligro de `StatusLabel` sobre una tarjeta plana de Ant Design. El
+encabezado reutiliza `terminal-title`; el texto de lectura usa la escala de cuerpo de 13px de la consola,
+con bloques de diagnóstico monoespaciados de 12px. El relleno de la tarjeta, el borde, el radio pequeño, el
+fondo, la escala de primer plano y el espaciado de acciones reutilizan el sistema actual de la
+consola. La acción primaria de recarga alineada a la derecha va al final, después del ancla
+al panel. No hay mapeos de paleta ni de tokens específicos de la página de error.
 
-`web/src/components/common/RouteErrorPage.tsx` uses the console's theme-aware
-22px wordmark and `StatusLabel` danger pip above a flat Ant Design card. The
-heading reuses `terminal-title`; reading text uses the console's 13px body scale,
-with 12px monospaced diagnostic blocks. Card padding, border, small radius,
-background, foreground ladder and action spacing reuse the current console
-system. The right-aligned primary reload action comes last, after the dashboard
-anchor. There are no error-page-specific palette or token mappings.
+`PanelTitle`, `FactList` y `CopyButton` poseen la cabecera de diagnóstico, las filas de metadatos
+y la interacción de copia. El tipo de error, la ruta, la compilación, la hora UTC de ocurrencia y el estado
+HTTP opcional permanecen visibles junto al mensaje de error redactado; un control details nativo
+revela la traza seleccionable. El código se ajusta y se desplaza dentro de su región.
+En teléfonos las acciones se apilan con áreas de impacto de 44px, y los controles de copia/detalle conservan el
+mismo suelo táctil. El foco del encabezado y el título de documento localizado identifican la página fallida
+para usuarios de teclado y de lector de pantalla. El texto de recuperación y diagnóstico está
+disponible en chino simplificado, chino tradicional, inglés y malayo.
 
-`PanelTitle`, `FactList` and `CopyButton` own the diagnostic header, metadata rows
-and copy interaction. Error type, route, build, UTC occurrence time and optional
-HTTP status stay visible alongside the redacted error message; a native details
-control reveals the selectable stack. Code wraps and scrolls within its region.
-On phones actions stack with 44px hit areas, and the copy/detail controls keep the
-same touch floor. Heading focus and localized document title identify the failed
-page for keyboard and screen-reader users. Recovery and diagnostic copy are
-available in Simplified Chinese, Traditional Chinese, English and Malay.
+### Comparación de versiones del sistema
 
-### System version comparison
+La tarjeta Versions & Updates es la primera fila de la página y abarca todo su ancho. Una fila de producto es
+identidad, comparación, estado y acciones a la vez, y una celda de medio ancho ajustaba cada una de
+ellas; la columna completa es lo que permite que cada producto ocupe dos líneas tranquilas en lugar de cuatro apretadas.
+La tarjeta mantiene dos filas de producto separadas por una única regla.
 
-The Versions & Updates card is the page's first row and spans its full width. A product row is
-identity, comparison, status and actions at once, and a half-width cell wrapped every one of
-them; the full column is what lets each product sit on two calm lines instead of four crowded
-ones. The card keeps two product rows separated by a single rule.
+Cada fila se abre con la identidad del producto y su repositorio junto a un estado semántico conciso. Debajo,
+las versiones en ejecución y la última publicada forman una comparación compacta, acotada a 320px con un
+divisor vertical discreto. La etiqueta de versión aparece en la comparación, no de nuevo en el estado.
+Los tokens existentes `--fg` y `--fg-2` llevan versiones y etiquetas; solo un destino de actualización conocido usa
+`--accent`. En pantallas estrechas la comparación pasa a dos filas etiqueta/valor, con las etiquetas de compilación largas
+ajustándose dentro de su propia columna.
 
-Each row opens with product identity and its repository beside a concise semantic status. Below
-it, the running and latest published versions form a compact comparison, bounded to 320px with a
-quiet vertical divider. The release tag appears in the comparison, not again in the status.
-Existing `--fg` and `--fg-2` tokens carry versions and labels; only a known update target uses
-`--accent`. On narrow screens the comparison becomes two label/value rows, with long build tags
-wrapping within their own column.
+Las acciones finales de la fila son un grupo en el borde derecho de la fila: la acción de registro de cambios en su
+forma de botón de texto de 32px con un icono de documento, una etiqueta localizada y un recuento atenuado de versiones reales;
+un conmutador **Ignore this version** antes de ella cuando existe una versión más nueva conocida, en la misma forma de
+botón de texto de 32px con un icono de campana; y, al final, el único control relleno de la fila - la acción de actualizar -,
+de modo que la acción primaria se sitúa en el mismo borde derecho que toma la acción primaria de la propia página. La
+etiqueta del conmutador de ignorar nunca cambia: el estado pulsado es la campana tachada, tinta `--fg` y
+`aria-pressed`, y el resultado de cada pulsación es un toast, de modo que ni la fila ni la tarjeta se mueven
+cuando se usa. Está deshabilitado hasta que se han leído los descartes almacenados.
 
-The row's trailing actions are one group at the row's right edge: the change-log action in its
-32px text-button form with a document icon, a localized label and a muted actual release count;
-an **Ignore this version** toggle before it when a known newer release exists, in the same 32px
-text-button form with a bell icon; and, last, the row's one filled control - the update action -
-so the primary action sits at the same right edge the page's own primary action takes. The
-ignore toggle's label never changes: the pressed state is the struck bell, `--fg` ink and
-`aria-pressed`, and the outcome of each press is a toast, so neither the row nor the card moves
-when it is used. It is disabled until the stored dismissals have been read.
+Un reemplazo en curso dibuja las cuatro etapas del actualizador - descarga, parada, arranque,
+verificación - como una barra de cuatro segmentos bajo las lecturas, con la frase de la etapa a su lado. La
+barra lleva el recuento de pasos, no un porcentaje medido: las etapas son conocidas y ordenadas, sus
+duraciones no. Un producto que el actualizador no reemplazará desde la página expone su motivo en una línea
+discreta bajo las lecturas, marcada con un glifo de información en lugar de un tono de advertencia,
+porque una imagen fijada o un contenedor que se ejecuta en otro lugar es una decisión del operador y no un
+fallo. Las explicaciones largas de la comparación van bajo las lecturas y no en la ranura de estado.
 
-A replacement in flight draws the updater's four stages - pulling, stopping, starting,
-verifying - as a four-segment bar under the readings, with the stage's sentence beside it. The
-bar carries the step count, not a measured percentage: the stages are known and ordered, their
-durations are not. A product the updater will not replace from the page states its reason in a
-quiet line under the readings, marked with an information glyph rather than a warning tone,
-because a pinned image or a container that runs elsewhere is an operator's decision and not a
-fault. Long comparison explanations belong below the readings rather than in the status slot.
+Una pista de notas ausentes pertenece solo a un rango de registro de cambios conocido; un feed vacío o sin comprobar
+no adquiere una segunda advertencia sobre notas. Una comprobación fallida conserva las lecturas y muestra su
+motivo y, cuando está disponible, la hora de la última comprobación exitosa. El registro sigue siendo un Drawer y las imágenes
+remotas siguen siendo enlaces, nunca medios descargados automáticamente. El paso de configuración que habilita las actualizaciones de un clic
+permanece dentro de esta tarjeta, bajo las filas que explica, y toma su cabecera de
+`SectionHeading`. Son disposiciones a nivel de página que usan los tokens visuales existentes, no nuevos
+mapeos de tema.
 
-A missing-notes hint belongs only to a known change-log range; an empty or unchecked feed does
-not acquire a second warning about notes. A failed check retains the readings and shows its
-reason and, when available, the last successful check time. The log remains a Drawer and remote
-images remain links, never automatically fetched media. The setup step that enables one-click
-updates stays inside this card, under the rows it explains, and takes its head from
-`SectionHeading`. These are page-level arrangements using the existing visual tokens, not new
-theme mappings.
+### Indicador de actualización
 
-### Update indicator
+Una versión disponible y no descartada marca la entrada de navegación System Information con un punto `--warn`
+de 6px justo fuera de la esquina superior final de su icono. Va sobre el icono porque
+es la única parte de una entrada que conservan el carril expandido, el carril contraído y la hoja de teléfono.
+El punto no se anima y no añade ningún control al carril; el nombre accesible de la entrada
+gana «Update available». Es el tono de advertencia usado como estado, no como decoración:
+dice que el despliegue va por detrás de una versión publicada.
 
-An available, undismissed release marks the System Information navigation entry with a 6px
-`--warn` dot just outside the top trailing corner of its icon. It rides the icon because
-that is the one part of an entry the expanded rail, the collapsed rail and the phone sheet
-all keep. The dot does not animate and adds no control to the rail; the entry's accessible
-name gains "Update available". This is the warning tone used as a status, not decoration:
-it says the deployment is behind a published release.
+### Tarjetas de estado de la información del sistema
 
-### System information status cards
+Bajo la tarjeta de versiones, mantenimiento, almacenamiento y salud de componentes se sitúan en una fila - tres tarjetas
+pares que comparten la columna, pasan a menos columnas antes de que sus propias lecturas queden comprimidas,
+y se apilan en una sola columna por debajo del punto de corte de 900px. Presentan sus lecturas seleccionadas
+de inmediato. Los títulos de las tarjetas se ajustan en pantallas estrechas, y estas disposiciones usan los tokens
+de tema existentes y la respuesta del sistema sin solicitudes de API adicionales.
 
-Under the versions card, maintenance, storage and component health sit in one row - three peer
-cards that share the column, wrap to fewer columns before their own readings would be squeezed,
-and stack into a single column below the 900px breakpoint. They present their selected readings
-immediately. Card titles wrap on narrow screens, and these arrangements use the existing theme
-tokens and system response without additional API requests.
+Mantenimiento empareja tres nombres de acción cortos con explicaciones de una frase y los botones antd
+con contorno estándar de la consola. Las dimensiones, tipografía, borde, fondo y estados de
+interacción de los botones heredan la configuración compartida. Los rechazos de admisión sustituyen la explicación
+ordinaria; los resultados en ejecución, fallidos y parciales permanecen explícitos. VACUUM requiere confirmación
+de la puerta de escritura exclusiva y de los requisitos de disco medidos. Los resultados completados son descartables de forma
+independiente; el trabajo en ejecución no.
 
-Maintenance pairs three short action names with one-sentence explanations and the console's
-standard outlined antd buttons. Button dimensions, typography, border, background and
-interaction states inherit the shared configuration. Admission refusals replace the ordinary
-explanation; running, failed and partial outcomes remain explicit. VACUUM requires confirmation
-of the exclusive write gate and measured disk requirements. Completed outcomes are independently
-dismissible; running work is not.
+Almacenamiento prioriza la huella física total sobre una única lista compartida de etiqueta/valor. Los tres
+tamaños de archivo medidos, el modo de journal y la generación del esquema comparten columnas idénticas de etiqueta y valor
+alineado a la derecha en todo viewport. Los archivos ausentes se leen «not present» en lugar de cero. La huella
+física no se repite como páginas asignadas ni recuentos de registros; la geometría interna, las páginas reutilizables
+y los ajustes de conexión pertenecen al paquete de diagnóstico saneado.
 
-Storage prioritizes the total physical footprint above one shared label/value list. The three
-measured file sizes, journal mode and schema generation share identical label and right-aligned
-value columns at every viewport. Missing files read "not present" rather than zero. Physical
-footprint is not repeated as allocated pages or record counts; internal geometry, reusable pages
-and connection settings belong in the sanitized diagnostics bundle.
+La salud de componentes tiene cuatro filas divididas, cada una con un nombre de componente, un estado semántico y un
+breve resumen operativo en línea. El gateway muestra su recuento de credenciales, Shell-PAMC su antigüedad de inicio
+y su memoria, SQLite su recuento de solicitudes, y el recolector la antigüedad del último uso. Cada resumen
+usa como máximo dos datos emparejados, con etiquetas junto a valores en lugar de cuadrículas de métricas separadas.
+El atraso de ingesta positivo y los huecos de recolección aparecen como lecturas de advertencia; los valores cero saludables
+no consumen espacio. Las observaciones ausentes permanecen explícitas.
 
-Component health has four divided rows, each with a component name, semantic status and one
-short inline operational summary. The gateway shows its credential count, Shell-PAMC its start
-age and memory, SQLite its request count, and the collector the latest usage age. Each summary
-uses at most two paired facts, with labels beside values rather than separate metric grids.
-Positive ingestion backlog and collection gaps appear as warning readings; healthy zero values
-do not consume space. Missing observations remain explicit.
+### Directorio Model Square
 
-### Model Square directory
+Model Square responde una pregunta: qué nombres de modelo puede llamar un cliente ahora mismo. El
+subtítulo de la cabecera lleva solo datos en vivo: el recuento de modelos, el recuento de fabricantes y la fuente y fecha
+de la instantánea de referencia. Una barra de herramientas contiene el campo de búsqueda (nombres, fabricantes e identidades
+de modelo conocidas). Una tira de chips de fabricante, cada uno con su marca y un recuento, filtra por un fabricante; sus
+recuentos siguen a la búsqueda, de modo que un recuento es lo que mostrará seleccionar el chip. Un filtro activo
+expresa «mostrados de total» y ofrece una única acción de borrado. La búsqueda y el fabricante viven en la URL.
 
-Model Square answers one question: which model names can a client call right now. The head's
-subtitle carries live data only: the model count, the maker count and the reference snapshot's
-source and date. One toolbar holds the search field (names, makers and known model
-identities). A strip of maker chips, each with its mark and a count, filters to one maker; its
-counts follow the search, so a count is what selecting the chip will show. An active filter
-states "shown of total" and offers one clear action. Search and maker live in the URL.
+Los fabricantes son secciones abiertas bajo una regla de encabezado. Los fabricantes con nombre se ordenan alfabéticamente; el
+grupo de varios fabricantes (un alias compartido que abarca varios fabricantes) y el grupo no identificado los siguen.
+Dentro de una sección cada nombre de modelo de cliente es una tarjeta compacta sobre `--surface` con un
+`--border` de 1px y el radio de 8px - la esquina de los mosaicos del panel con la densidad de un directorio - y las
+tarjetas llenan el ancho de la sección en tantas columnas como quepan (280px mínimo, `auto-fill`, huecos de 12px): un modelo aquí es un
+nombre, un precio y una conexión, lo cual es muy poco para justificar una línea de ancho completo. Una tarjeta contiene
+solo aquello sobre lo que actúa el operador: el nombre de llamada con su nombre visible de referencia como leyenda
+debajo, luego una línea con el precio (entrada / salida; la unidad por 1M de tokens se enuncia una sola vez,
+en los detalles) a la izquierda y la conexión que lo sirve a la derecha. Una conexión se nombra; varias
+se colapsan en hasta tres de sus marcas y un recuento («3 connections»), de modo que toda tarjeta conserva
+la misma altura, y los detalles listan cada una de ellas. Las especificaciones de
+referencia - límites, capacidades, apertura - y las cifras de uso no se dibujan en la lista;
+pertenecen a los detalles.
 
-Makers are open sections under a heading rule. Named makers sort alphabetically; the
-multiple-maker group (a shared alias spanning several makers) and the unidentified group follow
-them. Inside a section each client model name is a compact card on `--surface` with a 1px
-`--border` and the 8px radius - the dashboard tiles' corner at a directory's density - and the
-cards fill the section's width in as many columns as fit (280px minimum, `auto-fill`, 12px
-gaps): a model here is a
-name, a price and a connection, which is too little to justify a full-width line. A card holds
-only what the operator acts on: the call name with its reference display name as a caption
-under it, then one line with the price (input / output; the per-1M-token unit is stated once,
-in the details) on the left and the connection serving it on the right. One connection is named; several
-collapse to up to three of their marks and a count ("3 connections"), so every card keeps
-the same height, and the details list each of them. Reference
-specifications - limits, capabilities, openness - and usage figures are not drawn in the list;
-they belong to the details.
+El nombre de llamada es en sí el control de copia: al hacer clic se copia exactamente la cadena que envía un cliente,
+y el glifo a su lado se convierte en una marca de verificación `--success` durante 1,5s. Todo lo demás de la
+tarjeta abre los detalles, de modo que la tarjeta tiene dos objetivos y ningún espacio muerto; el hover eleva su
+borde a `--fg-2` sobre `--hover`. Un modelo sin precio muestra un estado `warn` que dice
+«Set price» en la posición del precio, que abre el editor de precios compartido en el lugar. El directorio
+no muestra ningún aviso a nivel de página sobre modelos sin precio: resumir el libro de precios es tarea de Cost & Usage.
+Un precio que no pudo leerse se deja en blanco - nunca se dibuja como sin precio.
 
-The call name is itself the copy control: clicking it copies exactly the string a client
-sends, and the glyph beside it turns into a `--success` check for 1.5s. Everything else on the
-card opens the details, so the card has two targets and no dead space; hover raises its
-border to `--fg-2` over `--hover`. A model without a price shows a `warn` status reading
-"Set price" in the price position, which opens the shared price editor in place. The directory
-raises no page-level notice about unpriced models: summarising the price book is Cost & Usage's
-job. A price that could not be read is left blank - never drawn as unpriced.
+El número de columnas sigue el ancho propio de la sección sin punto de corte: tres o cuatro columnas en
+un escritorio, una en un teléfono. En teléfonos el nombre y el chevrón de detalles son objetivos táctiles de 44px,
+los nombres largos se ajustan dentro de la tarjeta, y la tira de fabricantes se desplaza dentro de sí misma para que la página nunca
+se mueva lateralmente.
 
-The column count follows the section's own width with no breakpoint: three or four columns on
-a desktop, one on a phone. On phones the name and the details chevron are 44px touch targets,
-long names wrap inside the card, and the maker strip scrolls within itself so the page never
-moves sideways.
+Un fabricante con ilustración de marca la muestra. Los dos grupos que no son un fabricante dibujan el glifo Lucide
+propio de la consola (un cubo para no identificado, capas para varios) con trazo de 1,5px en `--fg-2`,
+enmarcado por un `--border` de 1px, `--surface` y el radio de 6px cuando la marca mide 20px o más;
+las marcas más pequeñas son el glifo desnudo en `--muted`. Se leen como chrome junto a la ilustración, nunca
+como otra marca. La entrada de navegación usa el glifo de cajas, distinto de la cuadrícula del panel.
 
-A maker with brand artwork shows it. The two groups that are not a maker draw the console's
-own Lucide glyph (a cube for unidentified, layers for multiple) at 1.5px stroke in `--fg-2`,
-framed by a 1px `--border`, `--surface` and the 6px radius once the mark is 20px or larger;
-smaller marks are the bare glyph in `--muted`. They read as chrome beside the artwork, never
-as another brand. The navigation entry uses the boxes glyph, distinct from the dashboard's grid.
+Los detalles son un Drawer compatible con Back y acotado al viewport, titulado con el nombre del cliente, con copiar
+junto al título. Se abre con Cost & Usage: tres mosaicos (precio de entrada, precio de salida, solicitudes
+en 24 horas - la única ventana que usan todas las cifras de uso de esta página), luego la acción de precio - «Set price» primario para un
+modelo sin precio, «Edit price» predeterminado en caso contrario - y un enlace a la lista de solicitudes acotada a este nombre de llamada
+durante las mismas 24 horas. El editor de precios se apila sobre el Drawer y un Back lo cierra
+solo. Debajo, el Drawer nombra las conexiones que sirven el modelo (el nombre upstream cuando
+difiere), y luego da a cada modelo distinto su propio perfil de models.dev (las conexiones que llegan al mismo
+registro de origen con nombres upstream distintos comparten uno): tres mosaicos de
+límite (contexto, salida, entrada), un grupo de capacidades (modalidades, razonamiento, herramientas, salida
+estructurada, adjuntos) y un grupo de publicación (apertura, licencia, lanzamiento, corte de conocimiento,
+fecha de metadatos). La apertura es uno de tres términos: modelo de código cerrado, modelo de pesos abiertos (los pesos
+están publicados), modelo de código abierto (los pesos están publicados bajo una licencia
+de código abierto reconocida). Una capacidad admitida lleva una marca de verificación `--success`; una no admitida y todo campo
+omitido se dibujan en `--meta`, de modo que lo conocido destaca y lo desconocido queda
+explícitamente enunciado. Los enlaces de pesos, los enlaces de origen y las búsquedas en models.dev, OpenRouter y pi.dev
+son botones de enlace con borde que abren una pestaña nueva con protección opener/referrer. El
+pie pasa al modelo anterior o siguiente de la lista filtrada sin cerrar el Drawer;
+un Back sigue descartándolo. La nota de origen y la fecha de la instantánea cierran el Drawer. Se reutilizan los iconos locales
+y los tokens existentes de paleta, tipografía, espaciado y movimiento sin nuevos tokens globales
+de diseño.
 
-The details are a Back-aware, viewport-bounded Drawer titled with the client name, with copy
-beside the title. It opens with Cost & Usage: three tiles (input price, output price, requests
-in 24 hours - the one window every usage figure on this page uses), then the price action - primary "Set price" for an unpriced
-model, default "Edit price" otherwise - and a link to the request list narrowed to this call
-name over the same 24 hours. The price editor stacks above the Drawer and one Back closes it
-alone. Below, the Drawer names the connections serving the model (the upstream name where it
-differs), then gives each distinct model its own models.dev profile (connections that reach the same
-source record under different upstream names share one): three limit
-tiles (context, output, input), a capability group (modalities, reasoning, tools, structured
-output, attachments) and a release group (openness, license, release, knowledge cutoff,
-metadata date). Openness is one of three terms: closed-source model, open-weight model (weights
-are published), open-source model (weights are published under a recognised open-source
-license). A supported capability carries a `--success` check; an unsupported one and every
-omitted field are drawn in `--meta`, so what is known stands out and what is unknown stays
-explicitly stated. Weight links, source links and the models.dev, OpenRouter and pi.dev
-lookups are bordered link buttons that open a new tab with opener/referrer protection. The
-footer steps to the previous or next model of the filtered list without closing the Drawer;
-one Back still dismisses it. The source note and snapshot date close the Drawer. Local icons
-and the existing palette, typography, spacing and motion tokens are reused without new global
-design tokens.
+### Reglas de modelo de OAuth
 
-### OAuth model rules
+La acción Model rules del espacio de trabajo OAuth abre un Drawer acotado al viewport y
+compatible con Back. La acción de cierre se sitúa en el borde final de la cabecera, manteniéndola alcanzable
+junto a los acuses de guardado centrados; el Drawer de detalle de credencial usa la misma
+ubicación de cierre. Su selector de proveedor usa los mismos nombres visibles y marcas de marca locales que
+las pestañas de proveedor, incluida la ilustración publicada por plugins, conservando la clave de CPA
+como valor seleccionado. La búsqueda acepta tanto el nombre visible como la clave. Las opciones
+llevan los recuentos de alias y exclusiones guardados; el selector cerrado muestra solo la
+identidad del proveedor. Los proveedores desconocidos conservan una marca neutra y un nombre legible.
 
-The OAuth workspace's Model rules action opens a viewport-bounded, Back-aware
-Drawer. The close action sits at the trailing header edge, keeping it reachable
-beside centered save acknowledgements; the credential detail Drawer uses the same
-close placement. Its provider picker uses the same display names and local brand marks as
-the provider tabs, including plugin-published artwork, while retaining CPA's key
-as the selected value. Search accepts both the display name and the key. Options
-carry the saved alias and exclusion counts; the closed picker shows only the
-provider identity. Unknown providers keep a neutral mark and a readable name.
+Dos pestañas de sección a ancho completo muestran alias y exclusiones con sus recuentos de borrador
+y un indicador de sin guardar. Cada sección guarda o revierte de forma independiente, y la selección de
+proveedor permanece deshabilitada mientras cualquiera tenga ediciones. Cerrar o el Back nativo preguntan
+antes de descartar borradores. Los alias usan el catálogo del proveedor como sugerencias de origen,
+mantienen la entrada manual y establecen por defecto que los nuevos mapeos conserven el modelo original (`fork`).
+Las exclusiones usan filas de casillas abiertas, acciones masivas de catálogo con búsqueda y una lista
+aparte para IDs escritos y reglas con comodines. Una fila cubierta por un comodín identifica su regla
+y no puede desmarcarse salvo que exista su propia regla exacta; la regla comodín total avisa
+de que todos los modelos quedan excluidos solo en las credenciales que heredan los valores predeterminados del proveedor.
+Las listas de credencial no vacías sustituyen esos valores predeterminados; vaciar una lista de credencial
+restaura la herencia. Las advertencias de alias y las confirmaciones de borrado de reglas de proveedor
+acotan sus afirmaciones en consecuencia y dejan la disponibilidad a CPA. El pie mantiene Clear, Revert y Save alcanzables
+en un teléfono. Se reutilizan los tokens existentes de paleta, forma, tipografía y movimiento.
 
-Two full-width section tabs show aliases and exclusions with their draft counts
-and an unsaved indicator. Each section saves or reverts independently, and provider
-selection remains disabled while either has edits. Closing or native Back asks
-before discarding drafts. Aliases use the provider catalog as source suggestions,
-keep manual entry and default new mappings to retaining the original model (`fork`).
-Exclusions use open checkbox rows, searchable catalog bulk actions and a separate
-list for typed IDs and wildcard rules. A wildcard-covered row identifies its rule
-and cannot be unchecked unless its own exact rule exists; the catch-all rule warns
-that every model is excluded only on credentials inheriting provider defaults.
-Non-empty credential lists replace these defaults; clearing a credential list
-restores inheritance. Alias warnings and provider-rule deletion confirmations
-scope their claims accordingly and leave availability to CPA. The footer keeps Clear, Revert and Save reachable
-on a phone. Existing palette, shape, typography and motion tokens are reused.
+### Políticas de credencial, importación de Vertex y herramientas de registro del gateway
 
-### Credential policies, Vertex import and gateway log tools
+La pestaña Configuration de la credencial edita alias de modelo locales de la credencial como entradas
+apiladas: nombre de origen, alias de llamada y nombre visible comparten un grupo, con los controles de conservar el original
+y forzar el mapeo debajo. Usa el borrador de configuración protegido existente;
+los mapeos OAuth de todo el proveedor siguen siendo un editor aparte. El diálogo de importación de Vertex
+muestra el proyecto y la dirección de cuenta del archivo de cuenta de servicio seleccionado antes de importar,
+con el campo de región y la consecuencia de reemplazo visibles. El contenido de la clave nunca se
+renderiza ni se retiene en las variables de mutación en caché; cerrar también invalida una lectura
+de archivo sin terminar para que no pueda restaurar la selección cancelada.
 
-The credential Configuration tab edits credential-local model aliases as stacked
-entries: source name, call alias and display name share one group, with retain-original
-and force-mapping controls below. It uses the existing guarded configuration draft;
-provider-wide OAuth mappings remain a separate editor. The Vertex import dialog
-shows the selected service-account file's project and account address before import,
-with the region field and replacement consequence visible. Key contents are never
-rendered or retained in cached mutation variables; closing also invalidates an unfinished
-file read so it cannot restore the cancelled selection.
+La barra de herramientas del registro del gateway mantiene en su primera fila la búsqueda, el nivel, el recuento de filtros adicionales, el recuento de filas
+y las acciones. La clase de estado, el método, la ruta y la visibilidad del tráfico de gestión
+pertenecen a su panel de filtros desplegable. Las opciones de método y ruta muestran recuentos de faceta;
+el ajuste de línea es una preferencia de visualización persistente. La pantalla completa mueve el mismo visor de registro
+sobre el chrome de la página sin sustituir su cola ni su estado de desplazamiento. Escape sale de la pantalla completa solo cuando no hay selector ni confirmación abiertos. En teléfonos los
+controles se ajustan dentro del viewport y la lista de registro posee su desplazamiento.
 
-The gateway log toolbar keeps search, level, the additional-filter count, row count
-and actions on its first row. Status class, method, path and management-traffic
-visibility belong to its disclosed filter panel. Method and path choices show facet
-counts; wrapping is a persistent viewing preference. Fullscreen moves the same log
-viewer above page chrome without replacing its tail or scroll state. Escape leaves fullscreen only when no selector or confirmation is open. On phones the
-controls wrap within the viewport and the log list owns its scrolling.
+Con movimiento reducido, un panel flotante que se cierra pasa a oculto en cuanto empieza su
+fase de salida, incluso mientras la biblioteca conserva su nodo para la limpieza del movimiento.
 
-Under reduced motion, a closing floating panel becomes hidden as soon as its
-leave phase starts, even while the library retains its node for motion cleanup.
+### Desplazamiento de navegación y fidelidad de respuestas portables
 
-### Navigation scroll and portable answer fidelity
+El viewport vertical nativo de la barra lateral tiene un indicador superpuesto de 6px en lugar de consumir una
+columna de barra de desplazamiento. El hover, el desplazamiento, el arrastre o el foco de teclado lo revelan; el táctil conserva el
+desplazamiento nativo del contenido. El pulgar sigue la proporción viewport/contenido y se puede arrastrar;
+pulsar la pista desnuda pagina hacia ella. El movimiento usa los tokens existentes fast/base.
+El mapa de calor empieza en el borde más reciente con un desfase de desplazamiento seguro para 32 bits con signo y
+permanece fijado durante el redimensionado solo hasta que el lector elige una fecha más antigua.
 
-The sidebar's native vertical viewport has a 6px overlay indicator instead of consuming a
-scrollbar column. Hover, scrolling, dragging or keyboard focus reveals it; touch retains
-native content scrolling. The thumb tracks the viewport/content ratio and can be dragged;
-pressing the bare track pages toward it. The motion uses the existing fast/base tokens.
-The heatmap starts at the newest edge with a signed-32-bit-safe scroll offset and
-stays pinned through resize only until the reader chooses an older date.
+La demostración anuncia su naturaleza mediante el toast global de llegada, con texto contextual de
+repetición del Agent en esa página; no reserva ninguna fila de banner. El HTML portable del Agent
+conserva el mismo texto, el razonamiento independiente, las líneas de tiempo de trabajo y las figuras generadas en línea
+en orden de lectura. Las filas de llamada conservan los resúmenes de argumentos y los desplegables de resultado y duración.
+El PNG captura las interfaces generadas con su ancho de layout, incluidos los gráficos y controles del kit;
+las figuras no disponibles conservan una nota de respaldo visible en lugar de desaparecer en silencio.
 
-The demonstration announces its nature using the global arrival toast, with contextual
-Agent replay copy on that page; it reserves no banner row. Portable Agent HTML
-keeps the same text, standalone reasoning, working timelines and inline generated figures
-in reading order. Call rows retain argument summaries, outcome and duration disclosures.
-PNG captures generated interfaces at their laid-out width, including kit charts and controls;
-unavailable figures keep a visible fallback note rather than silently disappearing.
+### Calentamiento de la ventana de credencial
 
-### Credential window warmup
+La barra de herramientas de OAuth abre un Drawer de ajustes de Warmup acotado al viewport con pestañas de sección
+Codex y Claude. Un borrador impide cambiar de proveedor; cerrar y el Back nativo exigen una
+decisión de descarte. Cada proveedor edita un modelo, un modo de restablecimiento y un inicio diario opcional,
+mostrando la zona horaria efectiva de Shell-PAMC y la regla de prioridad diaria. Los valores predeterminados son apagado y `06:00`.
+Guardar confirma el efecto sobre todas las credenciales actuales y futuras que heredan.
 
-The OAuth toolbar opens a viewport-bounded Warmup settings Drawer with Codex and Claude
-section tabs. A draft prevents provider switching; close and native Back require a
-discard decision. Each provider edits a model, reset mode and one optional daily start,
-showing the effective Shell-PAMC timezone and daily-priority rule. Defaults are off and `06:00`.
-Saving confirms the effect on all current and future inheriting credentials.
+La pestaña Quota de la credencial añade una sección Window warmup con herencia del proveedor o una
+sobrescritura completa, política efectiva, siguiente comprobación, último resultado duradero y motivo
+seguro de pausa. Dos datos discretos muestran siempre las observaciones de activación del modelo seleccionado y la última
+evidencia de respaldo de pago, incluida la evidencia desconocida. La ausencia de una observación de activación es historial
+neutro, no una instrucción ni una puerta de preparación. El motivo explica el estado actual de la ventana o de
+facturación. Guardar una política habilitada autoriza las solicitudes automáticas elegibles; la activación manual
+sigue siendo opcional. Sus borradores sobreviven a los cambios de pestaña, permanecen
+abiertos después de que otra sección guarde y participan en la protección de cierre del Drawer padre.
+La activación manual requiere una confirmación que nombre la credencial y el modelo y explique el
+consumo de cuota. Los resultados pendientes e inciertos nunca se leen como éxito de activación.
+Los resultados de ejecución manual permanecen en la sección de la credencial sin un toast duplicado;
+la confirmación en segundo plano actualiza ese mismo resultado. La demo pública no puede guardar ni consumir. Se reutilizan los tokens existentes de tipo, forma, espaciado y retroalimentación semántica.
 
-The credential Quota tab adds a Window warmup section with provider inheritance or a
-complete override, effective policy, next check, latest durable result and safe pause
-reason. Two quiet facts always show selected-model activation observations and the latest
-paid-fallback evidence, including unknown evidence. An absent activation observation is neutral
-history, not an instruction or readiness gate. The reason explains current window or billing
-state. Saving an enabled policy authorizes eligible automatic requests; manual activation
-remains optional. Its drafts survive tab changes, remain
-open after another section saves, and participate in the parent Drawer close guard.
-Manual activation requires confirmation naming the credential and model and explaining
-quota consumption. Pending and uncertain outcomes never read as activation success.
-Manual execution outcomes stay in the credential section without a duplicate toast;
-background confirmation updates that same result. The public demo cannot save or consume. Existing type, shape, spacing and semantic-feedback tokens are reused.
