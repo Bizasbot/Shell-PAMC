@@ -1,11 +1,9 @@
 <div align="center">
 
-<a href="#gh-light-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Shell-PAMC" width="340">
-</a>
-<a href="#gh-dark-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Shell-PAMC" width="340">
-</a>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="web/src/assets/brand/omc-wordmark-dark.svg">
+  <img src="web/src/assets/brand/omc-wordmark-light.svg" alt="Shell-PAMC" width="340">
+</picture>
 
 ### 集中管理 API 与 OAuth，可视化观测请求、成本、用量
 
