@@ -135,6 +135,10 @@ export async function capture(browser, { routePath, mode, lang, viewport }) {
   const page = await context.newPage();
   try {
     await page.goto(`${base}${routePath}`, { waitUntil: 'networkidle' });
+    // Under reduced motion the demonstration's arrival toast never gets its exit event, so it
+    // would hold the readiness check below forever. Remove it once it has mounted.
+    await page.waitForSelector('.omc-toast', { timeout: 5_000 }).catch(() => {});
+    await page.evaluate(() => document.querySelectorAll('.ant-notification').forEach((node) => node.remove()));
     await page.waitForFunction(hasReadmeScreenshotContent, contentSelectorFor(routePath), { timeout: 30_000 });
     await page.waitForFunction(hasDeferredFontShards, null, { timeout: 30_000 });
     await page.evaluate(() => document.fonts.ready);
