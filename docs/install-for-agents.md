@@ -3,7 +3,7 @@
 This runbook is for a coding agent installing Oh My CPA (OMC) on a user's machine. OMC
 is a web console for CLIProxyAPI (CPA). It needs **CPA v8.0.0 or later** and CPA's plaintext
 management key, which is also OMC's sign-in password. The Docker image is
-`wiziscool/oh-my-cpa:latest` (amd64 and arm64). Native release archives cover Darwin,
+`ghcr.io/bizasbot/shell-pamc:latest` (amd64 and arm64). Native release archives cover Darwin,
 Windows, Linux and FreeBSD on amd64/arm64; a normal install builds nothing.
 
 The work is: look at what is already there, pick a path, install, verify.
@@ -98,7 +98,7 @@ these under `services:` and leave every existing line as it is:
 
 ```yaml
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
@@ -111,7 +111,7 @@ these under `services:` and leave every existing line as it is:
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -283,7 +283,7 @@ Docker socket into a container, so explain that and get the user's agreement fir
 (rule 4):
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
 Keep `--pull always`: without it Docker runs the older `latest` the host already has,

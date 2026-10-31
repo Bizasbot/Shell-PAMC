@@ -191,7 +191,7 @@ type Container struct {
 func (c Container) ContainerName() string { return strings.TrimPrefix(c.Name, "/") }
 
 // ImageReference is the image as the container was configured, for example
-// "wiziscool/oh-my-cpa:latest".
+// "ghcr.io/bizasbot/shell-pamc:latest".
 func (c Container) ImageReference() string { return stringField(c.Config, "Image") }
 
 // Label returns one container label.

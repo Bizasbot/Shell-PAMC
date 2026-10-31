@@ -16,7 +16,7 @@ const ARCHIVE_FILES = ['LICENSE', 'README.md', 'README.zh-CN.md', '.env.example'
 export const RELEASE_DIRECTORY = path.join(ROOT, 'tmp/native-release');
 
 export function createNativePlan(tag, packageVersion, webVersion) {
-  const { version } = createReleasePlan({ tag, packageVersion, webVersion, image: 'wiziscool/oh-my-cpa' });
+  const { version } = createReleasePlan({ tag, packageVersion, webVersion, image: 'ghcr.io/bizasbot/shell-pamc' });
   return RELEASE_TARGETS.map(({ goos, goarch }) => ({
     goos, goarch,
     binary: `oh-my-cpa${goos === 'windows' ? '.exe' : ''}`,

@@ -16,7 +16,7 @@ MCP · 可视化 · 管理
 [![Release](https://img.shields.io/github/v/release/Bizasbot/Shell-PAMC?label=release)](https://github.com/Bizasbot/Shell-PAMC/releases)
 [![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/wiziscool/oh-my-cpa?style=flat&logo=docker&logoColor=white)](https://hub.docker.com/r/wiziscool/oh-my-cpa)
+[![Container image](https://img.shields.io/badge/ghcr.io-bizasbot%2Fshell--pamc-2496ED?style=flat&logo=docker&logoColor=white)](https://github.com/Bizasbot/Shell-PAMC/pkgs/container/shell-pamc)
 [![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
@@ -116,7 +116,7 @@ services:
       - ./plugins:/CLIProxyAPI/plugins
 
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     depends_on:
       - cli-proxy-api
@@ -131,7 +131,7 @@ services:
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -163,7 +163,7 @@ docker compose up -d
 
 ```yaml
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
@@ -176,7 +176,7 @@ docker compose up -d
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -208,7 +208,7 @@ OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
 ```yaml
 services:
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
@@ -223,7 +223,7 @@ services:
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -253,7 +253,7 @@ OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
 在该服务出现之前安装的部署，在 Docker 主机上执行一条命令即可启用，无需修改编排文件：
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
 该命令添加 `oh-my-cpa-updater` 容器，并同时把 Oh My CPA 升级到当前版本。`docker rm -f oh-my-cpa-updater`
@@ -451,7 +451,7 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 | [`AGENTS.md`](AGENTS.md) | 编码 Agent 在本仓库中遵循的约定 |
 | [`docs/architecture.md`](docs/architecture.md) | 模块边界、数据流与架构约束 |
 | [`CONTEXT.md`](CONTEXT.md) · [`docs/design.md`](docs/design.md) | 领域术语 · 视觉系统 |
-| [`docs/releasing.md`](docs/releasing.md) | Docker Hub 镜像、原生压缩包与 GitHub 标签发布流程 |
+| [`docs/releasing.md`](docs/releasing.md) | GHCR 镜像、原生压缩包与 GitHub 标签发布流程 |
 | [`docs/ops/cloudflare-demo.md`](docs/ops/cloudflare-demo.md) | 在线演示的部署方式 |
 
 ## 参与贡献

@@ -59,7 +59,7 @@ The same image is the updater when its command is `updater serve` (ADR 0099): th
 then asks the updater instead, so that role needs no health check of its own, and both
 release Compose files declare it as a second service that alone mounts the Docker socket.
 
-Docker Hub distributes `wiziscool/oh-my-cpa` for amd64 and arm64. The full Compose
+GitHub Container Registry distributes `ghcr.io/bizasbot/shell-pamc` for amd64 and arm64. The full Compose
 file pulls CPA and OMC with loopback host ports; OMC-only Compose attaches to a fresh
 or explicitly selected external network. Neither builds locally or installs a proxy.
 `deploy/cpa.config.example.yaml` is solely for fresh gateways; existing installations

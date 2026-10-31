@@ -16,7 +16,7 @@ MCP · Visualization · Management
 [![Release](https://img.shields.io/github/v/release/Bizasbot/Shell-PAMC?label=release)](https://github.com/Bizasbot/Shell-PAMC/releases)
 [![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/wiziscool/oh-my-cpa?style=flat&logo=docker&logoColor=white)](https://hub.docker.com/r/wiziscool/oh-my-cpa)
+[![Container image](https://img.shields.io/badge/ghcr.io-bizasbot%2Fshell--pamc-2496ED?style=flat&logo=docker&logoColor=white)](https://github.com/Bizasbot/Shell-PAMC/pkgs/container/shell-pamc)
 [![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
@@ -121,7 +121,7 @@ services:
       - ./plugins:/CLIProxyAPI/plugins
 
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     depends_on:
       - cli-proxy-api
@@ -136,7 +136,7 @@ services:
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -172,7 +172,7 @@ differently.
 
 ```yaml
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
@@ -185,7 +185,7 @@ differently.
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -220,7 +220,7 @@ lists the other cases.
 ```yaml
 services:
   oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
@@ -235,7 +235,7 @@ services:
       - oh-my-cpa-data:/data
 
   oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -269,7 +269,7 @@ A deployment installed before this service existed gains it with one command on 
 Docker host; the Compose file is not edited:
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
 The command adds an `oh-my-cpa-updater` container and brings Oh My CPA up to the current
@@ -482,7 +482,7 @@ Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Oh My CPA (
 | [`AGENTS.md`](AGENTS.md) | The contract coding agents follow in this repository |
 | [`docs/architecture.md`](docs/architecture.md) | Module boundaries, data flows and invariants |
 | [`CONTEXT.md`](CONTEXT.md) · [`docs/design.md`](docs/design.md) | Domain vocabulary · visual system |
-| [`docs/releasing.md`](docs/releasing.md) | Tag-triggered Docker Hub images, native archives and GitHub releases |
+| [`docs/releasing.md`](docs/releasing.md) | Tag-triggered GHCR images, native archives and GitHub releases |
 | [`docs/ops/cloudflare-demo.md`](docs/ops/cloudflare-demo.md) | How the public demo is deployed |
 
 ## Contributing

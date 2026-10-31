@@ -114,7 +114,7 @@ endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
   bare prefix as well as everything beneath it (`deploy/nginx.conf` shows both rules;
   `docs/install.md` has the Caddy equivalent); CPA keeps its separate port regardless
   of OMC's base path.
-- **Container image**: Compose pulls `wiziscool/oh-my-cpa:latest` from Docker Hub by
+- **Container image**: Compose pulls `ghcr.io/bizasbot/shell-pamc:latest` from GitHub Container Registry by
   default; the full-stack CPA image also defaults to `:latest`. Pin `OMCPA_IMAGE` to the desired version or digest; updates recreate only
   OMC with its existing data and master key. The image runs as uid/gid `10001:10001`,
   includes its own health probe and needs no mounted deployment scripts. A health

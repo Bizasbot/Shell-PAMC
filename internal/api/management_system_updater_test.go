@@ -110,7 +110,7 @@ func newUpdaterFixture(t *testing.T) updaterFixture {
 	t.Cleanup(func() { _ = db.Close() })
 	repo := repository.New(db)
 	sidecar := &fakeUpdater{status: updater.StatusResponse{Products: []updater.Target{
-		{Product: updater.ProductOMC, Image: "wiziscool/oh-my-cpa:latest", Action: updater.ActionAvailable},
+		{Product: updater.ProductOMC, Image: "ghcr.io/bizasbot/shell-pamc:latest", Action: updater.ActionAvailable},
 		{Product: updater.ProductCPA, Image: "eceasy/cli-proxy-api:8.0.1", Action: updater.ActionUnavailable, Reason: updater.ReasonPinned},
 	}}}
 	manifests := &fakeManifests{}

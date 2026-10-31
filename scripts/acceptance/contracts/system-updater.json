@@ -3,7 +3,7 @@
   "ready": {
     "state": "ready",
     "products": [
-      { "product": "omc", "action": "available", "reason": "", "image": "wiziscool/oh-my-cpa:latest" },
+      { "product": "omc", "action": "available", "reason": "", "image": "ghcr.io/bizasbot/shell-pamc:latest" },
       { "product": "cpa", "action": "unavailable", "reason": "pinned", "image": "eceasy/cli-proxy-api:8.0.1" }
     ],
     "job": null

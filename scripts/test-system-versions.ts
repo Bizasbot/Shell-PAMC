@@ -102,7 +102,7 @@ function createUpdater(overrides: Partial<SystemUpdaterResponse> = {}): SystemUp
   return {
     state: 'ready',
     products: [
-      { product: 'omc', action: 'available', reason: '', image: 'wiziscool/oh-my-cpa:latest' },
+      { product: 'omc', action: 'available', reason: '', image: 'ghcr.io/bizasbot/shell-pamc:latest' },
       { product: 'cpa', action: 'unavailable', reason: 'pinned', image: 'eceasy/cli-proxy-api:v8.0.1' },
     ],
     job: null,
@@ -141,7 +141,7 @@ test('a blocked product names its reason and image, and only when there is somet
 test('a running update shows its stage on its own product and holds the other one back', () => {
   const updater = createUpdater({
     products: [
-      { product: 'omc', action: 'available', reason: '', image: 'wiziscool/oh-my-cpa:latest' },
+      { product: 'omc', action: 'available', reason: '', image: 'ghcr.io/bizasbot/shell-pamc:latest' },
       { product: 'cpa', action: 'available', reason: '', image: 'eceasy/cli-proxy-api:latest' },
     ],
     job: createJob({ product: 'cpa', stage: 'verifying' }),

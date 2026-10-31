@@ -11,7 +11,7 @@ function validateTopology(document, isFullStack) {
   assert.deepEqual(Object.keys(document.services).sort(), isFullStack ? ['cpa', 'oh-my-cpa', 'oh-my-cpa-updater'] : ['oh-my-cpa', 'oh-my-cpa-updater']);
   const console = document.services['oh-my-cpa'];
   assert.equal(console.build, undefined);
-  assert.equal(console.image, '${OMCPA_IMAGE:-wiziscool/oh-my-cpa:latest}');
+  assert.equal(console.image, '${OMCPA_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}');
   assert.deepEqual(console.ports, ['${OMCPA_BIND:-127.0.0.1:8080}:8080']);
   assert.equal(console.read_only, true);
   assert.equal(console.user, '10001:10001');
@@ -52,7 +52,7 @@ test('Compose files install latest images through loopback and preserve collecti
   for (const mutate of [
     (updater) => { updater.ports = ['8090:8090']; },
     (updater) => { updater.cap_drop = []; },
-    (updater) => { updater.image = 'wiziscool/oh-my-cpa:latest'; },
+    (updater) => { updater.image = 'ghcr.io/bizasbot/shell-pamc:latest'; },
     (updater) => { updater.command = ['updater']; },
   ]) {
     const exposed = readDeployment('compose.omc.yml');

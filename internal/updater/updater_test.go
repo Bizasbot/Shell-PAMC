@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	OMC_REPOSITORY = "wiziscool/oh-my-cpa"
+	OMC_REPOSITORY = "ghcr.io/bizasbot/shell-pamc"
 	TEST_DIGEST    = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 	MASTER_KEY     = "test-master-key"
 )
@@ -89,15 +89,15 @@ func TestParseReferenceAndPinning(t *testing.T) {
 		tag        string
 		isPinned   bool
 	}{
-		{"wiziscool/oh-my-cpa", "wiziscool/oh-my-cpa", "latest", false},
-		{"wiziscool/oh-my-cpa:latest", "wiziscool/oh-my-cpa", "latest", false},
-		{"wiziscool/oh-my-cpa:v0.2.9", "wiziscool/oh-my-cpa", "v0.2.9", true},
+		{"ghcr.io/bizasbot/shell-pamc", "ghcr.io/bizasbot/shell-pamc", "latest", false},
+		{"ghcr.io/bizasbot/shell-pamc:latest", "ghcr.io/bizasbot/shell-pamc", "latest", false},
+		{"ghcr.io/bizasbot/shell-pamc:v0.2.9", "ghcr.io/bizasbot/shell-pamc", "v0.2.9", true},
 		{"eceasy/cli-proxy-api:8.0.16", "eceasy/cli-proxy-api", "8.0.16", true},
 		// A registry port is not a tag.
 		{"registry.example:5000/team/app", "registry.example:5000/team/app", "latest", false},
 		{"registry.example:5000/team/app:edge", "registry.example:5000/team/app", "edge", false},
-		{"wiziscool/oh-my-cpa@" + TEST_DIGEST, "wiziscool/oh-my-cpa", "latest", true},
-		{"wiziscool/oh-my-cpa:latest@" + TEST_DIGEST, "wiziscool/oh-my-cpa", "latest", true},
+		{"ghcr.io/bizasbot/shell-pamc@" + TEST_DIGEST, "ghcr.io/bizasbot/shell-pamc", "latest", true},
+		{"ghcr.io/bizasbot/shell-pamc:latest@" + TEST_DIGEST, "ghcr.io/bizasbot/shell-pamc", "latest", true},
 	}
 	for _, testCase := range cases {
 		reference := ParseReference(testCase.raw)
@@ -105,8 +105,8 @@ func TestParseReferenceAndPinning(t *testing.T) {
 			t.Errorf("%s: got repository=%q tag=%q pinned=%v", testCase.raw, reference.Repository, reference.EffectiveTag(), reference.IsPinned())
 		}
 	}
-	if CanonicalRepository("docker.io/Wiziscool/oh-my-cpa") != OMC_REPOSITORY {
-		t.Errorf("Docker Hub spellings must compare equal")
+	if CanonicalRepository("docker.io/Library/Nginx") != "nginx" {
+		t.Errorf("registry spellings must compare equal")
 	}
 }
 

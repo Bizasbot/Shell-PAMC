@@ -1,6 +1,6 @@
 # Publishing a release
 
-The stable distribution is **`wiziscool/oh-my-cpa`** on Docker Hub, for
+The stable distribution is **`ghcr.io/bizasbot/shell-pamc`** on GitHub Container Registry, for
 `linux/amd64` and `linux/arm64`. GitHub Releases in `Bizasbot/Shell-PAMC` are the
 console's version/update source and carry native executables and installation assets. A Git tag
 alone is not a published release and is not discovered by update checks.
@@ -57,17 +57,11 @@ the running tag. Foreign targets are cross-compiled, not executed on Linux.
 
 ## One-time configuration
 
-Create a Docker Hub access token for `wiziscool` with repository read/write permission,
-and put it in the GitHub repository's Actions secret **`DOCKERHUB_TOKEN`**. Never
-commit or paste the value into an issue, run log or chat:
-
-```bash
-gh secret set DOCKERHUB_TOKEN --repo Bizasbot/Shell-PAMC
-```
-
-The workflow uses the repository-scoped `GITHUB_TOKEN` to create the release; only its
-release job has `contents: write`. No GitHub personal token is required. Keep
-Docker Hub repository visibility public so an installation can pull without logging in.
+The workflow signs in to `ghcr.io` with the repository-scoped `GITHUB_TOKEN`; only the
+`publish` and `promote` jobs hold `packages: write`, and only the `release` job holds
+`contents: write`. No registry secret and no personal token is required. After the first
+publication, set the `shell-pamc` package visibility to public in the GitHub package
+settings, and link it to the repository, so an installation can pull without logging in.
 Enable Actions in the repository. Restrict creation/movement of release tags to trusted
 maintainers with repository rules; a version tag is a publishing authority.
 
@@ -143,7 +137,7 @@ the [v0.3.9 release notes](releases/v0.3.9.md).
      the actual non-root/read-only package, SQLite permissions, canonical base paths,
      health, login and version endpoints, and that `updater install` creates a hardened
      updater the console reaches with no setting on either side. It then builds/pushes the amd64/arm64 image
-     with provenance and SBOM to Docker Hub.
+     with provenance and SBOM to GitHub Container Registry.
    - **native** runs after verification, builds the eight archives and checksum
      manifest, smoke-tests the extracted Linux package, asserts clean generated state
      and transfers the complete asset directory with pinned upload/download actions.
@@ -172,7 +166,7 @@ the native packaged-image smoke complements the product's built-browser acceptan
 
 ```bash
 gh run list --workflow release.yml --repo Bizasbot/Shell-PAMC
-docker buildx imagetools inspect wiziscool/oh-my-cpa:v0.3.9
+docker buildx imagetools inspect ghcr.io/bizasbot/shell-pamc:v0.3.9
 gh release view v0.3.9 --repo Bizasbot/Shell-PAMC
 ```
 
@@ -194,7 +188,7 @@ work around a failed gate.
 
 ## Update checks after publishing
 
-The console reads stable release metadata from `api.github.com`, not Docker Hub tags.
+The console reads stable release metadata from `api.github.com`, not registry tags.
 It orders comparable versions numerically, ignores drafts and pre-releases, distinguishes
 newer/equal/ahead/indeterminate outcomes, and keeps its last successful index on a failed
 request. Its per-product 15-minute attempt floor, six-hour sweep, offline switches,

@@ -2,7 +2,7 @@
 
 Oh My CPA (OMC) runs beside [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
 (CPA) **v8.0.0 or later**. The console's sign-in password is CPA's management key. The
-image is **`wiziscool/oh-my-cpa`** on Docker Hub, for `linux/amd64` and `linux/arm64`.
+image is **`ghcr.io/bizasbot/shell-pamc`** on GitHub Container Registry, for `linux/amd64` and `linux/arm64`.
 
 | Scenario | Method |
 | --- | --- |
@@ -42,7 +42,7 @@ Deploys CPA and OMC together.
          - ./plugins:/CLIProxyAPI/plugins
 
      oh-my-cpa:
-       image: wiziscool/oh-my-cpa:latest
+       image: ghcr.io/bizasbot/shell-pamc:latest
        restart: unless-stopped
        depends_on:
          - cli-proxy-api
@@ -57,7 +57,7 @@ Deploys CPA and OMC together.
          - oh-my-cpa-data:/data
 
      oh-my-cpa-updater:
-       image: wiziscool/oh-my-cpa:latest
+       image: ghcr.io/bizasbot/shell-pamc:latest
        restart: unless-stopped
        command: ["updater", "serve"]
        user: "0:0"
@@ -124,7 +124,7 @@ Runs OMC as one more service in the Compose file that already runs CPA.
 
    ```yaml
      oh-my-cpa:
-       image: wiziscool/oh-my-cpa:latest
+       image: ghcr.io/bizasbot/shell-pamc:latest
        restart: unless-stopped
        ports:
          - "127.0.0.1:8080:8080"
@@ -137,7 +137,7 @@ Runs OMC as one more service in the Compose file that already runs CPA.
          - oh-my-cpa-data:/data
 
      oh-my-cpa-updater:
-       image: wiziscool/oh-my-cpa:latest
+       image: ghcr.io/bizasbot/shell-pamc:latest
        restart: unless-stopped
        command: ["updater", "serve"]
        user: "0:0"
@@ -201,7 +201,7 @@ changed.
    ```yaml
    services:
      oh-my-cpa:
-       image: wiziscool/oh-my-cpa:latest
+       image: ghcr.io/bizasbot/shell-pamc:latest
        restart: unless-stopped
        ports:
          - "127.0.0.1:8080:8080"
@@ -216,7 +216,7 @@ changed.
          - oh-my-cpa-data:/data
 
      oh-my-cpa-updater:
-       image: wiziscool/oh-my-cpa:latest
+       image: ghcr.io/bizasbot/shell-pamc:latest
        restart: unless-stopped
        command: ["updater", "serve"]
        user: "0:0"
@@ -363,7 +363,7 @@ These are the variables the two release Compose files accept. Compose reads
 | `CPA_MANAGEMENT_KEY` | required, full stack | The new CPA's management key and OMC's sign-in password |
 | `OMCPA_CPA_BASE_URL` | required, OMC only | The existing CPA's address |
 | `OMCPA_CPA_MANAGEMENT_KEY` | required, OMC only | The existing CPA's plaintext management key |
-| `OMCPA_IMAGE` | `wiziscool/oh-my-cpa:latest` | Set a release tag or digest to pin a version |
+| `OMCPA_IMAGE` | `ghcr.io/bizasbot/shell-pamc:latest` | Set a release tag or digest to pin a version |
 | `CPA_IMAGE` | `eceasy/cli-proxy-api:latest` | Full stack only |
 | `OMCPA_BIND` | `127.0.0.1:8080` | Host address of the console; change it if the port is taken |
 | `CPA_BIND` | `127.0.0.1:8317` | Host address of CPA, full stack only |
@@ -617,7 +617,7 @@ The action is not offered in three cases, and the page says which:
 
 | Case | What to do |
 | --- | --- |
-| The image is pinned to a version tag or digest, for example `OMCPA_IMAGE=wiziscool/oh-my-cpa:vX.Y.Z` | Change the pin and redeploy. The console leaves a pinned image alone, because the next `docker compose up` would put the pinned version back over a database that has already been migrated |
+| The image is pinned to a version tag or digest, for example `OMCPA_IMAGE=ghcr.io/bizasbot/shell-pamc:vX.Y.Z` | Change the pin and redeploy. The console leaves a pinned image alone, because the next `docker compose up` would put the pinned version back over a database that has already been migrated |
 | CPA does not run as a container on the same Docker host | Update CPA where it runs |
 | The build carries no release signing key, as a build from source does | Update by hand, below |
 
@@ -627,7 +627,7 @@ A deployment whose Compose file has no `oh-my-cpa-updater` service gains one wit
 single command on the Docker host. The Compose file is not edited:
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
 The command:
@@ -642,7 +642,7 @@ The command:
   described above. A pinned console is left as it is.
 
 `--pull always` fetches the current image: the host already holds an older
-`wiziscool/oh-my-cpa:latest`, which has no updater. `-u 0` is needed because the Docker
+`ghcr.io/bizasbot/shell-pamc:latest`, which has no updater. `-u 0` is needed because the Docker
 socket belongs to root. Running the command again
 repairs or refreshes the installation. `docker rm -f oh-my-cpa-updater` removes it, and
 the console then shows the command again in place of the update action.
@@ -670,7 +670,7 @@ release Compose file, add `-f deploy/compose.full.yml` or `-f deploy/compose.omc
 both commands.
 
 This upgrades OMC and leaves CPA as it is. To move to a specific version, change the
-`image:` tag to `wiziscool/oh-my-cpa:vX.Y.Z`, or set `OMCPA_IMAGE` in `deploy/.env` with
+`image:` tag to `ghcr.io/bizasbot/shell-pamc:vX.Y.Z`, or set `OMCPA_IMAGE` in `deploy/.env` with
 a release Compose file. With the files in this guide the data is in the Docker volume
 `<project>_oh-my-cpa-data`, and `docker volume inspect` prints its path. How releases
 are published is in `docs/releasing.md`.
