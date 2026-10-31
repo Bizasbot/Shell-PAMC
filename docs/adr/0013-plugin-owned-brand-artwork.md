@@ -77,8 +77,7 @@ en la salida.
   Verificado en vivo: el logotipo de jsdelivr del plugin CodeBuddy llega como `data:image/svg+xml;base64,…`
   (5 670 bytes) con cero URLs de CDN en la respuesta.
 - **El despliegue ahora se comunica con el host del plugin** (como máximo una vez por hora, por URL). Un despliegue
-  aislado (air-gapped) no puede hacerlo y recurre a la marca incluida en el paquete, tal como se indica en `README.md`
-  y `README.zh-CN.md`.
+  aislado (air-gapped) no puede hacerlo y recurre a la marca incluida en el paquete, tal como se indica en `README.md`.
 - **La anulación de icono almacenada por un operador ya no se aplica a un proveedor propiedad de un plugin.** Ese es
   el costo aceptado de que el plugin sea propietario de la identidad de su proveedor, y está registrado en la regla
   de nomenclatura de `CONTEXT.md`, que por lo demás establece que los iconos pertenecen a Oh My CPA.
