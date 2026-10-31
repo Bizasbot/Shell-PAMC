@@ -331,7 +331,7 @@ registry or its safety metadata changes.
 ## Agent model directory
 
 The Agent's model directory is generated from the loopback CPA fixture through the
-real OMC facade. The export derives its client-key fingerprint from the already-captured
+real Shell-PAMC facade. The export derives its client-key fingerprint from the already-captured
 masked key list; no literal fingerprint is maintained in the generator. The Worker maps
 `/api/v1/agent/models` (formerly `/api/v1/playground/models`) to the generated model-directory
 response. The console route `/agent` is included in both demo coverage and browser acceptance.

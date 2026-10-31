@@ -27,7 +27,7 @@ The matrix is pinned in `scripts/native-release.mjs`, not downloaded during buil
 It was checked on October 6, 2026 against CPA's official release workflow at commit
 `a2976eb8a303f11b4ea5177bce9f9ff752634dfc` and the v8.0.16 assets. CPA's current source
 uses its [release workflow](https://github.com/router-for-me/CLIProxyAPI/blob/a2976eb8a303f11b4ea5177bce9f9ff752634dfc/.github/workflows/release.yaml) rather than GoReleaser. Its `aarch64` asset label
-means Go `arm64`; its additional Linux plugin variants are not OMC targets. All OMC
+means Go `arm64`; its additional Linux plugin variants are not Shell-PAMC targets. All Shell-PAMC
 builds use `CGO_ENABLED=0` with modernc SQLite and embed the IANA time-zone database
 through `-tags timetzdata`. OS certificate roots are still required for HTTPS.
 The Darwin and Windows executables are not code-signed or notarized.
@@ -96,7 +96,7 @@ updated by hand once.
 - Docker version aliases are `v0.3.9` and `0.3.9`; `latest` advances only for the
   numerically newest stable release. A backport never moves either Docker `latest`
   or GitHub's latest pointer backwards. Compose defaults to `latest` for both
-  OMC and CPA. Operators can override
+  Shell-PAMC and CPA. Operators can override
   `SHELLPAMC_IMAGE` and `CPA_IMAGE` with a tested version or digest for controlled upgrades.
 - Publish a new version for changed application content. Do not move a published tag
   or intentionally rebuild its identity with different source.

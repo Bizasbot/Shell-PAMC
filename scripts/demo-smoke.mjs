@@ -52,7 +52,7 @@ const PAGES = [
   { route: 'usage/events', label: 'request records', selector: '.ant-table-row, .request-row, [data-request-row]', min: 1 },
   { route: 'pricing', label: 'pricing', selector: '.ant-table-row', min: 5 },
   { route: 'config', label: 'configuration', selector: '.ant-input, .ant-select, .config-field', min: 3 },
-  { route: 'omc-settings', label: 'oh my cpa settings', selector: '.ant-segmented, .ant-radio-group, .ant-card', min: 2 },
+  { route: 'omc-settings', label: 'shell-pamc settings', selector: '.ant-segmented, .ant-radio-group, .ant-card', min: 2 },
   { route: 'plugins', label: 'plugins', selector: '[data-plugin-panel="installed"] article', min: 2 },
   { route: 'plugins?tab=store', label: 'plugin store', selector: '[data-plugin-panel="store"] article', min: 2 },
   { route: 'plugins?tab=settings', label: 'plugin settings', selector: '[data-plugin-panel="settings"] .ant-card', min: 3 },

@@ -38,8 +38,8 @@ MCP · 可视化 · 管理
 </div>
 
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)（CPA）是一个 API 网关，负责协议适配、凭据管理与请求代理。
-**Shell-PAMC**（OMC）是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
-OMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本地 SQLite，可离线运行，登录使用 CPA 的管理密钥。
+**Shell-PAMC** 是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
+Shell-PAMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本地 SQLite，可离线运行，登录使用 CPA 的管理密钥。
 
 > [!TIP]
 > **[立即体验 Live Demo](https://omc-demo.junze.dev)**
@@ -272,7 +272,7 @@ Linux 和 FreeBSD 的 amd64、arm64 可执行文件。每个压缩包内嵌控�
 > 备份 `.env`。`SHELLPAMC_MASTER_KEY` 是数据库的加密密钥，丢失后数据无法读取。
 
 CPA 的每条用量记录只交给一个读取方。同一个 CPA 上已有其他用量统计工具时，停用该工具，
-或在 `environment:` 下添加 `SHELLPAMC_USAGE_INGEST_MODE: "off"`，仅将 OMC 用于管理。其他管理面板不冲突。
+或在 `environment:` 下添加 `SHELLPAMC_USAGE_INGEST_MODE: "off"`，仅将 Shell-PAMC 用于管理。其他管理面板不冲突。
 
 `shell-pamc-updater` 挂载了 Docker socket，等同于拥有该主机上 Docker 的控制权。关闭控制台更新需从编排文件中删除该服务，
 并用 `docker rm -f shell-pamc-updater` 删除正在运行的容器（仅删除服务定义时，Compose 不会停止已运行的容器）。

@@ -60,7 +60,7 @@ then asks the updater instead, so that role needs no health check of its own, an
 release Compose files declare it as a second service that alone mounts the Docker socket.
 
 GitHub Container Registry distributes `ghcr.io/bizasbot/shell-pamc` for amd64 and arm64. The full Compose
-file pulls CPA and OMC with loopback host ports; OMC-only Compose attaches to a fresh
+file pulls CPA and Shell-PAMC with loopback host ports; Shell-PAMC-only Compose attaches to a fresh
 or explicitly selected external network. Neither builds locally or installs a proxy.
 `deploy/cpa.config.example.yaml` is solely for fresh gateways; existing installations
 retain their configuration, panels and collection ownership. See `docs/install.md`.
@@ -124,7 +124,7 @@ cycle even though the `internal/usage` directory appears in both directions.
 | `internal/iconasset` | Static image validation, bounded decoding, MIME verification and XML-allowlisted SVG reconstruction | — |
 | `internal/fontasset` | Font container recognition by signature, weight/style/family description from `OS/2`, `fvar` and `name`, and the Google Fonts installer (stylesheet parsing, host-confined slice download) | — |
 | `internal/security` | Redaction, keyed-HMAC fingerprints, display masks | — |
-| `internal/applog` | The OMC service log: an `slog` handler that tees every record the stderr handler accepts into a bounded, redacted in-memory ring the console reads | `security` |
+| `internal/applog` | The Shell-PAMC service log: an `slog` handler that tees every record the stderr handler accepts into a bounded, redacted in-memory ring the console reads | `security` |
 | `internal/auth` | Admin session cookie: sign, verify, rotate | — |
 | `internal/usage` | Decode CPA usage/error payloads into typed events | `security` |
 | `internal/usage/resp` | Minimal RESP client for CPA's subscribe/LPOP subset | — |
@@ -143,7 +143,7 @@ cycle even though the `internal/usage` directory appears in both directions.
 | `internal/capability` | Agent capability declarations, JSON Schema validation, permission/risk rules, pending-operation store, executor audit | `repository`, `crypto` |
 | `internal/operations` | Shared management operations (usage analysis, requests, providers, OAuth, quota, keys, config, pricing, system, model directory) used by both console handlers and capabilities | `capability`, `cpa/management`, `cpa/gateway`, `modelcatalog`, `pricing`, `quota`, `repository` |
 | `internal/agent` | Server-side Agent runtime: conversation persistence, the tool catalogue it declares to the model, the sectioned system prompt, display tools, model loop, resumption | `capability`, `cpa/gateway`, `repository` |
-| `internal/agui` | The AG-UI 1.0 wire protocol for Agent runs: strict `RunAgentInput` decoding, the event translator and SSE framing; knows nothing of OMC | — |
+| `internal/agui` | The AG-UI 1.0 wire protocol for Agent runs: strict `RunAgentInput` decoding, the event translator and SSE framing; knows nothing of Shell-PAMC | — |
 | `internal/mcpbridge` | MCP server definition over the capability registry, its Streamable HTTP handler and the stdio bridge over the capability HTTP endpoints; no business logic or approval policy | `capability` |
 | `internal/api` | Routes, DTO allowlists, audited sensitive reveals, audit writes, the demo policy, capability/Agent endpoints | all of the above, `internal/web` |
 | `internal/web` | `go:embed` of the built SPA, with a committed placeholder entry page for a binary built without it (ADR 0033) | — |
@@ -233,7 +233,7 @@ Native writes join `providerWriteGate`, validate caller authentication before sn
 keep the encrypted stored config with the existing backup gate, and call `afterConfigWrite`
 on success. Classification is conservative for all v8 writes and core v0 writes; ordinary
 deep plugin actions do not take the config gate. Native requests keep CPA's last-write
-semantics rather than adding OMC revision fields to the external wire contract.
+semantics rather than adding Shell-PAMC revision fields to the external wire contract.
 
 HTML/CSS/JavaScript references and runtime fetch, Request, XMLHttpRequest and EventSource
 requests are rebased for the same surfaces. Rebased Request bodies are buffered before
@@ -366,7 +366,7 @@ over the shared shell in `web/src/components/workspace`. Text files attached in 
 server stores (`runReducer.ts`) and the exports (`export.ts`). `useAgentRun.ts` drives one run and
 publishes its frame on a 40ms cadence; `thread.ts` converts the stored conversation and the live
 frame to thread messages; `runtime.ts` is the one module that knows assistant-ui's runtime API, and
-routes every framework action - send, stop, approve, answer - back into OMC's code. A message sent
+routes every framework action - send, stop, approve, answer - back into Shell-PAMC's code. A message sent
 during a run waits in a queue behind it. Capability calls render through a toolkit of
 render-only `backend` entries (`tools/registry.tsx`) handed to the runtime provider: one disclosure per call (`tools/CapabilityCall.tsx`), joined into a collapsible timeline, each opening its arguments and the receipt
 the model received under its own row (ADR 0084); display calls render as a
@@ -395,7 +395,7 @@ operation. `ask_question`, which `internal/agent` registers, uses the same pendi
 path with an `answer` input and is the only capability that belongs to the conversation rather
 than to `internal/operations`.
 
-`database_schema` and `database_query` read OMC's own database through a second, read-only
+`database_schema` and `database_query` read Shell-PAMC's own database through a second, read-only
 SQLite pool that `internal/repository` opens on first use (`mode=ro`, `query_only`, no attached
 databases). Its escaped absolute file URI keeps Windows drive letters in the path
 (`file:///C:/...`), with reserved filename characters escaped and the connection
@@ -416,7 +416,7 @@ one tool per capability offered to the `mcp` adapter, plus `omc_operation_status
   endpoints with the same bearer credential. The subcommand is dispatched before
   configuration, database, and CPA client initialization, so it opens no data directory.
   Non-loopback URLs must be HTTPS, redirects are refused, responses are bounded, and only
-  OMC's own refusal codes are repeated to the agent.
+  Shell-PAMC's own refusal codes are repeated to the agent.
 
 Neither can approve operations, submit secrets, or complete OAuth. A prepared operation
 returns its id and a link to `<console>/authorize/<id>`. That route is
@@ -433,7 +433,7 @@ and per-client configuration built by `web/src/pages/agent/connect.ts`.
 Agent runs have no application-level token, round, call, display-count or duration ceiling
 (ADR 0083).
 Cancellation is checked between model calls and capability calls. The provider owns its actual
-context and output limits; the reference context window is a composer readout, not an OMC
+context and output limits; the reference context window is a composer readout, not an Shell-PAMC
 request-sizing gate. Transport health remains bounded: the gateway waits at most 120 seconds
 for response headers and cancels an Agent stream after 120 seconds without received bytes;
 individual SSE lines remain limited to 1 MiB. Payload validation and capability security limits
@@ -1435,7 +1435,7 @@ exclusions and never reads credential secrets. CPA's 400 (unknown channel) or 40
 remain failures. The editors retain manual entry without a catalog.
 Exclusion reads use CPA's trimmed, lowercase, deduplicated rules. The facade bounds
 provider count, rule count (512) and rule length (256 characters).
-Aliases and exclusions remain CPA-owned configuration, without a new OMC table.
+Aliases and exclusions remain CPA-owned configuration, without a new Shell-PAMC table.
 
 `cpa_bindings` carries `missing_at_ms` and `ON DELETE SET NULL` so upstream
 removal marks a binding missing without cascading into history.
@@ -1727,7 +1727,7 @@ transition, not merely the two transition days, because a single offset cannot d
 span that crosses one.
 
 `Repository.QueryDailyTokenTotals` therefore takes the days as exact instant ranges,
-built by the handler from the effective OMC IANA zone with `time.Date`/`AddDate`. Because
+built by the handler from the effective Shell-PAMC IANA zone with `time.Date`/`AddDate`. Because
 every civil offset is a multiple of fifteen minutes, each of those days is a whole number
 of `usage_facts_15m` buckets: the grid is one fifteen-minute fact read over the span,
 folded into days in Go. Days that are not contiguous or not quarter-hour aligned are read
@@ -2219,7 +2219,7 @@ immutability triggers and the request-id high-water mark while adding
 telemetry keeps the existing per-record policy, including for older CPA, mixed
 queues and CPA downgrades. CPA omits empty outbound tiers, so a missing field
 cannot distinguish an older publisher from a payload rule that removed the tier;
-OMC does not infer that fact from gateway version, configuration or latency.
+Shell-PAMC does not infer that fact from gateway version, configuration or latency.
 Historical totals never join the mutable tables, so a later edit
 cannot rewrite an invoice. A request with no effective price version is stored
 with pricing status `unpriced` (`legacy_unpriced` for rows that predate migration
@@ -2533,7 +2533,7 @@ The six-hour sweep is exempt by construction: it is far outside any floor.
 ### The header's star count
 
 The shell's repository link shows the star count of `release.ProjectRepository`, a constant
-rather than the configured OMC release source: the link names this project, so a count read
+rather than the configured Shell-PAMC release source: the link names this project, so a count read
 from an operator's fork would describe a different repository than the one it opens. The
 browser never asks GitHub. `Service.Stargazers` reads `GET /repos/{owner}/{name}` through the
 same fixed-host client and keeps the answer in memory only; a restart costs one request to
@@ -3384,9 +3384,9 @@ inference is explicitly refused, while one browser-local recorded example demons
 
 `internal/timezone` resolves the deployment calendar from `TZ`, the system zone name or the local zone file, and embeds Go's IANA data for offline named-zone loading. `Repository` owns an atomic runtime location and serializes timezone preference commits before publishing the new location. Startup loads `omc_timezone` from the existing preference table; no migration or timestamp rewrite is needed. Invalid overrides fail validation rather than replacing a working calendar. The preference API remains allowlisted: `PUT /preferences/omc_timezone` accepts an IANA name or an empty string, and `GET /preferences` includes `time_zone` metadata (`timezone`, `server_timezone`, `effective_timezone`).
 
-The application wraps its log handler with a per-record location resolver, so successful timezone writes affect new OMC log timestamps without changing process-global `time.Local`. Retention, authentication expiry, collector watermarks and stored timestamps continue to use absolute instants. The built-in Agent's system context names the effective calendar; `timezone_get` and `timezone_set` use the same repository validation through `internal/operations`.
+The application wraps its log handler with a per-record location resolver, so successful timezone writes affect new Shell-PAMC log timestamps without changing process-global `time.Local`. Retention, authentication expiry, collector watermarks and stored timestamps continue to use absolute instants. The built-in Agent's system context names the effective calendar; `timezone_get` and `timezone_set` use the same repository validation through `internal/operations`.
 
-`web/src/utils/time.ts` owns timezone-aware date construction, and gateway timestamp conversion. `TimeZoneProvider` hydrates the deployment setting inside the authenticated shell; subscribed readers update on preference changes and failed-write rollback. Memoized chart configuration and audit grouping include the zone as a dependency. Day keys use that calendar; the time range picker (`web/src/components/common/timeRange/`) stages civil dates and wall-clock times and resolves them to instants once, on Apply, so the offset applied is the one in force on the picked date. The heatmap accepts an optional explicit `tz` for API consumers and defaults to the effective server-side OMC zone; the console sends its shared effective zone.
+`web/src/utils/time.ts` owns timezone-aware date construction, and gateway timestamp conversion. `TimeZoneProvider` hydrates the deployment setting inside the authenticated shell; subscribed readers update on preference changes and failed-write rollback. Memoized chart configuration and audit grouping include the zone as a dependency. Day keys use that calendar; the time range picker (`web/src/components/common/timeRange/`) stages civil dates and wall-clock times and resolves them to instants once, on Apply, so the offset applied is the one in force on the picked date. The heatmap accepts an optional explicit `tz` for API consumers and defaults to the effective server-side Shell-PAMC zone; the console sends its shared effective zone.
 
 `web/src/components/common/TimeZoneSelect.tsx` is a controlled, reusable picker independent of preference persistence. It accepts `value`, `onChange`, optional `serverTimezone`, `isDisabled`, `id` and an accessible label. The server zone is pinned first and annotated; the caller decides whether choosing it clears an override. Options and minute-keyed offsets are cached, and fixed-height virtual rows bound the rendered list while preserving search and keyboard navigation.
 

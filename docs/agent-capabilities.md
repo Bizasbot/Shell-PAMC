@@ -26,7 +26,7 @@ Agent page ──▶ internal/agent.Runtime ──▶ CPA gateway (model + tool 
   validation, permission and risk rules, the pending-operation store, and the audit
   trail.
 - `internal/agent` owns the model loop: conversation persistence, budgets, streaming,
-  and resumption, plus the two things that belong to the conversation rather than to OMC -
+  and resumption, plus the two things that belong to the conversation rather than to Shell-PAMC -
   `ask_question` and the display tools. It never touches the database, configuration, or
   the CPA client directly. The console reaches it over AG-UI (`internal/agui`, ADR 0041).
 - `internal/mcpbridge` maps the registry to MCP tools for external agents, once, for
@@ -145,7 +145,7 @@ capability whose arguments an agent could plausibly get wrong.
 
 ### Asking the operator
 
-`ask_question` is the one capability that belongs to the conversation rather than to OMC:
+`ask_question` is the one capability that belongs to the conversation rather than to Shell-PAMC:
 `internal/agent` registers it, for the built-in Agent only. The model asks 1-4 questions in one
 call, each with 0 or 2-6 labelled options (single or multiple choice), and the operator can always
 type an answer instead. It is a `read` with `HumanInput: "answer"`: the executor stores it as a
@@ -253,7 +253,7 @@ strings, figures nested inside objects - cannot.
 ### Read-only database queries
 
 `database_schema` lists what `database_query` may read, and `database_query` runs one SQLite
-`SELECT` against OMC's own database (ADR 0036). Both are offered to the built-in Agent only
+`SELECT` against Shell-PAMC's own database (ADR 0036). Both are offered to the built-in Agent only
 (`Adapters: ["agent"]`); MCP clients do not see them. The policy lives in
 `internal/repository/readonly_query.go`, not in the capability:
 
@@ -342,7 +342,7 @@ the pull request with the reason, rather than added with a weaker check.
 
 ## Adding an agent-capable feature
 
-When a new OMC feature suits an agent:
+When a new Shell-PAMC feature suits an agent:
 
 1. Put the business operation in `internal/operations` (or extract the existing
    handler body into it) so the console and the registry share one implementation -
@@ -392,7 +392,7 @@ shell-pamc mcp
 The subcommand runs before configuration, database, and CPA client initialization, so
 the bridge process opens no data directory and holds no CPA credential of its own.
 Non-loopback URLs must be HTTPS, redirects are refused, and responses are bounded. A
-refusal from OMC reaches the agent as OMC's own code (`authentication_required`,
+refusal from Shell-PAMC reaches the agent as Shell-PAMC's own code (`authentication_required`,
 `capability_unavailable`, ...); any other error body is replaced by `omc_request_refused`.
 
 ### What an MCP client sees
@@ -403,7 +403,7 @@ refusal from OMC reaches the agent as OMC's own code (`authentication_required`,
   `ask_question` (an MCP client has its own way to ask its user) and the read-only
   database queries are offered to the built-in Agent only.
 - Server instructions (`mcpbridge.SERVER_INSTRUCTIONS`) that explain the result statuses
-  and the approval flow, and the OMC build as the server version.
+  and the approval flow, and the Shell-PAMC build as the server version.
 - `omc_operation_status` (`operation_id`, optional `wait_seconds` up to 30): the state of
   a prepared operation. With `wait_seconds` it re-reads until the operator decides or
   the wait ends, so an agent does not poll in a loop. The name is reserved in the
