@@ -23,7 +23,7 @@ function host(prefix) {
   return { window, location, requests };
 }
 
-for (const prefix of ['/api/v1/plugin-host', '/omc/api/v1/plugin-host', '/console/custom/api/v1/plugin-host']) {
+for (const prefix of ['/api/v1/plugin-host', '/shell-pamc/api/v1/plugin-host', '/console/custom/api/v1/plugin-host']) {
   test(`hosted fetch sends the console session only to supported same-origin paths: ${prefix}`, async () => {
     const { window, requests } = host(prefix);
     for (const path of ['/v0/management/plugins/example/state', '/v8/management/config', '/v1/models?kind=a', '/v0/resource/plugins/example/login_status']) {

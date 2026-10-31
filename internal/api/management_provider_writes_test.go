@@ -47,7 +47,7 @@ func TestConcurrentProviderTogglesDoNotLoseAWrite(t *testing.T) {
 
 	toggle := func(index int) (int, string) {
 		body := fmt.Sprintf(`{"family":"codex","index":%d,"disabled":true}`, index)
-		resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status", body)
+		resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status", body)
 		return resp.StatusCode, string(payload)
 	}
 
@@ -120,7 +120,7 @@ func TestProviderUpdateHoldsOverlayInsideAdmission(t *testing.T) {
 	update := func(name string) {
 		body := fmt.Sprintf(`{"family":"codex","name":%q,"base_url":"https://api.openai.com"}`, name)
 		resp, payload := doJSON(t, fixture.client, http.MethodPut,
-			fixture.baseURL+"/omc/api/v1/management/providers/codex-0", body)
+			fixture.baseURL+"/shell-pamc/api/v1/management/providers/codex-0", body)
 		results <- updateResult{name: name, status: resp.StatusCode, body: string(payload)}
 	}
 
@@ -159,7 +159,7 @@ func TestProviderUpdateHoldsOverlayInsideAdmission(t *testing.T) {
 		}
 	}
 
-	resp, payload := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("provider list status = %d body %s", resp.StatusCode, payload)
 	}
@@ -203,7 +203,7 @@ func isExcludedAll(entry map[string]any) bool {
 // treated as a valid selection.
 func TestProviderStatusToggleRejectsNegativeIndex(t *testing.T) {
 	client, baseURL, _ := startProviderTestServer(t)
-	resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status",
+	resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status",
 		`{"family":"codex","index":-1,"disabled":true}`)
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("negative index must be refused, got %d body %s", resp.StatusCode, payload)
@@ -220,7 +220,7 @@ func TestProviderStatusToggleRefreshesPricing(t *testing.T) {
 	fixture.state.mu.Unlock()
 
 	resp, payload := doJSON(t, fixture.client, http.MethodPatch,
-		fixture.baseURL+"/omc/api/v1/management/providers/status",
+		fixture.baseURL+"/shell-pamc/api/v1/management/providers/status",
 		`{"family":"codex","index":0,"disabled":true}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status toggle failed: %d body %s", resp.StatusCode, payload)
@@ -246,7 +246,7 @@ func TestProviderWritesAreBusyRefusedWhenGateIsHeld(t *testing.T) {
 	})
 
 	before := countProviderWrites(fixture.state)
-	resp, payload := doJSON(t, fixture.client, http.MethodPatch, fixture.baseURL+"/omc/api/v1/management/providers/status",
+	resp, payload := doJSON(t, fixture.client, http.MethodPatch, fixture.baseURL+"/shell-pamc/api/v1/management/providers/status",
 		`{"family":"codex","index":0,"disabled":true}`)
 	if resp.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("a refused admission must answer 503, got %d body %s", resp.StatusCode, payload)
@@ -299,7 +299,7 @@ func TestProviderStatusToggleChecksIdentityBeforeWriting(t *testing.T) {
 
 	before := countProviderWrites(state)
 	resp, payload := doJSON(t, fixture.client, http.MethodPatch,
-		fixture.baseURL+"/omc/api/v1/management/providers/status",
+		fixture.baseURL+"/shell-pamc/api/v1/management/providers/status",
 		`{"family":"codex","index":0,"disabled":true,"expected_auth_index":"c-9"}`)
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("a stale identity must be refused with 409, got %d body %s", resp.StatusCode, payload)
@@ -311,7 +311,7 @@ func TestProviderStatusToggleChecksIdentityBeforeWriting(t *testing.T) {
 	// The same request with the identity that is actually there succeeds, so the
 	// precondition refuses only the mismatch rather than the whole path.
 	resp, payload = doJSON(t, fixture.client, http.MethodPatch,
-		fixture.baseURL+"/omc/api/v1/management/providers/status",
+		fixture.baseURL+"/shell-pamc/api/v1/management/providers/status",
 		`{"family":"codex","index":0,"disabled":true,"expected_auth_index":"c-1"}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("a matching identity must be accepted, got %d body %s", resp.StatusCode, payload)
@@ -320,7 +320,7 @@ func TestProviderStatusToggleChecksIdentityBeforeWriting(t *testing.T) {
 	// Omitting the precondition keeps the endpoint working for a caller that has
 	// no identity to send.
 	resp, payload = doJSON(t, fixture.client, http.MethodPatch,
-		fixture.baseURL+"/omc/api/v1/management/providers/status",
+		fixture.baseURL+"/shell-pamc/api/v1/management/providers/status",
 		`{"family":"codex","index":0,"disabled":false}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("an omitted precondition must not be treated as a mismatch, got %d body %s", resp.StatusCode, payload)

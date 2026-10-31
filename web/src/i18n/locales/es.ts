@@ -1725,7 +1725,7 @@ export const ES: Readonly<Record<string, string>> = {
   "inst.api_root": "Ruta raíz de la API",
   "inst.media_mount": "Montaje de medios/íconos",
   "inst.proxy_advice": "Recomendación para el proxy inverso",
-  "inst.proxy_advice_val": "Caddy o Nginx deben conservar el prefijo /omc y reenviar al backend",
+  "inst.proxy_advice_val": "Caddy o Nginx deben conservar el prefijo /shell-pamc y reenviar al backend",
   "inst.faq_title": "¿Por qué CPA lista todo como Codex?",
   "inst.faq_body": "CLIProxyAPI llama Codex, en la capa de protocolo, a todo controlador de endpoint de OpenAI Responses. Ya agregues un endpoint oficial de DeepSeek, OpenCode Go, Command Code GOAT o un relay, CPA los lista a todos como Codex. Shell-PAMC construye encima tu catálogo personal de activos —nombres, íconos y categorías personalizados— sin cambiar cómo ejecuta CPA.",
   "tri.error": "No se pudo cargar la lista de recursos desde Shell-PAMC",

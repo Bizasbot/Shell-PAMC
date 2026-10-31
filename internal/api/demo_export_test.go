@@ -978,7 +978,7 @@ func writeDemoExportJSON(t *testing.T, path string, payload any) {
 // therefore declare the pattern they serve, and the concrete path is only what gets
 // fetched.
 func TestDemoExportCoversEveryReadableRoute(t *testing.T) {
-	const basePath = "/omc"
+	const basePath = "/shell-pamc"
 	handler := demoHandler(t, basePath)
 	routes := handler.routes()
 

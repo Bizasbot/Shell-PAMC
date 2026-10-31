@@ -23,7 +23,7 @@ func TestUsageEventsResolveCodexTierAcrossListDetailAndFacets(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&resolved_service_tier=priority")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&resolved_service_tier=priority")
 	var page struct {
 		Items []usageEventResponse `json:"items"`
 	}
@@ -35,7 +35,7 @@ func TestUsageEventsResolveCodexTierAcrossListDetailAndFacets(t *testing.T) {
 	if item.Provider != "codex" || item.ServiceTier != "priority" || item.ResponseServiceTier != "default" || item.ResolvedServiceTier != "priority" || item.ResolvedServiceTierSource != "request" {
 		t.Fatalf("list evidence: %+v", item)
 	}
-	response, payload = getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, item.ID))
+	response, payload = getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, item.ID))
 	var detail struct {
 		Event usageEventResponse `json:"event"`
 	}
@@ -43,12 +43,12 @@ func TestUsageEventsResolveCodexTierAcrossListDetailAndFacets(t *testing.T) {
 	if response.StatusCode != http.StatusOK || detail.Event.ServiceTier != "priority" || detail.Event.ResponseServiceTier != "default" || detail.Event.ResolvedServiceTier != "priority" || detail.Event.ResolvedServiceTierSource != "request" {
 		t.Fatalf("detail evidence: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&service_tier=priority")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&service_tier=priority")
 	decodeFilterJSON(t, payload, &page)
 	if response.StatusCode != http.StatusOK || len(page.Items) != 2 {
 		t.Fatalf("raw filter contract: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/facets?preset=24h")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/facets?preset=24h")
 	var facets struct {
 		Facets repository.UsageFacets `json:"facets"`
 	}
@@ -77,7 +77,7 @@ func TestUsageEventsOutboundTierAcrossListDetailAndFacets(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&resolved_service_tier=priority")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&resolved_service_tier=priority")
 	var page struct {
 		Items []usageEventResponse `json:"items"`
 	}
@@ -94,7 +94,7 @@ func TestUsageEventsOutboundTierAcrossListDetailAndFacets(t *testing.T) {
 	if outbound.EffectiveServiceTier != "priority" || outbound.ResolvedServiceTier != "priority" || outbound.ServiceTier != "auto" || outbound.ResponseServiceTier != "default" || outbound.ResolvedServiceTierSource != "outbound" {
 		t.Fatalf("outbound list: %+v", outbound)
 	}
-	response, payload = getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, outbound.ID))
+	response, payload = getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, outbound.ID))
 	var detail struct {
 		Event usageEventResponse `json:"event"`
 	}
@@ -102,7 +102,7 @@ func TestUsageEventsOutboundTierAcrossListDetailAndFacets(t *testing.T) {
 	if response.StatusCode != http.StatusOK || detail.Event.EffectiveServiceTier != "priority" || detail.Event.ResolvedServiceTier != "priority" || detail.Event.ResolvedServiceTierSource != "outbound" {
 		t.Fatalf("outbound detail: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	var rawPage struct {
 		Items []map[string]json.RawMessage `json:"items"`
 	}
@@ -123,7 +123,7 @@ func TestUsageEventsOutboundTierAcrossListDetailAndFacets(t *testing.T) {
 		if err := json.Unmarshal(item["id"], &id); err != nil {
 			t.Fatal(err)
 		}
-		response, payload = getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, id))
+		response, payload = getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, id))
 		detail.Event = usageEventResponse{}
 		decodeFilterJSON(t, payload, &detail)
 		if response.StatusCode != http.StatusOK || detail.Event.EffectiveServiceTier != "auto" || detail.Event.ResolvedServiceTier != "" || detail.Event.ResolvedServiceTierSource != "outbound" {
@@ -140,17 +140,17 @@ func TestUsageEventsOutboundTierAcrossListDetailAndFacets(t *testing.T) {
 	if !hasAuto {
 		t.Fatal("explicit outbound auto record was not returned")
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&service_tier=priority")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&service_tier=priority")
 	decodeFilterJSON(t, payload, &page)
 	if response.StatusCode != http.StatusOK || len(page.Items) != 3 {
 		t.Fatalf("original request filter: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&resolved_service_tier=default")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&resolved_service_tier=default")
 	decodeFilterJSON(t, payload, &page)
 	if response.StatusCode != http.StatusOK || len(page.Items) != 1 || page.Items[0].EffectiveServiceTier != "default" || page.Items[0].ResolvedServiceTier != "default" || page.Items[0].ResolvedServiceTierSource != "outbound" {
 		t.Fatalf("outbound downgrade filter: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/facets?preset=24h")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/facets?preset=24h")
 	var facets struct {
 		Facets repository.UsageFacets `json:"facets"`
 	}

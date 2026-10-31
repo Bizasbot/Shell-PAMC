@@ -68,9 +68,9 @@ func vertexOpenAPIUpstream(t *testing.T) (func(http.ResponseWriter, *http.Reques
 func TestVertexOpenAPIFieldsSafeProjectionAndVerifiedWrites(t *testing.T) {
 	upstream, stored := vertexOpenAPIUpstream(t)
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream)
-	fieldsURL := baseURL + "/omc/api/v1/management/auth-files/fields"
+	fieldsURL := baseURL + "/shell-pamc/api/v1/management/auth-files/fields"
 
-	response, raw := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/auth-files/safe-fields?name=vertex-sa.json&auth_index=vertex-1", "")
+	response, raw := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/auth-files/safe-fields?name=vertex-sa.json&auth_index=vertex-1", "")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("safe fields = %d body = %s", response.StatusCode, raw)
 	}
@@ -147,7 +147,7 @@ func TestVertexOpenAPIFieldsSafeProjectionAndVerifiedWrites(t *testing.T) {
 func TestVertexOpenAPIFieldsRefuseInvalidValuesAndOtherCredentials(t *testing.T) {
 	upstream, _ := vertexOpenAPIUpstream(t)
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream)
-	fieldsURL := baseURL + "/omc/api/v1/management/auth-files/fields"
+	fieldsURL := baseURL + "/shell-pamc/api/v1/management/auth-files/fields"
 	for _, body := range []string{
 		`{"name":"vertex-sa.json","openapi":"yes"}`,
 		`{"name":"vertex-sa.json","openapi_location":"us-central1/../config"}`,

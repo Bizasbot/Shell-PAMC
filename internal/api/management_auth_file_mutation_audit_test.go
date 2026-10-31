@@ -40,7 +40,7 @@ func TestCredentialMutationsRespectAuditPhases(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				response, raw := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/auth-files/"+mutation.name, mutation.body)
+				response, raw := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/auth-files/"+mutation.name, mutation.body)
 				if phase == "attempt" {
 					if response.StatusCode != http.StatusInternalServerError || mutationCount.Load() != 0 {
 						t.Fatalf("refused attempt audit: status=%d writes=%d body=%s", response.StatusCode, mutationCount.Load(), raw)

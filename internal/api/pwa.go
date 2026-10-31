@@ -25,7 +25,7 @@ import (
 //
 // Every URL inside the manifest is relative: start_url, scope and the icon sources
 // resolve against the manifest's URL, so one committed file is correct at the site
-// root, under /omc and under a nested base path. Omission of an `id` is part of that
+// root, under /shell-pamc and under a nested base path. Omission of an `id` is part of that
 // decision, not an oversight: a relative id resolves against start_url's *origin*, so
 // "./" would give every mount point the same installed identity. The default identity
 // is the resolved start_url, which already differs per mount. pwa_test.go pins both.

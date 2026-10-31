@@ -73,12 +73,12 @@ func startReleaseTestServer(t *testing.T) (*http.Client, string, *repository.Rep
 		t.Fatalf("upsert instance: %v", err)
 	}
 
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatalf("new auth manager: %v", err)
 	}
 	handler := NewHandler(config.Config{
-		BasePath: "/omc",
+		BasePath: "/shell-pamc",
 		Version:  "v0.1.0-dev",
 		Usage:    config.UsageConfig{Enabled: true, Mode: "auto"},
 	}, repo, cipher, nil, authManager)
@@ -109,13 +109,13 @@ func startReleaseTestServer(t *testing.T) (*http.Client, string, *repository.Rep
 		t.Fatalf("new cookie jar: %v", err)
 	}
 	client := &http.Client{Jar: jar}
-	loginResp, err := client.Post(appServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	loginResp, err := client.Post(appServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v (status %v)", err, loginResp)
 	}
 	loginResp.Body.Close()
 
-	return client, appServer.URL + "/omc/api/v1", repo, feed
+	return client, appServer.URL + "/shell-pamc/api/v1", repo, feed
 }
 
 // stubFeedSource answers release reads from memory.
@@ -414,14 +414,14 @@ func TestMaintenanceEndpointRebuildsAndReportsMeasuredResult(t *testing.T) {
 // refuse with 409 and a body naming the reason.
 func TestMaintenanceRefusesASecondJobWhileOneRuns(t *testing.T) {
 	_, _, repo, _ := startReleaseTestServer(t)
-	handler := NewHandler(config.Config{BasePath: "/omc", Version: "v0.1.0-dev"}, repo, nil, nil, nil)
+	handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "v0.1.0-dev"}, repo, nil, nil, nil)
 	handler.SetMaintenance(stubMaintenanceManager{
 		reserveErr: repository.ErrMaintenanceRunning,
 	})
 
 	recorder := httptest.NewRecorder()
 	handler.postSystemMaintenanceCheckpoint(recorder, httptest.NewRequest(
-		http.MethodPost, "/omc/api/v1/management/system/maintenance/checkpoint", nil))
+		http.MethodPost, "/shell-pamc/api/v1/management/system/maintenance/checkpoint", nil))
 
 	if recorder.Code != http.StatusConflict {
 		t.Fatalf("status = %d for a service reporting a running job, want 409", recorder.Code)
@@ -441,14 +441,14 @@ func TestMaintenanceRefusesASecondJobWhileOneRuns(t *testing.T) {
 // operator acts on: the message names the measured requirement rather than only a status code.
 func TestMaintenanceRefusesAnUndersizedDisk(t *testing.T) {
 	_, _, repo, _ := startReleaseTestServer(t)
-	handler := NewHandler(config.Config{BasePath: "/omc", Version: "v0.1.0-dev"}, repo, nil, nil, nil)
+	handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "v0.1.0-dev"}, repo, nil, nil, nil)
 	handler.SetMaintenance(stubMaintenanceManager{
 		reserveErr: fmt.Errorf("%w: 1000 bytes available, 4096 required", repository.ErrInsufficientDiskSpace),
 	})
 
 	recorder := httptest.NewRecorder()
 	handler.postSystemMaintenanceVacuum(recorder, httptest.NewRequest(
-		http.MethodPost, "/omc/api/v1/management/system/maintenance/vacuum", nil))
+		http.MethodPost, "/shell-pamc/api/v1/management/system/maintenance/vacuum", nil))
 
 	if recorder.Code != http.StatusInsufficientStorage {
 		t.Fatalf("status = %d for an undersized disk, want 507", recorder.Code)
@@ -555,7 +555,7 @@ func TestSystemRoutesRefuseWithoutTheirService(t *testing.T) {
 	_, _, repo, _ := startReleaseTestServer(t)
 
 	// The same repository, no release service and no maintenance service.
-	bare := NewHandler(config.Config{BasePath: "/omc", Version: "v0.1.0-dev"}, repo, nil, nil, nil)
+	bare := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "v0.1.0-dev"}, repo, nil, nil, nil)
 
 	// The three routes that need a service refuse, rather than answering as though the feature
 	// were configured and had nothing to report.
@@ -566,7 +566,7 @@ func TestSystemRoutesRefuseWithoutTheirService(t *testing.T) {
 		"maintenance":   bare.getSystemMaintenance,
 	} {
 		recorder := httptest.NewRecorder()
-		call(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system", nil))
+		call(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system", nil))
 		// The maintenance *status* read is served from memory and needs no service to be useful:
 		// it answers an empty job, which is the truth. The other three require one.
 		want := http.StatusServiceUnavailable
@@ -581,7 +581,7 @@ func TestSystemRoutesRefuseWithoutTheirService(t *testing.T) {
 	// The page itself still renders, because its other three cards work and a surface that was
 	// never configured must not take the whole page down with it.
 	recorder := httptest.NewRecorder()
-	bare.getSystemInfo(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system", nil))
+	bare.getSystemInfo(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system", nil))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("system info without services = %d, want 200", recorder.Code)
 	}

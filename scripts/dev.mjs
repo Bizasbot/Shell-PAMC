@@ -3,8 +3,8 @@
 //   pnpm dev:api   -> Air only
 //   pnpm dev:web   -> Vite only (declared in package.json)
 //
-// The browser entry is Vite at http://127.0.0.1:5173/omc/ (or http://<tailscale-ip>:5173/omc/).
-// Vite sends /omc/api to the Go API address from SHELLPAMC_LISTEN_ADDR. CPA remains an external
+// The browser entry is Vite at http://127.0.0.1:5173/shell-pamc/ (or http://<tailscale-ip>:5173/shell-pamc/).
+// Vite sends /shell-pamc/api to the Go API address from SHELLPAMC_LISTEN_ADDR. CPA remains an external
 // dependency and can be started separately with `pnpm cpa:start` when real integration is needed.
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -177,7 +177,7 @@ try {
     console.log(`[dev] mode: Go API only (${resolveListenAddr(root)})`);
   } else {
     console.log(`[dev] topology: browser -> Vite :5173 (0.0.0.0) -> Go API ${apiTarget} -> external CPA`);
-    console.log('[dev] open: http://127.0.0.1:5173/omc/ (or http://<tailscale-ip>:5173/omc/)');
+    console.log('[dev] open: http://127.0.0.1:5173/shell-pamc/ (or http://<tailscale-ip>:5173/shell-pamc/)');
   }
   console.log('[dev] CPA is external; start it separately with `pnpm cpa:start` when needed.\n');
 

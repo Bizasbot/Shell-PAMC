@@ -68,12 +68,12 @@ func startSystemTestServer(t *testing.T) (*http.Client, string, *repository.Repo
 		t.Fatalf("upsert instance: %v", err)
 	}
 
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatalf("new auth manager: %v", err)
 	}
 	handler := NewHandler(config.Config{
-		BasePath: "/omc",
+		BasePath: "/shell-pamc",
 		Version:  "v0.1.0-sys-test",
 		Usage: config.UsageConfig{
 			Enabled: true,
@@ -90,7 +90,7 @@ func startSystemTestServer(t *testing.T) (*http.Client, string, *repository.Repo
 	}
 	client := &http.Client{Jar: jar}
 
-	loginResp, err := client.Post(appServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	loginResp, err := client.Post(appServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v", err)
 	}
@@ -101,7 +101,7 @@ func startSystemTestServer(t *testing.T) (*http.Client, string, *repository.Repo
 func TestSystemInfoEndpoint(t *testing.T) {
 	client, baseURL, _ := startSystemTestServer(t)
 
-	req, _ := http.NewRequest(http.MethodGet, baseURL+"/omc/api/v1/management/system", nil)
+	req, _ := http.NewRequest(http.MethodGet, baseURL+"/shell-pamc/api/v1/management/system", nil)
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("get system info: %v", err)
@@ -198,7 +198,7 @@ func TestSystemInfoEndpoint(t *testing.T) {
 func TestSystemDiagnosticsEndpoint(t *testing.T) {
 	client, baseURL, repo := startSystemTestServer(t)
 
-	req, _ := http.NewRequest(http.MethodGet, baseURL+"/omc/api/v1/management/system/diagnostics", nil)
+	req, _ := http.NewRequest(http.MethodGet, baseURL+"/shell-pamc/api/v1/management/system/diagnostics", nil)
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("get diagnostics: %v", err)
@@ -254,7 +254,7 @@ func stringContains(s, substr string) bool {
 func TestDiagnosticsBundleCarriesWhatThePageStoppedShowing(t *testing.T) {
 	client, baseURL, _ := startSystemTestServer(t)
 
-	resp, err := client.Get(baseURL + "/omc/api/v1/management/system/diagnostics")
+	resp, err := client.Get(baseURL + "/shell-pamc/api/v1/management/system/diagnostics")
 	if err != nil {
 		t.Fatalf("get diagnostics: %v", err)
 	}

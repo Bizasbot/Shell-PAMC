@@ -395,7 +395,7 @@ claimed to meet the 10–30 s logic target.
   Add a component integration environment only for a concrete wiring claim with
   measurable savings, not as a uniform framework replacement.
 - The ordinary facade DTO allowlists, Plugin Host exception, request shapes, permission
-  gates, schema, offline resources and `/omc` subpath remain unchanged. Source proof,
+  gates, schema, offline resources and `/shell-pamc` subpath remain unchanged. Source proof,
   differential logic, real browser/visual evidence and production checks together
   establish compatibility within covered fixtures, not a claim about all future
   workloads or every supported host/browser combination.

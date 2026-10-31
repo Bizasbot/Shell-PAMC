@@ -75,7 +75,7 @@ func TestManifestIsInstallable(t *testing.T) {
 		t.Fatalf("name and short_name are required: %#v", manifest)
 	}
 	// start_url and scope are relative on purpose: they resolve against the manifest
-	// URL, so this single file is correct at the site root, under /omc and under a
+	// URL, so this single file is correct at the site root, under /shell-pamc and under a
 	// nested base path. An absolute path here would make the manifest describe one
 	// mount point only.
 	if manifest.StartURL != "./" || manifest.Scope != "./" {
@@ -144,7 +144,7 @@ func TestManifestIsInstallable(t *testing.T) {
 func TestInstallableAppSurfaceServesEveryMountPath(t *testing.T) {
 	manifestBytes := readPWAFile(t, manifestFile)
 	manifest := readManifest(t)
-	for _, basePath := range []string{"", "/", "/omc", "/nested/console"} {
+	for _, basePath := range []string{"", "/", "/shell-pamc", "/nested/console"} {
 		t.Run("base="+basePath, func(t *testing.T) {
 			handler := testHandler(t, basePath)
 			handler.consoleRoot = os.DirFS(publicConsoleDir)
@@ -249,7 +249,7 @@ func TestDeepLinkResolvesTheManifestUnderTheMountPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, basePath := range []string{"/", "/omc", "/nested/console"} {
+	for _, basePath := range []string{"/", "/shell-pamc", "/nested/console"} {
 		t.Run("base="+basePath, func(t *testing.T) {
 			shell, err := injectRuntimeConfig(string(index), config.Config{BasePath: basePath})
 			if err != nil {
@@ -304,12 +304,12 @@ func TestDeepLinkResolvesTheManifestUnderTheMountPath(t *testing.T) {
 // The demonstration serves the same install surface, and its boundary does not move:
 // the manifest is public build output while the refused operations stay refused.
 func TestDemoServesTheInstallableAppSurface(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	handler.consoleRoot = os.DirFS(publicConsoleDir)
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 
-	response, err := http.Get(server.URL + "/omc/manifest.webmanifest")
+	response, err := http.Get(server.URL + "/shell-pamc/manifest.webmanifest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +321,7 @@ func TestDemoServesTheInstallableAppSurface(t *testing.T) {
 		t.Fatalf("demo header = %q, want %q", demo, demoValue)
 	}
 
-	refused, err := http.Post(server.URL+"/omc/api/v1/management/oauth/start", "application/json", nil)
+	refused, err := http.Post(server.URL+"/shell-pamc/api/v1/management/oauth/start", "application/json", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

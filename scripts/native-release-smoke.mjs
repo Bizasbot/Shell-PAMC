@@ -23,7 +23,7 @@ try {
   execFileSync('tar', ['-xzf', path.join(RELEASE_DIRECTORY, target.archive), '-C', working]);
   assert.ok(fs.readFileSync(path.join(working, '.env.example'), 'utf8').includes('SHELLPAMC_MASTER_KEY='));
   assert.ok(fs.statSync(path.join(working, 'docs/install.md')).size > 0);
-  for (const basePath of ['/omc', '/', '/tools/omc']) {
+  for (const basePath of ['/shell-pamc', '/', '/tools/shell-pamc']) {
     const listener = net.createServer();
     listener.listen(0, '127.0.0.1');
     await once(listener, 'listening');

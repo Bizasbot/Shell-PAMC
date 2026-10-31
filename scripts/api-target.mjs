@@ -1,4 +1,4 @@
-// Resolves the Go API address the Vite dev server proxies /omc/api to.
+// Resolves the Go API address the Vite dev server proxies /shell-pamc/api to.
 //
 // The Go process reads SHELLPAMC_LISTEN_ADDR from its dotenv file (internal/config:
 // SHELLPAMC_ENV_FILE selects the file, real environment variables win over it), so

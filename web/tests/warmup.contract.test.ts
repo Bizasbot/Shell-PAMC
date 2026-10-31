@@ -8,7 +8,7 @@ afterEach(() => vi.unstubAllGlobals());
 it('uses the handler-certified wire projection and strict refusals through the typed client', async () => {
   const fixture = createWarmupFixture();
   const calls: { path: string; options: RequestInit }[] = [];
-  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/omc' } });
+  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/shell-pamc' } });
   vi.stubGlobal('fetch', async (path: string, options: RequestInit) => {
     calls.push({ path, options });
     const result = fixture(new URL(path, 'http://127.0.0.1'), options.method ?? 'GET', options.body as string);
@@ -21,7 +21,7 @@ it('uses the handler-certified wire projection and strict refusals through the t
   expect(calls.at(-1)?.options.method).toBe('POST');
   expect(JSON.parse(calls.at(-1)?.options.body as string)).toEqual({ request_id: 'manual-wire-test', revision: credential.revision, confirmed: true });
   expect(calls.at(-1)?.options.credentials).toBe('same-origin');
-  expect(calls.at(-1)?.path).toBe('/omc/api/v1/management/quota/warmup/credentials/exact-claude/run');
+  expect(calls.at(-1)?.path).toBe('/shell-pamc/api/v1/management/quota/warmup/credentials/exact-claude/run');
   for (const refusal of WARMUP_CONTRACT.cases) {
     await expect(requestResponse('/management/quota/warmup/credentials/exact-claude/run', { method: 'POST', body: JSON.stringify(refusal.body) })).rejects.toMatchObject({ status: refusal.status, data: refusal.response });
   }
@@ -31,7 +31,7 @@ it('uses the handler-certified wire projection and strict refusals through the t
 
 it('reads independently persisted model refusal evidence through the typed client', async () => {
   const fixture = createWarmupFixture({ isProtocolPaused: true });
-  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/omc' } });
+  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/shell-pamc' } });
   vi.stubGlobal('fetch', async (path: string, options: RequestInit) => {
     const result = fixture(new URL(path, 'http://127.0.0.1'), options.method ?? 'GET', options.body as string);
     return new Response(JSON.stringify(result.json), { status: result.status, headers: { 'Content-Type': 'application/json' } });

@@ -41,7 +41,7 @@ a message naming the variable.
 | --- | --- | --- |
 | `SHELLPAMC_VERSION` | embedded stable tag; `v0.1.0-dev` for untagged source builds | Optional display/User-Agent version override; does not change the installed build |
 | `SHELLPAMC_LISTEN_ADDR` | `:8080` | Listen address |
-| `SHELLPAMC_BASE_PATH` | `/omc` | Sub-path the console is served under. `omc`, `/omc/` and `/omc` are equivalent; `/` serves it at the root |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Sub-path the console is served under. `omc`, `/shell-pamc/` and `/shell-pamc` are equivalent; `/` serves it at the root |
 | `SHELLPAMC_DATA_DIR` | `./data` | Directory holding `shell-pamc.db`. Local disk only. A database left under the old name `oh-my-cpa.db` (with its `-wal` and `-shm` files) is renamed on the first start; if both names exist the start fails and you keep the one that holds your data |
 | `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use. An `https://` value marks the session cookie `Secure` |
 | `SHELLPAMC_TRUSTED_PROXY_CIDRS` | unset | Comma-separated CIDRs of reverse proxies whose forwarding headers may be trusted for login throttling |
@@ -110,8 +110,8 @@ endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
   both mean `0`; the example's `3` and `30` apply only when explicitly configured.
   Header passthrough forwards filtered upstream response headers to clients.
   See `docs/cpa-v8-compat.md` for the other option semantics and upstream sources.
-- **Base path**: Direct OMC serving supports `/omc` or `/`. The console is served at
-  the prefix with a trailing slash (`/omc/`); OMC answers the bare prefix (`/omc`) with
+- **Base path**: Direct OMC serving supports `/shell-pamc` or `/`. The console is served at
+  the prefix with a trailing slash (`/shell-pamc/`); OMC answers the bare prefix (`/shell-pamc`) with
   a 308 redirect to it. An operator-owned proxy must preserve the prefix and route the
   bare prefix as well as everything beneath it (`deploy/nginx.conf` shows both rules;
   `docs/install.md` has the Caddy equivalent); CPA keeps its separate port regardless
@@ -260,7 +260,7 @@ External agents connect over MCP to the same capability registry, in one of two 
 
 | Transport | Address | Credential |
 | --- | --- | --- |
-| Streamable HTTP, served by the console | `<console URL>/api/mcp`, for example `https://omc.example.com/omc/api/mcp` | `Authorization: Bearer <CPA management key>` |
+| Streamable HTTP, served by the console | `<console URL>/api/mcp`, for example `https://shell-pamc.example.com/shell-pamc/api/mcp` | `Authorization: Bearer <CPA management key>` |
 | stdio, the `oh-my-cpa mcp` bridge process | `SHELLPAMC_SERVER_URL` (the console URL, including any base path) | `SHELLPAMC_CPA_MANAGEMENT_KEY` |
 
 The HTTP endpoint needs nothing installed where the agent runs; the **Connect** action at
@@ -384,7 +384,7 @@ capabilities (ADR 0067).
 of a CPA, so it needs no management key and no provider credential. Its storage is not
 durable — the database is deleted and rebuilt on every boot — and the server refuses
 sign-in flows, credential movement, plugin execution and plugin pages, gateway configuration writes and
-anything that would leave the process. It opens at the site root rather than `/omc`
+anything that would leave the process. It opens at the site root rather than `/shell-pamc`
 unless `SHELLPAMC_BASE_PATH` says otherwise. A visitor's theme stays in their own browser:
 a demonstration is shared, so it is neither sent to the server nor read from it.
 

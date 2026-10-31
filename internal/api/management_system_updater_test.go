@@ -128,7 +128,7 @@ func newUpdaterFixture(t *testing.T) updaterFixture {
 func (f updaterFixture) apply(t *testing.T, product string) (int, map[string]any) {
 	t.Helper()
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPost, "/omc/api/v1/management/system/updater/apply", strings.NewReader(`{"product":"`+product+`"}`))
+	request := httptest.NewRequest(http.MethodPost, "/shell-pamc/api/v1/management/system/updater/apply", strings.NewReader(`{"product":"`+product+`"}`))
 	// The middleware gives each request one ID; every row it writes carries it.
 	request = request.WithContext(context.WithValue(request.Context(), requestIDKey{}, "apply-request"))
 	f.handler.postSystemUpdaterApply(recorder, request)
@@ -155,7 +155,7 @@ func (f updaterFixture) audits(t *testing.T, action string) []repository.AuditEv
 func readUpdater(t *testing.T, handler *Handler) SystemUpdaterDTO {
 	t.Helper()
 	recorder := httptest.NewRecorder()
-	handler.getSystemUpdater(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system/updater", nil))
+	handler.getSystemUpdater(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system/updater", nil))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200: an absent updater is a state, not a failure", recorder.Code)
 	}
@@ -457,12 +457,12 @@ func TestSystemUpdaterSharedWireContract(t *testing.T) {
 	}
 	read := func(handler *Handler) []byte {
 		recorder := httptest.NewRecorder()
-		handler.getSystemUpdater(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system/updater", nil))
+		handler.getSystemUpdater(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system/updater", nil))
 		return recorder.Body.Bytes()
 	}
 	post := func(handler *Handler, body json.RawMessage) *httptest.ResponseRecorder {
 		recorder := httptest.NewRecorder()
-		handler.postSystemUpdaterApply(recorder, httptest.NewRequest(http.MethodPost, "/omc/api/v1/management/system/updater/apply", bytes.NewReader(body)))
+		handler.postSystemUpdaterApply(recorder, httptest.NewRequest(http.MethodPost, "/shell-pamc/api/v1/management/system/updater/apply", bytes.NewReader(body)))
 		return recorder
 	}
 

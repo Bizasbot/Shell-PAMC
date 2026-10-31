@@ -106,11 +106,11 @@ func startAuthFilesTestServer(t *testing.T, managementKey string, handler func(h
 	}); err != nil {
 		t.Fatal(err)
 	}
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	appHandler := NewHandler(config.Config{BasePath: "/omc", Version: "test", RequestTimeout: 5 * time.Second}, repo, cipher, nil, authManager)
+	appHandler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test", RequestTimeout: 5 * time.Second}, repo, cipher, nil, authManager)
 	server := httptest.NewServer(appHandler.Router())
 	t.Cleanup(server.Close)
 
@@ -119,7 +119,7 @@ func startAuthFilesTestServer(t *testing.T, managementKey string, handler func(h
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	login, err := client.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	login, err := client.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +241,7 @@ func TestManagementAuthFilesFacadeProjectsAndForwards(t *testing.T) {
 		}
 	}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", handler)
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	response, raw := doJSON(t, client, http.MethodGet, base, "")
 	if response.StatusCode != http.StatusOK {
@@ -485,7 +485,7 @@ func TestManagementAuthFileFieldsPatchRequiresReadback(t *testing.T) {
 	}
 	client, baseURL, _ := startAuthFilesTestServer(t, "management-secret-value", handler)
 	response, raw := doJSON(t, client, http.MethodPatch,
-		baseURL+"/omc/api/v1/management/auth-files/fields",
+		baseURL+"/shell-pamc/api/v1/management/auth-files/fields",
 		`{"name":"test.json","auth_index":"idx-1","priority":9}`)
 	if response.StatusCode != http.StatusBadGateway {
 		t.Fatalf("unverified patch status = %d body = %s", response.StatusCode, raw)
@@ -505,7 +505,7 @@ func TestManagementAuthFilesFacadeGuardrails(t *testing.T) {
 		}
 		_, _ = writer.Write([]byte(`{"files":[]}`))
 	})
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	for _, probe := range []struct {
 		method, url, body string
@@ -554,11 +554,11 @@ func TestManagementAuthFilesFacadeGuardrails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	emptyHandler := NewHandler(config.Config{BasePath: "/omc", Version: "test", RequestTimeout: time.Second}, repository.New(db), cipher, nil, authManager)
+	emptyHandler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test", RequestTimeout: time.Second}, repository.New(db), cipher, nil, authManager)
 	emptyServer := httptest.NewServer(emptyHandler.Router())
 	defer emptyServer.Close()
 	jar, err := cookiejar.New(nil)
@@ -566,17 +566,17 @@ func TestManagementAuthFilesFacadeGuardrails(t *testing.T) {
 		t.Fatal(err)
 	}
 	emptyClient := &http.Client{Jar: jar}
-	login, err := emptyClient.Post(emptyServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	login, err := emptyClient.Post(emptyServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	login.Body.Close()
-	unconfigured, raw := doJSON(t, emptyClient, http.MethodGet, emptyServer.URL+"/omc/api/v1/management/auth-files", "")
+	unconfigured, raw := doJSON(t, emptyClient, http.MethodGet, emptyServer.URL+"/shell-pamc/api/v1/management/auth-files", "")
 	if unconfigured.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("unconfigured status = %d body = %s", unconfigured.StatusCode, raw)
 	}
 
-	unauthenticated, err := http.Get(emptyServer.URL + "/omc/api/v1/management/auth-files")
+	unauthenticated, err := http.Get(emptyServer.URL + "/shell-pamc/api/v1/management/auth-files")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -595,7 +595,7 @@ func TestManagementAuthFileListProjectionSurvivesUnexpectedTimeFormats(t *testin
 			{"name":"absent-time.json"}
 		]}`))
 	})
-	response, raw := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/auth-files", "")
+	response, raw := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/auth-files", "")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body = %s", response.StatusCode, raw)
 	}
@@ -623,7 +623,7 @@ func TestManagementAuthFilesPartialDeletion(t *testing.T) {
 		_, _ = writer.Write([]byte(`{"status":"success"}`))
 	}
 	client, baseURL, _ := startAuthFilesTestServer(t, "management-secret-value", handler)
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	response, raw := doJSON(t, client, http.MethodDelete, base, `{"names":["ok.json","missing.json"]}`)
 	if response.StatusCode != http.StatusMultiStatus {
@@ -673,7 +673,7 @@ func TestManagementAuthFilesAllFailureDeletion(t *testing.T) {
 		_, _ = writer.Write([]byte(`{"status":"success"}`))
 	}
 	client, baseURL, _ := startAuthFilesTestServer(t, "management-secret-value", handler)
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	response, raw := doJSON(t, client, http.MethodDelete, base, `{"names":["fail1.json","fail2.json"]}`)
 	if response.StatusCode != http.StatusMultiStatus {
@@ -718,7 +718,7 @@ func TestManagementAuthFilesEmptyOrContradictoryResponse(t *testing.T) {
 		_, _ = writer.Write([]byte(`{"status":"success"}`))
 	}
 	client, baseURL, _ := startAuthFilesTestServer(t, "management-secret-value", handler)
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	response, raw := doJSON(t, client, http.MethodDelete, base, `{"names":["unconfirmed.json"]}`)
 	if response.StatusCode != http.StatusMultiStatus {
@@ -874,7 +874,7 @@ func TestManagementAuthFilesEndpointBoundsQuotaProjection(t *testing.T) {
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(filesFixture))
 	})
-	response, raw := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/auth-files", "")
+	response, raw := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/auth-files", "")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("list status = %d body = %s", response.StatusCode, raw)
 	}

@@ -75,7 +75,7 @@ func TestPluginHostScriptPreservesUnrelatedCode(t *testing.T) {
 
 func TestPluginHostDocumentAdaptsOnlyExecutableScripts(t *testing.T) {
 	input := `<html><head><script type="application/json">{"code":"location.pathname"}</script><script>const inline = window.location.pathname;</script><script type="module">export const modulePath = location.pathname;</script><script src="/v0/resource/plugins/example/app.js"></script></head></html>`
-	output, err := hostPluginDocument([]byte(input), "/omc/api/v1/plugin-host")
+	output, err := hostPluginDocument([]byte(input), "/shell-pamc/api/v1/plugin-host")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestPluginHostDocumentAdaptsOnlyExecutableScripts(t *testing.T) {
 	if !strings.Contains(string(output), "const inline = window.location._omcPath;") || !strings.Contains(string(output), "export const modulePath = location._omcPath;") {
 		t.Fatalf("inline/module pathname not adapted: %s", output)
 	}
-	if !strings.Contains(string(output), `src="/omc/api/v1/plugin-host/v0/resource/plugins/example/app.js"`) {
+	if !strings.Contains(string(output), `src="/shell-pamc/api/v1/plugin-host/v0/resource/plugins/example/app.js"`) {
 		t.Fatalf("external script not rebased: %s", output)
 	}
 }

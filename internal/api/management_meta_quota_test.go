@@ -53,7 +53,7 @@ func TestMetaQuotaFacadeAuditsBeforeDownloadAndProjectsSnapshots(t *testing.T) {
 		}
 	})
 	repo = testRepo
-	response, err := client.Post(baseURL+"/omc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(`{"auth_index":"meta-fixture"}`))
+	response, err := client.Post(baseURL+"/shell-pamc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(`{"auth_index":"meta-fixture"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,14 +78,14 @@ func TestMetaQuotaFacadeAuditsBeforeDownloadAndProjectsSnapshots(t *testing.T) {
 	if strings.Contains(snapshot.PlanJSON+snapshot.WindowsJSON, "private") || strings.Contains(snapshot.PlanJSON+snapshot.WindowsJSON, "dca:") {
 		t.Fatal("secret persisted in quota snapshot")
 	}
-	for _, path := range []string{"/omc/api/v1/management/quota", "/omc/api/v1/management/quota/meta-fixture"} {
+	for _, path := range []string{"/shell-pamc/api/v1/management/quota", "/shell-pamc/api/v1/management/quota/meta-fixture"} {
 		response, body := getJSON(t, client, baseURL+path)
 		if response.StatusCode != http.StatusOK || !strings.Contains(string(body), "Muse Pro") || strings.Contains(string(body), "private-fixture") {
 			t.Fatalf("unsafe/unreadable quota after refresh: %d %s", response.StatusCode, body)
 		}
 	}
 	// A repeated selection must not repeat Meta's key exchange or its audit.
-	response, err = client.Post(baseURL+"/omc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(`{"auth_indexes":["meta-fixture"," meta-fixture ","","meta-fixture"]}`))
+	response, err = client.Post(baseURL+"/shell-pamc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(`{"auth_indexes":["meta-fixture"," meta-fixture ","","meta-fixture"]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestMetaQuotaFacadeAuditsBeforeDownloadAndProjectsSnapshots(t *testing.T) {
 	if err != nil || response.StatusCode != http.StatusOK || batch.Total != 1 || len(batch.Quotas) != 1 {
 		t.Fatalf("duplicate batch refresh: status=%d total=%d quotas=%d err=%v", response.StatusCode, batch.Total, len(batch.Quotas), err)
 	}
-	response, err = client.Post(baseURL+"/omc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(`{"auth_indexes":[" ",""]}`))
+	response, err = client.Post(baseURL+"/shell-pamc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(`{"auth_indexes":[" ",""]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func TestMetaQuotaFacadeAuditsBeforeDownloadAndProjectsSnapshots(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, payload := range []string{`{"auth_index":"meta-fixture"}`, `{"auth_indexes":["meta-fixture"]}`} {
-		response, err := client.Post(baseURL+"/omc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(payload))
+		response, err := client.Post(baseURL+"/shell-pamc/api/v1/management/quota/refresh", "application/json", bytes.NewBufferString(payload))
 		if err != nil {
 			t.Fatal(err)
 		}

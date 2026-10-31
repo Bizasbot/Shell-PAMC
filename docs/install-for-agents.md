@@ -198,7 +198,7 @@ Do not attempt to verify undownloaded entries or run a mismatched executable.
 Extract into a new user-owned directory. Copy the packaged `.env.example` to `.env`
 only if no existing file is present. Generate a master key without printing it and
 ask the user to fill in the plaintext CPA management key. The template binds loopback,
-uses `/omc` and writes `./data`; preserve those defaults unless the user approves a
+uses `/shell-pamc` and writes `./data`; preserve those defaults unless the user approves a
 change. Leave `SHELLPAMC_VERSION` unset, match CPA's `TZ`, and apply B2's usage-reader
 ownership decision. A host CPA listening on loopback needs no remote-management edit.
 Restrict the environment/data files to the service account (Unix permissions or Windows
@@ -234,7 +234,7 @@ It runs in the foreground. Offer a systemd unit or similar only if the user want
 ## 4. Verify
 
 ```bash
-curl -fsS http://127.0.0.1:8080/omc/api/healthz
+curl -fsS http://127.0.0.1:8080/shell-pamc/api/healthz
 ```
 
 The install is done only when the response has `"status":"ok"`, `"database_status":"ok"`
@@ -309,9 +309,9 @@ the backup. Verify as in step 4.
 
 ## 6. Tell the user
 
-- The console address, `http://127.0.0.1:8080/omc/` unless the port was changed. On a
+- The console address, `http://127.0.0.1:8080/shell-pamc/` unless the port was changed. On a
   remote server, give them `ssh -L 18080:127.0.0.1:8080 user@server` and
-  `http://127.0.0.1:18080/omc/`.
+  `http://127.0.0.1:18080/shell-pamc/`.
 - That the sign-in password is the CPA management key, and which file holds it. Not
   the key itself.
 - To back up the `.env` file and OMC's data (the `oh-my-cpa-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
@@ -322,9 +322,9 @@ the backup. Verify as in step 4.
   container holds the Docker socket. If it is not: the command that adds it.
 - Anything changed outside the new `oh-my-cpa` directory.
 
-OMC redirects the bare `/omc` to `/omc/`. If a reverse proxy sits in front of it,
-route both `/omc` and `/omc/` to OMC (or redirect `/omc` to `/omc/` at the proxy) and
-confirm `curl -sI <public address>/omc` answers `308`; a rule for `/omc/` alone leaves
+OMC redirects the bare `/shell-pamc` to `/shell-pamc/`. If a reverse proxy sits in front of it,
+route both `/shell-pamc` and `/shell-pamc/` to OMC (or redirect `/shell-pamc` to `/shell-pamc/` at the proxy) and
+confirm `curl -sI <public address>/shell-pamc` answers `308`; a rule for `/shell-pamc/` alone leaves
 the bare path unreachable.
 
 More detail, including HTTPS behind a reverse proxy and every setting, is in

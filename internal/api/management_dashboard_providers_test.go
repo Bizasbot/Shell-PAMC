@@ -13,7 +13,7 @@ import (
 	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
-const providersDashboardPath = "/omc/api/v1/management/dashboard/providers"
+const providersDashboardPath = "/shell-pamc/api/v1/management/dashboard/providers"
 
 func TestDashboardProvidersRequiresAuthentication(t *testing.T) {
 	_, baseURL, _ := startDashboardTestServer(t, nil)

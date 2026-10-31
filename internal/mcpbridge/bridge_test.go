@@ -36,9 +36,9 @@ func TestMCPStdioDiscoveryAndCall(t *testing.T) {
 			t.Error("missing scoped bearer")
 		}
 		switch request.URL.Path {
-		case "/omc/api/v1/capabilities":
+		case "/shell-pamc/api/v1/capabilities":
 			json.NewEncoder(writer).Encode(map[string]any{"capabilities": registry.List(capability.Principal{Adapter: "mcp", IsAdmin: true})})
-		case "/omc/api/v1/capabilities/invoke":
+		case "/shell-pamc/api/v1/capabilities/invoke":
 			var input struct {
 				Name      string          `json:"name"`
 				Arguments json.RawMessage `json:"arguments"`
@@ -56,7 +56,7 @@ func TestMCPStdioDiscoveryAndCall(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestMCPStdioHelper$")
-	command.Env = append(os.Environ(), "SHELLPAMC_MCP_TEST_CHILD=1", "SHELLPAMC_SERVER_URL="+upstream.URL+"/omc", "SHELLPAMC_CPA_MANAGEMENT_KEY=fixture-token")
+	command.Env = append(os.Environ(), "SHELLPAMC_MCP_TEST_CHILD=1", "SHELLPAMC_SERVER_URL="+upstream.URL+"/shell-pamc", "SHELLPAMC_CPA_MANAGEMENT_KEY=fixture-token")
 	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
 	session, err := client.Connect(ctx, &mcp.CommandTransport{Command: command}, nil)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestMCPStdioDiscoveryAndCall(t *testing.T) {
 	}
 }
 func TestMCPTransportSecurity(t *testing.T) {
-	for _, address := range []string{"http://example.org/omc", "https://user:pass@example.org/omc", "file:///etc/passwd", "https://example.org?token=secret"} {
+	for _, address := range []string{"http://example.org/shell-pamc", "https://user:pass@example.org/shell-pamc", "file:///etc/passwd", "https://example.org?token=secret"} {
 		if _, err := New(address, "token"); err == nil {
 			t.Errorf("accepted %s", address)
 		}
@@ -119,7 +119,7 @@ func (backend *fixtureBackend) Operation(context.Context, string) (capability.Op
 
 func connectFixture(t *testing.T, backend Backend) *mcp.ClientSession {
 	t.Helper()
-	server, err := NewServer(context.Background(), backend, Options{Version: "v-test", ConsoleURL: func(*mcp.CallToolRequest) string { return "https://omc.example/omc/" }})
+	server, err := NewServer(context.Background(), backend, Options{Version: "v-test", ConsoleURL: func(*mcp.CallToolRequest) string { return "https://shell-pamc.example/shell-pamc/" }})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func TestPendingResultCarriesTheApprovalLinkAndRefusalsKeepTheirCode(t *testing.
 	if err != nil || result.IsError {
 		t.Fatalf("prepare: %+v %v", result, err)
 	}
-	if got := texts(result); len(got) != 2 || got[1] != "Operator approval: https://omc.example/omc/authorize/"+operationID {
+	if got := texts(result); len(got) != 2 || got[1] != "Operator approval: https://shell-pamc.example/shell-pamc/authorize/"+operationID {
 		t.Fatalf("approval link: %v", got)
 	}
 	backend.result, backend.err = capability.Result{}, errors.New("capability_forbidden")

@@ -13,10 +13,10 @@ func TestNormalizeBasePath(t *testing.T) {
 		in   string
 		want string
 	}{
-		{name: "default", in: "", want: "/omc"},
-		{name: "plain", in: "omc", want: "/omc"},
-		{name: "trailing", in: "/omc/", want: "/omc"},
-		{name: "nested", in: "/tools/omc/", want: "/tools/omc"},
+		{name: "default", in: "", want: "/shell-pamc"},
+		{name: "plain", in: "shell-pamc", want: "/shell-pamc"},
+		{name: "trailing", in: "/shell-pamc/", want: "/shell-pamc"},
+		{name: "nested", in: "/tools/shell-pamc/", want: "/tools/shell-pamc"},
 		{name: "root", in: "/", want: ""},
 	}
 	for _, test := range tests {
@@ -33,10 +33,10 @@ func TestNormalizeBasePath(t *testing.T) {
 }
 
 func TestLoadReadsAuthenticationConfiguration(t *testing.T) {
-	t.Setenv("SHELLPAMC_BASE_PATH", "/omc")
+	t.Setenv("SHELLPAMC_BASE_PATH", "/shell-pamc")
 
 	t.Setenv("SHELLPAMC_MASTER_KEY", "01234567890123456789012345678901")
-	t.Setenv("SHELLPAMC_PUBLIC_URL", "https://example.test/omc")
+	t.Setenv("SHELLPAMC_PUBLIC_URL", "https://example.test/shell-pamc")
 	for _, name := range []string{"SHELLPAMC_DATA_DIR", "SHELLPAMC_LISTEN_ADDR", "SHELLPAMC_CPA_BASE_URL", "SHELLPAMC_CPA_USAGE_ADDR", "SHELLPAMC_REQUEST_TIMEOUT", "SHELLPAMC_CPA_TLS_SKIP_VERIFY", "SHELLPAMC_CPA_MANAGEMENT_KEY", "SHELLPAMC_VERSION"} {
 		_ = os.Unsetenv(name)
 	}
@@ -44,13 +44,13 @@ func TestLoadReadsAuthenticationConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.PublicURL != "https://example.test/omc" {
+	if cfg.PublicURL != "https://example.test/shell-pamc" {
 		t.Fatalf("authentication config = %#v", cfg)
 	}
 }
 
 func TestNormalizeBasePathRejectsURLSyntax(t *testing.T) {
-	for _, value := range []string{"/omc?x=1", "/omc#fragment", "/../omc"} {
+	for _, value := range []string{"/shell-pamc?x=1", "/shell-pamc#fragment", "/../shell-pamc"} {
 		if _, err := NormalizeBasePath(value); err == nil {
 			t.Fatalf("NormalizeBasePath(%q) unexpectedly succeeded", value)
 		}
@@ -80,8 +80,8 @@ func TestLoadLeavesSelfHostDefaultsAlone(t *testing.T) {
 	if cfg.IsDemoMode {
 		t.Fatal("demo mode must be off unless it is asked for")
 	}
-	if cfg.BasePath != "/omc" {
-		t.Fatalf("base path = %q, want the documented /omc", cfg.BasePath)
+	if cfg.BasePath != "/shell-pamc" {
+		t.Fatalf("base path = %q, want the documented /shell-pamc", cfg.BasePath)
 	}
 	if cfg.DataDir != "data" {
 		t.Fatalf("data dir = %q, want ./data", cfg.DataDir)
@@ -172,7 +172,7 @@ func TestLoadIsDemoModeIsSelfContained(t *testing.T) {
 func TestLoadIsDemoModeHonoursExplicitOverrides(t *testing.T) {
 	clearConfigEnv(t)
 	t.Setenv(DemoModeEnv, "true")
-	t.Setenv("SHELLPAMC_BASE_PATH", "/omc")
+	t.Setenv("SHELLPAMC_BASE_PATH", "/shell-pamc")
 	t.Setenv("SHELLPAMC_DATA_DIR", "/data")
 	t.Setenv("SHELLPAMC_MASTER_KEY", "01234567890123456789012345678901")
 	t.Setenv("SHELLPAMC_LISTEN_ADDR", "127.0.0.1:9000")
@@ -181,7 +181,7 @@ func TestLoadIsDemoModeHonoursExplicitOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.BasePath != "/omc" || cfg.DataDir != filepath.Clean("/data") || cfg.ListenAddr != "127.0.0.1:9000" {
+	if cfg.BasePath != "/shell-pamc" || cfg.DataDir != filepath.Clean("/data") || cfg.ListenAddr != "127.0.0.1:9000" {
 		t.Fatalf("explicit configuration was overridden: %#v", cfg)
 	}
 	if cfg.MasterKey != "01234567890123456789012345678901" || cfg.PublicURL != "https://demo.example.test" {

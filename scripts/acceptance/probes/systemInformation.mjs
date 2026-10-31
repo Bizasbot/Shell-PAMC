@@ -186,7 +186,7 @@ export async function systemInformationPage({ base, page, check }) {
   // first navigation, so a request issued while expanding the log is captured too.
   const offOriginRequests = [];
   // Compared by origin rather than by the console's path prefix: the dev server serves the
-  // module graph from `/src/...` and the entry from `/omc/`, so a prefix test would treat the
+  // module graph from `/src/...` and the entry from `/shell-pamc/`, so a prefix test would treat the
   // application's own source as a third party.
   const ownOrigin = new URL(base).origin;
   page.on('request', (request) => {
@@ -432,7 +432,7 @@ export async function systemInformationPage({ base, page, check }) {
   // network: `route.fetch()` would leave the harness's own mock and hit the dev server, which
   // answers no API and takes the session with it.
   const systemInfoFixture = systemFixtures()
-    .find(([matches]) => matches(new URL('http://probe/omc/api/v1/management/system')));
+    .find(([matches]) => matches(new URL('http://probe/shell-pamc/api/v1/management/system')));
   const baseSystemBody = () => systemInfoFixture[1]();
   // What `/management/system` reports as the last job. It is a variable because the scenario
   // needs three states from one page: a retained terminal job, a job that is still running when
@@ -441,7 +441,7 @@ export async function systemInformationPage({ base, page, check }) {
   // The backend process the fixture reports. It is a variable because a restart mints job ids from
   // the beginning again, which is the case the page has to survive without a reload.
   let servedProcessStart = 1790013000000;
-  await page.route('**/omc/api/v1/management/system', async (route) => {
+  await page.route('**/shell-pamc/api/v1/management/system', async (route) => {
     const body = baseSystemBody();
     body.runtime = { ...body.runtime, started_at_ms: servedProcessStart };
     await fulfillFixture(route, { status: 200, json: { ...body, maintenance: servedMaintenance } });
@@ -450,7 +450,7 @@ export async function systemInformationPage({ base, page, check }) {
   // The retained job must actually be what the page is being offered, or the assertion below
   // would pass on a fixture that quietly served nothing.
   const servedRetained = await page.evaluate(async () => {
-    const res = await fetch('/omc/api/v1/management/system', { headers: { Accept: 'application/json' } });
+    const res = await fetch('/shell-pamc/api/v1/management/system', { headers: { Accept: 'application/json' } });
     return (await res.json()).maintenance?.action ?? '';
   });
   check('the fixture serves a retained terminal job', servedRetained === 'wal_checkpoint', `action=${servedRetained}`);
@@ -526,7 +526,7 @@ export async function systemInformationPage({ base, page, check }) {
       }),
     });
   };
-  await page.route('**/omc/api/v1/management/system/maintenance**', runningOnLoadHandler);
+  await page.route('**/shell-pamc/api/v1/management/system/maintenance**', runningOnLoadHandler);
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.system-page').waitFor({ timeout: 20_000 });
@@ -558,7 +558,7 @@ export async function systemInformationPage({ base, page, check }) {
     /2\.4\d*\s*KB/i.test(adoptedOutcome.replace(/\s+/g, ' ')) && /reclaimed|净回收/i.test(adoptedOutcome),
     `outcome text: ${adoptedOutcome.slice(0, 160)}`,
   );
-  await page.unroute('**/omc/api/v1/management/system/maintenance**', runningOnLoadHandler);
+  await page.unroute('**/shell-pamc/api/v1/management/system/maintenance**', runningOnLoadHandler);
 
   // ── a job superseded by a newer one is still reported ───────────────────────
   // The server holds one job status, so a fast job that finishes and is replaced inside a single
@@ -610,7 +610,7 @@ export async function systemInformationPage({ base, page, check }) {
       }),
     });
   };
-  await page.route('**/omc/api/v1/management/system/maintenance**', supersedeHandler);
+  await page.route('**/shell-pamc/api/v1/management/system/maintenance**', supersedeHandler);
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.system-page').waitFor({ timeout: 20_000 });
@@ -624,7 +624,7 @@ export async function systemInformationPage({ base, page, check }) {
     supersededOutcome.includes('the replacement job'),
     `polls=${supersedePolls} outcome text: ${supersededOutcome.slice(0, 160)}`,
   );
-  await page.unroute('**/omc/api/v1/management/system/maintenance**', supersedeHandler);
+  await page.unroute('**/shell-pamc/api/v1/management/system/maintenance**', supersedeHandler);
 
   // ── a job that starts AFTER the page is open is followed to its outcome ─────
   // A job admitted elsewhere - another tab, another operator - is invisible to the page until a
@@ -673,7 +673,7 @@ export async function systemInformationPage({ base, page, check }) {
   };
   // The page is idle with no job; the job begins now, on the server, and only a refetch reveals it.
   servedMaintenance = { action: '', job_id: 0, running: false, started_at_ms: 0, finished_at_ms: 0, size_before_bytes: 0, size_after_bytes: 0, reclaimed_bytes: 0, incomplete: false, detail: '', error: '' };
-  await page.route('**/omc/api/v1/management/system/maintenance**', laterJobHandler);
+  await page.route('**/shell-pamc/api/v1/management/system/maintenance**', laterJobHandler);
   servedMaintenance = { ...laterJob };
   // Refresh re-reads both endpoints, which is how this page learns about the job it never started.
   await page.locator('.system-page').getByRole('button', { name: /Refresh|刷新/i }).first().click();
@@ -693,7 +693,7 @@ export async function systemInformationPage({ base, page, check }) {
     /vacuum|重建/i.test(laterOutcome) && /1\.9\d*\s*KB/i.test(laterOutcome.replace(/\s+/g, ' ')),
     `outcome text: ${laterOutcome.slice(0, 160)}`,
   );
-  await page.unroute('**/omc/api/v1/management/system/maintenance**', laterJobHandler);
+  await page.unroute('**/shell-pamc/api/v1/management/system/maintenance**', laterJobHandler);
 
   // ── a running job is shown even when the poll cache is stale ───────────────
   // The card reads the poll's cache while polling is enabled, and that cache can still hold an
@@ -749,7 +749,7 @@ export async function systemInformationPage({ base, page, check }) {
       }),
     });
   };
-  await page.route('**/omc/api/v1/management/system/maintenance**', slowPollHandler);
+  await page.route('**/shell-pamc/api/v1/management/system/maintenance**', slowPollHandler);
   try {
     servedMaintenance = { ...freshRunningJob };
     await page.locator('.system-page').getByRole('button', { name: /Refresh|刷新/i }).first().click();
@@ -794,7 +794,7 @@ export async function systemInformationPage({ base, page, check }) {
     'the job behind the slow poll is still followed to its outcome',
     (await page.locator('[data-testid="sys-maintenance-outcome"]').count()) === 1,
   );
-  await page.unroute('**/omc/api/v1/management/system/maintenance**', slowPollHandler);
+  await page.unroute('**/shell-pamc/api/v1/management/system/maintenance**', slowPollHandler);
 
   // ── a backend restart does not make the new process's job look handled ──────
   // Job ids come from a counter that starts again with each process, so a restart can mint an id
@@ -842,7 +842,7 @@ export async function systemInformationPage({ base, page, check }) {
       }),
     });
   };
-  await page.route('**/omc/api/v1/management/system/maintenance**', postRestartHandler);
+  await page.route('**/shell-pamc/api/v1/management/system/maintenance**', postRestartHandler);
   // The process restarts: a new start instant, and the job it admits reuses an id.
   servedProcessStart = 1790070000000;
   servedMaintenance = { ...postRestartJob };
@@ -858,7 +858,7 @@ export async function systemInformationPage({ base, page, check }) {
     postRestartOutcome.includes('the job the restarted process ran'),
     `polls=${postRestartPolls} outcome text: ${postRestartOutcome.slice(0, 160)}`,
   );
-  await page.unroute('**/omc/api/v1/management/system/maintenance**', postRestartHandler);
+  await page.unroute('**/shell-pamc/api/v1/management/system/maintenance**', postRestartHandler);
 
   // ── a maintenance job is admitted as started, and its outcome is its own ────
   // 202 means accepted, not done. The page must say so when it is accepted and report the
@@ -889,7 +889,7 @@ export async function systemInformationPage({ base, page, check }) {
   // The first GET after the POST reports the job still running, and every later one reports the
   // partial outcome: the page has to follow the job across both, rather than read once.
   let pollCount = 0;
-  await page.route('**/omc/api/v1/management/system/maintenance**', async (route) => {
+  await page.route('**/shell-pamc/api/v1/management/system/maintenance**', async (route) => {
     if (route.request().method() === 'POST') {
       acceptedJob.started_at_ms = 1790020000000;
       // The page's own read is moved with the job. One server holds one job status, so a fixture
@@ -1277,7 +1277,7 @@ export async function systemInformationNarrow({ base, page, check }) {
 
 
 async function verifyVersionCheckFeedback({ page, base, check }) {
-  const fixture = systemFixtures().find(([matches]) => matches(new URL('http://probe/omc/api/v1/management/system')));
+  const fixture = systemFixtures().find(([matches]) => matches(new URL('http://probe/shell-pamc/api/v1/management/system')));
   let body = fixture[1]();
   body.update_check_on_page_load = true;
   body.omc_version = {
@@ -1298,8 +1298,8 @@ async function verifyVersionCheckFeedback({ page, base, check }) {
       omc_version: body.omc_version, cpa_version: body.cpa_version, served_from_cache: checkCount > 1,
     } });
   };
-  await page.route('**/omc/api/v1/management/system', systemHandler);
-  await page.route('**/omc/api/v1/management/system/check-updates', checkHandler);
+  await page.route('**/shell-pamc/api/v1/management/system', systemHandler);
+  await page.route('**/shell-pamc/api/v1/management/system/check-updates', checkHandler);
   try {
     await page.goto(`${base}/system`, { waitUntil: 'domcontentloaded' });
     await until(async () => checkCount === 1, { label: 'the automatic version check' });
@@ -1327,8 +1327,8 @@ async function verifyVersionCheckFeedback({ page, base, check }) {
       checkCount === 2 && await page.locator('.omc-toast-success').count() === 0 && (await page.locator('.omc-toast-warning').innerText()).includes('CLIProxyAPI') && /cached|缓存/.test(await page.locator('.omc-toast-warning').innerText()));
   } finally {
     releaseCheck();
-    await page.unroute('**/omc/api/v1/management/system', systemHandler);
-    await page.unroute('**/omc/api/v1/management/system/check-updates', checkHandler);
+    await page.unroute('**/shell-pamc/api/v1/management/system', systemHandler);
+    await page.unroute('**/shell-pamc/api/v1/management/system/check-updates', checkHandler);
     await page.goto(`${base}/system`, { waitUntil: 'domcontentloaded' });
     await page.locator('[data-testid="sys-product-cpa"]').waitFor({ state: 'visible' });
   }
@@ -1391,7 +1391,7 @@ async function verifySystemHealthAnomalies({ base, page, check }) {
       data_volumes: { ...systemReading.data_volumes, credentials: null, last_event_ms: null, inbox_pending: 12 },
     }),
   });
-  await page.route('**/omc/api/v1/management/system', systemHandler);
+  await page.route('**/shell-pamc/api/v1/management/system', systemHandler);
   try {
     await page.goto(`${base}/system`, { waitUntil: 'domcontentloaded' });
     await page.locator('[data-testid="sys-health-pending"]').waitFor({ state: 'visible' });
@@ -1417,7 +1417,7 @@ async function verifySystemHealthAnomalies({ base, page, check }) {
     });
     check('health anomaly summaries fit without overlapping or overflowing', isContained);
   } finally {
-    await page.unroute('**/omc/api/v1/management/system', systemHandler);
+    await page.unroute('**/shell-pamc/api/v1/management/system', systemHandler);
   }
 }
 
@@ -1436,8 +1436,8 @@ export async function systemHealthAnomalies(fixtures) {
  * fixed and its outcome is a toast.
  */
 export async function systemUpdateIndicator({ base, page, check }) {
-  const system = systemFixtures().find(([matches]) => matches(new URL('http://probe/omc/api/v1/management/system')))[1]();
-  await page.route('**/omc/api/v1/management/system/updates', (route) => fulfillFixture(route, {
+  const system = systemFixtures().find(([matches]) => matches(new URL('http://probe/shell-pamc/api/v1/management/system')))[1]();
+  await page.route('**/shell-pamc/api/v1/management/system/updates', (route) => fulfillFixture(route, {
     status: 200, json: { omc_version: system.omc_version, cpa_version: system.cpa_version },
   }));
 

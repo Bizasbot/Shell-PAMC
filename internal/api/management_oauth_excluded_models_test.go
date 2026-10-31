@@ -57,7 +57,7 @@ func TestManagementOAuthExcludedModelsRoundTrip(t *testing.T) {
 		"empty":          {" "},
 	}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", oauthExcludedModelsUpstream(t, state))
-	base := baseURL + "/omc/api/v1/management/auth-files/excluded-models"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files/excluded-models"
 
 	response, raw := doJSON(t, client, http.MethodGet, base, "")
 	if response.StatusCode != http.StatusOK {
@@ -134,7 +134,7 @@ func TestManagementOAuthExcludedModelsRequireReadback(t *testing.T) {
 		_, _ = writer.Write([]byte(`{"status":"ok"}`))
 	}
 	client, baseURL, _ := startAuthFilesTestServer(t, "management-secret-value", handler)
-	response, raw := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/auth-files/excluded-models", `{"provider":"codex","models":["gpt-5"]}`)
+	response, raw := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/auth-files/excluded-models", `{"provider":"codex","models":["gpt-5"]}`)
 	if response.StatusCode != http.StatusBadGateway {
 		t.Fatalf("unverified write = %d body = %s, want 502", response.StatusCode, raw)
 	}
@@ -142,7 +142,7 @@ func TestManagementOAuthExcludedModelsRequireReadback(t *testing.T) {
 
 func TestManagementOAuthExcludedModelsGuardrails(t *testing.T) {
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", oauthExcludedModelsUpstream(t, map[string][]string{}))
-	base := baseURL + "/omc/api/v1/management/auth-files/excluded-models"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files/excluded-models"
 	tooMany := make([]string, 0, managementOAuthExcludedModelRuleLimit+1)
 	for index := 0; index <= managementOAuthExcludedModelRuleLimit; index++ {
 		tooMany = append(tooMany, "model-"+strings.Repeat("x", index%7)+string(rune('a'+index%26))+strings.Repeat("y", index/26))
@@ -190,7 +190,7 @@ func TestManagementOAuthProviderModels(t *testing.T) {
 		}
 	}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", handler)
-	base := baseURL + "/omc/api/v1/management/auth-files/provider-models?provider="
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files/provider-models?provider="
 	type catalog struct {
 		Provider  string `json:"provider"`
 		Available bool   `json:"available"`
@@ -260,7 +260,7 @@ func TestManagementOAuthProviderModelsPreserveUpstreamFailure(t *testing.T) {
 		}
 		_, _ = writer.Write([]byte(`{}`))
 	})
-	response, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/auth-files/provider-models?provider=codex", "")
+	response, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/auth-files/provider-models?provider=codex", "")
 	if response.StatusCode < 500 || strings.Contains(string(body), `"available":false`) {
 		t.Fatalf("failed catalog became an absent catalog: status=%d body=%s", response.StatusCode, body)
 	}
@@ -288,7 +288,7 @@ func TestManagementOAuthExcludedModelsAuditFailure(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			response, raw := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/auth-files/excluded-models", `{"provider":"CODEX","models":[" GPT-5-Codex ","gpt-5-codex","o3-*"]}`)
+			response, raw := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/auth-files/excluded-models", `{"provider":"CODEX","models":[" GPT-5-Codex ","gpt-5-codex","o3-*"]}`)
 			stateMutex.Lock()
 			defer stateMutex.Unlock()
 			if outcome == "attempt" {

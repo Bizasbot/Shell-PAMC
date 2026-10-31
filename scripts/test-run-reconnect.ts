@@ -8,7 +8,7 @@ class ApiError extends Error {
 }
 const { reconnectRun } = createRunConnection(async (path, init) => {
  let response: Response;
- try { response=await fetch(`/omc/api/v1${path}`,init); } catch(error) { if(error instanceof TypeError) throw new ApiError('network',0); throw error; }
+ try { response=await fetch(`/shell-pamc/api/v1${path}`,init); } catch(error) { if(error instanceof TypeError) throw new ApiError('network',0); throw error; }
  if(!response.ok) throw new ApiError('terminal',response.status);
  return response;
 });
@@ -36,7 +36,7 @@ test('a lost POST acknowledgement recovers by GET only, using the original id', 
   const frames = [];
   for await (const frame of reconnectRun({ workspace: 'agent', id: 'original', signal: new AbortController().signal, initial: { method: 'POST', body: '{}' }, replay: () => { replays++; }, waitForRetry: async () => {} })) frames.push(frame);
   assert.deepEqual(calls.map(call => call.method), ['POST','GET']);
-  assert.deepEqual(calls.map(call => call.url), ['/omc/api/v1/agent/run','/omc/api/v1/agent/runs/original']);
+  assert.deepEqual(calls.map(call => call.url), ['/shell-pamc/api/v1/agent/run','/shell-pamc/api/v1/agent/runs/original']);
   assert.ok(calls.every(call => call.id === 'original'));
   assert.equal(replays,1); assert.equal(frames.length,2);
  } finally { globalThis.fetch = originalFetch; }

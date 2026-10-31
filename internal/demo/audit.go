@@ -88,7 +88,7 @@ func SeedServiceLog(buffer *applog.Buffer, now time.Time) {
 		message string
 		attrs   []applog.Attr
 	}{
-		{95 * time.Minute, "info", "HTTP server listening", []applog.Attr{{Key: "addr", Value: ":8080"}, {Key: "base_path", Value: "/omc"}}},
+		{95 * time.Minute, "info", "HTTP server listening", []applog.Attr{{Key: "addr", Value: ":8080"}, {Key: "base_path", Value: "/shell-pamc"}}},
 		{95 * time.Minute, "info", "usage ingestion started", []applog.Attr{{Key: "mode", Value: "auto"}, {Key: "instance", Value: "default"}}},
 		{94 * time.Minute, "info", "release check sweep started", []applog.Attr{{Key: "interval", Value: "6h0m0s"}}},
 		{93 * time.Minute, "info", "pricing sync completed", []applog.Attr{{Key: "models", Value: "412"}, {Key: "changed", Value: "3"}}},

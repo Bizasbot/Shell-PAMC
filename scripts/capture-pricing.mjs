@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const baseUrl = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:5173/omc').replace(/\/$/, '');
+const baseUrl = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:5173/shell-pamc').replace(/\/$/, '');
 // Resolved against the repository root so a relative override still lands in the
 // worktree, and defaulted into gitignored tmp/ so captures cannot be committed.
 const outDir = path.resolve(root, process.env.SHELLPAMC_CAPTURE_DIR || 'tmp/captures');

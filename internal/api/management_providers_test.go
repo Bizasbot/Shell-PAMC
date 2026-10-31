@@ -260,11 +260,11 @@ func newProviderTestFixture(t *testing.T) providerTestFixture {
 		t.Fatal(err)
 	}
 
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := NewHandler(config.Config{BasePath: "/omc", Version: "test"}, repo, cipher, nil, authManager)
+	handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test"}, repo, cipher, nil, authManager)
 	appServer := httptest.NewServer(handler.Router())
 	t.Cleanup(appServer.Close)
 
@@ -273,7 +273,7 @@ func newProviderTestFixture(t *testing.T) providerTestFixture {
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	loginResp, err := client.Post(appServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	loginResp, err := client.Post(appServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v", err)
 	}
@@ -285,7 +285,7 @@ func TestManagementProvidersEndpoints(t *testing.T) {
 	client, baseURL, state := startProviderTestServer(t)
 
 	// 1. GET providers: assert plaintext keys and raw URLs are returned unmasked
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get providers status = %d body %s", resp.StatusCode, payload)
 	}
@@ -305,7 +305,7 @@ func TestManagementProvidersEndpoints(t *testing.T) {
 
 	// The default projection is sanitized: key_configured stays, plaintext
 	// key material never reaches pages whose contract excludes it.
-	_, sanitized := getJSON(t, client, baseURL+"/omc/api/v1/management/providers")
+	_, sanitized := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers")
 	sanitizedStr := string(sanitized)
 	for _, secret := range []string{"sk-provider-secret-key-1234", "sk-codex-secret-key-9999", "sk-ant-secret-1234"} {
 		if strings.Contains(sanitizedStr, secret) {
@@ -318,7 +318,7 @@ func TestManagementProvidersEndpoints(t *testing.T) {
 
 	// 2. PATCH provider status
 	patchBody := `{"family":"openai-compatibility","index":0,"disabled":true}`
-	resp, payload = doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status", patchBody)
+	resp, payload = doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status", patchBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("patch provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -336,13 +336,13 @@ func TestUnifiedProviderArchitectureClaudeCodexGemini(t *testing.T) {
 
 	// 1. Verify Claude provider displays key entries and can be updated with custom name & new key
 	updateClaude := `{"family":"claude","name":"Claude 3.5 专线","base_url":"https://api.anthropic.com","keys":[{"api_key":"sk-ant-new-secret-5678","proxy_url":"http://127.0.0.1:7890","weight":3}],"prefix":"fast"}`
-	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/claude-0", updateClaude)
+	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/claude-0", updateClaude)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update claude provider status = %d body %s", resp.StatusCode, payload)
 	}
 
 	// Read providers list and verify custom name and plaintext key in list
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	var providersResp struct {
 		Providers []ProviderItemDTO `json:"providers"`
 	}
@@ -373,12 +373,12 @@ func TestUnifiedProviderArchitectureClaudeCodexGemini(t *testing.T) {
 
 	// 2. Toggle status on Claude provider and verify it reflects in list
 	patchClaude := `{"family":"claude","index":0,"disabled":true}`
-	resp, payload = doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status", patchClaude)
+	resp, payload = doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status", patchClaude)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("patch claude status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	_ = json.Unmarshal(payload, &providersResp)
 	for i := range providersResp.Providers {
 		if providersResp.Providers[i].ID == "claude-0" {
@@ -390,12 +390,12 @@ func TestUnifiedProviderArchitectureClaudeCodexGemini(t *testing.T) {
 
 	// 3. Create Gemini provider with custom name and verify it persists
 	createGemini := `{"family":"gemini","name":"Gemini Pro Line","base_url":"https://generativelanguage.googleapis.com","keys":[{"api_key":"gemini-secret-9999"}],"prefix":"gem-pro"}`
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", createGemini)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", createGemini)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create gemini provider status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	_ = json.Unmarshal(payload, &providersResp)
 	foundGemini := false
 	for _, p := range providersResp.Providers {
@@ -416,7 +416,7 @@ func TestProviderFamiliesXAIVertexInteractions(t *testing.T) {
 
 	listProviders := func() map[string]ProviderItemDTO {
 		t.Helper()
-		resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+		resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("list providers status = %d body %s", resp.StatusCode, payload)
 		}
@@ -441,7 +441,7 @@ func TestProviderFamiliesXAIVertexInteractions(t *testing.T) {
 	// An edit through the console rewrites the whole list; the settings it does
 	// not model must reach CPA unchanged.
 	updateXAI := `{"family":"xai","name":"Grok Line","base_url":"https://api.x.ai/v1","keys":[{"api_key":"xai-new-secret-5678"}]}`
-	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/xai-0", updateXAI); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/xai-0", updateXAI); resp.StatusCode != http.StatusOK {
 		t.Fatalf("update xai status = %d body %s", resp.StatusCode, payload)
 	}
 	state.mu.Lock()
@@ -456,7 +456,7 @@ func TestProviderFamiliesXAIVertexInteractions(t *testing.T) {
 	state.mu.Lock()
 	putsBefore := state.putCount
 	state.mu.Unlock()
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", `{"family":"xai","name":"No URL","keys":[{"api_key":"xai-other"}]}`)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", `{"family":"xai","name":"No URL","keys":[{"api_key":"xai-other"}]}`)
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("create xai without base URL status = %d body %s", resp.StatusCode, payload)
 	}
@@ -472,7 +472,7 @@ func TestProviderFamiliesXAIVertexInteractions(t *testing.T) {
 		`{"family":"vertex","name":"Vertex Line","keys":[{"api_key":"vertex-secret"}],"model_entries":[{"name":"gemini-2.5-pro","alias":"vertex-pro"}]}`,
 		`{"family":"interactions","name":"Interactions Line","base_url":"https://generativelanguage.googleapis.com","keys":[{"api_key":"interactions-secret"}]}`,
 	} {
-		if resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", create); resp.StatusCode != http.StatusOK {
+		if resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", create); resp.StatusCode != http.StatusOK {
 			t.Fatalf("create %s status = %d body %s", create, resp.StatusCode, payload)
 		}
 	}
@@ -485,14 +485,14 @@ func TestProviderFamiliesXAIVertexInteractions(t *testing.T) {
 	}
 
 	// The toggle uses CPA's excluded-all marker, as for every config family.
-	if resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status", `{"family":"interactions","index":0,"disabled":true}`); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status", `{"family":"interactions","index":0,"disabled":true}`); resp.StatusCode != http.StatusOK {
 		t.Fatalf("patch interactions status = %d body %s", resp.StatusCode, payload)
 	}
 	if row := listProviders()["interactions-0"]; !row.Disabled {
 		t.Fatalf("interactions-0 should be disabled after the toggle: %#v", row)
 	}
 
-	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/providers/vertex-0", "")
+	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/providers/vertex-0", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("delete vertex status = %d body %s", resp.StatusCode, payload)
 	}
@@ -523,7 +523,7 @@ func TestProviderEditKeepsTheSettingsTheFormDoesNotShow(t *testing.T) {
 		"claude-0":        `{"family":"claude","name":"Claude","base_url":"https://api.anthropic.com","keys":[{"api_key":""}],"model_entries":[{"name":"claude-x","alias":"cx2"}]}`,
 	}
 	for id, body := range updates {
-		if resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/omc/api/v1/management/providers/"+id, body); resp.StatusCode != http.StatusOK {
+		if resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/shell-pamc/api/v1/management/providers/"+id, body); resp.StatusCode != http.StatusOK {
 			t.Fatalf("update %s = %d %s", id, resp.StatusCode, payload)
 		}
 	}
@@ -575,13 +575,13 @@ func TestConfigFamilyModelsNeverCarryTheImageFlag(t *testing.T) {
 	}
 
 	update := `{"family":"codex","name":"Codex Line","base_url":"https://api.openai.com","model_entries":[{"name":"gpt-image-2","image":true}]}`
-	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/codex-0", update); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/codex-0", update); resp.StatusCode != http.StatusOK {
 		t.Fatalf("update codex status = %d body %s", resp.StatusCode, payload)
 	}
 	assertNoImage(storedModels(0))
 
 	create := `{"family":"codex","name":"Codex Images","base_url":"https://api.openai.com","keys":[{"api_key":"sk-codex-images"}],"model_entries":[{"name":"gpt-image-2","image":true}]}`
-	if resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", create); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", create); resp.StatusCode != http.StatusOK {
 		t.Fatalf("create codex status = %d body %s", resp.StatusCode, payload)
 	}
 	state.mu.Lock()

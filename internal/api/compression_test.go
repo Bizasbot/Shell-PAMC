@@ -79,7 +79,7 @@ func TestJSONCompressionPreservesResponsesAndSkipsStreamingAndDownloads(t *testi
 			if method == "" {
 				method = http.MethodGet
 			}
-			request := httptest.NewRequest(method, "/omc/api/v1/example", nil)
+			request := httptest.NewRequest(method, "/shell-pamc/api/v1/example", nil)
 			request.Header.Set("Accept-Encoding", entry.encoding)
 			request.Header.Set("Range", entry.rangeHeader)
 			recorder := httptest.NewRecorder()
@@ -127,7 +127,7 @@ func TestJSONCompressionPreservesResponsesAndSkipsStreamingAndDownloads(t *testi
 
 func TestCompressionForwardsImmediateSSEFlushAndResponseController(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/omc/api/v1/agent/runs/test", nil)
+	request := httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/agent/runs/test", nil)
 	request.Header.Set("Accept-Encoding", "gzip")
 	compressAPIResponses(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "text/event-stream")
@@ -236,7 +236,7 @@ func TestStaticGzipGETAndHEADHaveMatchingHeaders(t *testing.T) {
 	payload := []byte(strings.Repeat("const fixture = true;\n", 1000))
 	var getHeader http.Header
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
-		request := httptest.NewRequest(method, "/omc/assets/compression-test.js", nil)
+		request := httptest.NewRequest(method, "/shell-pamc/assets/compression-test.js", nil)
 		request.Header.Set("Accept-Encoding", "gzip")
 		recorder := httptest.NewRecorder()
 		serveAssetRepresentation(recorder, request, "assets/compression-test.js", payload)
@@ -265,7 +265,7 @@ func TestStaticGzipGETAndHEADHaveMatchingHeaders(t *testing.T) {
 }
 
 func TestRouterCompressesAPIUnderConfiguredBasePath(t *testing.T) {
-	for _, base := range []string{"/", "/omc"} {
+	for _, base := range []string{"/", "/shell-pamc"} {
 		handler := testHandler(t, base)
 		request := httptest.NewRequest(http.MethodGet, strings.TrimSuffix(base, "/")+"/api/healthz", nil)
 		request.Header.Set("Accept-Encoding", "gzip")
@@ -286,7 +286,7 @@ func TestRouterCompressesAPIUnderConfiguredBasePath(t *testing.T) {
 
 func TestExplicitCredentialRevealIsNotCompressed(t *testing.T) {
 	for _, value := range []string{"true", "TRUE", "TrUe"} {
-		request := httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/api-keys?include_keys="+value, nil)
+		request := httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/api-keys?include_keys="+value, nil)
 		request.Header.Set("Accept-Encoding", "gzip")
 		recorder := httptest.NewRecorder()
 		compressAPIResponses(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {

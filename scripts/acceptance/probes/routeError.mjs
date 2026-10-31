@@ -14,7 +14,7 @@ const READINGS = [
 
 async function checkRouteRecovery({ base, page, context, check, errors, expectProblem }, failureMode) {
   await context.addInitScript(() => {
-    window.__SHELLPAMC_CONFIG__ = { basePath: '/omc', apiBaseUrl: '/omc/api/v1', mediaBaseUrl: '/omc/media', version: 'route-error-test-build' };
+    window.__SHELLPAMC_CONFIG__ = { basePath: '/shell-pamc', apiBaseUrl: '/shell-pamc/api/v1', mediaBaseUrl: '/shell-pamc/media', version: 'route-error-test-build' };
   });
   const modulePattern = '**/src/pages/ConfigPage.tsx*';
   await page.goto(`${base}/dashboard`);
@@ -38,8 +38,8 @@ async function checkRouteRecovery({ base, page, context, check, errors, expectPr
         expectProblem({kind:'console', message:/Cannot read properties of undefined \(reading model\)/, count:8});
         expectProblem({kind:'pageerror', message:/^Cannot read properties of undefined \(reading model\)/, count:4});
       } else {
-        expectProblem({kind:'console', message:/Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/omc\/src\/pages\/ConfigPage\.tsx/, count:8});
-        expectProblem({kind:'pageerror', message:/^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/omc\/src\/pages\/ConfigPage\.tsx/, count:4});
+        expectProblem({kind:'console', message:/Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/shell-pamc\/src\/pages\/ConfigPage\.tsx/, count:8});
+        expectProblem({kind:'pageerror', message:/^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/shell-pamc\/src\/pages\/ConfigPage\.tsx/, count:4});
       }
       hasInjectedFailure = true;
       if (failureMode === 'lazy') return abortFixture(route, 'failed');
@@ -125,8 +125,8 @@ export async function routeRenderError(fixtures) {
   const { base, page, context, check, expectProblem } = fixtures;
   const shellModulePattern = '**/src/components/common/AppLayout.tsx*';
   expectProblem({kind:'console',message:/^The above error occurred in (?:one of your React components:\n\n    at Lazy\n|the <AppLayout> component:)/,count:8});
-  expectProblem({kind:'console', message:/Cannot read properties of undefined \(reading model\)|Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/omc\/src\/components\/common\/AppLayout\.tsx/,count:12});
-  expectProblem({kind:'pageerror', message:/^Cannot read properties of undefined \(reading model\)|^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/omc\/src\/components\/common\/AppLayout\.tsx/,count:6});
+  expectProblem({kind:'console', message:/Cannot read properties of undefined \(reading model\)|Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/shell-pamc\/src\/components\/common\/AppLayout\.tsx/,count:12});
+  expectProblem({kind:'pageerror', message:/^Cannot read properties of undefined \(reading model\)|^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/shell-pamc\/src\/components\/common\/AppLayout\.tsx/,count:6});
   const failShell = (route) => route.fulfill({
     contentType: 'application/javascript',
     body: `export function AppLayout() { throw new Error('${FAILURE_MARKER}'); }`,
@@ -150,8 +150,8 @@ export async function routeLazyError(fixtures) {
   expectProblem({kind:'console',message:/^The above error occurred in (?:one of your React components:\n\n    at Lazy\n|the <AppLayout> component:)/,count:8});
   let rejectShell;
   const shellRelease = new Promise(resolve => { rejectShell = resolve; });
-  expectProblem({kind:'console', message:/Cannot read properties of undefined \(reading model\)|Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/omc\/src\/components\/common\/AppLayout\.tsx/,count:12});
-  expectProblem({kind:'pageerror', message:/^Cannot read properties of undefined \(reading model\)|^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/omc\/src\/components\/common\/AppLayout\.tsx/,count:6});
+  expectProblem({kind:'console', message:/Cannot read properties of undefined \(reading model\)|Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/shell-pamc\/src\/components\/common\/AppLayout\.tsx/,count:12});
+  expectProblem({kind:'pageerror', message:/^Cannot read properties of undefined \(reading model\)|^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:\d+\/shell-pamc\/src\/components\/common\/AppLayout\.tsx/,count:6});
   const failShell = async (route) => {
     await shellRelease;
     await abortFixture(route, 'failed');

@@ -91,11 +91,11 @@ func startDashboardTestServerStoring(t *testing.T, storedYAML string, handler fu
 	}); err != nil {
 		t.Fatal(err)
 	}
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	appHandler := NewHandler(config.Config{BasePath: "/omc", Version: "test", RequestTimeout: 5 * time.Second}, repo, cipher, nil, authManager)
+	appHandler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test", RequestTimeout: 5 * time.Second}, repo, cipher, nil, authManager)
 	// Optional per-test wiring (e.g. attaching the pricing service) happens
 	// before the router serves; it mirrors the app construction order.
 	for _, hook := range hooks {
@@ -109,7 +109,7 @@ func startDashboardTestServerStoring(t *testing.T, storedYAML string, handler fu
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	login, err := client.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	login, err := client.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func postJSON(t *testing.T, client *http.Client, url string) (*http.Response, []
 		t.Fatal(err)
 	}
 	// The router refuses a state-changing call without a same-origin header.
-	request.Header.Set("Origin", strings.TrimSuffix(url, "/omc/api/v1/usage/ingest/refresh"))
+	request.Header.Set("Origin", strings.TrimSuffix(url, "/shell-pamc/api/v1/usage/ingest/refresh"))
 	response, err := client.Do(request)
 	if err != nil {
 		t.Fatal(err)

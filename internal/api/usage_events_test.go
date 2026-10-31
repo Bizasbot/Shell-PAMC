@@ -58,8 +58,8 @@ func TestUsageEventsSurfaceCostUSD(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Test GET /omc/api/v1/usage/events
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/omc/api/v1/usage/events", nil)
+	// Test GET /shell-pamc/api/v1/usage/events
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/shell-pamc/api/v1/usage/events", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,8 +115,8 @@ func TestUsageEventsSurfaceCostUSD(t *testing.T) {
 		t.Fatalf("missing expected events in response: priced=%v, unpriced=%v", pricedFound, unpricedFound)
 	}
 
-	// Test GET /omc/api/v1/usage/events/{id} for the priced event
-	detailReq, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, pricedID), nil)
+	// Test GET /shell-pamc/api/v1/usage/events/{id} for the priced event
+	detailReq, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, pricedID), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestUsageEventsListFilterAndCursor(t *testing.T) {
 		{Event: eventFor("e2", now.Add(-4*time.Minute), usage.TokenStats{TotalTokens: 6}, true)},
 		{Event: eventFor("e3", now.Add(-3*time.Minute), usage.TokenStats{TotalTokens: 7}, false)},
 	})
-	listURL := baseURL + "/omc/api/v1/usage/events?preset=24h"
+	listURL := baseURL + "/shell-pamc/api/v1/usage/events?preset=24h"
 
 	response, payload := getJSON(t, client, listURL)
 	if response.StatusCode != http.StatusOK {
@@ -241,7 +241,7 @@ func TestUsageEventsArrivalCount(t *testing.T) {
 	seedEvents(t, repo, now, []repository.UsageDecoded{
 		{Event: eventFor("older", now.Add(-5*time.Minute), usage.TokenStats{TotalTokens: 5}, false)},
 	})
-	listURL := baseURL + "/omc/api/v1/usage/events?preset=24h"
+	listURL := baseURL + "/shell-pamc/api/v1/usage/events?preset=24h"
 
 	var page struct {
 		Items        []usageEventResponse `json:"items"`
@@ -301,7 +301,7 @@ func TestUsageEventListOmitsDiagnosticFields(t *testing.T) {
 	event.APIGroupLabel = "api_key"
 	event.APIKeyMask = "sk-12345••••••••7890"
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: event}})
-	listURL := baseURL + "/omc/api/v1/usage/events?preset=24h"
+	listURL := baseURL + "/shell-pamc/api/v1/usage/events?preset=24h"
 
 	response, payload := getJSON(t, client, listURL)
 	if response.StatusCode != http.StatusOK {
@@ -341,7 +341,7 @@ func TestUsageEventListOmitsDiagnosticFields(t *testing.T) {
 
 	// The same record on the detail view keeps diagnosis data behind one id.
 	id := int64(list.Items[0]["id"].(float64))
-	_, detail := getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, id))
+	_, detail := getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, id))
 	// Protected detail keeps the diagnostic address and proxy chain, while the
 	// user agent is still reduced before persistence.
 	for _, expected := range []string{"client_ip", "x_forwarded_for", "user_agent", "endpoint", "192.0.2.44", "203.0.113.9", "secret-client", "api_key_mask", "sk-12345••••••••7890"} {
@@ -360,7 +360,7 @@ func TestUsageEventListPreservesExplicitNonStreamingFlag(t *testing.T) {
 	legacy := eventFor("legacy-stream-unknown", now.Add(-2*time.Minute), usage.TokenStats{TotalTokens: 5}, false)
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: nonStream}, {Event: legacy}})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -402,7 +402,7 @@ func TestUsageEventsRejectBadLimits(t *testing.T) {
 		"limit=0", "limit=-5", "limit=abc", "result=maybe",
 		"regex=x", "regex=model:", "regex=client_ip:x", "regex=model:%28", "regex=model:a&regex=model:b",
 	} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -412,7 +412,7 @@ func TestUsageEventsRejectBadLimits(t *testing.T) {
 func TestUsageEventsAcceptAFieldPattern(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
 	// The pattern keeps its own colons and anchors; only the first colon separates it from the field.
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&regex="+url.QueryEscape(`model:^(?i)no-such:model$`))
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&regex="+url.QueryEscape(`model:^(?i)no-such:model$`))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -451,7 +451,7 @@ func TestUsageEventDetailIncludesCorrelatedErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response, payload := getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, eventID))
+	response, payload := getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, eventID))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -475,11 +475,11 @@ func TestUsageEventDetailIncludesCorrelatedErrors(t *testing.T) {
 
 func TestUsageEventDetailNotFound(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events/999999")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events/999999")
 	if response.StatusCode != http.StatusNotFound {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events/zero")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events/zero")
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("non numeric id status = %d body %s", response.StatusCode, payload)
 	}
@@ -509,7 +509,7 @@ func TestUsageEventRequestLogProxiedFromCPA(t *testing.T) {
 	}
 	id := page.Items[0].ID
 
-	response, payload := getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d/request-log", baseURL, id))
+	response, payload := getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d/request-log", baseURL, id))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -546,7 +546,7 @@ func TestUsageEventRequestLogMapsCPAGaps(t *testing.T) {
 	if err != nil || len(page.Items) == 0 {
 		t.Fatal("seed failed")
 	}
-	response, payload := getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d/request-log", baseURL, page.Items[0].ID))
+	response, payload := getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d/request-log", baseURL, page.Items[0].ID))
 	// The console tells "CPA kept no file" apart from an outage by this code.
 	if response.StatusCode != http.StatusNotFound || !strings.Contains(string(payload), `"code":"request_log_not_found"`) {
 		t.Fatalf("missing upstream log = %d %s, want 404 request_log_not_found", response.StatusCode, payload)
@@ -567,7 +567,7 @@ func TestUsageEventFailureDetailStaysOnTheDetailView(t *testing.T) {
 	if _, err := repo.InsertUsageEvents(context.Background(), []usage.Event{event}); err != nil {
 		t.Fatal(err)
 	}
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?range=1h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?range=1h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("list status = %d body %s", response.StatusCode, payload)
 	}
@@ -588,7 +588,7 @@ func TestUsageEventFailureDetailStaysOnTheDetailView(t *testing.T) {
 		strings.Contains(string(payload), "is_native_key") {
 		t.Fatalf("list leaked the upstream error body: %s", payload)
 	}
-	response, payload = getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, list.Items[0].ID))
+	response, payload = getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, list.Items[0].ID))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("detail status = %d body %s", response.StatusCode, payload)
 	}
@@ -620,7 +620,7 @@ func TestUsageEventRequestLogRejectsTraversalIDs(t *testing.T) {
 	// The path parameter is numeric, so a traversal payload cannot even route
 	// here; and an unknown id must not reach CPA with a fabricated path.
 	for _, raw := range []string{"..%2F..%2Fetc%2Fpasswd", "1/../../etc", "0", "-1", "abc"} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events/"+raw+"/request-log")
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events/"+raw+"/request-log")
 		if response.StatusCode == http.StatusOK {
 			t.Fatalf("traversal id %q was served: %s", raw, payload)
 		}
@@ -634,7 +634,7 @@ func TestUsageFacetsListOnlyPresentValues(t *testing.T) {
 	event.APIGroupLabel = "api_key"
 	event.APIKeyMask = "sk-12345••••••••7890"
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: event}})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/facets?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/facets?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -668,20 +668,20 @@ func TestUsageFacetsListOnlyPresentValues(t *testing.T) {
 func TestUsageEndpointsRequireSession(t *testing.T) {
 	_, baseURL, _ := startDashboardTestServer(t, nil)
 	for _, path := range []string{
-		"/omc/api/v1/management/dashboard",
-		"/omc/api/v1/management/dashboard/tail",
-		"/omc/api/v1/management/logs",
-		"/omc/api/v1/management/logs/status",
-		"/omc/api/v1/management/request-error-logs",
-		"/omc/api/v1/preferences",
-		"/omc/api/v1/usage/events",
-		"/omc/api/v1/usage/facets",
-		"/omc/api/v1/usage/ingest-status",
-		"/omc/api/v1/usage/events/1",
+		"/shell-pamc/api/v1/management/dashboard",
+		"/shell-pamc/api/v1/management/dashboard/tail",
+		"/shell-pamc/api/v1/management/logs",
+		"/shell-pamc/api/v1/management/logs/status",
+		"/shell-pamc/api/v1/management/request-error-logs",
+		"/shell-pamc/api/v1/preferences",
+		"/shell-pamc/api/v1/usage/events",
+		"/shell-pamc/api/v1/usage/facets",
+		"/shell-pamc/api/v1/usage/ingest-status",
+		"/shell-pamc/api/v1/usage/events/1",
 		// Reading the raw configuration source is the most sensitive config action
 		// and no longer asks for the management key a second time, so the session
 		// check is the boundary that has to hold.
-		"/omc/api/v1/management/config/source",
+		"/shell-pamc/api/v1/management/config/source",
 	} {
 		response, err := http.Get(baseURL + path)
 		if err != nil {

@@ -23,7 +23,7 @@ func TestManagementClientAPIKeysEndpoints(t *testing.T) {
 	// 1. GET client API keys: the list reports the keys as masks by default. Asserted
 	// on the raw body as well as the decoded field, because "no plaintext key in the
 	// response" is a property of the whole payload, not of one field of it.
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/api-keys")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/api-keys")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get keys status = %d body %s", resp.StatusCode, payload)
 	}
@@ -47,7 +47,7 @@ func TestManagementClientAPIKeysEndpoints(t *testing.T) {
 	}
 
 	// 2. GET with the opt-in: the page that edits the keys joins on the value.
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/api-keys?include_keys=true")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/api-keys?include_keys=true")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get keys status = %d body %s", resp.StatusCode, payload)
 	}
@@ -61,7 +61,7 @@ func TestManagementClientAPIKeysEndpoints(t *testing.T) {
 	// 3. POST client API key: the response names the row it added - the index the new
 	// key occupies - and does not echo back a secret the requester just sent.
 	createBody := `{"key":"sk-new-client-key-3333"}`
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/api-keys", createBody)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/api-keys", createBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create key status = %d body %s", resp.StatusCode, payload)
 	}
@@ -93,7 +93,7 @@ func TestManagementClientAPIKeysEndpoints(t *testing.T) {
 	}
 
 	// 4. DELETE client API key
-	delResp, _ := doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/api-keys/0", "")
+	delResp, _ := doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/api-keys/0", "")
 	if delResp.StatusCode != http.StatusOK {
 		t.Fatalf("delete key status = %d", delResp.StatusCode)
 	}

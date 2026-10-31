@@ -145,12 +145,12 @@ type CPAConfig struct {
 }
 
 // NormalizeBasePath returns a clean URL path without a trailing slash. An
-// empty environment value means the documented default (/omc); callers that
+// empty environment value means the documented default (/shell-pamc); callers that
 // explicitly need the site root should pass "/".
 func NormalizeBasePath(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return "/omc", nil
+		return "/shell-pamc", nil
 	}
 	if raw == "/" {
 		return "", nil

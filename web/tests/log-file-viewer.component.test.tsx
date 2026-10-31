@@ -35,7 +35,7 @@ const copyButton = () => screen.getByRole('button', { name: /Copy/ }) as HTMLBut
 describe('LogFileViewer', () => {
   beforeEach(() => {
     window.localStorage.setItem('omc-lang', 'en');
-    window.__SHELLPAMC_CONFIG__ = { apiBaseUrl: '/omc/api/v1' } as typeof window.__SHELLPAMC_CONFIG__;
+    window.__SHELLPAMC_CONFIG__ = { apiBaseUrl: '/shell-pamc/api/v1' } as typeof window.__SHELLPAMC_CONFIG__;
   });
 
   it('reads a request log by the id on its gateway line and titles it as that file', async () => {
@@ -44,7 +44,7 @@ describe('LogFileViewer', () => {
 
     expect((await screen.findByText(/auth_unavailable: no auth available/)).tagName).toBe('PRE');
     expect(screen.getByText('request-41dbb9ee.log')).toBeTruthy();
-    expect(new Set(paths)).toEqual(new Set(['/omc/api/v1/management/request-logs/41dbb9ee']));
+    expect(new Set(paths)).toEqual(new Set(['/shell-pamc/api/v1/management/request-logs/41dbb9ee']));
     expect(downloadButton().disabled).toBe(false);
     expect(copyButton().disabled).toBe(false);
   });
@@ -54,7 +54,7 @@ describe('LogFileViewer', () => {
     render(<Surface target={{ kind: 'file', file: { name: 'error-v1-messages-41dbb9ee.log', size: 1622, modified: 0 } }} />);
 
     await screen.findByText(/auth_unavailable/);
-    expect(new Set(paths)).toEqual(new Set(['/omc/api/v1/management/request-error-logs/error-v1-messages-41dbb9ee.log']));
+    expect(new Set(paths)).toEqual(new Set(['/shell-pamc/api/v1/management/request-error-logs/error-v1-messages-41dbb9ee.log']));
   });
 
   it('words a file CPA did not keep as retention, with nothing to retry, copy or save', async () => {

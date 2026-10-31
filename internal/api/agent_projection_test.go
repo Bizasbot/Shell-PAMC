@@ -61,7 +61,7 @@ func TestAgentSessionProjectsStoredQueryResults(t *testing.T) {
 	if _, err := fixture.handler.agent.runtime.Store.Save(context.Background(), "session", "latest", 0, time.Now().Add(time.Hour), &conversation); err != nil {
 		t.Fatal(err)
 	}
-	response, raw := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/agent/session")
+	response, raw := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/agent/session")
 	if response.StatusCode != 200 {
 		t.Fatalf("session status %d: %s", response.StatusCode, raw)
 	}

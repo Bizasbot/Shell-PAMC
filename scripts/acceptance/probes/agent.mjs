@@ -298,7 +298,7 @@ export async function agentWorkspace({ base, page, check }) {
     && await targets.getByRole('option', { name: 'vision-alias', exact: true }).getAttribute('aria-selected') === 'true'
     && await page.getByRole('button', { name: 'Reasoning effort: High', exact: true }).count() === 1, `${await selection()} / ${keyName}`);
   await page.keyboard.press('Escape');
-  const preference = await page.evaluate(async () => (await (await fetch('/omc/api/v1/preferences')).json()).preferences);
+  const preference = await page.evaluate(async () => (await (await fetch('/shell-pamc/api/v1/preferences')).json()).preferences);
   check('the chosen target is remembered as the operator\'s own preference', preference?.agent_target?.model === 'vision-alias' && preference?.agent_target?.reasoning_effort === 'high', JSON.stringify(preference?.agent_target));
 }
 
@@ -1037,7 +1037,7 @@ export async function agentViews({ base, page, check, expectProblem }) {
     && await panel.getByRole('img', { name: 'In progress' }).count() === 1 && await panel.getByRole('meter', { name: 'Daily budget' }).getAttribute('aria-valuenow') === '80');
   check('an icon is resolved from any Lucide name, and an unknown one is a neutral mark rather than a failure',
     await panel.locator('svg[data-icon="trending-up"] path').count() >= 1 && await panel.locator('svg[data-icon="neutral"]').count() === 1);
-  check('a panel link leads to a console page under the base path', (await panel.getByRole('link', { name: 'Open quota' }).getAttribute('href') ?? '').endsWith('/omc/quota'));
+  check('a panel link leads to a console page under the base path', (await panel.getByRole('link', { name: 'Open quota' }).getAttribute('href') ?? '').endsWith('/shell-pamc/quota'));
   check('a panel fits its column', await panel.evaluate(element => element.scrollWidth <= element.clientWidth));
 
   const sketch = page.getByRole('figure', { name: 'Routing sketch', exact: true });

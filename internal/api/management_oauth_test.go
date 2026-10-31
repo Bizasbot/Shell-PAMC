@@ -145,11 +145,11 @@ func startOAuthTestServer(t *testing.T) (*http.Client, string, *oauthCPAState, *
 		t.Fatal(err)
 	}
 
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := NewHandler(config.Config{BasePath: "/omc", Version: "test"}, repo, cipher, nil, authManager)
+	handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test"}, repo, cipher, nil, authManager)
 	appServer := httptest.NewServer(handler.Router())
 	t.Cleanup(appServer.Close)
 
@@ -158,7 +158,7 @@ func startOAuthTestServer(t *testing.T) (*http.Client, string, *oauthCPAState, *
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	loginResp, err := client.Post(appServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	loginResp, err := client.Post(appServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 	client, baseURL, state, repo := startOAuthTestServer(t)
 
 	// 1. List OAuth providers
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/oauth/providers")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/oauth/providers")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("list providers status = %d body %s", resp.StatusCode, payload)
 	}
@@ -183,7 +183,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 
 	// 2. Start OAuth flow for codex
 	startBody := `{"provider":"codex"}`
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/start", startBody)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/start", startBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("start oauth status = %d body %s", resp.StatusCode, payload)
 	}
@@ -198,13 +198,13 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 	}
 
 	// 2b. Reject invalid provider
-	badResp, _ := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/start", `{"provider":"../../bad"}`)
+	badResp, _ := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/start", `{"provider":"../../bad"}`)
 	if badResp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 for bad provider, got %d", badResp.StatusCode)
 	}
 
 	// 3. Poll OAuth status with state
-	statusURL := fmt.Sprintf("%s/omc/api/v1/management/oauth/status?state=%s", baseURL, startRes.State)
+	statusURL := fmt.Sprintf("%s/shell-pamc/api/v1/management/oauth/status?state=%s", baseURL, startRes.State)
 	resp, payload = getJSON(t, client, statusURL)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("poll oauth status = %d body %s", resp.StatusCode, payload)
@@ -230,14 +230,14 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 
 	// 4. Reject legacy code/state callback without redirect_url
 	legacyBody := `{"code":"oauth-code-1234","state":"csrf-state-5678"}`
-	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/callback", legacyBody)
+	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/callback", legacyBody)
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 for legacy code/state callback without redirect_url, got %d", resp.StatusCode)
 	}
 
 	// 4b. Handle OAuth callback with provider & redirect_url
 	redirectBody := `{"provider":"codex","redirect_url":"http://127.0.0.1:56121/callback?code=xyz&state=abc"}`
-	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/callback", redirectBody)
+	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/callback", redirectBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("redirect callback status = %d", resp.StatusCode)
 	}
@@ -253,7 +253,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 
 	// 4c. Propagate upstream CPA error faithfully
 	errBody := `{"provider":"codex","redirect_url":"http://127.0.0.1:56121/callback?error=invalid"}`
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/callback", errBody)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/callback", errBody)
 	if resp.StatusCode != http.StatusBadGateway {
 		t.Fatalf("expected error propagation status = 502, got %d body %s", resp.StatusCode, payload)
 	}
@@ -262,7 +262,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 	// flow must be idempotent: CPA answers 409, the facade re-checks the
 	// session state (now ok) and reports success with completed=true.
 	replayBody := `{"provider":"codex","redirect_url":"http://127.0.0.1:8317/codex/callback?code=replayed&state=already-done"}`
-	resp, replayPayload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/callback", replayBody)
+	resp, replayPayload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/callback", replayBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected idempotent success status = 200, got %d body %s", resp.StatusCode, replayPayload)
 	}
@@ -275,7 +275,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 	}
 
 	// 5. Cancel OAuth session with state
-	cancelURL := fmt.Sprintf("%s/omc/api/v1/management/oauth/session?state=%s", baseURL, startRes.State)
+	cancelURL := fmt.Sprintf("%s/shell-pamc/api/v1/management/oauth/session?state=%s", baseURL, startRes.State)
 	resp, cancelPayload := doJSON(t, client, http.MethodDelete, cancelURL, "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("cancel status = %d", resp.StatusCode)
@@ -296,7 +296,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 	// 5a. A session CPA could not cancel must not be reported as cancelled: the
 	// console would otherwise claim a sign-in was abandoned that may have just
 	// saved a credential.
-	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/oauth/session?state=already-done", "")
+	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/oauth/session?state=already-done", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("uncancellable session status = %d body %s", resp.StatusCode, payload)
 	}
@@ -308,7 +308,7 @@ func TestOAuthFlowLifecycle(t *testing.T) {
 	}
 
 	// 5b. Start OAuth flow without state from CPA (verifies no random UUID generated)
-	noStateResp, noStatePayload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/start", `{"provider":"nostate"}`)
+	noStateResp, noStatePayload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/start", `{"provider":"nostate"}`)
 	if noStateResp.StatusCode != http.StatusOK {
 		t.Fatalf("nostate start status = %d", noStateResp.StatusCode)
 	}
@@ -341,7 +341,7 @@ func TestQuotaOverviewAndReset(t *testing.T) {
 	client, baseURL, state, repo := startOAuthTestServer(t)
 
 	// 1. GET quota overview
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/quota")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/quota")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get quota status = %d body %s", resp.StatusCode, payload)
 	}
@@ -359,7 +359,7 @@ func TestQuotaOverviewAndReset(t *testing.T) {
 
 	// 2. POST reset-quota with valid auth_index
 	resetBody := `{"auth_index":"cpa-auth-idx-1"}`
-	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/quota/reset", resetBody)
+	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/quota/reset", resetBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("reset quota status = %d", resp.StatusCode)
 	}
@@ -371,7 +371,7 @@ func TestQuotaOverviewAndReset(t *testing.T) {
 	}
 
 	// 3. POST reset-quota with empty auth_index must return 400
-	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/quota/reset", `{"auth_index":""}`)
+	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/quota/reset", `{"auth_index":""}`)
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 for empty auth_index, got %d", resp.StatusCode)
 	}
@@ -401,7 +401,7 @@ func TestQuotaOverviewAndReset(t *testing.T) {
 func TestOAuthProviderRegistryWiring(t *testing.T) {
 	client, baseURL, state, _ := startOAuthTestServer(t)
 
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/oauth/providers")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/oauth/providers")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("list providers status = %d body %s", resp.StatusCode, payload)
 	}
@@ -433,7 +433,7 @@ func TestOAuthProviderRegistryWiring(t *testing.T) {
 		state.lastAuthURLQuery = ""
 		state.mu.Unlock()
 		body := `{"provider":"` + provider + `"}`
-		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/start", body)
+		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/start", body)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("start %s status = %d body %s", provider, resp.StatusCode, payload)
 		}
@@ -451,7 +451,7 @@ func TestOAuthProviderRegistryWiring(t *testing.T) {
 
 	// A device grant's code and flow reach the browser, which is what lets the
 	// card show the code the operator has to confirm.
-	_, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/oauth/start", `{"provider":"meta"}`)
+	_, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/oauth/start", `{"provider":"meta"}`)
 	var metaStart struct {
 		Flow     string `json:"flow"`
 		UserCode string `json:"user_code"`

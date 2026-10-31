@@ -20,7 +20,7 @@ func modelEventFor(id, model string, at time.Time, totalTokens int64) usage.Even
 	return event
 }
 
-const modelsPath = "/omc/api/v1/management/dashboard/models"
+const modelsPath = "/shell-pamc/api/v1/management/dashboard/models"
 
 // describeGroups renders just the ranking, so a failed assertion prints the claim under test rather
 // than several hundred bucket timestamps.

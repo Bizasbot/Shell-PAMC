@@ -13,7 +13,7 @@ import (
 func TestPluginHostRefusesUnparseableScriptOverHTTP(t *testing.T) {
 	client, baseURL, _, _ := startPluginTestServer(t)
 
-	response, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/resource/plugins/logger/broken.js", "")
+	response, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/broken.js", "")
 	if response.StatusCode != http.StatusBadGateway || !strings.HasPrefix(response.Header.Get("Content-Type"), "application/json") {
 		t.Fatalf("script adaptation refusal: status=%d type=%q body=%s", response.StatusCode, response.Header.Get("Content-Type"), body)
 	}
@@ -29,7 +29,7 @@ func TestPluginHostRefusesUnparseableScriptOverHTTP(t *testing.T) {
 func TestPluginHostServesThePluginPageRebasedOntoTheConsole(t *testing.T) {
 	client, baseURL, _, state := startPluginTestServer(t)
 
-	resp, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/resource/plugins/logger/console", "")
+	resp, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/console", "")
 	if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") {
 		t.Fatalf("plugin page: status %d type %q body %s", resp.StatusCode, resp.Header.Get("Content-Type"), body)
 	}
@@ -38,9 +38,9 @@ func TestPluginHostServesThePluginPageRebasedOntoTheConsole(t *testing.T) {
 	// its API base and its stylesheet, or every request it makes lands outside the
 	// console's base path and never reaches a plugin.
 	for _, want := range []string{
-		`content="/omc/api/v1/plugin-host/v0/management/logger"`,
-		`href="/omc/api/v1/plugin-host/v0/resource/plugins/logger/app.css"`,
-		`const API='/omc/api/v1/plugin-host/v0/management/logger'`,
+		`content="/shell-pamc/api/v1/plugin-host/v0/management/logger"`,
+		`href="/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/app.css"`,
+		`const API='/shell-pamc/api/v1/plugin-host/v0/management/logger'`,
 		// A reference to another origin is that origin's, not a path to re-base.
 		`"https://cpa.example/v0/management/logger"`,
 	} {
@@ -62,17 +62,17 @@ func TestPluginHostServesThePluginPageRebasedOntoTheConsole(t *testing.T) {
 		t.Errorf("a plugin set a cookie on the console's origin: %q", resp.Header.Get("Set-Cookie"))
 	}
 
-	_, css := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/resource/plugins/logger/app.css", "")
-	if string(css) != `body{background:url(/omc/api/v1/plugin-host/v0/resource/plugins/logger/bg.png)}` {
+	_, css := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/app.css", "")
+	if string(css) != `body{background:url(/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/bg.png)}` {
 		t.Errorf("stylesheet = %s, want its reference re-based", css)
 	}
 	// Bytes that are not text are the plugin's own and pass through untouched.
-	_, image := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/resource/plugins/logger/bg.png", "")
+	_, image := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/bg.png", "")
 	if string(image) != "/v0/management/raw-bytes" {
 		t.Errorf("image body = %q, want it unmodified", image)
 	}
 
-	missing, _ := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/resource/plugins/logger/absent", "")
+	missing, _ := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/resource/plugins/logger/absent", "")
 	if missing.StatusCode != http.StatusNotFound {
 		t.Errorf("unknown resource: status %d, want the plugin's 404", missing.StatusCode)
 	}
@@ -81,7 +81,7 @@ func TestPluginHostServesThePluginPageRebasedOntoTheConsole(t *testing.T) {
 func TestPluginHostCallsPluginRoutesWithTheServerSideKey(t *testing.T) {
 	client, baseURL, repo, state := startPluginTestServer(t)
 
-	request, _ := http.NewRequest(http.MethodPost, baseURL+"/omc/api/v1/plugin-host/v0/management/logger/credentials?id=7", strings.NewReader(`{"label":"a"}`))
+	request, _ := http.NewRequest(http.MethodPost, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/logger/credentials?id=7", strings.NewReader(`{"label":"a"}`))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Origin", baseURL)
 	// Credential-less pages retain the session bridge; explicit credentials are tested
@@ -124,7 +124,7 @@ func TestPluginHostCallsPluginRoutesWithTheServerSideKey(t *testing.T) {
 	}
 
 	// A plugin's own failure is the page's to read, status and body.
-	missing, missingBody := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/management/logger/missing", "")
+	missing, missingBody := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/logger/missing", "")
 	if missing.StatusCode != http.StatusNotFound || string(missingBody) != `{"error":"not found"}` {
 		t.Errorf("plugin 404: status %d body %s", missing.StatusCode, missingBody)
 	}
@@ -146,7 +146,7 @@ func TestPluginHostRefusesWhatIsNotAPluginRoute(t *testing.T) {
 		"/v0/resource/plugins/logger/../../management/config.yaml",
 		"/v1/chat/completions",
 	} {
-		resp, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host"+target, "")
+		resp, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host"+target, "")
 		if resp.StatusCode != http.StatusNotFound {
 			t.Errorf("GET %s: status %d body %s, want 404", target, resp.StatusCode, body)
 		}
@@ -167,7 +167,7 @@ func TestPluginHostRequiresTheConsoleSession(t *testing.T) {
 			{"Authorization": {"Bearer cpa-secret-key"}},
 			{"X-Management-Key": {"cpa-secret-key"}},
 		} {
-			request, _ := http.NewRequest(http.MethodGet, baseURL+"/omc/api/v1/plugin-host"+target, nil)
+			request, _ := http.NewRequest(http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host"+target, nil)
 			request.Header = header
 			resp, err := http.DefaultClient.Do(request)
 			if err != nil {
@@ -202,7 +202,7 @@ func TestPluginHostRefusesWrongPageCredentialsBeforeCPA(t *testing.T) {
 			if credential.value == "" {
 				want = `{"error":"missing management key"}`
 			}
-			request, _ := http.NewRequest(http.MethodGet, baseURL+"/omc/api/v1/plugin-host"+target, nil)
+			request, _ := http.NewRequest(http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host"+target, nil)
 			request.Header.Set(credential.header, credential.value)
 			response, err := client.Do(request)
 			if err != nil {
@@ -227,7 +227,7 @@ func TestPluginHostRefusesWrongPageCredentialsBeforeCPA(t *testing.T) {
 
 func TestPluginHostNativeStartupRequestChain(t *testing.T) {
 	client, baseURL, repo, state := startPluginTestServer(t)
-	host := baseURL + "/omc/api/v1/plugin-host"
+	host := baseURL + "/shell-pamc/api/v1/plugin-host"
 	for _, step := range []struct{ method, target, credential, body, want string }{
 		{http.MethodGet, "/v0/management/config", "cpa-secret-key", "", "synthetic-client-key"},
 		{http.MethodGet, "/v8/management/config/api-keys", "cpa-secret-key", "", "synthetic-provider-key"},
@@ -287,7 +287,7 @@ func TestPluginHostNativeStartupRequestChain(t *testing.T) {
 func TestPluginHostModelsNeverSubstituteManagementCredentials(t *testing.T) {
 	client, baseURL, _, _ := startPluginTestServer(t)
 	for _, credential := range []string{"", "cpa-secret-key", "wrong-client-key"} {
-		request, _ := http.NewRequest(http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v1/models", nil)
+		request, _ := http.NewRequest(http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v1/models", nil)
 		if credential != "" {
 			request.Header.Set("Authorization", "Bearer "+credential)
 		}
@@ -310,7 +310,7 @@ func TestPluginHostAuditsReadsFailClosed(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			response, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/management/config", "")
+			response, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/config", "")
 			if response.StatusCode != http.StatusInternalServerError || !strings.Contains(string(body), auditWriteFailedCode) || strings.Contains(string(body), "synthetic-") {
 				t.Fatalf("failed %s audit leaked config: %d %s", phase, response.StatusCode, body)
 			}
@@ -327,7 +327,7 @@ func TestPluginHostAuditsReadsFailClosed(t *testing.T) {
 
 func TestPluginHostNativeWriteGateAndCredentialRefusal(t *testing.T) {
 	client, baseURL, repo, state := startPluginTestServer(t)
-	request, _ := http.NewRequest(http.MethodPatch, baseURL+"/omc/api/v1/plugin-host/v0/management/auth-files/status", strings.NewReader(`{"disabled":true}`))
+	request, _ := http.NewRequest(http.MethodPatch, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/auth-files/status", strings.NewReader(`{"disabled":true}`))
 	request.Header.Set("Origin", baseURL)
 	request.Header.Set("Authorization", "Bearer wrong-management-key")
 	response, err := client.Do(request)
@@ -346,7 +346,7 @@ func TestPluginHostNativeWriteGateAndCredentialRefusal(t *testing.T) {
 	state.handler.providerWrites.permits <- struct{}{}
 	state.handler.providerWrites.acquireTimeout = 10 * time.Millisecond
 	t.Cleanup(func() { <-state.handler.providerWrites.permits })
-	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/plugin-host/v0/management/auth-files/status", `{"disabled":true}`)
+	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/auth-files/status", `{"disabled":true}`)
 	if response.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), `"code":"write_busy"`) {
 		t.Fatalf("native write bypassed gate: %d %s", response.StatusCode, body)
 	}
@@ -358,7 +358,7 @@ func TestPluginHostNativeWriteGateAndCredentialRefusal(t *testing.T) {
 }
 
 func TestPluginHostRebasesOnlySupportedReferences(t *testing.T) {
-	for _, prefix := range []string{"/omc/api/v1/plugin-host", "/console/custom/api/v1/plugin-host", "/api/v1/plugin-host"} {
+	for _, prefix := range []string{"/shell-pamc/api/v1/plugin-host", "/console/custom/api/v1/plugin-host", "/api/v1/plugin-host"} {
 		input := `const config="/v0/management/config";const groups='/v8/management/config/api-keys';const models="/v1/models?kind=a";const remote="https://other.example/v8/management/config";const already="` + prefix + `/v0/management/config";const chat="/v1/chat/completions";`
 		output := string(rebasePluginReferences([]byte(input), prefix))
 		for _, expected := range []string{prefix + "/v0/management/config", prefix + "/v8/management/config/api-keys", prefix + "/v1/models?kind=a", "https://other.example/v8/management/config", `const chat="/v1/chat/completions"`} {
@@ -380,7 +380,7 @@ func TestPluginHostWriteAuditOutcomes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			response, _ := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/plugin-host/v0/management/plugins/example/run", `{}`)
+			response, _ := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/plugins/example/run", `{}`)
 			state.mu.Lock()
 			defer state.mu.Unlock()
 			if phase == "attempt" && (response.StatusCode != http.StatusInternalServerError || len(state.routeCalls) != 0) {
@@ -399,7 +399,7 @@ func TestPluginHostNativeWriteFailsClosedOnBackupFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/plugin-host/v8/management/config", `{"observability":{"logs":{"debug":true}}}`)
+	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/plugin-host/v8/management/config", `{"observability":{"logs":{"debug":true}}}`)
 	if response.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), `"code":"config_backup_failed"`) {
 		t.Fatalf("backup failure: %d %s", response.StatusCode, body)
 	}
@@ -413,7 +413,7 @@ func TestPluginHostNativeWriteFailsClosedOnBackupFailure(t *testing.T) {
 func TestPluginHostRejectsCrossOriginWrites(t *testing.T) {
 	client, baseURL, _, state := startPluginTestServer(t)
 	for _, target := range []string{"/v0/management/plugins/example/run", "/v8/management/config"} {
-		request, _ := http.NewRequest(http.MethodPost, baseURL+"/omc/api/v1/plugin-host"+target, strings.NewReader(`{}`))
+		request, _ := http.NewRequest(http.MethodPost, baseURL+"/shell-pamc/api/v1/plugin-host"+target, strings.NewReader(`{}`))
 		request.Header.Set("Origin", "https://other.example")
 		response, err := client.Do(request)
 		if err != nil {
@@ -437,7 +437,7 @@ func TestPluginHostAuditOmitsCallerPathsAndQueries(t *testing.T) {
 		"/v8/management/config/api-keys/synthetic-path-secret?token=synthetic-query-secret",
 		"/v0/management/plugins/example/state?token=synthetic-query-secret",
 	} {
-		response, _ := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/plugin-host"+suffix, "")
+		response, _ := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host"+suffix, "")
 		if response.StatusCode >= http.StatusInternalServerError {
 			t.Fatalf("unexpected host failure: %d", response.StatusCode)
 		}
@@ -471,7 +471,7 @@ func TestPluginHostManagementCredentialPrecedence(t *testing.T) {
 		{"Bearer invalid-page-key", http.StatusUnauthorized},
 		{"", http.StatusOK},
 	} {
-		request, _ := http.NewRequest(http.MethodGet, baseURL+"/omc/api/v1/plugin-host/v0/management/config", nil)
+		request, _ := http.NewRequest(http.MethodGet, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/config", nil)
 		request.Header.Set("Authorization", credential.authorization)
 		request.Header.Set("X-Management-Key", "cpa-secret-key")
 		response, err := client.Do(request)
@@ -487,7 +487,7 @@ func TestPluginHostManagementCredentialPrecedence(t *testing.T) {
 
 func TestPluginHostManagementHEAD(t *testing.T) {
 	client, baseURL, repo, _ := startPluginTestServer(t)
-	response, body := doJSON(t, client, http.MethodHead, baseURL+"/omc/api/v1/plugin-host/v0/management/config", "")
+	response, body := doJSON(t, client, http.MethodHead, baseURL+"/shell-pamc/api/v1/plugin-host/v0/management/config", "")
 	if response.StatusCode != http.StatusOK || len(body) != 0 || response.Header.Get("Cache-Control") != "no-store" {
 		t.Fatalf("native HEAD: status=%d body=%s cache=%s", response.StatusCode, body, response.Header.Get("Cache-Control"))
 	}

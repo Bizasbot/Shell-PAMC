@@ -3,7 +3,7 @@ import test from 'node:test';
 import { auditNativePluginHostResponse, settleNativeResponseAudits, hasPluginHostProtectedSecret, isNativePluginHostResponse } from './acceptance/configuration-plugins.mjs';
 
 test('secret-bearing evidence exception is limited to exact native host API surfaces', () => {
-  for (const basePath of ['', '/omc', '/console/custom']) {
+  for (const basePath of ['', '/shell-pamc', '/console/custom']) {
     const appURL = `http://127.0.0.1:8317${basePath}`;
     for (const suffix of ['/v0/management/config', '/v8/management/config/api-keys?kind=codex', '/v1/models', '/v1/models?scope=all']) {
       assert.ok(isNativePluginHostResponse(`${appURL}/api/v1/plugin-host${suffix}`, appURL));
@@ -16,7 +16,7 @@ test('secret-bearing evidence exception is limited to exact native host API surf
       `${appURL}/api/v1/plugin-host/v1/models/extra`,
       `${appURL}/api/v1/plugin-host/v1/chat/completions`,
       `${appURL}/api/v1/plugin-host-other/v8/management/config`,
-      'http://other.example/omc/api/v1/plugin-host/v8/management/config',
+      'http://other.example/shell-pamc/api/v1/plugin-host/v8/management/config',
     ]) {
       assert.equal(isNativePluginHostResponse(url, appURL), false, url);
     }
@@ -36,7 +36,7 @@ test('native startup permits client/provider keys but still detects protected fi
 test('native response audit fails on protected secrets or unreadable evidence', async () => {
   const outcomes = [];
   const check = (label, passed, detail) => outcomes.push({ label, passed, detail });
-  const url = 'http://127.0.0.1:8317/omc/api/v1/plugin-host/v0/management/config';
+  const url = 'http://127.0.0.1:8317/shell-pamc/api/v1/plugin-host/v0/management/config';
   for (const body of ['{"api-keys":["client-fixture"]}', 'unexpected management-fixture', 'unexpected oauth-fixture']) {
     await auditNativePluginHostResponse({ url: () => url, text: async () => body }, ['management-fixture', 'oauth-fixture'], check);
   }

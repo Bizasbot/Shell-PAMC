@@ -22,9 +22,9 @@ export default defineConfig(({ command }) => ({
     bundleGraphPlugin(repoRoot),
     bareBaseRedirectPlugin(),
   ],
-  // Development has one browser entry at /omc/ (the bare /omc redirects to it);
+  // Development has one browser entry at /shell-pamc/ (the bare /shell-pamc redirects to it);
   // Vite proxies only API calls to Go. Production output stays relative so Go can embed it at any subpath.
-  base: command === 'serve' ? '/omc/' : './',
+  base: command === 'serve' ? '/shell-pamc/' : './',
   resolve: {
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
@@ -61,14 +61,14 @@ export default defineConfig(({ command }) => ({
     host: '0.0.0.0',
     strictPort: true,
     proxy: {
-      // A regex rather than the plain prefix '/omc/api', because the dev server's
+      // A regex rather than the plain prefix '/shell-pamc/api', because the dev server's
       // proxy matches string keys by prefix and would then also swallow the SPA
-      // route '/omc/api-keys': loading or reloading that page in `pnpm dev` was
+      // route '/shell-pamc/api-keys': loading or reloading that page in `pnpm dev` was
       // proxied to the backend, which answered with the SPA shell whose asset
       // hashes belong to another build, and the route rendered blank. The API
       // surface is always '/api/<something>' (the Go router hangs every route off
       // '/api/'), so requiring the trailing slash keeps the two apart.
-      '^/omc/api/': {
+      '^/shell-pamc/api/': {
         // Follow SHELLPAMC_LISTEN_ADDR so a taken default port only needs a .env
         // change; SHELLPAMC_API_TARGET overrides the resolved address.
         target: resolveApiTarget(repoRoot),

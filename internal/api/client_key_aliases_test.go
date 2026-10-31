@@ -21,7 +21,7 @@ import (
 // key - two keys can share one.
 func aliasFor(t *testing.T, client *http.Client, baseURL, rawKey string) ClientAPIKeyItemDTO {
 	t.Helper()
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/api-keys?include_keys=true")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/api-keys?include_keys=true")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("api-keys status = %d body %s", resp.StatusCode, payload)
 	}
@@ -71,7 +71,7 @@ func TestClientKeyAliasDoesNotTouchCPAConfig(t *testing.T) {
 
 	item := aliasFor(t, client, baseURL, "sk-original-key-1")
 	body := fmt.Sprintf(`{"key_fingerprint":%q,"alias":"Production CI","version":0}`, item.UsageFingerprint)
-	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", body)
+	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", body)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("set alias status = %d body %s", resp.StatusCode, payload)
 	}
@@ -97,13 +97,13 @@ func TestClientKeyAliasRejectsStaleVersionOverHTTP(t *testing.T) {
 	item := aliasFor(t, client, baseURL, "sk-original-key-1")
 
 	body := fmt.Sprintf(`{"key_fingerprint":%q,"alias":"First","version":0}`, item.UsageFingerprint)
-	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", body); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", body); resp.StatusCode != http.StatusOK {
 		t.Fatalf("first write status = %d body %s", resp.StatusCode, payload)
 	}
 
 	// Still citing version 0 while version 1 exists.
 	stale := fmt.Sprintf(`{"key_fingerprint":%q,"alias":"Racing","version":0}`, item.UsageFingerprint)
-	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", stale)
+	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", stale)
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("stale write status = %d, want 409: %s", resp.StatusCode, payload)
 	}
@@ -130,13 +130,13 @@ func TestClientKeyAliasRejectsInvalidInput(t *testing.T) {
 
 	for _, invalid := range []string{"line\nbreak", "\u202Eoverride"} {
 		body := fmt.Sprintf(`{"key_fingerprint":%q,"alias":%q,"version":0}`, item.UsageFingerprint, invalid)
-		resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", body)
+		resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", body)
 		if resp.StatusCode != http.StatusBadRequest {
 			t.Fatalf("alias %q status = %d, want 400: %s", invalid, resp.StatusCode, payload)
 		}
 	}
 	// Missing identity is refused too, rather than stored under an empty key.
-	resp, _ := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", `{"alias":"No identity","version":0}`)
+	resp, _ := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", `{"alias":"No identity","version":0}`)
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("missing fingerprint status = %d, want 400", resp.StatusCode)
 	}
@@ -152,11 +152,11 @@ func TestClientKeyAliasClearRestoresUnnamed(t *testing.T) {
 	item := aliasFor(t, client, baseURL, "sk-original-key-1")
 
 	body := fmt.Sprintf(`{"key_fingerprint":%q,"alias":"Temporary","version":0}`, item.UsageFingerprint)
-	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", body); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", body); resp.StatusCode != http.StatusOK {
 		t.Fatalf("set status = %d body %s", resp.StatusCode, payload)
 	}
 	clear := fmt.Sprintf(`{"key_fingerprint":%q,"alias":"","version":1}`, item.UsageFingerprint)
-	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/client-key-aliases", clear); resp.StatusCode != http.StatusOK {
+	if resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/client-key-aliases", clear); resp.StatusCode != http.StatusOK {
 		t.Fatalf("clear status = %d body %s", resp.StatusCode, payload)
 	}
 	if got := aliasFor(t, client, baseURL, "sk-original-key-1"); got.Alias != "" || got.AliasVersion != 0 {
@@ -186,7 +186,7 @@ func TestUsageEventsCarryResolvedAlias(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("list status = %d body %s", resp.StatusCode, payload)
 	}
@@ -213,7 +213,7 @@ func TestUsageEventsCarryResolvedAlias(t *testing.T) {
 
 	// The caller-key facet offers the same name, so the dropdown and the rows it
 	// filters cannot disagree.
-	facetResp, facetPayload := getJSON(t, client, baseURL+"/omc/api/v1/usage/facets?preset=24h")
+	facetResp, facetPayload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/facets?preset=24h")
 	if facetResp.StatusCode != http.StatusOK {
 		t.Fatalf("facets status = %d body %s", facetResp.StatusCode, facetPayload)
 	}
@@ -253,7 +253,7 @@ func TestUsageEventsFallBackToMaskWithoutAlias(t *testing.T) {
 	event.APIKeyMask = "sk-unna••••••••••key"
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: event}})
 
-	_, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	_, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	var page struct {
 		Items []usageEventResponse `json:"items"`
 	}
@@ -293,7 +293,7 @@ func TestUsageEventsDoNotAliasNonKeyCallers(t *testing.T) {
 	event.APIGroupLabel = "provider"
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: event}})
 
-	_, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	_, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	var page struct {
 		Items []usageEventResponse `json:"items"`
 	}
@@ -326,7 +326,7 @@ func TestClientKeyUsageEndpointScopesToKeyCallers(t *testing.T) {
 	byProvider.APIGroupLabel = "provider"
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: keyed}, {Event: byProvider}})
 
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/client-key-usage?preset=24h")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/client-key-usage?preset=24h")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("usage status = %d body %s", resp.StatusCode, payload)
 	}
@@ -345,7 +345,7 @@ func TestClientKeyUsageEndpointScopesToKeyCallers(t *testing.T) {
 
 	// A malformed window is refused rather than silently ignored, which would
 	// report an empty result as if it were the truth.
-	badResp, _ := getJSON(t, client, baseURL+"/omc/api/v1/management/client-key-usage?preset=nonsense")
+	badResp, _ := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/client-key-usage?preset=nonsense")
 	if badResp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("bad preset status = %d, want 400", badResp.StatusCode)
 	}

@@ -52,7 +52,7 @@ services:
     environment:
       TZ: ${TZ:-UTC}
       SHELLPAMC_LISTEN_ADDR: ":8080"
-      SHELLPAMC_BASE_PATH: ${SHELLPAMC_BASE_PATH:-/omc}
+      SHELLPAMC_BASE_PATH: ${SHELLPAMC_BASE_PATH:-/shell-pamc}
       SHELLPAMC_DATA_DIR: /data
       SHELLPAMC_CPA_BASE_URL: http://cpa:8317
       SHELLPAMC_CPA_USAGE_ADDR: cpa:8317

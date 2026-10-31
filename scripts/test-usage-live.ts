@@ -47,7 +47,7 @@ function harness() {
       sources.push(source);
       return source as unknown as EventSource;
     },
-    url: () => '/omc/api/v1/usage/live',
+    url: () => '/shell-pamc/api/v1/usage/live',
     isVisible: () => isVisible,
     onVisibilityChange: (handler) => {
       visibilityHandler = handler;

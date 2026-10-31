@@ -252,7 +252,7 @@ try {
   });
   const cpaPort = fakeCpa.server.address().port;
   const appPort = await freePort();
-  appURL = `http://127.0.0.1:${appPort}/omc`;
+  appURL = `http://127.0.0.1:${appPort}/shell-pamc`;
 
   if (configuredExecutable) {
     if (!fs.existsSync(executable)) throw new Error(`SHELLPAMC_BROWSER_BINARY does not exist: ${executable}`);
@@ -291,7 +291,7 @@ try {
     cwd: root,
     env: isolatedAppEnvironment({
       SHELLPAMC_LISTEN_ADDR: `127.0.0.1:${appPort}`,
-      SHELLPAMC_BASE_PATH: '/omc',
+      SHELLPAMC_BASE_PATH: '/shell-pamc',
       SHELLPAMC_DATA_DIR: path.join(temporary, 'data'),
       SHELLPAMC_MASTER_KEY: MASTER_KEY,
       SHELLPAMC_CPA_BASE_URL: `http://127.0.0.1:${cpaPort}`,
@@ -324,7 +324,7 @@ try {
 
   const redirect = await waitFor(appURL);
   check('fixture startup ignores operator dotenv files', !appLog.join('').includes('loaded environment file'));
-  check('/omc redirects to /omc/', redirect.status === 308 && redirect.headers.get('location') === '/omc/', `status=${redirect.status}`);
+  check('/shell-pamc redirects to /shell-pamc/', redirect.status === 308 && redirect.headers.get('location') === '/shell-pamc/', `status=${redirect.status}`);
 
   browser = await launchBrowser(chromium, { headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });

@@ -175,7 +175,7 @@ func startPricingTestServer(t *testing.T, fake *fakePricing) (*http.Client, stri
 
 func TestPricingWithoutServiceReturnsUnavailable(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing")
 	if response.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("pricing without service status = %d body %s", response.StatusCode, payload)
 	}
@@ -195,7 +195,7 @@ func TestPricingPageEndpointShape(t *testing.T) {
 		known:       true,
 	}
 	client, baseURL := startPricingTestServer(t, fake)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("pricing status = %d body %s", response.StatusCode, payload)
 	}
@@ -239,11 +239,11 @@ func TestPricingPageEndpointShape(t *testing.T) {
 	if len(body.Channels) != 1 || !body.Channels[0].IsConfigured || body.Channels[0].Multiplier != 0.3 || body.UpstreamCount != 2 {
 		t.Fatalf("channels or upstream count: %s", payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/pricing/attention")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing/attention")
 	if response.StatusCode != http.StatusOK || !strings.Contains(string(payload), "mystery-model") {
 		t.Fatalf("attention: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/pricing/catalog")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing/catalog")
 	if response.StatusCode != http.StatusOK || !strings.Contains(string(payload), "vendor/mystery") {
 		t.Fatalf("catalog: %d %s", response.StatusCode, payload)
 	}
@@ -253,7 +253,7 @@ func TestPricingModelModeChangesAndRefusals(t *testing.T) {
 	fake := &fakePricing{acceptSync: true}
 	client, baseURL := startPricingTestServer(t, fake)
 	put := func(model, body string) (*http.Response, []byte) {
-		return doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/pricing/models/"+model, body)
+		return doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/pricing/models/"+model, body)
 	}
 	// Unknown fields are rejected so a typo cannot silently change rates.
 	if response, _ := put("m", `{"mode":"custom","unknown_field":1}`); response.StatusCode != http.StatusBadRequest {
@@ -283,7 +283,7 @@ func TestPricingModelModeChangesAndRefusals(t *testing.T) {
 		t.Fatalf("refusal code: %d %s", response.StatusCode, payload)
 	}
 	fake.changeErr = nil
-	del, _ := http.NewRequest(http.MethodDelete, baseURL+"/omc/api/v1/pricing/models/openai%2Fgpt-5", nil)
+	del, _ := http.NewRequest(http.MethodDelete, baseURL+"/shell-pamc/api/v1/pricing/models/openai%2Fgpt-5", nil)
 	response, err := client.Do(del)
 	if err != nil {
 		t.Fatal(err)
@@ -292,17 +292,17 @@ func TestPricingModelModeChangesAndRefusals(t *testing.T) {
 	if response.StatusCode != http.StatusOK || len(fake.deleted) != 1 || fake.deleted[0] != "openai/gpt-5" {
 		t.Fatalf("delete: %d %+v", response.StatusCode, fake.deleted)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/pricing/models/openai%2Fgpt-5")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing/models/openai%2Fgpt-5")
 	if response.StatusCode != http.StatusOK || !strings.Contains(string(payload), `"model":"openai/gpt-5"`) {
 		t.Fatalf("model detail: %d %s", response.StatusCode, payload)
 	}
 	// Sync: 202 on start, 409 while one is already in flight.
-	response, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/pricing/sync", "")
+	response, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/pricing/sync", "")
 	if response.StatusCode != http.StatusAccepted {
 		t.Fatalf("sync start status = %d", response.StatusCode)
 	}
 	fake.running, fake.acceptSync = true, false
-	response, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/pricing/sync", "")
+	response, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/pricing/sync", "")
 	if response.StatusCode != http.StatusConflict {
 		t.Fatalf("conflicting sync status = %d", response.StatusCode)
 	}
@@ -311,17 +311,17 @@ func TestPricingModelModeChangesAndRefusals(t *testing.T) {
 func TestPricingChannelEndpoints(t *testing.T) {
 	fake := &fakePricing{}
 	client, baseURL := startPricingTestServer(t, fake)
-	response, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/pricing/channels/openai-compatible-relay%2Fus", `{"multiplier":0.3,"note":"resells at 30%"}`)
+	response, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/pricing/channels/openai-compatible-relay%2Fus", `{"multiplier":0.3,"note":"resells at 30%"}`)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("channel set: %d %s", response.StatusCode, payload)
 	}
 	if len(fake.channelSets) != 1 || fake.channelSets[0].Channel != "openai-compatible-relay/us" || fake.channelSets[0].Multiplier != 0.3 {
 		t.Fatalf("channel not routed: %+v", fake.channelSets)
 	}
-	if response, _ := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/pricing/channels/relay", `{"multiplier":0}`); response.StatusCode != http.StatusBadRequest {
+	if response, _ := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/pricing/channels/relay", `{"multiplier":0}`); response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("zero multiplier status = %d", response.StatusCode)
 	}
-	del, _ := http.NewRequest(http.MethodDelete, baseURL+"/omc/api/v1/pricing/channels/relay", nil)
+	del, _ := http.NewRequest(http.MethodDelete, baseURL+"/shell-pamc/api/v1/pricing/channels/relay", nil)
 	response, err := client.Do(del)
 	if err != nil {
 		t.Fatal(err)
@@ -342,7 +342,7 @@ func TestPricingPageDegradesWhenSyncStateUnreadable(t *testing.T) {
 		stateErr: errors.New("corrupt sync state"),
 	}
 	client, baseURL := startPricingTestServer(t, fake)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("pricing status = %d body %s", response.StatusCode, payload)
 	}
@@ -368,15 +368,15 @@ func TestPricingPageDegradesWhenSyncStateUnreadable(t *testing.T) {
 func TestUpdatePricingSyncSchedule(t *testing.T) {
 	fake := &fakePricing{state: pricing.SyncState{Source: pricing.SourceOpenRouter, AutoSyncIntervalHours: 24}, known: true}
 	client, baseURL := startPricingTestServer(t, fake)
-	response, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/pricing/sync-schedule", `{"interval_hours":6}`)
+	response, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/pricing/sync-schedule", `{"interval_hours":6}`)
 	if response.StatusCode != http.StatusOK || fake.state.AutoSyncIntervalHours != 6 {
 		t.Fatalf("update schedule status = %d body %s", response.StatusCode, payload)
 	}
-	response, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/pricing/sync-schedule", `{"interval_hours":0}`)
+	response, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/pricing/sync-schedule", `{"interval_hours":0}`)
 	if response.StatusCode != http.StatusOK || fake.state.AutoSyncIntervalHours != 0 {
 		t.Fatalf("disable schedule status = %d body %s", response.StatusCode, payload)
 	}
-	response, _ = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/pricing/sync-schedule", `{"interval_hours":999}`)
+	response, _ = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/pricing/sync-schedule", `{"interval_hours":999}`)
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("invalid schedule status = %d, want 400", response.StatusCode)
 	}
@@ -401,7 +401,7 @@ func TestPricingProvidersUseCurrentIdentityOverlays(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status=%d: %s", response.StatusCode, payload)
 	}
@@ -428,7 +428,7 @@ func TestPricingCandidatesAndDismissal(t *testing.T) {
 		candidates: map[string]pricing.Candidate{"brand-new": {Model: newModel, Kind: pricing.CandidateAutomatic, MatchKind: pricing.MatchExact}},
 	}
 	client, baseURL := startPricingTestServer(t, fake)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("pricing status = %d body %s", response.StatusCode, payload)
 	}
@@ -445,13 +445,13 @@ func TestPricingCandidatesAndDismissal(t *testing.T) {
 		body.Models[0].Candidate.Kind != pricing.CandidateAutomatic || body.Models[1].Candidate != nil {
 		t.Fatalf("candidates not projected onto their rows: %s", payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/pricing/models/brand-new")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing/models/brand-new")
 	if response.StatusCode != http.StatusOK || !strings.Contains(string(payload), `"candidate":{"model":{"id":"vendor/brand-new"`) {
 		t.Fatalf("model detail candidate: %d %s", response.StatusCode, payload)
 	}
 
 	dismiss := func(model, body string) (*http.Response, []byte) {
-		return doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/pricing/models/"+model+"/dismiss-candidate", body)
+		return doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/pricing/models/"+model+"/dismiss-candidate", body)
 	}
 	if response, payload := dismiss("brand-new", `{"upstream_id":""}`); response.StatusCode != http.StatusBadRequest || !strings.Contains(string(payload), "pricing_invalid_review") {
 		t.Fatalf("empty dismissal: %d %s", response.StatusCode, payload)
@@ -465,7 +465,7 @@ func TestPricingCandidatesAndDismissal(t *testing.T) {
 	if len(fake.dismissed) != 1 || fake.dismissed[0] != "brand-new=vendor/brand-new" || len(fake.changes) != 0 {
 		t.Fatalf("dismissal routed wrong or changed a price: %+v %+v", fake.dismissed, fake.changes)
 	}
-	if _, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing"); strings.Contains(string(payload), `"candidate"`) {
+	if _, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing"); strings.Contains(string(payload), `"candidate"`) {
 		t.Fatalf("a dismissed candidate is still offered: %s", payload)
 	}
 }
@@ -506,7 +506,7 @@ func TestPricingModelPriceWireShape(t *testing.T) {
 				UpstreamID: "vendor/reference", MatchKind: pricing.MatchLinked, SyncedAtMS: 123, UpdatedAtMS: 456}
 			client, baseURL := startPricingTestServer(t, &fakePricing{listRows: []pricing.ModelPrice{row}})
 			want := fmt.Sprintf(`{"model":"vendor/model","prompt_price_per_1m":2,"completion_price_per_1m":10,"cache_read_price_per_1m":0.2,"cache_write_price_per_1m":2.5,"price_multiplier":0.75,"tiers":%s,"source":"manual","upstream_id":"vendor/reference","match_kind":"linked","synced_at_ms":123,"updated_at_ms":456%s}`, tc.tiersJSON, tc.optionalJSON)
-			response, payload := getJSON(t, client, baseURL+"/omc/api/v1/pricing")
+			response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing")
 			var book struct {
 				Models        []map[string]json.RawMessage `json:"models"`
 				ChannelModels json.RawMessage              `json:"channel_models"`
@@ -524,7 +524,7 @@ func TestPricingModelPriceWireShape(t *testing.T) {
 				t.Fatal(err)
 			}
 			assertPricingJSON(t, encoded, want)
-			response, payload = getJSON(t, client, baseURL+"/omc/api/v1/pricing/models/vendor%2Fmodel")
+			response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/pricing/models/vendor%2Fmodel")
 			var detail map[string]json.RawMessage
 			if err := json.Unmarshal(payload, &detail); err != nil {
 				t.Fatal(err)
@@ -558,7 +558,7 @@ func TestPricingChannelModelParameterRouting(t *testing.T) {
 	fake := &fakePricing{}
 	client, baseURL := startPricingTestServer(t, fake)
 	for _, channel := range []string{" \t华为云/us+west\n ", " \t "} {
-		target := baseURL + "/omc/api/v1/pricing/models/%20vendor%2Fmodel%20?channel=" + url.QueryEscape(channel)
+		target := baseURL + "/shell-pamc/api/v1/pricing/models/%20vendor%2Fmodel%20?channel=" + url.QueryEscape(channel)
 		response, payload := doJSON(t, client, http.MethodPut, target, `{"mode":"custom"}`)
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("PUT: %d %s", response.StatusCode, payload)
@@ -584,7 +584,7 @@ func TestPricingChannelModelParameterRouting(t *testing.T) {
 
 func TestPricingChannelModelEndpoints(t *testing.T) {
 	client, baseURL, repo := startChannelPricingTestServer(t)
-	endpoint := baseURL + "/omc/api/v1/pricing/models/vendor%2Fmodel"
+	endpoint := baseURL + "/shell-pamc/api/v1/pricing/models/vendor%2Fmodel"
 	scoped := endpoint + "?channel=" + url.QueryEscape(" \t华为云/us+west\n ")
 	read := func(target string) map[string]json.RawMessage {
 		t.Helper()
@@ -605,7 +605,7 @@ func TestPricingChannelModelEndpoints(t *testing.T) {
 	assertPricingJSON(t, inherited["is_inherited"], `true`)
 	assertPricingJSON(t, inherited["price"], string(shared))
 	assertPricingJSON(t, inherited["versions"], `[]`)
-	unpriced := read(baseURL + "/omc/api/v1/pricing/models/unknown?channel=other")
+	unpriced := read(baseURL + "/shell-pamc/api/v1/pricing/models/unknown?channel=other")
 	assertPricingJSON(t, unpriced["price"], `null`)
 	assertPricingJSON(t, unpriced["is_inherited"], `true`)
 
@@ -642,7 +642,7 @@ func TestPricingChannelModelEndpoints(t *testing.T) {
 	assertPricingJSON(t, versions[0]["price"], `{"model":"vendor/model","channel":"华为云/us+west","prompt_price_per_1m":3,"completion_price_per_1m":6,"cache_read_price_per_1m":0.3,"cache_write_price_per_1m":3.75,"price_multiplier":0.5,"tiers":[{"utc_start":0,"utc_end":830,"time_zone":"Asia/Shanghai","prompt_price_per_1m":1.5}],"source":"manual","upstream_id":""}`)
 	assertPricingJSON(t, read(endpoint)["price"], string(shared))
 	assertPricingJSON(t, read(endpoint + "?channel=other")["is_inherited"], `true`)
-	book := read(baseURL + "/omc/api/v1/pricing")
+	book := read(baseURL + "/shell-pamc/api/v1/pricing")
 	assertPricingJSON(t, book["channel_models"], "["+string(current["price"])+"]")
 	if err := repo.UpsertChannelModelPrice(context.Background(), pricing.ModelPrice{
 		Model: "vendor/model", Channel: "other", PromptPricePer1M: 99, PriceMultiplier: 1, Source: pricing.SourceManual,
@@ -671,17 +671,17 @@ func TestPricingChannelModelEndpoints(t *testing.T) {
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("DELETE other: %d %s", response.StatusCode, payload)
 	}
-	if book := read(baseURL + "/omc/api/v1/pricing"); book["channel_models"] != nil {
+	if book := read(baseURL + "/shell-pamc/api/v1/pricing"); book["channel_models"] != nil {
 		t.Fatalf("empty channel_models must be omitted: %s", book["channel_models"])
 	}
 }
 
 func TestPricingChannelModelRefusals(t *testing.T) {
 	client, baseURL, repo := startChannelPricingTestServer(t)
-	endpoint := baseURL + "/omc/api/v1/pricing/models/vendor%2Fmodel?channel=" + url.QueryEscape(" 华为云/us+west ")
+	endpoint := baseURL + "/shell-pamc/api/v1/pricing/models/vendor%2Fmodel?channel=" + url.QueryEscape(" 华为云/us+west ")
 	for _, tc := range []struct{ name, target, body, code string }{
-		{"unknown channel", baseURL + "/omc/api/v1/pricing/models/vendor%2Fmodel?channel=unknown", `{"mode":"custom"}`, "pricing_model_not_in_catalog"},
-		{"unknown model", baseURL + "/omc/api/v1/pricing/models/unknown?channel=" + url.QueryEscape("华为云/us+west"), `{"mode":"custom"}`, "pricing_model_not_in_catalog"},
+		{"unknown channel", baseURL + "/shell-pamc/api/v1/pricing/models/vendor%2Fmodel?channel=unknown", `{"mode":"custom"}`, "pricing_model_not_in_catalog"},
+		{"unknown model", baseURL + "/shell-pamc/api/v1/pricing/models/unknown?channel=" + url.QueryEscape("华为云/us+west"), `{"mode":"custom"}`, "pricing_model_not_in_catalog"},
 		{"automatic channel price", endpoint, `{"mode":"auto"}`, "pricing_invalid_mode"},
 		{"linked channel price", endpoint, `{"mode":"linked","upstream_id":"vendor/model"}`, "pricing_invalid_mode"},
 		{"unknown field", endpoint, `{"mode":"custom","unknown":true}`, ""},
@@ -706,7 +706,7 @@ func TestPricingChannelModelReadFailureReturnsInternalError(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range []string{"/pricing", "/pricing/models/vendor%2Fmodel?channel=relay"} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1"+target)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1"+target)
 		if response.StatusCode != http.StatusInternalServerError || strings.Contains(string(payload), `"price"`) || strings.Contains(string(payload), `"models"`) {
 			t.Fatalf("an unreadable override must not expose a fallback price: %d %s", response.StatusCode, payload)
 		}

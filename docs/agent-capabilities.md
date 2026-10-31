@@ -369,7 +369,7 @@ The registry is served to MCP clients in two ways, from one tool definition
 **Remote, by URL.** The console serves Streamable HTTP at `<console URL>/api/mcp`:
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://omc.example.com/omc/api/mcp \
+claude mcp add --transport http oh-my-cpa https://shell-pamc.example.com/shell-pamc/api/mcp \
   --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
@@ -384,7 +384,7 @@ clients.
 capability HTTP endpoints:
 
 ```bash
-SHELLPAMC_SERVER_URL=https://omc.example.com/omc \
+SHELLPAMC_SERVER_URL=https://shell-pamc.example.com/shell-pamc \
 SHELLPAMC_CPA_MANAGEMENT_KEY=<your CPA management key> \
 oh-my-cpa mcp
 ```

@@ -58,10 +58,10 @@ beforeEach(() => {
   shouldRejectWrite = false;
   readResponse = undefined;
   vi.stubGlobal('fetch', vi.fn(async (input: string, options: RequestInit) => {
-    if (input === '/omc/api/v1/preferences' && options.method === 'GET') {
+    if (input === '/shell-pamc/api/v1/preferences' && options.method === 'GET') {
       return readResponse ?? jsonResponse({ preferences: stored, time_zone: { server_timezone: 'UTC' } });
     }
-    if (input.startsWith('/omc/api/v1/preferences/') && options.method === 'PUT') {
+    if (input.startsWith('/shell-pamc/api/v1/preferences/') && options.method === 'PUT') {
       const key = input.split('/').pop()!;
       const value: unknown = JSON.parse(String(options.body));
       writes.push({ key, value });

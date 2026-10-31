@@ -24,7 +24,7 @@ A client that speaks Streamable HTTP does not need this process: it connects to
 
 Environment:
   SHELLPAMC_SERVER_URL          console URL including its base path, for example
-                            https://omc.example.com/omc (plain HTTP is accepted
+                            https://shell-pamc.example.com/shell-pamc (plain HTTP is accepted
                             for loopback addresses only)
   SHELLPAMC_CPA_MANAGEMENT_KEY  the CPA management key that signs in to the console
 `

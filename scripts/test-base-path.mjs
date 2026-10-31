@@ -23,14 +23,14 @@ function basePath(rawValue) {
 // The same table as the Go test for NormalizeBasePath, including the empty result
 // that means the site root.
 const ACCEPTED = [
-  { name: 'unset value means the documented default', input: '', want: '/omc' },
-  { name: 'plain name', input: 'omc', want: '/omc' },
-  { name: 'absolute path', input: '/omc', want: '/omc' },
-  { name: 'trailing slash', input: '/omc/', want: '/omc' },
-  { name: 'nested path with trailing slash', input: '/tools/omc/', want: '/tools/omc' },
+  { name: 'unset value means the documented default', input: '', want: '/shell-pamc' },
+  { name: 'plain name', input: 'shell-pamc', want: '/shell-pamc' },
+  { name: 'absolute path', input: '/shell-pamc', want: '/shell-pamc' },
+  { name: 'trailing slash', input: '/shell-pamc/', want: '/shell-pamc' },
+  { name: 'nested path with trailing slash', input: '/tools/shell-pamc/', want: '/tools/shell-pamc' },
   { name: 'duplicate slashes', input: '/a//b/', want: '/a/b' },
-  { name: 'single dot segment', input: '/omc/./x', want: '/omc/x' },
-  { name: 'surrounding whitespace', input: '  /omc  ', want: '/omc' },
+  { name: 'single dot segment', input: '/shell-pamc/./x', want: '/shell-pamc/x' },
+  { name: 'surrounding whitespace', input: '  /shell-pamc  ', want: '/shell-pamc' },
   { name: 'site root', input: '/', want: '' },
   { name: 'only slashes is the site root', input: '//', want: '' },
 ];
@@ -44,7 +44,7 @@ test('deploy/base-path.sh agrees with the server on every accepted value', { ski
 });
 
 test('deploy/base-path.sh refuses values the server refuses', { skip: hasShell ? false : 'requires a POSIX shell' }, () => {
-  for (const input of ['/omc?x=1', '/omc#fragment', '/../omc']) {
+  for (const input of ['/shell-pamc?x=1', '/shell-pamc#fragment', '/../shell-pamc']) {
     const result = basePath(input);
     assert.notEqual(result.status, 0, `${input} was accepted`);
     assert.match(result.stderr, /SHELLPAMC_BASE_PATH/, `${input} failed without naming the variable`);

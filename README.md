@@ -159,7 +159,7 @@ chmod 600 .env
 docker compose up -d
 ```
 
-Open **`http://127.0.0.1:8080/omc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
+Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
 from `.env`. Providers and client keys are added in the console; clients send requests
 to CPA at `http://127.0.0.1:8317`.
 
@@ -208,7 +208,7 @@ SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 Add the `oh-my-cpa-updater` service from the snippet as well to update from the console.
 Run `docker compose up -d oh-my-cpa oh-my-cpa-updater`, which leaves the CPA container
 running as it is.
-Open **`http://127.0.0.1:8080/omc/`** and sign in with the management key.
+Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
 
 #### Standalone
 
@@ -255,7 +255,7 @@ SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in
 SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 ```
 
-Run `docker compose up -d`, then open **`http://127.0.0.1:8080/omc/`** and sign in with
+Run `docker compose up -d`, then open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with
 the management key.
 
 ### Updating
@@ -374,7 +374,7 @@ with ready-to-copy configuration.
 Claude Code:
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://cpa.example.com/omc/api/mcp \
+claude mcp add --transport http oh-my-cpa https://cpa.example.com/shell-pamc/api/mcp \
   --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
@@ -382,7 +382,7 @@ Codex (`~/.codex/config.toml`):
 
 ```toml
 [mcp_servers.oh-my-cpa]
-url = "https://cpa.example.com/omc/api/mcp"
+url = "https://cpa.example.com/shell-pamc/api/mcp"
 bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
@@ -392,7 +392,7 @@ Clients configured in JSON, such as Cursor:
 {
   "mcpServers": {
     "oh-my-cpa": {
-      "url": "https://cpa.example.com/omc/api/mcp",
+      "url": "https://cpa.example.com/shell-pamc/api/mcp",
       "headers": { "Authorization": "Bearer <CPA management key>" }
     }
   }
@@ -411,7 +411,7 @@ The binary carries a stdio bridge that forwards to the console:
       "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
-        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/omc",
+        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/shell-pamc",
         "SHELLPAMC_CPA_MANAGEMENT_KEY": "<CPA management key>"
       }
     }
@@ -435,7 +435,7 @@ trusted agents and serve the console over HTTPS before connecting one remotely.
 | `SHELLPAMC_CPA_BASE_URL` | required | CPA's address |
 | `SHELLPAMC_CPA_MANAGEMENT_KEY` | required | CPA's management key, and the console's sign-in password |
 | `SHELLPAMC_MASTER_KEY` | required | At-rest encryption key (`openssl rand -hex 32`) |
-| `SHELLPAMC_BASE_PATH` | `/omc` | Sub-path the console is served under |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Sub-path the console is served under |
 | `SHELLPAMC_DATA_DIR` | `./data` | Directory of the SQLite database; the Compose files set `/data` |
 | `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use; `https://` marks the session cookie `Secure` |
 | `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another service collects this CPA's usage |
@@ -448,14 +448,14 @@ The full reference, with deployment constraints and operational notes, is
 
 ```text
 Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Oh My CPA (:8080)
-                                                 ├─ Embedded React SPA (/omc/)
+                                                 ├─ Embedded React SPA (/shell-pamc/)
                                                  ├─ SQLite WAL (/data)
                                                  └─ Usage collector ──▶ CLIProxyAPI (:8317)
 ```
 
 - **Single binary**: the React console is embedded in the Go executable.
 - **Single replica**: SQLite in WAL mode, one process per data directory.
-- **Sub-path native**: served under `/omc` by default (`SHELLPAMC_BASE_PATH`), so it shares a host with CPA.
+- **Sub-path native**: served under `/shell-pamc` by default (`SHELLPAMC_BASE_PATH`), so it shares a host with CPA.
 - **Allowlisted facade**: ordinary console APIs project safe DTOs; trusted plugin pages use the bounded native contract. Arbitrary target URLs remain refused.
 
 [`docs/architecture.md`](docs/architecture.md) has the module map, data flows and invariants.
@@ -493,7 +493,7 @@ pnpm 11+:
 ```bash
 pnpm install --frozen-lockfile
 cp .env.example .env
-pnpm dev          # Air + Vite with hot reload at http://127.0.0.1:5173/omc/
+pnpm dev          # Air + Vite with hot reload at http://127.0.0.1:5173/shell-pamc/
 ```
 
 Run `pnpm verify` and `pnpm check:ui` before pushing.

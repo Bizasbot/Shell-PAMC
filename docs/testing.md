@@ -831,7 +831,7 @@ before measuring geometry and SVG fills, because the shell download can complete
 `start_url` and `scope`, no `id`, standalone display, the declared icon sizes), each icon
 decoding at the size it declares, `application/manifest+json` with `Cache-Control:
 no-cache`, HEAD parity, a missing icon answering 404 instead of the SPA shell, the same
-routes at the root, `/omc` and a nested base, and the demonstration's allow/refuse
+routes at the root, `/shell-pamc` and a nested base, and the demonstration's allow/refuse
 boundary around them. `scripts/acceptance/pwa.mjs` owns what only Chromium can
 establish: `Page.getAppManifest` parses the manifest deployed by the built binary with
 no errors, `Page.getInstallabilityErrors` is empty in a browser context that blocks service

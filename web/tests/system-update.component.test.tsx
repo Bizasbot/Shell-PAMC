@@ -76,7 +76,7 @@ it('asks before updating and sends nothing until the question is answered', asyn
   expect(surface.requests.some((entry) => entry.method === 'POST')).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: 'Update now' }));
   await screen.findByText('Pulling the new image…');
-  expect(surface.requests.filter((entry) => entry.method === 'POST').map((entry) => entry.path)).toEqual(['/omc/api/v1/management/system/updater/apply']);
+  expect(surface.requests.filter((entry) => entry.method === 'POST').map((entry) => entry.path)).toEqual(['/shell-pamc/api/v1/management/system/updater/apply']);
   surface.close();
 });
 

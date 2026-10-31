@@ -8,7 +8,7 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.component.test.tsx', 'tests/**/*.contract.test.ts'],
     environment: 'jsdom',
-    environmentOptions: { jsdom: { url: 'http://localhost/omc/' } },
+    environmentOptions: { jsdom: { url: 'http://localhost/shell-pamc/' } },
     setupFiles: ['./tests/setup.ts'],
     isolate: true,
     maxWorkers: 1,

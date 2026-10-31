@@ -27,7 +27,7 @@ func (s *stargazerRelease) Stargazers(_ context.Context, mayFetch bool) (int64, 
 func readSystemRepository(t *testing.T, handler *Handler) string {
 	t.Helper()
 	recorder := httptest.NewRecorder()
-	handler.getSystemRepository(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system/repository", nil))
+	handler.getSystemRepository(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system/repository", nil))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
 	}

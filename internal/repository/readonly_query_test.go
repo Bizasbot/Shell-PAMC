@@ -16,11 +16,11 @@ func TestReadOnlyDSNPreservesAbsolutePaths(t *testing.T) {
 	for _, example := range []struct {
 		name, path, want string
 	}{
-		{"unix", "/var/lib/omc/query.db", "file:///var/lib/omc/query.db"},
+		{"unix", "/var/lib/shell-pamc/query.db", "file:///var/lib/shell-pamc/query.db"},
 		{"windows drive", "C:/Users/runner/query.db", "file:///C:/Users/runner/query.db"},
 		{"lowercase drive", "d:/OMC data/query.db", "file:///d:/OMC%20data/query.db"},
 		{"escaped filename", "C:/OMC 数据/query #100%?.db", "file:///C:/OMC%20%E6%95%B0%E6%8D%AE/query%20%23100%25%3F.db"},
-		{"unix backslash", `/var/lib/omc/query\name.db`, "file:///var/lib/omc/query%5Cname.db"},
+		{"unix backslash", `/var/lib/shell-pamc/query\name.db`, "file:///var/lib/shell-pamc/query%5Cname.db"},
 	} {
 		t.Run(example.name, func(t *testing.T) {
 			dsn := formatReadOnlyDSN(example.path)

@@ -29,7 +29,7 @@ declare global {
 export function getAppConfig(): AppConfig {
   const injected = typeof window !== 'undefined' ? window.__SHELLPAMC_CONFIG__ : undefined;
 
-  let basePath = (injected?.basePath ?? '/omc').trim();
+  let basePath = (injected?.basePath ?? '/shell-pamc').trim();
   if (basePath && !basePath.startsWith('/')) {
     basePath = '/' + basePath;
   }

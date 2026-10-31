@@ -263,7 +263,7 @@ async function main() {
       );
       if (definition.redirectedPath) {
         // The path's tail rather than the whole pathname: a deployment served under a base path
-        // (`SHELLPAMC_DEMO_URL=https://host/omc`) reaches this route as `/omc/<route>`, and the local
+        // (`SHELLPAMC_DEMO_URL=https://host/shell-pamc`) reaches this route as `/shell-pamc/<route>`, and the local
         // fixture reaches it as `/<route>`. Comparing the whole pathname would fail the deployed
         // form and pass the local one, which is the reverse of what this check is for.
         check(

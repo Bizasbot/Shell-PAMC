@@ -12,7 +12,7 @@ set -eu
 raw=$(printf '%s' "${SHELLPAMC_BASE_PATH:-}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 
 if [ -z "$raw" ]; then
-	printf '/omc\n'
+	printf '/shell-pamc\n'
 	exit 0
 fi
 

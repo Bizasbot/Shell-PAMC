@@ -39,7 +39,7 @@ test('real default route dispatcher uses the certified preference fixture and re
     assert.equal(response.headers['Cache-Control'], 'no-store', entry.id);
   }
   let response;
-  await dispatch({ request: () => ({ url: () => 'http://127.0.0.1/omc/api/v1/preferences', method: () => 'POST' }), fulfill: value => { response = value; } });
+  await dispatch({ request: () => ({ url: () => 'http://127.0.0.1/shell-pamc/api/v1/preferences', method: () => 'POST' }), fulfill: value => { response = value; } });
   assert.equal(response.status, 501, 'an unsupported fixture method remains a harness fault, not a success');
   assert.equal(problems.length, 1);
 });
@@ -47,8 +47,8 @@ test('real default route dispatcher uses the certified preference fixture and re
 test('stores are per-context and returned documents cannot mutate later reads', () => {
   const first = createPreferenceFixture();
   const second = createPreferenceFixture();
-  const write = new URL('http://127.0.0.1/omc/api/v1/preferences/agent_target');
-  const read = new URL('http://127.0.0.1/omc/api/v1/preferences');
+  const write = new URL('http://127.0.0.1/shell-pamc/api/v1/preferences/agent_target');
+  const read = new URL('http://127.0.0.1/shell-pamc/api/v1/preferences');
   const response = first(write, 'PUT', '{"model":"fixture-model"}');
   response.json.value.model = 'mutated';
   const listed = first(read, 'GET');
@@ -61,5 +61,5 @@ test('stores are per-context and returned documents cannot mutate later reads', 
 test('non-UTC deployment metadata is certified independently of the UTC fallback', () => {
   const alternate = PREFERENCE_CONTRACT.alternate_server;
   const fixture = createPreferenceFixture({ serverTimezone: alternate.timezone });
-  assert.deepEqual(fixture(new URL('http://127.0.0.1/omc/api/v1/preferences'), 'GET', null).json, alternate.response);
+  assert.deepEqual(fixture(new URL('http://127.0.0.1/shell-pamc/api/v1/preferences'), 'GET', null).json, alternate.response);
 });

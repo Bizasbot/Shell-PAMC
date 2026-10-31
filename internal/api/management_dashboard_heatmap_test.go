@@ -12,7 +12,7 @@ import (
 )
 
 func heatmapURL(baseURL string, query string) string {
-	return baseURL + "/omc/api/v1/management/dashboard/token-heatmap" + query
+	return baseURL + "/shell-pamc/api/v1/management/dashboard/token-heatmap" + query
 }
 
 // getHeatmapJSON fetches the strip and fails on anything but a 200, so a wrong shape
@@ -275,7 +275,7 @@ func TestTokenHeatmapWindowsMatchTheRequestListWindowForTheSameDay(t *testing.T)
 	}
 
 	// The list, asked for the strip's own bounds.
-	url := fmt.Sprintf("%s/omc/api/v1/usage/events?from=%d&to=%d&limit=500", baseURL, today.FromMS, today.ToMS)
+	url := fmt.Sprintf("%s/shell-pamc/api/v1/usage/events?from=%d&to=%d&limit=500", baseURL, today.FromMS, today.ToMS)
 	response, payload := getJSON(t, client, url)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("request list status = %d body %s", response.StatusCode, payload)

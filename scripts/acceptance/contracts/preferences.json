@@ -29,7 +29,7 @@
     {
       "id": "empty-document",
       "method": "GET",
-      "path": "/omc/api/v1/preferences",
+      "path": "/shell-pamc/api/v1/preferences",
       "body": null,
       "authenticated": true,
       "status": 200,
@@ -45,7 +45,7 @@
     {
       "id": "unauthenticated-read",
       "method": "GET",
-      "path": "/omc/api/v1/preferences",
+      "path": "/shell-pamc/api/v1/preferences",
       "body": null,
       "authenticated": false,
       "status": 401,
@@ -56,7 +56,7 @@
     {
       "id": "unauthenticated-write",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_tps_calculation_mode",
+      "path": "/shell-pamc/api/v1/preferences/omc_tps_calculation_mode",
       "body": "\"include_ttft\"",
       "authenticated": false,
       "status": 401,
@@ -67,7 +67,7 @@
     {
       "id": "unsupported-key",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/management_key",
+      "path": "/shell-pamc/api/v1/preferences/management_key",
       "body": "{}",
       "authenticated": true,
       "status": 400,
@@ -78,7 +78,7 @@
     {
       "id": "invalid-json",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/dashboard_range",
+      "path": "/shell-pamc/api/v1/preferences/dashboard_range",
       "body": "{\"preset\":",
       "authenticated": true,
       "status": 400,
@@ -89,7 +89,7 @@
     {
       "id": "tps-write",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_tps_calculation_mode",
+      "path": "/shell-pamc/api/v1/preferences/omc_tps_calculation_mode",
       "body": "\"include_ttft\"",
       "authenticated": true,
       "status": 200,
@@ -101,7 +101,7 @@
     {
       "id": "tps-readback",
       "method": "GET",
-      "path": "/omc/api/v1/preferences",
+      "path": "/shell-pamc/api/v1/preferences",
       "body": null,
       "authenticated": true,
       "status": 200,
@@ -119,7 +119,7 @@
     {
       "id": "raw-enum-preserved",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_tps_calculation_mode",
+      "path": "/shell-pamc/api/v1/preferences/omc_tps_calculation_mode",
       "body": "\"future-mode\"",
       "authenticated": true,
       "status": 200,
@@ -131,7 +131,7 @@
     {
       "id": "null-preserved",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/provider_names",
+      "path": "/shell-pamc/api/v1/preferences/provider_names",
       "body": "null",
       "authenticated": true,
       "status": 200,
@@ -143,7 +143,7 @@
     {
       "id": "structured-document",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/provider_websites",
+      "path": "/shell-pamc/api/v1/preferences/provider_websites",
       "body": "{\"names\":[\"OpenAI\",\"Claude\"],\"empty\":null,\"enabled\":false,\"nested\":{\"count\":0}}",
       "authenticated": true,
       "status": 200,
@@ -165,7 +165,7 @@
     {
       "id": "quota-auto-refresh-invalid",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_quota_auto_refresh",
+      "path": "/shell-pamc/api/v1/preferences/omc_quota_auto_refresh",
       "body": "{\"interval_minutes\":1,\"refresh_on_reset\":true}",
       "authenticated": true,
       "status": 400,
@@ -176,7 +176,7 @@
     {
       "id": "quota-auto-refresh-partial",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_quota_auto_refresh",
+      "path": "/shell-pamc/api/v1/preferences/omc_quota_auto_refresh",
       "body": "{\"interval_minutes\":30}",
       "authenticated": true,
       "status": 400,
@@ -187,7 +187,7 @@
     {
       "id": "plugin-source-shape",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_plugin_source_enabled",
+      "path": "/shell-pamc/api/v1/preferences/omc_plugin_source_enabled",
       "body": "{\"enabled\":true}",
       "authenticated": true,
       "status": 400,
@@ -198,7 +198,7 @@
     {
       "id": "plugin-source-null",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_plugin_source_enabled",
+      "path": "/shell-pamc/api/v1/preferences/omc_plugin_source_enabled",
       "body": "null",
       "authenticated": true,
       "status": 400,
@@ -209,7 +209,7 @@
     {
       "id": "quota-auto-refresh-write",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_quota_auto_refresh",
+      "path": "/shell-pamc/api/v1/preferences/omc_quota_auto_refresh",
       "body": "{\"interval_minutes\":30,\"refresh_on_reset\":false}",
       "authenticated": true,
       "status": 200,
@@ -224,7 +224,7 @@
     {
       "id": "invalid-timezone",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_timezone",
+      "path": "/shell-pamc/api/v1/preferences/omc_timezone",
       "body": "\"Not/AZone\"",
       "authenticated": true,
       "status": 400,
@@ -235,7 +235,7 @@
     {
       "id": "timezone-null-refused",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_timezone",
+      "path": "/shell-pamc/api/v1/preferences/omc_timezone",
       "body": "null",
       "authenticated": true,
       "status": 400,
@@ -246,7 +246,7 @@
     {
       "id": "timezone-write",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_timezone",
+      "path": "/shell-pamc/api/v1/preferences/omc_timezone",
       "body": "\"America/New_York\"",
       "authenticated": true,
       "status": 200,
@@ -258,7 +258,7 @@
     {
       "id": "timezone-readback",
       "method": "GET",
-      "path": "/omc/api/v1/preferences",
+      "path": "/shell-pamc/api/v1/preferences",
       "body": null,
       "authenticated": true,
       "status": 200,
@@ -293,7 +293,7 @@
     {
       "id": "timezone-fallback",
       "method": "PUT",
-      "path": "/omc/api/v1/preferences/omc_timezone",
+      "path": "/shell-pamc/api/v1/preferences/omc_timezone",
       "body": "\"\"",
       "authenticated": true,
       "status": 200,
@@ -305,7 +305,7 @@
     {
       "id": "final-readback",
       "method": "GET",
-      "path": "/omc/api/v1/preferences",
+      "path": "/shell-pamc/api/v1/preferences",
       "body": null,
       "authenticated": true,
       "status": 200,

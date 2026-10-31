@@ -11,7 +11,7 @@ func TestManagementProviderCreateUpdateDelete(t *testing.T) {
 
 	// 1. Create a new openai-compatibility provider
 	createBody := `{"family":"openai-compatibility","name":"DeepSeek Primary","base_url":"https://api.deepseek.com/v1","api_key":"sk-deepseek-1234","models":["deepseek-chat"]}`
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", createBody)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", createBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -26,7 +26,7 @@ func TestManagementProviderCreateUpdateDelete(t *testing.T) {
 
 	// 2. Update provider (openai-compat-1)
 	updateBody := `{"family":"openai-compatibility","name":"DeepSeek Updated","base_url":"https://api.deepseek.com/v2","models":["deepseek-reasoner"]}`
-	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/openai-compat-1", updateBody)
+	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/openai-compat-1", updateBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -39,7 +39,7 @@ func TestManagementProviderCreateUpdateDelete(t *testing.T) {
 	}
 
 	// 3. Delete provider (openai-compat-1)
-	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/providers/openai-compat-1", "")
+	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/providers/openai-compat-1", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("delete provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -53,12 +53,12 @@ func TestManagementProviderCreateUpdateDelete(t *testing.T) {
 
 	// 4. Create provider with multi-key, proxy_url and weight
 	multiKeyBody := `{"family":"openai-compatibility","name":"Multi Key Provider","base_url":"https://api.example.com","keys":[{"api_key":"sk-key-alpha-1234","proxy_url":"http://127.0.0.1:7890","weight":5},{"api_key":"sk-key-beta-5678","weight":10}]}`
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", multiKeyBody)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", multiKeyBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create multi-key provider status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	var providersResp struct {
 		Providers []ProviderItemDTO `json:"providers"`
 	}
@@ -89,12 +89,12 @@ func TestManagementProviderCreateUpdateDelete(t *testing.T) {
 
 	// 5. Create provider with custom models, image support and thinking levels
 	thinkingBody := `{"family":"openai-compatibility","name":"Reasoning Provider","base_url":"https://api.reasoning.com/v1","model_entries":[{"name":"deepseek-r1","alias":"r1","image":true,"thinking":{"levels":["low","medium","high","xhigh"]}}]}`
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", thinkingBody)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", thinkingBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create reasoning provider status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	if err := json.Unmarshal(payload, &providersResp); err != nil {
 		t.Fatal(err)
 	}

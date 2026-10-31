@@ -20,7 +20,7 @@ import (
 
 func TestUsageIngestStatusReportsDisabledPipeline(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/ingest-status")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/ingest-status")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -49,7 +49,7 @@ func (f *fakeUsagePipeline) RefreshNow(context.Context) (ingest.RefreshNowResult
 
 func TestUsageIngestRefreshReportsDisabledIngestion(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, payload := postJSON(t, client, baseURL+"/omc/api/v1/usage/ingest/refresh")
+	response, payload := postJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/ingest/refresh")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -70,7 +70,7 @@ func TestUsageIngestRefreshServesTheSyncResult(t *testing.T) {
 		handler.SetUsagePipeline(pipeline)
 	})
 
-	response, payload := postJSON(t, client, baseURL+"/omc/api/v1/usage/ingest/refresh")
+	response, payload := postJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/ingest/refresh")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -98,7 +98,7 @@ func TestUsageIngestRefreshReportsTransportFailure(t *testing.T) {
 		handler.SetUsagePipeline(pipeline)
 	})
 
-	response, payload := postJSON(t, client, baseURL+"/omc/api/v1/usage/ingest/refresh")
+	response, payload := postJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/ingest/refresh")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -117,7 +117,7 @@ func TestUsageIngestRefreshRefusesOverlapWithConflict(t *testing.T) {
 		handler.SetUsagePipeline(pipeline)
 	})
 
-	response, payload := postJSON(t, client, baseURL+"/omc/api/v1/usage/ingest/refresh")
+	response, payload := postJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/ingest/refresh")
 	if response.StatusCode != http.StatusConflict {
 		t.Fatalf("status = %d body %s, want 409", response.StatusCode, payload)
 	}
@@ -125,7 +125,7 @@ func TestUsageIngestRefreshRefusesOverlapWithConflict(t *testing.T) {
 
 func TestUsageIngestRefreshRequiresSameOrigin(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	request, err := http.NewRequest(http.MethodPost, baseURL+"/omc/api/v1/usage/ingest/refresh", nil)
+	request, err := http.NewRequest(http.MethodPost, baseURL+"/shell-pamc/api/v1/usage/ingest/refresh", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ func TestUsageIngestRefreshStoresRecordsBeforeItReportsSuccess(t *testing.T) {
 	fixture.waitForInitialPoll(t)
 	fixture.queue([]string{usagePayloadForTest("http-refresh-1")})
 
-	response, payload := postJSON(t, client, baseURL+"/omc/api/v1/usage/ingest/refresh")
+	response, payload := postJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/ingest/refresh")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -286,7 +286,7 @@ func TestUsageIngestRefreshStoresRecordsBeforeItReportsSuccess(t *testing.T) {
 	if stored != 1 {
 		t.Fatalf("event rows = %d, want 1 queryable before success returns", stored)
 	}
-	listResponse, listPayload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	listResponse, listPayload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	if listResponse.StatusCode != http.StatusOK {
 		t.Fatalf("list status = %d body %s", listResponse.StatusCode, listPayload)
 	}

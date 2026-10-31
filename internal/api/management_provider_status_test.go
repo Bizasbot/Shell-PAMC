@@ -16,14 +16,14 @@ func TestProviderStatusToggleReachesCPA(t *testing.T) {
 	client, baseURL, state := startProviderTestServer(t)
 
 	patch := func(body string) *http.Response {
-		resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status", body)
+		resp, payload := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status", body)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("patch status = %d body %s", resp.StatusCode, payload)
 		}
 		return resp
 	}
 	providerByID := func(id string) *ProviderItemDTO {
-		resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/providers")
+		resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers")
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("providers status = %d body %s", resp.StatusCode, payload)
 		}
@@ -94,7 +94,7 @@ func TestManagementMetaProviderFamily(t *testing.T) {
 	client, baseURL, state := startProviderTestServer(t)
 
 	providersByID := func(query string) map[string]ProviderItemDTO {
-		resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/providers"+query)
+		resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers"+query)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("providers status = %d body %s", resp.StatusCode, payload)
 		}
@@ -134,7 +134,7 @@ func TestManagementMetaProviderFamily(t *testing.T) {
 
 	// 3. Create appends to CPA's list under the meta family.
 	create := `{"family":"meta","name":"Meta Muse Team","base_url":"https://api.meta.ai/v1","keys":[{"api_key":"meta-created-key-4321"}],"prefix":"team"}`
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", create)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", create)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create meta provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -160,7 +160,7 @@ func TestManagementMetaProviderFamily(t *testing.T) {
 
 	// 5. Update rewrites the entry in place.
 	update := `{"family":"meta","name":"Meta Muse East","base_url":"https://api.meta.ai/v1","keys":[{"api_key":"meta-rotated-key-8765"}],"prefix":"east"}`
-	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/meta-1", update)
+	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/meta-1", update)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update meta provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -171,7 +171,7 @@ func TestManagementMetaProviderFamily(t *testing.T) {
 
 	// 6. The enable toggle reaches CPA as the excluded-all marker, like every
 	// other config API-key family.
-	resp, payload = doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/providers/status", `{"family":"meta","index":0,"disabled":true}`)
+	resp, payload = doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/providers/status", `{"family":"meta","index":0,"disabled":true}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("patch meta status = %d body %s", resp.StatusCode, payload)
 	}
@@ -188,7 +188,7 @@ func TestManagementMetaProviderFamily(t *testing.T) {
 	// 7. Delete removes exactly the addressed entry. Ids are positional, so the
 	// survivor of a delete occupies the freed index: what must hold is that the
 	// deleted credential is gone and the other one is intact.
-	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/providers/meta-0", "")
+	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/providers/meta-0", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("delete meta provider status = %d body %s", resp.StatusCode, payload)
 	}

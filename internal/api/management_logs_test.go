@@ -77,7 +77,7 @@ func (f *logsFixtureCPA) seen() []string {
 func TestManagementLogsForwardsPagingContract(t *testing.T) {
 	fixture := &logsFixtureCPA{}
 	client, baseURL, _ := startDashboardTestServer(t, fixture.serve)
-	base := baseURL + "/omc/api/v1/management/logs"
+	base := baseURL + "/shell-pamc/api/v1/management/logs"
 
 	var first struct {
 		Lines       []string `json:"lines"`
@@ -126,7 +126,7 @@ func TestManagementLogsReportsCapabilityMissing(t *testing.T) {
 		writer.WriteHeader(http.StatusNotFound)
 		_, _ = writer.Write([]byte(`{"error":"not found"}`))
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/logs")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/logs")
 	if response.StatusCode != http.StatusNotImplemented {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -139,7 +139,7 @@ func TestManagementLogsReportsCapabilityMissing(t *testing.T) {
 func TestManagementLogsMutationsAndDownloads(t *testing.T) {
 	fixture := &logsFixtureCPA{}
 	client, baseURL, _ := startDashboardTestServer(t, fixture.serve)
-	api := baseURL + "/omc/api/v1/management"
+	api := baseURL + "/shell-pamc/api/v1/management"
 
 	response, payload := doJSON(t, client, http.MethodDelete, api+"/logs", "")
 	if response.StatusCode != http.StatusOK || !strings.Contains(string(payload), `"cleared":true`) {
@@ -192,7 +192,7 @@ func TestManagementLogsMutationsAndDownloads(t *testing.T) {
 
 func TestManagementLogsStatusReadsCPASwitches(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, (&logsFixtureCPA{}).serve)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/logs/status")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/logs/status")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -213,7 +213,7 @@ func TestManagementLogsReportsFileLoggingDisabled(t *testing.T) {
 		writer.WriteHeader(http.StatusBadRequest)
 		_, _ = writer.Write([]byte(`{"error":"logging to file disabled"}`))
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/logs")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/logs")
 	if response.StatusCode != http.StatusConflict {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -227,7 +227,7 @@ func TestManagementLogsReportsFileLoggingDisabled(t *testing.T) {
 func TestRequestLogByIDServesAuditsAndExplainsAbsence(t *testing.T) {
 	fixture := &logsFixtureCPA{}
 	client, baseURL, repo := startDashboardTestServer(t, fixture.serve)
-	api := baseURL + "/omc/api/v1/management/request-logs/"
+	api := baseURL + "/shell-pamc/api/v1/management/request-logs/"
 
 	found, err := client.Get(api + "41dbb9ee")
 	if err != nil {

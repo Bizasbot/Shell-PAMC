@@ -68,7 +68,7 @@ func TestCredentialPolicyFieldsRoundTrip(t *testing.T) {
 		"request-scoped-errors": []any{map[string]any{"status": float64(500), "match": []any{" boom "}, "action": "continue"}},
 	}}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream.serve(t))
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	// A file CPA wrote with its own hyphenated names reads the same as a patched one.
 	response, raw := doJSON(t, client, http.MethodGet, base+"/safe-fields?name=codex.json&auth_index=idx-1", "")
@@ -129,7 +129,7 @@ func TestCredentialPolicyFieldsRoundTrip(t *testing.T) {
 func TestCredentialPolicyFieldsRefuseWhatCPAWouldSkip(t *testing.T) {
 	upstream := &credentialPolicyUpstream{stored: map[string]any{"type": "codex"}}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream.serve(t))
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	cases := map[string]string{
 		`"request_retry":-1`:                                                                  "request_retry",
@@ -163,7 +163,7 @@ func TestCredentialPolicyFieldsRefuseWhatCPAWouldSkip(t *testing.T) {
 func TestCredentialRefreshReportsOnlyTheOutcome(t *testing.T) {
 	upstream := &credentialPolicyUpstream{stored: map[string]any{"type": "codex"}, refreshStatus: http.StatusOK}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream.serve(t))
-	endpoint := baseURL + "/omc/api/v1/management/auth-files/refresh"
+	endpoint := baseURL + "/shell-pamc/api/v1/management/auth-files/refresh"
 
 	response, raw := doJSON(t, client, http.MethodPost, endpoint, `{"name":"codex.json","auth_index":"idx-1"}`)
 	if response.StatusCode != http.StatusOK || strings.TrimSpace(string(raw)) != `{"status":"ok"}` {
@@ -215,7 +215,7 @@ func TestCredentialModelAliasesRoundTrip(t *testing.T) {
 		"model-aliases": []any{map[string]any{"name": "gpt-5", "alias": "fast", "force-mapping": true}, map[string]any{"name": "same", "alias": "SAME"}},
 	}}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream.serve(t))
-	base := baseURL + "/omc/api/v1/management/auth-files"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files"
 
 	response, raw := doJSON(t, client, http.MethodGet, base+"/safe-fields?name=codex.json&auth_index=idx-1", "")
 	var safe managementAuthFileSafeFields

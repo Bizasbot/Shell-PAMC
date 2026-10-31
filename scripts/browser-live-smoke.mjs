@@ -1,8 +1,8 @@
 // Browser acceptance for the Oh My CPA management centre.
 //
 // It drives a real Chromium against a running Oh My CPA instance. By default
-// it targets the embedded production build at http://127.0.0.1:8080/omc/;
-// override SHELLPAMC_URL with http://127.0.0.1:5173/omc/ to exercise the Vite dev
+// it targets the embedded production build at http://127.0.0.1:8080/shell-pamc/;
+// override SHELLPAMC_URL with http://127.0.0.1:5173/shell-pamc/ to exercise the Vite dev
 // entry. The API facade and CPA instance configured in .env remain real.
 // Nothing is mocked: every assertion compares the DOM with the data the real
 // CPA Management API returns through /api/v1/management/*.
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const appURL = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:8080/omc/').replace(/\/$/, '');
+const appURL = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:8080/shell-pamc/').replace(/\/$/, '');
 // Oh My CPA has no separate admin password: login uses the CPA management key.
 const password = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
 const managementKey = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
@@ -74,8 +74,8 @@ async function main() {
   if (!password) throw new Error('SHELLPAMC_CPA_MANAGEMENT_KEY is required (set it or fill .env)');
 
   const redirect = await fetch(`${appURL}`, { redirect: 'manual' });
-  check('/omc 规范跳转到 /omc/', `status=${redirect.status} location=${redirect.headers.get('location')}`,
-    redirect.status >= 300 && redirect.status < 400 && (redirect.headers.get('location') || '').endsWith('/omc/'));
+  check('/shell-pamc 规范跳转到 /shell-pamc/', `status=${redirect.status} location=${redirect.headers.get('location')}`,
+    redirect.status >= 300 && redirect.status < 400 && (redirect.headers.get('location') || '').endsWith('/shell-pamc/'));
 
   const browser = await chromium.launch({ executablePath: executable, headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });

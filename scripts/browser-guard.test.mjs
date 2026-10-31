@@ -18,10 +18,10 @@ test('an unrelated successful assertion cannot erase runtime and network faults'
 test('network allowlist covers HTTP and sockets, and respects ports', async () => {
   let http, socket;
   const context={on(){},pages:()=>[],route:async(_,handler)=>{http=handler;},routeWebSocket:async(_,handler)=>{socket=handler;}};
-  const ledger=await guardBrowserContext(context,['http://127.0.0.1:5180/omc']);
+  const ledger=await guardBrowserContext(context,['http://127.0.0.1:5180/shell-pamc']);
   let passed=0,blocked=0;
   const route=url=>({request:()=>({url:()=>url,method:()=> 'GET'}),fallback:()=>passed++,abort:()=>blocked++});
-  await http(route('http://127.0.0.1:5180/omc/'));
+  await http(route('http://127.0.0.1:5180/shell-pamc/'));
   await http(route('http://127.0.0.1:9999/private'));
   socket({url:()=> 'ws://127.0.0.1:5180/',connectToServer:()=>passed++});
   socket({url:()=> 'wss://external.test/',close:()=>blocked++});
@@ -33,7 +33,7 @@ test('unknown API endpoints and wrong methods never receive an empty successful 
   const context={route:async(_,callback)=>{handler=callback;}};
   const problems=[];
   await installRoutes(context,[],{record:problem=>problems.push(problem)});
-  for(const [method,pathname] of [['GET','/omc/api/v1/unregistered'],['POST','/omc/api/v1/dashboard']]) {
+  for(const [method,pathname] of [['GET','/shell-pamc/api/v1/unregistered'],['POST','/shell-pamc/api/v1/dashboard']]) {
     let response;
     await handler({request:()=>({url:()=>`http://127.0.0.1${pathname}`,method:()=>method}),fulfill:value=>{response=value;}});
     assert.equal(response.status,501);

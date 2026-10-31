@@ -22,10 +22,10 @@ import (
 )
 
 func TestManagementOverviewRequiresAuthentication(t *testing.T) {
-	handler := testHandler(t, "/omc")
+	handler := testHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
-	response, err := http.Get(server.URL + "/omc/api/v1/management/overview")
+	response, err := http.Get(server.URL + "/shell-pamc/api/v1/management/overview")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestManagementOverviewRequiresAuthentication(t *testing.T) {
 }
 
 func TestManagementOverviewUnconfiguredReportsNullCounts(t *testing.T) {
-	handler := testHandler(t, "/omc")
+	handler := testHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	jar, err := cookiejar.New(nil)
@@ -44,12 +44,12 @@ func TestManagementOverviewUnconfiguredReportsNullCounts(t *testing.T) {
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	login, err := client.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
+	login, err := client.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	login.Body.Close()
-	response, err := client.Get(server.URL + "/omc/api/v1/management/overview")
+	response, err := client.Get(server.URL + "/shell-pamc/api/v1/management/overview")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,11 +128,11 @@ func TestManagementOverviewAggregatesWithoutSecrets(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	authManager, err := auth.New("management-secret", "/omc", "")
+	authManager, err := auth.New("management-secret", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := NewHandler(config.Config{BasePath: "/omc", Version: "test-version", RequestTimeout: time.Second}, repo, cipher, nil, authManager)
+	handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test-version", RequestTimeout: time.Second}, repo, cipher, nil, authManager)
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	jar, err := cookiejar.New(nil)
@@ -140,7 +140,7 @@ func TestManagementOverviewAggregatesWithoutSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	login, err := client.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
+	login, err := client.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestManagementOverviewAggregatesWithoutSecrets(t *testing.T) {
 	if login.StatusCode != http.StatusOK {
 		t.Fatalf("login status = %d", login.StatusCode)
 	}
-	response, err := client.Get(server.URL + "/omc/api/v1/management/overview")
+	response, err := client.Get(server.URL + "/shell-pamc/api/v1/management/overview")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,21 +290,21 @@ func TestManagementOverviewPartialFailureAndNullCounts(t *testing.T) {
 			if err := repo.UpsertInstance(context.Background(), domain.CPAInstance{ID: "default", Name: "Test", BaseURL: cpaServer.URL, ManagementKeyCiphertext: ciphertext, ManagementKeyNonce: nonce, CreatedAt: now, UpdatedAt: now}); err != nil {
 				t.Fatal(err)
 			}
-			authManager, err := auth.New("management-secret", "/omc", "")
+			authManager, err := auth.New("management-secret", "/shell-pamc", "")
 			if err != nil {
 				t.Fatal(err)
 			}
-			handler := NewHandler(config.Config{BasePath: "/omc", Version: "test", RequestTimeout: time.Second}, repo, cipher, nil, authManager)
+			handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test", RequestTimeout: time.Second}, repo, cipher, nil, authManager)
 			server := httptest.NewServer(handler.Router())
 			defer server.Close()
 			client := &http.Client{}
-			login, err := client.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
+			login, err := client.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
 			if err != nil {
 				t.Fatal(err)
 			}
 			login.Body.Close()
 			// Attach the session manually because this test does not use a cookie jar.
-			request, err := http.NewRequest(http.MethodGet, server.URL+"/omc/api/v1/management/overview", nil)
+			request, err := http.NewRequest(http.MethodGet, server.URL+"/shell-pamc/api/v1/management/overview", nil)
 			if err != nil {
 				t.Fatal(err)
 			}

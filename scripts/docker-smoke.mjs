@@ -41,7 +41,7 @@ export async function verifyDockerImage(image, version) {
   assert.equal(metadata.Config.User, '10001:10001');
   assert.equal(metadata.Config.Labels['org.opencontainers.image.version'], version);
   const secret = randomBytes(24).toString('hex');
-  for (const [rawPath, listenPort] of [['omc', '8080'], ['/', '8080'], ['/tools/omc/', '8081']]) {
+  for (const [rawPath, listenPort] of [['shell-pamc', '8080'], ['/', '8080'], ['/tools/shell-pamc/', '8081']]) {
     const volume = `omc-release-${randomBytes(6).toString('hex')}`;
     const since = new Date().toISOString();
     let container;
@@ -137,7 +137,7 @@ export async function verifyUpdaterInstall(image) {
     executeDocker('volume', 'create', volume);
     executeDocker('run', '-d', '--name', consoleName, '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
       '--health-interval=1s', '--health-start-period=1s', '-p', '127.0.0.1::8080', '-v', `${volume}:/data`,
-      '-e', 'SHELLPAMC_LISTEN_ADDR=:8080', '-e', 'SHELLPAMC_BASE_PATH=/omc', '-e', 'SHELLPAMC_DATA_DIR=/data',
+      '-e', 'SHELLPAMC_LISTEN_ADDR=:8080', '-e', 'SHELLPAMC_BASE_PATH=/shell-pamc', '-e', 'SHELLPAMC_DATA_DIR=/data',
       '-e', `SHELLPAMC_MASTER_KEY=${randomBytes(32).toString('hex')}`,
       '-e', 'SHELLPAMC_CPA_BASE_URL=http://127.0.0.1:1', '-e', `SHELLPAMC_CPA_MANAGEMENT_KEY=${secret}`,
       '-e', 'SHELLPAMC_USAGE_INGEST_MODE=off', '-e', 'SHELLPAMC_UPDATE_CHECK_ENABLED=false',
@@ -166,7 +166,7 @@ export async function verifyUpdaterInstall(image) {
     assert.equal(consoleAfter.HostConfig.ReadonlyRootfs, true);
     assert.ok(!JSON.stringify(consoleAfter.Mounts).includes('docker.sock'), 'The console never holds the socket');
 
-    const origin = `http://${executeDocker('port', consoleName, '8080/tcp')}/omc`;
+    const origin = `http://${executeDocker('port', consoleName, '8080/tcp')}/shell-pamc`;
     const login = await fetch(`${origin}/api/auth/login`, {method: 'POST',
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: secret})});
     assert.equal(login.status, 200);

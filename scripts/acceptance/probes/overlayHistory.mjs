@@ -68,7 +68,7 @@ async function waitForRequests(page) {
 }
 
 export async function overlayBackDismisses({ base, page, check }) {
-  // The console is served under a base path (`/omc` by default) and the whole app is expected to
+  // The console is served under a base path (`/shell-pamc` by default) and the whole app is expected to
   // work under any of them, so the route a check compares is the base path plus the route rather
   // than the route alone.
   const basePath = new URL(base).pathname.replace(/\/$/, '');

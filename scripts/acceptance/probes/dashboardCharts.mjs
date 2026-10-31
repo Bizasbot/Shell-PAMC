@@ -329,7 +329,7 @@ export async function dashboardRollingReadouts({ base, page, context, check }) {
   const dashboardResponse = (target) =>
     target.waitForResponse((response) => {
       const url = new URL(response.url());
-      return url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard');
+      return url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard');
     });
 
   /** The dashboard fixture with the six tile readings replaced, so each case names what it changes. */
@@ -356,14 +356,14 @@ export async function dashboardRollingReadouts({ base, page, context, check }) {
    * is still in flight. Every registration is therefore awaited, here and at the call sites.
    */
   const serveDashboard = async (target, body) => {
-    // The API path, not the SPA route: `/omc/dashboard` is also the document URL, and a glob would
+    // The API path, not the SPA route: `/shell-pamc/dashboard` is also the document URL, and a glob would
     // answer the page request with JSON.
     await target.route(
-      (url) => url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard'),
+      (url) => url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard'),
       (route) => route.fulfill({ json: body }),
     );
     await target.route(
-      (url) => url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard/tail'),
+      (url) => url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard/tail'),
       (route) => route.fulfill({ json: body }),
     );
   };
@@ -612,15 +612,15 @@ export async function dashboardChartMotion({ base, page, context, check }) {
   // Awaited before anything is driven: `BrowserContext.route()` is asynchronous, and a navigation
   // that starts before the registration lands is answered by the previous fixture.
   await context.route(
-    (url) => url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard'),
+    (url) => url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard'),
     (route) => route.fulfill({ json: bodies.dashboard }),
   );
   await context.route(
-    (url) => url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard/tail'),
+    (url) => url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard/tail'),
     (route) => route.fulfill({ json: bodies.dashboard }),
   );
   await context.route(
-    (url) => url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard/models'),
+    (url) => url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard/models'),
     (route) => route.fulfill({ json: bodies.models }),
   );
 
@@ -657,7 +657,7 @@ export async function dashboardChartMotion({ base, page, context, check }) {
     }, markSelector);
     const answered = page.waitForResponse((response) => {
       const url = new URL(response.url());
-      return url.pathname.includes('/omc/api/') && url.pathname.endsWith('/dashboard/models');
+      return url.pathname.includes('/shell-pamc/api/') && url.pathname.endsWith('/dashboard/models');
     });
     await page.locator('.terminal-page-head button:has(.anticon-reload)').click();
     await answered;

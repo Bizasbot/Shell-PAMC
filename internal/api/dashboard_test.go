@@ -32,7 +32,7 @@ func getDashboardJSON(t *testing.T, client *http.Client, url string) dashboardRe
 
 func TestDashboardRejectsInvalidWindows(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	base := baseURL + "/omc/api/v1/management/dashboard"
+	base := baseURL + "/shell-pamc/api/v1/management/dashboard"
 
 	cases := map[string]string{
 		"unknown preset":   base + "?preset=5minutes",
@@ -50,7 +50,7 @@ func TestDashboardRejectsInvalidWindows(t *testing.T) {
 
 func TestDashboardDefaultsTo24hAndReportsZeroState(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -85,7 +85,7 @@ func TestDashboardAggregatesStoredRequestsAndTokens(t *testing.T) {
 		{Event: eventFor("bad", base.Add(2*time.Minute), usage.TokenStats{TotalTokens: 0}, true)},
 	})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=1h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=1h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -139,25 +139,25 @@ func TestDashboardFiltersByClientAPIKey(t *testing.T) {
 	})
 
 	// 1. Without api_key: all 2 requests
-	all := getDashboardJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=1h")
+	all := getDashboardJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=1h")
 	if all.Requests.Total != 2 || all.Tokens.Total != 160 {
 		t.Fatalf("expected all 2 requests, got requests=%d tokens=%d", all.Requests.Total, all.Tokens.Total)
 	}
 
 	// 2. With api_key=key-alpha: 1 request
-	alpha := getDashboardJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=1h&api_key=key-alpha")
+	alpha := getDashboardJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=1h&api_key=key-alpha")
 	if alpha.Requests.Total != 1 || alpha.Tokens.Total != 100 {
 		t.Fatalf("expected 1 request for key-alpha, got requests=%d tokens=%d", alpha.Requests.Total, alpha.Tokens.Total)
 	}
 
 	// 3. With api_key=key-beta: 1 request
-	beta := getDashboardJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=1h&api_key=key-beta")
+	beta := getDashboardJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=1h&api_key=key-beta")
 	if beta.Requests.Total != 1 || beta.Tokens.Total != 60 {
 		t.Fatalf("expected 1 request for key-beta, got requests=%d tokens=%d", beta.Requests.Total, beta.Tokens.Total)
 	}
 
 	// 4. With nonexistent api_key: 0 requests
-	none := getDashboardJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=1h&api_key=nonexistent")
+	none := getDashboardJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=1h&api_key=nonexistent")
 	if none.Requests.Total != 0 {
 		t.Fatalf("expected 0 requests for nonexistent key, got requests=%d", none.Requests.Total)
 	}
@@ -174,7 +174,7 @@ func TestDashboardUsesRollupOnceAggregated(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=6h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=6h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -214,7 +214,7 @@ func TestDashboardUsesRollupForCoarseGrids(t *testing.T) {
 	if _, err := repo.AggregateUsageFacts(context.Background(), 100); err != nil {
 		t.Fatal(err)
 	}
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=30d")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=30d")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -260,7 +260,7 @@ func TestDashboardAllTimeWindowOutlivesRequestRecords(t *testing.T) {
 		t.Fatalf("retention left %d request records, want only the recent one: %v", records, err)
 	}
 
-	body := getDashboardJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=all")
+	body := getDashboardJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=all")
 	if body.Window.Preset != "all" || body.Requests.Total != 2 || body.Tokens.Total != 42 || body.Requests.Failed != 1 {
 		t.Fatalf("all-time window = %+v requests %+v tokens %d, want both requests", body.Window, body.Requests, body.Tokens.Total)
 	}
@@ -276,7 +276,7 @@ func TestDashboardAllTimeWindowOutlivesRequestRecords(t *testing.T) {
 	}
 
 	for _, panel := range []string{"dashboard/tail", "dashboard/models", "dashboard/providers"} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/"+panel+"?preset=all")
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/"+panel+"?preset=all")
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("%s?preset=all status = %d body %s", panel, response.StatusCode, payload)
 		}
@@ -310,7 +310,7 @@ func TestDashboardAllTimeWindowOutlivesRequestRecords(t *testing.T) {
 
 	// The request list reads request records, which do not reach that far, so it
 	// does not offer the window at all rather than answering it with a fragment.
-	response, _ := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=all")
+	response, _ := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=all")
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("request list accepted preset=all with status %d", response.StatusCode)
 	}
@@ -325,7 +325,7 @@ func TestDashboardCustomRangeAccepted(t *testing.T) {
 		{Event: eventFor("recent", now.Add(-time.Hour), usage.TokenStats{TotalTokens: 7}, false)},
 	})
 	from := now.Add(-2 * time.Hour).UnixMilli()
-	response, payload := getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/management/dashboard?from=%d&to=%d", baseURL, from, now.UnixMilli()))
+	response, payload := getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/management/dashboard?from=%d&to=%d", baseURL, from, now.UnixMilli()))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -411,7 +411,7 @@ func TestDashboardCacheRateIsBounded(t *testing.T) {
 			CacheReadTokens: 900, CachedTokens: 900, Generate: true,
 		}},
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -444,7 +444,7 @@ func TestDashboardCacheRateNeverReachesOneHundred(t *testing.T) {
 			CacheReadTokens: 1000, CachedTokens: 1000, Generate: true,
 		}},
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -487,7 +487,7 @@ func TestDashboardCacheRateStaysBoundedForMixedConventions(t *testing.T) {
 			CacheReadTokens: 1000, CacheCreationTokens: 500, Generate: true,
 		}},
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -513,7 +513,7 @@ func TestDashboardSeriesIsZeroFilledAndStableAcrossRefresh(t *testing.T) {
 		{Event: eventFor("sparse-2", now.Add(-2*time.Minute), usage.TokenStats{TotalTokens: 6}, false)},
 	})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -565,8 +565,8 @@ func TestDashboardTailMatchesFullWindowNumbers(t *testing.T) {
 	// preset would slide between them.
 	window := fmt.Sprintf("?from=%d&to=%d", now.Add(-time.Hour).UnixMilli(), now.UnixMilli())
 
-	full := getDashboardJSON(t, client, baseURL+"/omc/api/v1/management/dashboard"+window)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard/tail"+window)
+	full := getDashboardJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard"+window)
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard/tail"+window)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("tail status = %d body %s", response.StatusCode, payload)
 	}
@@ -628,7 +628,7 @@ func TestDashboardTailMatchesFullWindowNumbers(t *testing.T) {
 // on bucket positions rather than on "did anything arrive".
 func TestDashboardTailKeepsAnEmptyWindowRenderable(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard/tail?preset=1h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard/tail?preset=1h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -655,7 +655,7 @@ func TestDashboardTailKeepsAnEmptyWindowRenderable(t *testing.T) {
 
 func TestDashboardTailRejectsInvalidWindows(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	base := baseURL + "/omc/api/v1/management/dashboard/tail"
+	base := baseURL + "/shell-pamc/api/v1/management/dashboard/tail"
 	for name, url := range map[string]string{
 		"unknown preset":   base + "?preset=5minutes",
 		"non numeric from": base + "?from=abc&to=1",
@@ -777,7 +777,7 @@ func TestDashboardOpenEndedWindowTracksNow(t *testing.T) {
 	seedEvents(t, repo, now, []repository.UsageDecoded{
 		{Event: eventFor("open-1", now.Add(-30*time.Minute), usage.TokenStats{TotalTokens: 12}, false)},
 	})
-	base := baseURL + "/omc/api/v1/management/dashboard"
+	base := baseURL + "/shell-pamc/api/v1/management/dashboard"
 
 	response, payload := getJSON(t, client, base+"?from="+strconv.FormatInt(now.Add(-90*time.Minute).UnixMilli(), 10))
 	if response.StatusCode != http.StatusOK {
@@ -816,7 +816,7 @@ func TestDashboardRealtimePresetIsFifteenMinutes(t *testing.T) {
 		{Event: eventFor("rt-out", now.Add(-40*time.Minute), usage.TokenStats{TotalTokens: 9}, false)},
 	})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard?preset=15m")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard?preset=15m")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -837,7 +837,7 @@ func TestDashboardRealtimePresetIsFifteenMinutes(t *testing.T) {
 		t.Fatalf("expected roughly one point per minute, got %d", len(body.Requests.Series))
 	}
 	// The tail poll keeps the same resolution, which is what paces the client.
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/dashboard/tail?preset=15m")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/dashboard/tail?preset=15m")
 	var tail dashboardTailResponse
 	if err := json.Unmarshal(payload, &tail); err != nil {
 		t.Fatal(err)

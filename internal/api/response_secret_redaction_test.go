@@ -21,7 +21,7 @@ func TestOrdinaryAuthFileDTOSecrets(t *testing.T) {
 			http.NotFound(w, r)
 		}
 	})
-	response, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/auth-files", "")
+	response, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/auth-files", "")
 	leaked := strings.Contains(string(body), sentinel)
 	t.Logf("ordinary-list status=%d opaque-token-exposed=%v", response.StatusCode, leaked)
 	if response.StatusCode != 200 {
@@ -58,7 +58,7 @@ func TestStaleAuthFileIdentityDoesNotMutate(t *testing.T) {
 			http.NotFound(w, r)
 		}
 	})
-	response, _ := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/auth-files/fields", `{"name":"demo.json","auth_index":"old-index","priority":5}`)
+	response, _ := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/auth-files/fields", `{"name":"demo.json","auth_index":"old-index","priority":5}`)
 	t.Logf("stale selector response=%d upstream_mutations=%d replacement_priority=%d", response.StatusCode, writes.Load(), priority.Load())
 	if priority.Load() != 0 {
 		t.Error("replacement resource actually changed from priority0 to5")
@@ -82,11 +82,11 @@ func TestProviderPullErrorDoesNotRevealStoredKey(t *testing.T) {
 	defer upstream.Close()
 	client, baseURL, _ := startProviderTestServer(t)
 	requestBody, _ := json.Marshal(map[string]any{"family": "claude", "name": "Relay", "base_url": upstream.URL, "keys": []map[string]string{{"api_key": storedKey}}})
-	response, _ := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/claude-0", string(requestBody))
+	response, _ := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/claude-0", string(requestBody))
 	if response.StatusCode != 200 {
 		t.Fatalf("provider fixture update status%d", response.StatusCode)
 	}
-	response, body := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", `{"provider_id":"claude-0"}`)
+	response, body := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", `{"provider_id":"claude-0"}`)
 	leaked := strings.Contains(string(body), storedKey)
 	t.Logf("provider_id_only=true stored-key-sent=%v response=%d stored-key-exposed=%v", sawStoredKey.Load(), response.StatusCode, leaked)
 	if !sawStoredKey.Load() {
@@ -112,7 +112,7 @@ func TestOrdinaryQuotaErrorDoesNotExposeUpstreamToken(t *testing.T) {
 			http.NotFound(w, r)
 		}
 	})
-	response, body := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/quota/refresh", `{"auth_index":"fixture-codex-index"}`)
+	response, body := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/quota/refresh", `{"auth_index":"fixture-codex-index"}`)
 	exposed := strings.Contains(string(body), sentinel)
 	t.Logf("ordinary quota-refresh status=%d CPA-mock-executions=%d secret-exposed=%v", response.StatusCode, calls.Load(), exposed)
 	if calls.Load() != 1 || response.StatusCode != http.StatusOK {

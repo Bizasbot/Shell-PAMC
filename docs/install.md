@@ -97,7 +97,7 @@ Deploys CPA and OMC together.
    docker compose up -d
    ```
 
-5. Open **`http://127.0.0.1:8080/omc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
+5. Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
    from `.env`.
 
 The new CPA has no providers and no client keys; add both in the console before sending
@@ -175,7 +175,7 @@ Runs OMC as one more service in the Compose file that already runs CPA.
    docker compose up -d oh-my-cpa oh-my-cpa-updater
    ```
 
-5. Open **`http://127.0.0.1:8080/omc/`** and sign in with the management key.
+5. Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
 
 Effect on the existing deployment:
 
@@ -253,7 +253,7 @@ changed.
    docker compose up -d
    ```
 
-5. Open **`http://127.0.0.1:8080/omc/`** and sign in with the management key.
+5. Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
 
 ### Reaching CPA
 
@@ -368,7 +368,7 @@ These are the variables the two release Compose files accept. Compose reads
 | `SHELLPAMC_BIND` | `127.0.0.1:8080` | Host address of the console; change it if the port is taken |
 | `CPA_BIND` | `127.0.0.1:8317` | Host address of CPA, full stack only |
 | `SHELLPAMC_PUBLIC_URL` | `http://127.0.0.1:8080` | The address browsers use. `https://` only when they really use TLS |
-| `SHELLPAMC_BASE_PATH` | `/omc` | URL prefix; `/` serves the console at the root |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | URL prefix; `/` serves the console at the root |
 | `TZ` | `UTC` | Calendar for daily totals; match CPA's |
 | `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another tool collects this CPA's usage |
 | `SHELLPAMC_CPA_USAGE_ADDR` | derived from the CPA URL | Override for CPA's usage queue address, OMC only |
@@ -386,25 +386,25 @@ Everything else OMC reads is in `docs/operations.md`.
 ## Reaching the console from elsewhere
 
 Every Compose file here publishes on `127.0.0.1` only. From another machine, tunnel over
-SSH and open `http://127.0.0.1:18080/omc/`:
+SSH and open `http://127.0.0.1:18080/shell-pamc/`:
 
 ```bash
 ssh -L 18080:127.0.0.1:8080 user@server
 ```
 
 To serve OMC over HTTPS, point the existing reverse proxy at `127.0.0.1:8080`, keep the
-`/omc` prefix, and set `SHELLPAMC_PUBLIC_URL` to the address browsers use. Set
+`/shell-pamc` prefix, and set `SHELLPAMC_PUBLIC_URL` to the address browsers use. Set
 `SHELLPAMC_TRUSTED_PROXY_CIDRS` to the proxy's address so OMC reads the client IP it
 forwards. Do not publish port 8080 on a public interface without TLS: the sign-in
 password is CPA's administrator key.
 
-### `/omc` and `/omc/`
+### `/shell-pamc` and `/shell-pamc/`
 
-The console lives at `/omc/`. OMC answers the bare `/omc` with a permanent redirect
-(308) to `/omc/`, so either address opens it when browsers reach OMC directly.
+The console lives at `/shell-pamc/`. OMC answers the bare `/shell-pamc` with a permanent redirect
+(308) to `/shell-pamc/`, so either address opens it when browsers reach OMC directly.
 
 Behind a reverse proxy the bare path only works if the proxy handles it. A rule that
-matches `/omc/` alone never passes `/omc` to OMC, and the visitor gets whatever the
+matches `/shell-pamc/` alone never passes `/shell-pamc` to OMC, and the visitor gets whatever the
 proxy serves for unmatched paths instead of the console. Cover both: redirect the bare
 path at the proxy, or forward it and let OMC redirect.
 
@@ -412,12 +412,12 @@ nginx (`deploy/nginx.conf` is a complete example that also routes the rest of th
 to CPA):
 
 ```nginx
-location = /omc {
-    return 308 /omc/;
+location = /shell-pamc {
+    return 308 /shell-pamc/;
 }
 
-# No trailing slash on proxy_pass: the /omc prefix must reach OMC unchanged.
-location ^~ /omc/ {
+# No trailing slash on proxy_pass: the /shell-pamc prefix must reach OMC unchanged.
+location ^~ /shell-pamc/ {
     proxy_pass http://127.0.0.1:8080;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -428,15 +428,15 @@ location ^~ /omc/ {
 Caddy:
 
 ```caddyfile
-@omc path /omc /omc/*
+@omc path /shell-pamc /shell-pamc/*
 reverse_proxy @omc 127.0.0.1:8080
 ```
 
 Check both addresses through the proxy:
 
 ```bash
-curl -sI https://example.com/omc | head -n 1                           # 308
-curl -fsS https://example.com/omc/api/healthz
+curl -sI https://example.com/shell-pamc | head -n 1                           # 308
+curl -fsS https://example.com/shell-pamc/api/healthz
 ```
 
 With a different `SHELLPAMC_BASE_PATH`, the same holds for that prefix. With `/` there is
@@ -475,7 +475,7 @@ Two conditions come from the browser rather than from OMC:
   is not needed to pick up an update; every launch loads the current bundle from the
   deployment.
 
-The mount point is part of the installed identity. `/`, `/omc` and a nested
+The mount point is part of the installed identity. `/`, `/shell-pamc` and a nested
 `SHELLPAMC_BASE_PATH` are three different apps to the browser, so installing one does not
 replace another, and an app installed at a path that later changes has to be installed
 again. The manifest's URLs are relative and resolve against the manifest's own address,
@@ -526,13 +526,13 @@ Set `SHELLPAMC_MASTER_KEY` once to a random 64-character hex string (`openssl ra
 on Unix; use a cryptographic random generator on Windows), set CPA's plaintext
 management key and its reachable URL, and match CPA's `TZ`. Keep `SHELLPAMC_VERSION`
 unset so the tagged build reports its embedded version. The included template binds
-`127.0.0.1:8080`, serves `/omc` and writes SQLite to `./data` under the working directory.
+`127.0.0.1:8080`, serves `/shell-pamc` and writes SQLite to `./data` under the working directory.
 When CPA is on the same host, its loopback URL works without changing CPA's remote
 management policy. Review [usage-reader ownership](#other-panels-and-usage-trackers)
 before keeping `SHELLPAMC_USAGE_INGEST_MODE=auto`; use `off` if another reader continues.
 
 Run `./shell-pamc` on Unix or `.\shell-pamc.exe` on Windows from that directory. Verify
-[health and connectivity](#verifying-the-install), then open `http://127.0.0.1:8080/omc/`
+[health and connectivity](#verifying-the-install), then open `http://127.0.0.1:8080/shell-pamc/`
 and sign in with CPA's management key. For an operator-owned service manager, keep the
 same working directory, environment file, service account and data path. Do not open
 the listener to the network without configuring remote access and HTTPS.
@@ -563,7 +563,7 @@ go build -trimpath -o bin/shell-pamc ./cmd/shell-pamc
 ./bin/shell-pamc
 ```
 
-Open `http://127.0.0.1:8080/omc/`. The process runs in the foreground; a service manager
+Open `http://127.0.0.1:8080/shell-pamc/`. The process runs in the foreground; a service manager
 such as systemd keeps it running. Variables in the environment win over `.env`, and
 `SHELLPAMC_ENV_FILE` points at a different file. A build from an untagged checkout reports
 itself as `v0.1.0-dev`. For hot reload while developing, see
@@ -572,7 +572,7 @@ itself as `v0.1.0-dev`. For hot reload while developing, see
 ## Verifying the install
 
 ```bash
-curl -fsS http://127.0.0.1:8080/omc/api/healthz
+curl -fsS http://127.0.0.1:8080/shell-pamc/api/healthz
 ```
 
 A working install returns `"status":"ok"` and `"cpa_connected":true`. A container that

@@ -233,12 +233,12 @@ func startPluginTestServer(t *testing.T) (*http.Client, string, *repository.Repo
 		t.Fatalf("upsert instance: %v", err)
 	}
 
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatalf("new auth manager: %v", err)
 	}
 	handler := NewHandler(config.Config{
-		BasePath: "/omc",
+		BasePath: "/shell-pamc",
 		Version:  "v0.1.0-test",
 		Usage:    config.UsageConfig{Enabled: false},
 	}, repo, cipher, nil, authManager)
@@ -267,7 +267,7 @@ func startPluginTestServer(t *testing.T) (*http.Client, string, *repository.Repo
 	}
 	client := &http.Client{Jar: jar}
 
-	loginResp, err := client.Post(appServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	loginResp, err := client.Post(appServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestPluginsLifecycle(t *testing.T) {
 	client, baseURL, repo, state := startPluginTestServer(t)
 
 	// 1. List installed plugins
-	resp, err := client.Get(baseURL + "/omc/api/v1/management/plugins")
+	resp, err := client.Get(baseURL + "/shell-pamc/api/v1/management/plugins")
 	if err != nil || resp.StatusCode != http.StatusOK {
 		t.Fatalf("get plugins failed: %v, status: %d", err, resp.StatusCode)
 	}
@@ -347,7 +347,7 @@ func TestPluginsLifecycle(t *testing.T) {
 	}
 
 	// 2. Disable the plugin through CPA's own route.
-	patchResp, patchBody := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/plugins/logger/enabled", `{"enabled":false}`)
+	patchResp, patchBody := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/plugins/logger/enabled", `{"enabled":false}`)
 	if patchResp.StatusCode != http.StatusOK {
 		t.Fatalf("patch enabled: status %d body %s", patchResp.StatusCode, patchBody)
 	}
@@ -356,11 +356,11 @@ func TestPluginsLifecycle(t *testing.T) {
 	}
 
 	// 3. Read, then replace, the plugin's settings document.
-	configResp, configBody := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/plugins/logger/config", "")
+	configResp, configBody := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/plugins/logger/config", "")
 	if configResp.StatusCode != http.StatusOK || !strings.Contains(string(configBody), `"level":"info"`) {
 		t.Fatalf("get config: status %d body %s", configResp.StatusCode, configBody)
 	}
-	putResp, putBody := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/logger/config", `{"config":{"enabled":true,"level":"debug"}}`)
+	putResp, putBody := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/logger/config", `{"config":{"enabled":true,"level":"debug"}}`)
 	if putResp.StatusCode != http.StatusOK {
 		t.Fatalf("put config: status %d body %s", putResp.StatusCode, putBody)
 	}
@@ -369,13 +369,13 @@ func TestPluginsLifecycle(t *testing.T) {
 	}
 
 	// A plugin CPA does not know is reported as such, not as a missing capability.
-	missingResp, missingBody := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/plugins/ghost/config", "")
+	missingResp, missingBody := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/plugins/ghost/config", "")
 	if missingResp.StatusCode != http.StatusNotFound || !strings.Contains(string(missingBody), `"code":"plugin_not_found"`) {
 		t.Fatalf("missing plugin config: status %d body %s", missingResp.StatusCode, missingBody)
 	}
 
 	// 4. Delete plugin
-	delResp, delBody := doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/plugins/logger", "")
+	delResp, delBody := doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/plugins/logger", "")
 	if delResp.StatusCode != http.StatusOK || !strings.Contains(string(delBody), `"file_deleted":true`) {
 		t.Fatalf("delete plugin: status %d body %s", delResp.StatusCode, delBody)
 	}
@@ -396,7 +396,7 @@ func TestPluginDeleteThatNeedsARestartIsReportedAsSuch(t *testing.T) {
 	state.deleteBlocked = true
 	state.mu.Unlock()
 
-	resp, body := doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/plugins/logger", "")
+	resp, body := doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/plugins/logger", "")
 	if resp.StatusCode != http.StatusConflict || !strings.Contains(string(body), `"code":"plugin_delete_requires_restart"`) {
 		t.Fatalf("status %d body %s, want CPA's restart refusal kept", resp.StatusCode, body)
 	}
@@ -405,7 +405,7 @@ func TestPluginDeleteThatNeedsARestartIsReportedAsSuch(t *testing.T) {
 func TestPluginSettingsRoundTrip(t *testing.T) {
 	client, baseURL, _, state := startPluginTestServer(t)
 
-	resp, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/plugins/settings", "")
+	resp, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/plugins/settings", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get settings: status %d body %s", resp.StatusCode, body)
 	}
@@ -420,7 +420,7 @@ func TestPluginSettingsRoundTrip(t *testing.T) {
 	payload := `{"revision":"` + settings.Revision + `","enabled":true,` +
 		`"store_sources":["https://plugins.example/registry.json"," ","https://plugins.example/registry.json"],` +
 		`"store_auth":[{"match":"https://plugins.example/","apply_to":["registry","ARTIFACT"],"type":"bearer","token_env":"PLUGIN_TOKEN","username_env":"STALE","allow_insecure":false}]}`
-	putResp, putBody := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/settings", payload)
+	putResp, putBody := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/settings", payload)
 	if putResp.StatusCode != http.StatusOK {
 		t.Fatalf("put settings: status %d body %s", putResp.StatusCode, putBody)
 	}
@@ -438,7 +438,7 @@ func TestPluginSettingsRoundTrip(t *testing.T) {
 	}
 
 	// The stale revision is now refused rather than overwriting the save above.
-	conflictResp, conflictBody := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/settings", payload)
+	conflictResp, conflictBody := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/settings", payload)
 	if conflictResp.StatusCode != http.StatusConflict || !strings.Contains(string(conflictBody), "config_conflict") {
 		t.Fatalf("stale save: status %d body %s", conflictResp.StatusCode, conflictBody)
 	}
@@ -457,7 +457,7 @@ func TestPluginSettingsRefuseWhatCPAWouldNotRead(t *testing.T) {
 		`{"enabled":true}`,
 	}
 	for _, payload := range cases {
-		resp, body := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/settings", payload)
+		resp, body := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/settings", payload)
 		if resp.StatusCode != http.StatusBadRequest {
 			t.Errorf("payload %s: status %d body %s, want 400", payload, resp.StatusCode, body)
 		}
@@ -477,10 +477,10 @@ func TestPluginMutationsRequireExplicitFields(t *testing.T) {
 		path   string
 		body   string
 	}{
-		{http.MethodPatch, "/omc/api/v1/management/plugins/logger/enabled", `{}`},
-		{http.MethodPatch, "/omc/api/v1/management/plugins/logger/enabled", `{"enabled":null}`},
-		{http.MethodPut, "/omc/api/v1/management/plugins/logger/config", `{}`},
-		{http.MethodPut, "/omc/api/v1/management/plugins/logger/config", `{"config":null}`},
+		{http.MethodPatch, "/shell-pamc/api/v1/management/plugins/logger/enabled", `{}`},
+		{http.MethodPatch, "/shell-pamc/api/v1/management/plugins/logger/enabled", `{"enabled":null}`},
+		{http.MethodPut, "/shell-pamc/api/v1/management/plugins/logger/config", `{}`},
+		{http.MethodPut, "/shell-pamc/api/v1/management/plugins/logger/config", `{"config":null}`},
 	}
 	for _, tc := range cases {
 		resp, payload := doJSON(t, client, tc.method, baseURL+tc.path, tc.body)
@@ -515,7 +515,7 @@ func TestPluginSettingsRejectionDoesNotEchoStoredSecrets(t *testing.T) {
 	fixture := &configFixtureCPA{rejectWrites: true, rejectMessage: `management.secret-key: "top-secret-management-key" is too short`}
 	client, baseURL, _ := startDashboardTestServer(t, fixture.serve)
 	body := `{"revision":"` + configyaml.ComputeRevision(configFixtureYAML) + `","enabled":true}`
-	response, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/settings", body)
+	response, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/settings", body)
 	var refusal map[string]any
 	if err := json.Unmarshal(payload, &refusal); err != nil {
 		t.Fatal(err)
@@ -537,8 +537,8 @@ func TestPluginWritesWaitForAConfigurationSave(t *testing.T) {
 	defer gate.release()
 
 	for _, write := range []struct{ method, path, body string }{
-		{http.MethodPatch, "/omc/api/v1/management/plugins/logger/enabled", `{"enabled":false}`},
-		{http.MethodPut, "/omc/api/v1/management/plugins/logger/config", `{"config":{"level":"debug"}}`},
+		{http.MethodPatch, "/shell-pamc/api/v1/management/plugins/logger/enabled", `{"enabled":false}`},
+		{http.MethodPut, "/shell-pamc/api/v1/management/plugins/logger/config", `{"config":{"level":"debug"}}`},
 	} {
 		response, body := doJSON(t, client, write.method, baseURL+write.path, write.body)
 		if response.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), "write_busy") {
@@ -555,8 +555,8 @@ func TestPluginWritesWaitForAConfigurationSave(t *testing.T) {
 func TestPluginWritesRefuseAnUnknownPlugin(t *testing.T) {
 	client, baseURL, _, state := startPluginTestServer(t)
 	for _, write := range []struct{ method, path, body string }{
-		{http.MethodPatch, "/omc/api/v1/management/plugins/ghost/enabled", `{"enabled":true}`},
-		{http.MethodPut, "/omc/api/v1/management/plugins/ghost/config", `{"config":{"level":"debug"}}`},
+		{http.MethodPatch, "/shell-pamc/api/v1/management/plugins/ghost/enabled", `{"enabled":true}`},
+		{http.MethodPut, "/shell-pamc/api/v1/management/plugins/ghost/config", `{"config":{"level":"debug"}}`},
 	} {
 		response, body := doJSON(t, client, write.method, baseURL+write.path, write.body)
 		if response.StatusCode != http.StatusNotFound || !strings.Contains(string(body), "plugin_not_found") {
@@ -575,7 +575,7 @@ func TestPluginConfigOfAnInstalledPluginWithoutSettingsIsEmpty(t *testing.T) {
 	state.mu.Lock()
 	state.hasBareInstall = true
 	state.mu.Unlock()
-	response, body := doJSON(t, client, http.MethodGet, baseURL+"/omc/api/v1/management/plugins/installed/config", "")
+	response, body := doJSON(t, client, http.MethodGet, baseURL+"/shell-pamc/api/v1/management/plugins/installed/config", "")
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
 		t.Fatal(err)

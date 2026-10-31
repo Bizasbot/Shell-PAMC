@@ -153,7 +153,7 @@ chmod 600 .env
 docker compose up -d
 ```
 
-访问 **`http://127.0.0.1:8080/omc/`**，以 `.env` 中 `CPA_MANAGEMENT_KEY` 的值登录。
+访问 **`http://127.0.0.1:8080/shell-pamc/`**，以 `.env` 中 `CPA_MANAGEMENT_KEY` 的值登录。
 提供商与客户端密钥在控制台中添加；客户端请求发往 CPA：`http://127.0.0.1:8317`。
 
 #### 已经安装了 CLIProxyAPI
@@ -198,7 +198,7 @@ SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 
 需要在控制台更新时，一并添加片段中的 `oh-my-cpa-updater` 服务。
 执行 `docker compose up -d oh-my-cpa oh-my-cpa-updater`，CPA 容器保持原样运行，不会重启。
-访问 **`http://127.0.0.1:8080/omc/`**，以管理密钥登录。
+访问 **`http://127.0.0.1:8080/shell-pamc/`**，以管理密钥登录。
 
 #### 独立部署
 
@@ -243,7 +243,7 @@ SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中
 SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 ```
 
-执行 `docker compose up -d`，然后访问 **`http://127.0.0.1:8080/omc/`**，以管理密钥登录。
+执行 `docker compose up -d`，然后访问 **`http://127.0.0.1:8080/shell-pamc/`**，以管理密钥登录。
 
 ### 更新
 
@@ -344,7 +344,7 @@ CPA 的每条用量记录只交给一个读取方。同一个 CPA 上已有其�
 Claude Code：
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://cpa.example.com/omc/api/mcp \
+claude mcp add --transport http oh-my-cpa https://cpa.example.com/shell-pamc/api/mcp \
   --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
@@ -352,7 +352,7 @@ Codex（`~/.codex/config.toml`）：
 
 ```toml
 [mcp_servers.oh-my-cpa]
-url = "https://cpa.example.com/omc/api/mcp"
+url = "https://cpa.example.com/shell-pamc/api/mcp"
 bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
@@ -362,7 +362,7 @@ bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 {
   "mcpServers": {
     "oh-my-cpa": {
-      "url": "https://cpa.example.com/omc/api/mcp",
+      "url": "https://cpa.example.com/shell-pamc/api/mcp",
       "headers": { "Authorization": "Bearer <CPA 管理密钥>" }
     }
   }
@@ -381,7 +381,7 @@ bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
       "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
-        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/omc",
+        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/shell-pamc",
         "SHELLPAMC_CPA_MANAGEMENT_KEY": "<CPA 管理密钥>"
       }
     }
@@ -403,7 +403,7 @@ bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 | `SHELLPAMC_CPA_BASE_URL` | 必填 | CPA 的地址 |
 | `SHELLPAMC_CPA_MANAGEMENT_KEY` | 必填 | CPA 管理密钥，同时是控制台登录密码 |
 | `SHELLPAMC_MASTER_KEY` | 必填 | 静态加密密钥（`openssl rand -hex 32`） |
-| `SHELLPAMC_BASE_PATH` | `/omc` | 控制台挂载的子路径 |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | 控制台挂载的子路径 |
 | `SHELLPAMC_DATA_DIR` | `./data` | SQLite 数据库所在目录；编排文件中设为 `/data` |
 | `SHELLPAMC_PUBLIC_URL` | 未设置 | 浏览器访问的地址；为 `https://` 时会话 Cookie 带 `Secure` 标记 |
 | `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | 已有其他服务采集该 CPA 的用量时设为 `off` |
@@ -415,14 +415,14 @@ bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 
 ```text
 浏览器 ──▶ 直接访问 / 已有 HTTPS 入口 ──▶ Oh My CPA (:8080)
-                                           ├─ 内嵌 React SPA (/omc/)
+                                           ├─ 内嵌 React SPA (/shell-pamc/)
                                            ├─ SQLite WAL (/data)
                                            └─ 用量采集器 ──▶ CLIProxyAPI (:8317)
 ```
 
 - **单二进制**：React 控制台内嵌在 Go 可执行文件中。
 - **单副本**：SQLite WAL 模式，每个数据目录只允许一个进程。
-- **原生支持子路径**：默认挂载在 `/omc`（`SHELLPAMC_BASE_PATH`），可与 CPA 共用同一个主机名。
+- **原生支持子路径**：默认挂载在 `/shell-pamc`（`SHELLPAMC_BASE_PATH`），可与 CPA 共用同一个主机名。
 - **接口白名单**：普通控制台接口只返回经过筛选的安全字段；可信插件页面使用有边界的原生接口。仍禁止代理任意目标 URL。
 
 模块划分、数据流与架构约束见 [`docs/architecture.md`](docs/architecture.md)。
@@ -461,7 +461,7 @@ bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```bash
 pnpm install --frozen-lockfile
 cp .env.example .env
-pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/omc/
+pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/shell-pamc/
 ```
 
 推送前运行 `pnpm verify` 与 `pnpm check:ui`。环境搭建与验证流程见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。

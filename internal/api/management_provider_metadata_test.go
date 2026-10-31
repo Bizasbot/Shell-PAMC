@@ -39,7 +39,7 @@ func TestProviderUpdateWritesBothOverlaysOnlyAfterTheWrite(t *testing.T) {
 		}
 
 		resp, payload := doJSON(t, fixture.client, http.MethodPut,
-			fixture.baseURL+"/omc/api/v1/management/providers/"+testCase.refusedID,
+			fixture.baseURL+"/shell-pamc/api/v1/management/providers/"+testCase.refusedID,
 			body("Ghost Name", "https://ghost.example.test"))
 		if resp.StatusCode != http.StatusNotFound {
 			t.Fatalf("%s: an out-of-range index must be refused, got %d body %s", testCase.family, resp.StatusCode, payload)
@@ -50,7 +50,7 @@ func TestProviderUpdateWritesBothOverlaysOnlyAfterTheWrite(t *testing.T) {
 		// asserted through the list the console renders rather than through storage,
 		// so the test fails if either map stops being read back.
 		resp, payload = doJSON(t, fixture.client, http.MethodPut,
-			fixture.baseURL+"/omc/api/v1/management/providers/"+testCase.acceptedID,
+			fixture.baseURL+"/shell-pamc/api/v1/management/providers/"+testCase.acceptedID,
 			body("Named Provider", "https://named.example.test"))
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("%s: update status = %d body %s", testCase.family, resp.StatusCode, payload)
@@ -102,7 +102,7 @@ func TestProviderDeleteShiftsEveryPositionalOverlay(t *testing.T) {
 	// only key an override by display name, which the row's own id key shadows.
 	for index, name := range []string{"Codex Two", "Codex Three"} {
 		body := fmt.Sprintf(`{"family":"codex","name":%q,"base_url":"https://api.openai.com","api_key":"fixture-codex-extra-%d"}`, name, index)
-		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", body)
+		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", body)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("create codex provider status = %d body %s", resp.StatusCode, payload)
 		}
@@ -140,7 +140,7 @@ func TestProviderDeleteShiftsEveryPositionalOverlay(t *testing.T) {
 		}
 	}
 
-	resp, payload := doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/providers/codex-0", "")
+	resp, payload := doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/providers/codex-0", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("delete codex provider status = %d body %s", resp.StatusCode, payload)
 	}
@@ -210,7 +210,7 @@ func TestProviderOverlayFailureReportsPartialCommit(t *testing.T) {
 		}
 
 		resp, payload := doJSON(t, fixture.client, http.MethodPut,
-			fixture.baseURL+"/omc/api/v1/management/providers/codex-0",
+			fixture.baseURL+"/shell-pamc/api/v1/management/providers/codex-0",
 			`{"family":"codex","name":"Partial Update","base_url":"https://partial.example.test"}`)
 		assertPartialCommit(t, resp, payload, pricing)
 
@@ -231,7 +231,7 @@ func TestProviderOverlayFailureReportsPartialCommit(t *testing.T) {
 		}
 
 		resp, payload := doJSON(t, fixture.client, http.MethodPost,
-			fixture.baseURL+"/omc/api/v1/management/providers",
+			fixture.baseURL+"/shell-pamc/api/v1/management/providers",
 			`{"family":"openai-compatibility","name":"Partial Create","base_url":"https://partial.example.test"}`)
 		assertPartialCommit(t, resp, payload, pricing)
 
@@ -253,7 +253,7 @@ func TestProviderOverlayFailureReportsPartialCommit(t *testing.T) {
 		}
 
 		resp, payload := doJSON(t, fixture.client, http.MethodDelete,
-			fixture.baseURL+"/omc/api/v1/management/providers/codex-0", "")
+			fixture.baseURL+"/shell-pamc/api/v1/management/providers/codex-0", "")
 		assertPartialCommit(t, resp, payload, pricing)
 
 		fixture.state.mu.Lock()

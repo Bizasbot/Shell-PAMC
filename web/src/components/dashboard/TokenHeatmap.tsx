@@ -105,7 +105,7 @@ function formatDay(day: string, lang: Lang, options: Intl.DateTimeFormatOptions)
  *
  * The drill-down is React Router's `Link`, which renders a real `<a href>`: the day's request list
  * is a place, so it has to be openable in a new tab, copyable and announced as a link. It is a
- * `Link` rather than a bare anchor because the app is served under a basename (`/omc`): an anchor
+ * `Link` rather than a bare anchor because the app is served under a basename (`/shell-pamc`): an anchor
  * whose `href` is the router-internal path skips the basename and lands outside the app entirely.
  * A `Link` resolves through the router, so the rendered `href` carries the prefix.
  *

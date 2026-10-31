@@ -1990,8 +1990,8 @@ const DICT: Record<string, [string, string]> = {
   'inst.media_mount': ['媒体/图标挂载', 'Media/icon mount'],
   'inst.proxy_advice': ['反向代理建议', 'Reverse proxy advice'],
   'inst.proxy_advice_val': [
-    'Caddy 或 Nginx 保留 /omc 前缀转发至后端',
-    'Caddy or Nginx should keep the /omc prefix and forward to the backend',
+    'Caddy 或 Nginx 保留 /shell-pamc 前缀转发至后端',
+    'Caddy or Nginx should keep the /shell-pamc prefix and forward to the backend',
   ],
   'inst.faq_title': ['为什么 CPA 统一显示为 Codex？', 'Why does CPA list everything as Codex?'],
   'inst.faq_body': [

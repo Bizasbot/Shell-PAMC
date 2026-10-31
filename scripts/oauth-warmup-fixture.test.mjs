@@ -5,7 +5,7 @@ import { oauthManagementFixtures } from './acceptance/probes/oauthManagement.mjs
 test('OAuth warmup fixture binds provider and saved state to the exact credential within one scenario', () => {
   const routes = oauthManagementFixtures.routes;
   const request = (index, method = 'GET', body, suffix = '') => {
-    const url = new URL(`http://console.test/omc/api/v1/management/quota/warmup/credentials/${index}${suffix}`);
+    const url = new URL(`http://console.test/shell-pamc/api/v1/management/quota/warmup/credentials/${index}${suffix}`);
     const route = routes.find(([matches]) => matches(url, method));
     return route[1](url, method, body ? JSON.stringify(body) : null);
   };
@@ -24,7 +24,7 @@ test('OAuth warmup fixture binds provider and saved state to the exact credentia
   assert.equal(result.json.model, 'gpt-codex-test');
   assert.equal(request('auth-01').json.state.last_result.request_id, 'codex-fixture-run');
   assert.equal(request('auth-12').json.state.protocol_verified, false);
-  const freshURL = new URL('http://console.test/omc/api/v1/management/quota/warmup/credentials/auth-01');
+  const freshURL = new URL('http://console.test/shell-pamc/api/v1/management/quota/warmup/credentials/auth-01');
   const freshRoute = oauthManagementFixtures.routes.find(([matches]) => matches(freshURL, 'GET'));
   assert.equal(freshRoute[1](freshURL, 'GET', null).json.state.protocol_verified, false);
 });

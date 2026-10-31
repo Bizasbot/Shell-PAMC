@@ -30,7 +30,7 @@ func (s *storedRelease) Status(_ context.Context, product, runningVersion string
 func readSystemUpdates(t *testing.T, handler *Handler) SystemUpdatesDTO {
 	t.Helper()
 	recorder := httptest.NewRecorder()
-	handler.getSystemUpdates(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system/updates", nil))
+	handler.getSystemUpdates(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system/updates", nil))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
 	}

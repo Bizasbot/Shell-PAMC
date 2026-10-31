@@ -77,11 +77,11 @@ func TestManagementAuthFilesPatchFieldsSuccess(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	authManager, err := auth.New("management-secret-value", "/omc", "")
+	authManager, err := auth.New("management-secret-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := NewHandler(config.Config{BasePath: "/omc", Version: "test"}, repo, cipher, nil, authManager)
+	handler := NewHandler(config.Config{BasePath: "/shell-pamc", Version: "test"}, repo, cipher, nil, authManager)
 	appServer := httptest.NewServer(handler.Router())
 	defer appServer.Close()
 
@@ -90,14 +90,14 @@ func TestManagementAuthFilesPatchFieldsSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	loginResp, err := client.Post(appServer.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
+	loginResp, err := client.Post(appServer.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret-value"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v", err)
 	}
 
 	// 1. PATCH fields with safe metadata
 	patchBody := `{"name":"test.json","priority":5,"weight":10,"note":"priority line"}`
-	resp, payload := doJSON(t, client, http.MethodPatch, appServer.URL+"/omc/api/v1/management/auth-files/fields", patchBody)
+	resp, payload := doJSON(t, client, http.MethodPatch, appServer.URL+"/shell-pamc/api/v1/management/auth-files/fields", patchBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("patch fields status = %d body = %s", resp.StatusCode, payload)
 	}
@@ -113,7 +113,7 @@ func TestManagementAuthFilesPatchFieldsSuccess(t *testing.T) {
 	}
 
 	// 2. GET models
-	resp, payload = doJSON(t, client, http.MethodGet, appServer.URL+"/omc/api/v1/management/auth-files/models?name=test.json", "")
+	resp, payload = doJSON(t, client, http.MethodGet, appServer.URL+"/shell-pamc/api/v1/management/auth-files/models?name=test.json", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("get models status = %d body = %s", resp.StatusCode, payload)
 	}

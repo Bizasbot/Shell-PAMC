@@ -20,7 +20,7 @@ export async function runProvidersAcceptance({
   // it stays plain text rather than becoming a dead link or a link to nowhere.
   const setProviderWebsite = async (value) => {
     const status = await page.evaluate(async (body) => {
-      const response = await fetch('/omc/api/v1/preferences/provider_websites', {
+      const response = await fetch('/shell-pamc/api/v1/preferences/provider_websites', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body,
@@ -124,7 +124,7 @@ export async function runProvidersAcceptance({
   // removed provider's override on the index the next credential inherited.
   const setProviderIcons = async (value) => {
     const status = await page.evaluate(async (body) => {
-      const response = await fetch('/omc/api/v1/preferences/provider_icons', {
+      const response = await fetch('/shell-pamc/api/v1/preferences/provider_icons', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body,
@@ -179,7 +179,7 @@ export async function runProvidersAcceptance({
 
   /** Reads the gateway's own answer for one provider, rather than trusting the page. */
   const providerEnabledFromApi = async (id) => {
-    const body = await page.evaluate(() => fetch('/omc/api/v1/management/providers').then((r) => r.json()));
+    const body = await page.evaluate(() => fetch('/shell-pamc/api/v1/management/providers').then((r) => r.json()));
     const row = (body.providers ?? []).find((provider) => provider.id === id);
     return row === undefined ? undefined : !row.disabled;
   };
@@ -193,7 +193,7 @@ export async function runProvidersAcceptance({
    * position-ordered lists would let a misalignment look like agreement.
    */
   const toggleStatesFromApi = async () => {
-    const body = await page.evaluate(() => fetch('/omc/api/v1/management/providers').then((r) => r.json()));
+    const body = await page.evaluate(() => fetch('/shell-pamc/api/v1/management/providers').then((r) => r.json()));
     const states = {};
     for (const provider of body.providers ?? []) {
       if (provider.family === 'codex') states[provider.id] = !provider.disabled;

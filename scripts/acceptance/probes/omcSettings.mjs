@@ -16,10 +16,10 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   const writes = [];
   const preferences = {};
   let shouldRejectTpsWrite = false;
-  await page.route('**/omc/api/**/preferences', (route) => route.fulfill({
+  await page.route('**/shell-pamc/api/**/preferences', (route) => route.fulfill({
     json: { preferences, time_zone: { server_timezone: 'Asia/Kuala_Lumpur' } },
   }));
-  await page.route('**/omc/api/**/preferences/*', async (route) => {
+  await page.route('**/shell-pamc/api/**/preferences/*', async (route) => {
     if (route.request().method() === 'PUT') {
       const key = new URL(route.request().url()).pathname.split('/').pop();
       if (key === 'omc_tps_calculation_mode' && shouldRejectTpsWrite) {
@@ -526,7 +526,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   await page.goto(`${base}/omc-settings`, { waitUntil: 'domcontentloaded' });
   await page.locator('.omc-settings-page').waitFor({ timeout: 20_000 });
   await page.evaluate(async () => {
-    await fetch('/omc/api/v1/preferences/omc_token_style', {
+    await fetch('/shell-pamc/api/v1/preferences/omc_token_style', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify('zh'),

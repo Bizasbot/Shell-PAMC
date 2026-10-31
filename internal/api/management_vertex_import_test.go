@@ -31,7 +31,7 @@ func TestVertexImportForwardsTheKeyAndReportsOnlyItsIdentity(t *testing.T) {
 		_, _ = writer.Write([]byte(`{"status":"ok","auth-file":"/srv/cpa/auths/vertex-acme-prod.json","project_id":"acme-prod","email":"runner@acme-prod.iam.gserviceaccount.com","location":"europe-west4"}`))
 	}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream)
-	endpoint := baseURL + "/omc/api/v1/management/auth-files/vertex-import"
+	endpoint := baseURL + "/shell-pamc/api/v1/management/auth-files/vertex-import"
 	key := `{"type":"service_account","project_id":"acme-prod","private_key":"-----BEGIN PRIVATE KEY-----\nKEY-MATERIAL-SECRET\n-----END PRIVATE KEY-----\n","client_email":"runner@acme-prod.iam.gserviceaccount.com"}`
 
 	response, raw := doJSON(t, client, http.MethodPost, endpoint+"?location=europe-west4", key)
