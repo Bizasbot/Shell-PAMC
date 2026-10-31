@@ -1,98 +1,98 @@
-# Contributing to Shell-PAMC
+# Contribuir a Shell-PAMC
 
-Thank you for your interest in contributing to Shell-PAMC! We welcome bug reports, feature suggestions, documentation improvements, and code contributions.
+¡Gracias por tu interés en contribuir a Shell-PAMC! Aceptamos reportes de errores, sugerencias de funciones, mejoras de documentación y contribuciones de código.
 
-Bug reports and feature requests go through the issue forms under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/); security vulnerabilities are reported privately as described in [`SECURITY.md`](SECURITY.md).
-
----
-
-## Code of Conduct & Ground Rules
-
-- **Zero Secret Exposure**: Never submit real API keys, tokens, auth files, or sensitive production data in pull requests, issues, or commit history.
-- **Explain Why, Not What**: Code comments must be written in **English** and focus on design rationale, non-obvious constraints, and edge cases.
-- **Keep Docs Accurate**: If your change alters an endpoint, configuration, UI token, or architectural boundary, update the documents it makes wrong in the same pull request (see [`AGENTS.md`](AGENTS.md) §7).
+Los reportes de errores y las solicitudes de funciones se gestionan a través de los formularios en [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/); las vulnerabilidades de seguridad se informan de forma privada como se describe en [`SECURITY.md`](SECURITY.md).
 
 ---
 
-## Getting Started
+## Código de conducta y reglas básicas
 
-### Prerequisites
+- **Cero exposición de secretos**: Nunca envíes claves API reales, tokens, archivos de autenticación ni datos de producción sensibles en pull requests, issues o en el historial de commits.
+- **Explica el porqué, no el qué**: Los comentarios de código deben centrarse en la justificación del diseño, restricciones no obvias y casos límite.
+- **Mantén la documentación precisa**: Si tu cambio altera un endpoint, configuración, token de interfaz o límite arquitectónico, actualiza los documentos afectados en el mismo pull request (consulta [`AGENTS.md`](AGENTS.md) §7).
 
-- **Go**: 1.26+ (pinned to `1.27.3` in CI)
-- **Node.js**: 22+ (pinned to `22.23.4`)
-- **pnpm**: 11+ (pinned to `11.19.0`)
-- **Air**: (optional, for Go hot reloading): `go install github.com/air-verse/air@latest`
+---
 
-### Local Development Setup
+## Primeros pasos
 
-1. **Fork and clone the repository**:
+### Requisitos previos
+
+- **Go**: 1.26+ (fijado a `1.27.3` en CI)
+- **Node.js**: 22+ (fijado a `22.23.4`)
+- **pnpm**: 11+ (fijado a `11.19.0`)
+- **Air**: (opcional, para recarga en caliente de Go): `go install github.com/air-verse/air@latest`
+
+### Configuración del entorno de desarrollo local
+
+1. **Haz un fork y clona el repositorio**:
    ```bash
-   git clone https://github.com/<your-username>/Shell-PAMC.git
+   git clone https://github.com/<tu-usuario>/Shell-PAMC.git
    cd Shell-PAMC
    pnpm install --frozen-lockfile
    ```
 
-2. **Set up local environment**:
+2. **Configura el entorno local**:
    ```bash
    cp .env.example .env
    ```
-   Provide a 32-byte hex string for `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`) and your local CLIProxyAPI management key for `SHELLPAMC_CPA_MANAGEMENT_KEY`.
+   Proporciona una cadena hexadecimal de 32 bytes para `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`) y tu clave de administración local de CLIProxyAPI para `SHELLPAMC_CPA_MANAGEMENT_KEY`.
 
-3. **Start the development servers**:
+3. **Inicia los servidores de desarrollo**:
    ```bash
    pnpm dev
    ```
-   This launches Air (watching Go backend on `:8080`) and Vite (frontend dev server on `:5173`) concurrently. Access the console at **`http://127.0.0.1:5173/shell-pamc/`** (`/shell-pamc` redirects there).
+   Esto inicia Air (monitoreando el backend de Go en `:8080`) y Vite (servidor de desarrollo del frontend en `:5173`) de forma concurrente. Accede a la consola en **`http://127.0.0.1:5173/shell-pamc/`** (`/shell-pamc` redirige allí).
 
 ---
 
-## Verification Gates
+## Barreras de verificación
 
-Verification is structured around three moments — while editing, when a feature is
-complete, and on the pull request. [`AGENTS.md`](AGENTS.md) §5 has the moments table and
-the rules that keep the gates honest; [`docs/testing.md`](docs/testing.md) says which
-layer a claim belongs in and how a new test is registered. In short:
+La verificación se estructura en torno a tres momentos: mientras editas, cuando una función está
+completa y en el pull request. [`AGENTS.md`](AGENTS.md) §5 contiene la tabla de momentos y
+las reglas para mantener las barreras rigurosas; [`docs/testing.md`](docs/testing.md) indica a qué
+capa pertenece cada aserción y cómo se registra una nueva prueba. En resumen:
 
 ```bash
-pnpm test:fast    # while editing: only the checks the changed files need
-pnpm verify       # feature complete, and before pushing
-pnpm check:ui     # the browser scenarios the change can reach
+pnpm test:fast    # mientras editas: solo las comprobaciones que los archivos modificados necesitan
+pnpm verify       # función completa y antes de hacer push
+pnpm check:ui     # los escenarios de navegador que el cambio puede alcanzar
 ```
 
-Do not rerun a gate after each edit. When a check fails, rerun that check first. Both
-UI probe commands use the dev server; production-artifact coverage comes from browser
-and demo acceptance. The full command list is in [`AGENTS.md`](AGENTS.md) §8 and
+No vuelvas a ejecutar una barrera completa tras cada edición. Cuando falle una comprobación, vuelve a ejecutar esa comprobación primero. Ambos
+comandos de sondeo de interfaz utilizan el servidor de desarrollo; la cobertura de artefactos de producción proviene de la aceptación
+del navegador y de la demo. La lista completa de comandos está en [`AGENTS.md`](AGENTS.md) §8 y
 [`package.json`](package.json).
 
 ---
 
-## Development Guidelines
+## Pautas de desarrollo
 
-### 1. Localization
-User-facing strings must never be hardcoded in backend responses or React components. Add all new strings as `[zh, en]` pairs to `web/src/i18n/index.tsx`, add the corresponding entries to `web/src/i18n/locales/zh-Hant.ts` and `web/src/i18n/locales/ms.ts`, and verify with `pnpm check-i18n`.
+### 1. Localización
+Las cadenas visibles para el usuario nunca deben estar escritas directamente en las respuestas del backend ni en componentes de React. Añade todas las cadenas nuevas como pares `[zh, en]` en `web/src/i18n/index.tsx`, añade las entradas correspondientes a `web/src/i18n/locales/zh-Hant.ts` y `web/src/i18n/locales/ms.ts`, y verifica con `pnpm check-i18n`.
 
-### 2. Styling & Theme Tokens
-- Never hardcode color hex values in components. Read the resolved palette from `web/src/theme/palette.ts` or use the CSS variables from `docs/design.md`; the eighteen derived tokens are computed, so reach for the relationship rather than re-deriving one.
-- Shell-PAMC uses a **terminal-flat** design language: zero box shadows (`box-shadow: none`), 4px border radii, and 1px hairline borders. Status colors (green, amber, red) are reserved strictly for semantic system health.
+### 2. Estilos y tokens de tema
+- Nunca uses valores hexadecimales de color fijos en los componentes. Lee la paleta resuelta desde `web/src/theme/palette.ts` o usa las variables CSS de `docs/design.md`; los dieciocho tokens derivados se calculan, así que recurre a la relación en lugar de volver a derivarla.
+- Shell-PAMC utiliza un lenguaje de diseño **terminal-flat**: cero sombras de caja (`box-shadow: none`), radios de borde de 4px y bordes finos de 1px. Los colores de estado (verde, ámbar, rojo) están reservados estrictamente para la salud semántica del sistema.
 
-### 3. API & DTO Allowlisting
-- The backend enforces strict DTO allowlists in `internal/api/`. Ordinary responses must not pass through raw, unsanitized CPA payloads. The trusted Plugin Host is the bounded native-response exception in ADR 0067, with credential separation, auditing, serialization and backups. Arbitrary target URLs remain forbidden.
+### 3. Listas permitidas de API y DTO
+- El backend aplica listas estrictas de permitidos para DTOs en `internal/api/`. Las respuestas ordinarias no deben transmitir cargas útiles sin procesar ni sanitizar de CPA. El Plugin Host confiable es la excepción acotada de respuesta nativa en ADR 0067, con separación de credenciales, auditoría, serialización y respaldos. Las URLs de destino arbitrarias siguen estando prohibidas.
 
 ---
 
-## Submitting a Pull Request
+## Enviar un Pull Request
 
-1. Create a descriptive feature branch from `master`:
+1. Crea una rama descriptiva a partir de `master`:
    ```bash
-   git checkout -b feat/your-feature-name
+   git checkout -b feat/nombre-de-tu-caracteristica
    ```
-2. Commit your changes with concise, conventional commit messages (`feat: ...`, `fix: ...`, `docs: ...`, `test: ...`).
-3. Run the feature-completion gates before pushing (CI runs the full browser catalog):
+2. Realiza tus commits con mensajes convencionales y concisos (`feat: ...`, `fix: ...`, `docs: ...`, `test: ...`).
+3. Ejecuta las barreras de finalización de funciones antes de hacer push (CI ejecuta el catálogo completo de navegadores):
    ```bash
    pnpm verify
    pnpm check:ui
    ```
-4. Push your branch to your fork and open a Pull Request against `master`.
-5. Pull requests are reviewed against [`.coderabbit.yaml`](.coderabbit.yaml), which points the reviewer at the invariants in [`AGENTS.md`](AGENTS.md). A non-draft pull request is reviewed once, when it opens; comment `@coderabbitai review` to request a later review. A release preparation pull request, titled `chore(release): prepare vX.Y.Z`, is exempt: the changes it describes were reviewed when they merged.
-6. Fill in the pull request template ([`.github/pull_request_template.md`](.github/pull_request_template.md)): the problem and the solution, the context documents updated, and the gates that were run. Title the pull request `type(scope): lowercase subject`.
-7. When your Pull Request is squashed and merged, GitHub will automatically append `(#<PR_NUMBER>)` to the commit title (e.g. `feat: add client key alias (#12)`), maintaining an auditable, linear history matching the project standard.
+4. Haz push de tu rama a tu fork y abre un Pull Request contra `master`.
+5. Los pull requests se revisan contra [`.coderabbit.yaml`](.coderabbit.yaml), que orienta al revisor sobre los invariantes en [`AGENTS.md`](AGENTS.md). Un pull request que no sea borrador se revisa una vez, al abrirse; comenta `@coderabbitai review` para solicitar una revisión posterior. Un pull request de preparación de release, titulado `chore(release): prepare vX.Y.Z`, está exento: los cambios que describe ya fueron revisados al fusionarse.
+6. Completa la plantilla de pull request ([`.github/pull_request_template.md`](.github/pull_request_template.md)): el problema y la solución, los documentos de contexto actualizados y las barreras ejecutadas. Titula el pull request `type(scope): asunto en minusculas`.
+7. Cuando tu Pull Request se fusione mediante squash, GitHub añadirá automáticamente `(#<NUMERO_PR>)` al título del commit (por ejemplo, `feat: add client key alias (#12)`), manteniendo un historial lineal y auditable que cumple el estándar del proyecto.

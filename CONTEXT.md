@@ -1,783 +1,202 @@
-# Shell-PAMC domain context
+# Contexto del dominio de Shell-PAMC
 
-Shell-PAMC adds a user-owned identity and organization layer above CLIProxyAPI (CPA). CPA remains the execution and protocol-adaptation backend; Shell-PAMC stores the business meaning users give to CPA resources.
+Shell-PAMC añade una capa de identidad y organización propiedad del usuario por encima de CLIProxyAPI (CPA). CPA sigue siendo el backend de ejecución y adaptación de protocolos; Shell-PAMC almacena el significado de negocio que los usuarios asignan a los recursos de CPA.
 
-## Terms
+## Términos
 
-- **Model Square**: The read-only available-model list at `/model-square`, with client-visible Call Point names grouped vertically by manufacturer. CPA's live `/v1/models` is authoritative, authenticated server-side with the first nonempty configured client key. Advertising a model does not guarantee inference availability. Configured upstream mappings and OAuth model lists only enrich advertised identities; unreadable provenance remains partial and unresolved models stay visible. A manufacturer is the model's maker, not its adapter or relay. Model-family recognition supplies artwork, never routing identity. The Call Point name is what the page copies and the key it shares with the price book (`model`) and the request records (`model_alias`); the directory shows each name's price in the list and its 24-hour request count in the details, from those two and owns neither, so an unread neighbour is unknown, never zero or unpriced.
-- **Model Reference Metadata**: Bundled models.dev facts about a model: context/input/output limits, modalities, reasoning and tool support, release/knowledge dates, license and weight references. Exact canonical identities and unambiguous source-declared aliases are the only evidence. A name with neither is retried only in enumerated forms that denote the same model - without a router tag (`:free`), without one request-variant suffix (reasoning effort, `-thinking`), without leading routing namespaces - and each form must itself match exactly; similar names never match. Reference limits do not certify the limits a connection applies. Openness has three terms: **closed-source model** (闭源模型), **open-weight model** (开放权重模型; the source marks weights available) and **open-source model** (开源模型; weights available under a recognised open-source license). Published weights alone do not establish an open-source license. Missing fields remain unknown. These facts are independent of pricing and never add models to the available list. External models.dev, OpenRouter and pi.dev links are explicit navigation, not background fetches.
+- **Model Square**: La lista de solo lectura de modelos disponibles en `/model-square`, con nombres de Call Point visibles para el cliente agrupados verticalmente por fabricante. El `/v1/models` en vivo de CPA es autoritativo, autenticado en el servidor con la primera clave de cliente configurada no vacía. Publicitar un modelo no garantiza la disponibilidad de inferencia. Los mapeos de upstream configurados y las listas de modelos OAuth solo enriquecen las identidades publicitadas; la procedencia ilegible permanece parcial y los modelos no resueltos siguen visibles. Un fabricante es el creador del modelo, no su adaptador o repetidor. El reconocimiento de la familia del modelo aporta el arte visual, nunca la identidad de enrutamiento. El nombre del Call Point es lo que la página copia y la clave que comparte con el libro de precios (`model`) y los registros de solicitudes (`model_alias`); el directorio muestra el precio de cada nombre en la lista y su recuento de solicitudes en 24 horas en los detalles, a partir de esos dos sin ser propietario de ninguno, por lo que un vecino no leído permanece desconocido, nunca cero ni sin precio.
+- **Metadatos de referencia del modelo**: Hechos empaquetados de models.dev sobre un modelo: límites de contexto/entrada/salida, modalidades, soporte de razonamiento y herramientas, fechas de lanzamiento/conocimiento, licencia y referencias de pesos. Las identidades canónicas exactas y los alias inequívocos declarados por el origen son la única evidencia válida. Un nombre que no tenga ninguno de los dos solo se reintenta en formas enumeradas que denoten el mismo modelo — sin etiqueta de enrutador (`:free`), sin sufijos de variantes de solicitud (esfuerzo de razonamiento, `-thinking`), sin espacios de nombres de enrutamiento iniciales — y cada forma debe coincidir exactamente; nombres similares nunca coinciden. Los límites de referencia no certifican los límites que aplica una conexión. La apertura tiene tres términos: **modelo de código cerrado** (closed-source), **modelo de pesos abiertos** (open-weight; el origen indica pesos disponibles) y **modelo de código abierto** (open-source; pesos disponibles bajo una licencia de código abierto reconocida). Los pesos publicados por sí solos no establecen una licencia de código abierto. Los campos ausentes permanecen como desconocidos. Estos hechos son independientes de los precios y nunca añaden modelos a la lista de disponibles. Los enlaces externos a models.dev, OpenRouter y pi.dev son navegación explícita, no recuperaciones en segundo plano.
 
-- **Release version**: The stable `vMAJOR.MINOR.PATCH` identity shared by an official Shell-PAMC build, its published container and its GitHub Release. The running release version is a claim about the shipped build, not a user-selected upgrade target. Development and fork suffixes are intentionally incomparable with the stable release line; failed or absent observations never imply that a deployment is current.
+- **Versión de lanzamiento (Release version)**: La identidad estable `vMAJOR.MINOR.PATCH` compartida por una compilación oficial de Shell-PAMC, su contenedor publicado y su GitHub Release. La versión en ejecución es una afirmación sobre la compilación distribuida, no un objetivo de actualización elegido por el usuario. Los sufijos de desarrollo y bifurcación (fork) son intencionalmente incomparables con la línea de versiones estables; observaciones fallidas o ausentes nunca implican que un despliegue esté actualizado.
 
-- **Updater**: The Shell-PAMC image run as `shell-pamc updater serve` in its own container, `shell-pamc-updater`, holding the Docker socket (ADR 0099). It is the only component that replaces containers. The console never holds the socket; it asks the Updater to update a **product** (`omc` or `cpa`) and nothing more specific. An Updater is either declared as a Compose service or added to an existing deployment by `updater install`.
-- **Console update**: One confirmed action on System Information that replaces a product's container with a newer image. It is distinct from the **update check**, which only observes that a newer release exists. A Console update is offered only when the check reports `update_available` and the Updater reports the product `available`.
-- **Pinned image**: A configured image reference that carries a version tag or a digest. The Updater never changes a Pinned image, because the deployment's own Compose file would restore the older version over a migrated database. Only a floating tag such as `latest` is updated.
-- **Release manifest**: `release-manifest.json`, published with each release beside its Ed25519 signature: the version, the image repository and the multi-platform image digest. It is the only thing that authorizes a Console update of Shell-PAMC. CLIProxyAPI has none; its update follows the tag its container already uses.
+- **Actualizador (Updater)**: La imagen de Shell-PAMC ejecutada como `shell-pamc updater serve` en su propio contenedor, `shell-pamc-updater`, que contiene el socket de Docker (ADR 0099). Es el único componente que reemplaza contenedores. La consola nunca tiene acceso al socket; le pide al Updater que actualice un **producto** (`omc` o `cpa`) y nada más específico. Un Updater se declara como servicio de Compose o se agrega a un despliegue existente mediante `updater install`.
+- **Actualización de consola**: Una acción confirmada en Información del Sistema que reemplaza el contenedor de un producto con una imagen más nueva. Es distinta de la **verificación de actualización**, que solo observa si existe una versión más nueva. Una actualización de consola se ofrece solo cuando la verificación informa `update_available` y el Updater informa el producto como `available`.
+- **Imagen fijada (Pinned image)**: Una referencia de imagen configurada que porta un tag de versión o un digest. El Updater nunca modifica una imagen fijada, porque el propio archivo Compose del despliegue restauraría la versión anterior sobre una base de datos migrada. Solo se actualiza un tag flotante como `latest`.
+- **Manifiesto de versión (Release manifest)**: `release-manifest.json`, publicado con cada versión junto a su firma Ed25519: la versión, el repositorio de la imagen y el digest de la imagen multiplataforma. Es lo único que autoriza una actualización de consola de Shell-PAMC. CLIProxyAPI no tiene ninguno; su actualización sigue el tag que su contenedor ya utiliza.
 
-- **Inference Endpoint**: One of the three surfaces CPA serves a client key on, named `chat` (Chat Completions, `/v1/chat/completions`), `responses` (`/v1/responses`) or `messages` (`/v1/messages`). The Agent sends its conversation to whichever is chosen: the server writes that endpoint's body and reads its stream back into the same events, so a Turn looks the same whichever answered (ADR 0088). It is a name from a closed set, never a path or URL.
-- **Tokens per second (TPS)**: Output-token rate for one attempt, shown consistently in request records. The deployment-wide TPS Calculation Mode chooses the denominator; it never changes recorded usage or timing. A remaining interval after the first token may include server-side tool calls and is not a precise measurement of pure generation time.
-- **TPS Calculation Mode**: Whether TPS includes first-token latency. `exclude_ttft` (default) divides output tokens by total latency minus first-token latency when the remaining interval is at least 50 ms; missing, invalid or collapsed first-token measurements fall back to total latency. `include_ttft` always divides by total latency. Stored as `omc_tps_calculation_mode`; an absent or unsupported preference uses the default. The choice applies to historical readouts without changing observations or the independent TTFT and non-streaming indicators.
+- **Endpoint de inferencia**: Una de las tres superficies en las que CPA sirve una clave de cliente, llamada `chat` (Chat Completions, `/v1/chat/completions`), `responses` (`/v1/responses`) o `messages` (`/v1/messages`). El Agente envía su conversación a la que esté seleccionada: el servidor escribe el cuerpo de ese endpoint y lee su flujo hacia los mismos eventos, por lo que un Turno se ve idéntico independientemente de cuál haya respondido (ADR 0088). Es un nombre de un conjunto cerrado, nunca una ruta o URL.
+- **Tokens por segundo (TPS)**: Tasa de tokens de salida para un intento, mostrada de forma consistente en los registros de solicitudes. El Modo de Cálculo de TPS a nivel de despliegue elige el denominador; nunca modifica el uso o los tiempos registrados. Un intervalo restante después del primer token puede incluir llamadas a herramientas del lado del servidor y no es una medición precisa del tiempo puro de generación.
+- **Modo de cálculo de TPS**: Determina si el TPS incluye la latencia del primer token. `exclude_ttft` (predeterminado) divide los tokens de salida por la latencia total menos la latencia del primer token cuando el intervalo restante es de al menos 50 ms; mediciones de primer token ausentes, inválidas o colapsadas recurren a la latencia total. `include_ttft` siempre divide por la latencia total. Se almacena como `omc_tps_calculation_mode`; una preferencia ausente o no admitida utiliza el valor predeterminado. La elección se aplica a las lecturas históricas sin alterar las observaciones ni los indicadores independientes de TTFT y sin streaming.
 
+- **Agente**: El espacio de trabajo `/agent` de la consola: una conversación orquestada por el servidor con un modelo invocable a través de CPA, que puede llamar a capacidades declaradas de Shell-PAMC (herramientas) para leer o modificar el estado de Shell-PAMC. La página del Agente envía el mensaje del operador y los datos comerciales de Shell-PAMC que el agente lee para responderlo al modelo de CPA seleccionado y a su upstream; la página lo indica junto al compositor y enviar es el acto que la declaración describe (ADR 0027). El modelo nunca recibe la clave de administración de CPA del operador ni detalles internos de capacidades. La clave del operador, el Call Point y el esfuerzo de razonamiento son la preferencia `agent_target`: una elección que sobrevive a recargas y nuevas conversaciones, independiente del objetivo con el que se ejecutó cada turno almacenado.
+- **Ejecución en navegador (Browser Run)**: Una ejecución administrada por la consola identificada por `X-OMC-Run-ID`, separada de su suscripción en el navegador. Las desconexiones y recargas se reconectan a su diario en el servidor; solo Detener cancela explícitamente la ejecución. Los diarios del Agente crecen con la ejecución. Los diarios completados son locales al proceso y recuperables durante 15 minutos, hasta su reemplazo o reinicio, nunca una cola duradera de trabajos. La recuperación no reenvía una generación ni repite escrituras de capacidades. Consulte ADR 0044.
+- **Turno del agente (Agent Turn)**: Un mensaje de usuario más las rondas del modelo y llamadas a capacidades producidas, almacenadas en la última sesión del lado del servidor. Un turno está en estado `running`, `pending` (esperando una decisión humana), `success`, `error` o `interrupted`/`uncertain` tras un reinicio o una escritura no verificada. Un turno registra lo que el modelo produjo como partes ordenadas — razonamiento, texto de respuesta y llamadas a capacidades, en el orden en que ocurrieron — y la consola lo dibuja en ese orden; el razonamiento nunca entra en el contexto con el que se construyen las rondas posteriores. También registra sus rondas, el uso de tokens reportado por la pasarela — sumado a través de las rondas, más los **tokens de contexto**, la entrada de la última ronda que informó una, que representa cuánto de la ventana de contexto del modelo ocupó la conversación —, cualquier **sugerencia de seguimiento** que el modelo ofreció con una respuesta terminada y la versión del prompt del sistema con la que se ejecutó. Un turno detenido por el operador se almacena como un error con el código `cancelled`; la consola interpreta ese par como "detenido" en lugar de reescribir el turno almacenado. El servidor es dueño de la transcripción; el navegador solo la renderiza y no puede inyectar resultados de herramientas, aprobaciones ni historial.
+- **Ejecución del agente (Agent Run)**: Una solicitud a `/agent/run`, comunicada mediante AG-UI (ADR 0041): inicia un turno a partir de un mensaje nuevo o reanuda el turno que se detuvo esperando al operador. Una ejecución es **aceptada** una vez que el servidor ha persistido su turno — hasta entonces, un mensaje rechazado se devuelve al compositor — y finaliza en éxito, error o una **interrupción**: la lista de operaciones esperando al operador, cada una indicando la llamada que la originó. Una reanudación nombra exactamente esas operaciones, ya decididas.
+- **Reemplazo de turno**: Un reintento o una edición del turno más reciente del Agente: el mensaje nuevo toma el lugar de ese turno en vez de seguirlo (`replace_turn`). Permitido solo para un turno asentado cuyas llamadas hayan sido todas de lectura o dibujo; un turno que preparó o ejecutó un cambio permanece en el registro.
+- **Archivo adjunto**: Un archivo de texto enviado con un mensaje del Agente, transportado dentro del mensaje como un bloque `<file name="...">` (ADR 0074). Como máximo cuatro por mensaje y 40 KiB en total. Una **imagen adjunta** (ADR 0075) es de naturaleza distinta: un PNG, JPEG o WebP de hasta 5 MiB, hasta cuatro por mensaje, enviado como parte junto al texto, almacenado como documento cifrado propio y referenciado por el turno, viviendo exactamente el tiempo de ese turno.
+- **Llamada de visualización (Display Call)**: Una interfaz generada seleccionada por el modelo en una respuesta del Agente, declarada por la consola como `render_ui`. No altera ningún recurso administrado y nunca espera aprobación. Puede referenciar filas de un resultado exitoso de capacidad retenido; el servidor congela esas filas con el marcado del modelo, de modo que la visualización permanece idéntica tras recargar. Una vista dibujada exitosamente aparece donde ocurre su llamada entre las partes ordenadas de la respuesta, rodeada por el texto anterior y posterior. Las nuevas visualizaciones usan por defecto un componente en línea sin marco sobre el fondo de la conversación; el modelo puede elegir explícitamente una tarjeta con título. Las visualizaciones almacenadas conservan su encuadre original. Controles locales pueden filtrar, calcular o explorar el contenido congelado; un seguimiento que requiera datos nuevos o una operación se ofrece como borrador de mensaje para revisión del operador. Una visualización fallida permanece como fila de llamada diagnóstica. Paneles y lienzos almacenados anteriormente siguen siendo legibles. `suggest_next` es una anotación sobre la respuesta final, conservada como sugerencias de seguimiento sin traza ni una ronda adicional del modelo.
+- **Presentación**: Lo que un comando del compositor solicitó que sea la respuesta de un turno del Agente: interfaz generada (`/ui`) o solo texto (`/text`). Un turno de interfaz recibe `render_ui`; un turno de texto no recibe visualización. La elección se aplica solo al mensaje siguiente; ambos pueden ofrecer sugerencias de seguimiento.
+- **Comando del compositor**: Una fila en la lista `/` del compositor del Agente. Cada uno establece la Presentación del mensaje siguiente o ejecuta una acción de página (detener, reintentar, editar, nueva conversación, exportar, abrir el directorio de capacidades o la guía de conexión); un comando que no pueda ejecutarse en el momento no se lista y ninguno es una pregunta prefabricada.
+- **Capacidad**: Una operación declarada que Shell-PAMC expone a agentes: un nombre estable en snake_case, descripción, JSON Schema para su entrada y salida tipadas, permiso (`read`, `write` o `destructive`), riesgo, adaptadores expuestos y controlador. La misma declaración respalda al Agente integrado, el endpoint y puente MCP, el catálogo de capacidades y sus pruebas. **Todo el registro es lo que se ofrece al modelo**: cada capacidad declarada es una herramienta desde la primera ronda de cada turno del Agente, por lo que una capacidad agregada aquí es accesible sin un paso de descubrimiento previo y su descripción es un costo por turno recurrente.
+- **Operación de capacidad**: El registro del lado del servidor de una invocación de capacidad que requirió decisión o produjo un resultado duradero: sus argumentos normalizados, vista previa estructurada, revisión objetivo, estado y resultado. Llamadas destructivas o de alto riesgo esperan una decisión humana de permitir o denegar vinculada a esa vista previa (ADR 0035), tomada en una tarjeta debajo de la llamada que la preparó (ADR 0043); una llamada `ask_question` espera la respuesta del operador. Una operación se consume una sola vez, expira tras 10 minutos si no se decide (24 horas para preguntas) y los registros terminales se conservan durante 7 días.
+- **Pregunta al operador**: Una llamada a `ask_question`: de 1 a 4 preguntas que el Agente hace al operador en medio de un turno, cada una con opciones etiquetadas opcionales y una respuesta escrita siempre disponible. El turno espera la respuesta; omitirla es un rechazo informado al modelo.
+- **Tabla legible**: Una tabla de base de datos que `database_query` puede consultar, con las columnas que oculta. Cada tabla está clasificada como legible u oculta (ADR 0036); una tabla añadida por una migración no es legible hasta clasificarse. Las filas de consulta sin procesar pertenecen a la investigación del Agente, no a una vista previa de consola; el modelo las recibe y puede usarlas en su respuesta o en una visualización explícita.
+- **Endpoint MCP**: `<base path>/api/mcp`, el registro de capacidades servido a agentes externos como herramientas MCP sobre Streamable HTTP por la propia consola (ADR 0070). Acepta la clave de administración de CPA como token portador y nada más, no conserva sesión y no puede aprobar, enviar secretos ni completar OAuth.
+- **Puente MCP (MCP bridge)**: `shell-pamc mcp`, un proceso stdio que sirve las mismas definiciones de herramientas reenviando a los endpoints HTTP de capacidades, para clientes que solo hablan stdio. Al igual que el endpoint, no contiene lógica de negocio ni políticas de aprobación.
+- **Enlace de aprobación**: `<console>/authorize/<id>`, devuelto a un agente externo con una operación preparada. Abre la **pantalla de autorización**: una pantalla de consentimiento fuera del shell de la consola, tras la puerta de inicio de sesión, que indica quién solicita, en qué despliegue y para qué, ofreciendo Denegar y Permitir. La dirección solo nombra la operación; el operador con sesión iniciada que la abre decide a través del mismo endpoint que las aprobaciones del Agente integrado.
 
-- **Agent**: The console's `/agent` workspace: a server-orchestrated conversation with a model callable through CPA, which may call declared Shell-PAMC capabilities (tools) to read or change Shell-PAMC state. The Agent page sends the operator's message, and the Shell-PAMC business data the agent reads to answer it, to the selected CPA model and its upstream; the page states this beside the composer, and sending is the act the statement describes (ADR 0027). The model never receives the operator's CPA management key or capability internals. The operator's key, Call Point and reasoning effort are the `agent_target` Preference: a choice that survives reloads and new conversations, apart from the target each stored turn ran with.
-- **Browser Run**: A console-managed execution identified by `X-OMC-Run-ID`, separate from its browser subscription. Disconnects and reloads reattach to its server-owned journal; only Stop explicitly cancels execution. Agent journals grow with the run. Completed journals are process-local and recoverable for 15 minutes, until replacement or restart, never a durable job queue. Recovery does not resubmit a generation or repeat capability writes. See ADR 0044.
-- **Agent Turn**: One user message plus the model rounds and capability calls it produced, stored in the server-side latest session. A turn is `running`, `pending` (waiting for a human decision), `success`, `error`, or `interrupted`/`uncertain` after a restart or an unverified write. A turn records what the model produced as ordered parts - reasoning, answer text and capability calls, in the order they happened - and the console draws it in that order; reasoning never enters the context later rounds are built from. It also records its rounds, the token usage the gateway reported - summed over the rounds, plus the **context tokens**, the input of the last round that reported one, which is how much of the model's context window the conversation occupied - any **follow-up suggestions** the model offered with a finished answer, and the system prompt version it ran with. A turn stopped by the operator is stored as an error carrying the `cancelled` code; the console reads that pair as "stopped" rather than rewriting the stored turn. The server owns the transcript; the browser only renders it and cannot inject tool results, approvals, or history.
-- **Agent Run**: One request to `/agent/run`, spoken in AG-UI (ADR 0041): it either starts a turn from one new message or resumes the turn that stopped for the operator. A run is **accepted** once the server has persisted its turn - until then a refused message is handed back to the composer - and it ends in success, an error, or an **interrupt**: the list of operations waiting for the operator, each naming the call that raised it. A resume names exactly those operations, each already decided.
-- **Turn replacement**: A retry or an edit of the newest Agent Turn: the new message takes that turn's place instead of following it (`replace_turn`). Allowed only for a settled turn whose calls all read or drew; a turn that prepared or ran a change stays in the record.
-- **Attached file**: A text file sent with an Agent message, carried inside the message as a `<file name="...">` block (ADR 0074). At most four per message and 40 KiB together. An **attached image** (ADR 0075) is different in kind: a PNG, JPEG or WebP of at most 5 MiB, up to four per message, sent as a part beside the text, stored as its own encrypted document and referenced by the turn, living exactly as long as that turn.
-- **Display Call**: A model-selected generated UI in an Agent answer, declared by the console as `render_ui`. It changes no managed resource and never waits for approval. It can reference rows from a retained successful capability result; the server freezes those rows with the model's markup, so the display remains the same after reload. A successfully drawn view appears where its call occurs among the answer's ordered parts, surrounded by the text before and after it. New displays default to a frameless component on the conversation's ground; the model may explicitly choose a titled card. Stored displays keep their original framing. Local controls can filter, calculate or explore the frozen content; a follow-up that needs new data or an operation is offered as a message draft for operator review. A failed display remains a diagnostic call row. Earlier stored panels and canvases remain readable. `suggest_next` is a note on the final answer, kept as follow-up suggestions without a trace or another model round.
-- **Presentation**: What a composer command asked one Agent Turn's answer to be: generated UI (`/ui`) or text alone (`/text`). A UI turn is offered `render_ui`; a text turn is offered no display. The choice applies only to the next message; both may offer follow-up suggestions.
-- **Composer command**: A row of the Agent composer's `/` list. Each sets the next message's Presentation or runs a page action (stop, retry, edit, new conversation, export, open the capability directory or the connection guide); a command that cannot run now is not listed, and none is a canned question.
-- **Capability**: One declared operation Shell-PAMC exposes to agents: a stable snake_case name, description, JSON Schema for its typed input and output, permission (`read`, `write`, or `destructive`), risk, adapter exposure, and handler. The same declaration backs the built-in Agent, the MCP endpoint and bridge, the capability catalogue, and its tests. **The whole registry is what the model is offered**: every declared capability is a tool from the first round of every Agent turn, so a capability added here is reachable without a discovery step, and its description is a per-turn cost rather than a one-off.
-- **Capability Operation**: The server-side record of one capability invocation that needed a decision or produced a durable outcome: its normalized arguments, structured preview, target revision, status, and result. Destructive or otherwise high-risk calls wait for one allow-or-deny operator decision bound to that preview (ADR 0035), made on a card under the call that raised it (ADR 0043); an `ask_question` call waits for the operator's answer instead. An operation is consumed once, expires after 10 minutes if undecided (24 hours for a question), and terminal records are retained for 7 days.
-- **Operator question**: An `ask_question` call: 1-4 questions the Agent asks the operator mid-turn, each with optional labelled choices and a typed answer always available. The turn waits for the answer; skipping it is a rejection the model is told of.
-- **Readable table**: A database table `database_query` may read, with the columns it hides. Every table is classified readable or hidden (ADR 0036); a table a migration adds is unreadable until classified. Raw query rows belong to the Agent's investigation, not to a console preview; the model still receives them and may use them in its answer or an explicit display.
-- **MCP endpoint**: `<base path>/api/mcp`, the capability registry served to external agents as MCP tools over Streamable HTTP by the console itself (ADR 0070). It accepts the CPA management key as a bearer token and nothing else, keeps no session, and cannot approve, submit secrets, or complete OAuth.
-- **MCP bridge**: `shell-pamc mcp`, a stdio process that serves the same tool definitions by forwarding to the capability HTTP endpoints, for clients that only speak stdio. Like the endpoint it carries no business logic and no approval policy.
-- **Approval link**: `<console>/authorize/<id>`, returned to an external agent with a prepared operation. It opens the **authorization screen**: a consent screen outside the console's shell, behind the sign-in gate, that states who is asking, on which deployment and for what, and offers Deny and Allow. The address only names the operation; the signed-in operator who opens it decides, through the same decision endpoint as the built-in Agent's approvals.
+- **Plugin**: Una extensión de CPA cargada en el proceso de la pasarela desde su directorio de plugins. Un plugin está *instalado* cuando CPA descubre su archivo, *configurado* cuando existe `plugins.configs.<id>`, *registrado* cuando el host en ejecución lo cargó y *activo* (`effective_enabled`) solo cuando está habilitado, registrado y el sistema de plugins está encendido; la consola indica cuál de estos estados aplica en lugar de un simple encendido/apagado. Los **campos declarados** de un plugin son los ajustes que describe su manifiesto (nombre, tipo, valores enum, descripción); su **documento de configuración** es `plugins.configs.<id>`, que también almacena el `enabled` y `priority` del host, el **registro de instalación** que CPA escribe bajo `store` al instalarlo desde un registro (mostrado como origen del plugin, nunca editable) y puede contener claves que el plugin nunca declaró. Editar conserva esas claves no declaradas.
+- **Proveedor de autenticación de plugin**: Un plugin que implementa la interfaz de proveedores de credenciales de CPA. CPA reporta esta capacidad como `supports_oauth`, pero esa bandera no establece por sí sola un flujo interactivo de inicio de sesión OAuth; un proveedor puede gestionar credenciales de clave API. La insignia de capacidad en plugins instalados indica por tanto **Proveedor de autenticación**, sin inferir el tipo de credencial o método de inicio de sesión. El selector de conexiones etiqueta estas entradas como **Gestionadas por plugin**, utiliza la página registrada del plugin cuando está disponible y, en caso contrario, solicita inicio de sesión interactivo solo ante una acción explícita del usuario. Una respuesta exitosa de inicio de sesión de CPA determina el flujo de sesión: etiquetas reconocidas tienen prioridad, mientras que etiquetas ausentes o desconocidas recurren a un código de dispositivo devuelto o una URL de inicio de sesión con estado de sesión. Respuestas incompletas permanecen como gestionadas por plugin; credenciales existentes no dependen de la capacidad de inicio de sesión.
+- **Página de plugin**: Una página que un plugin en ejecución registra con CPA (`menus`): un recurso HTML que el plugin sirve bajo `/v0/resource/plugins/<id>/`, listado en la navegación de la consola bajo la etiqueta asignada por el plugin y mostrado en un marco. La página es el documento propio del plugin y llama a sus rutas de administración. Solo un plugin en ejecución tiene páginas.
+- **Host de plugins (Plugin Host)**: El árbol de rutas autenticado (`/api/v1/plugin-host/`) mediante el cual Páginas de Plugins confiables utilizan `/v0/management/*`, `/v8/management/*` nativos de CPA y el directorio fijo `GET /v1/models`. Los recursos no portan credenciales; las llamadas de administración siempre llegan a CPA con la clave almacenada del servidor: una página que no envía credenciales actúa con la sesión, y una página que envía Authorization o X-Management-Key tiene esa credencial comparada con la clave almacenada dentro de Shell-PAMC, respondiéndose `401` ante una discrepancia sin contactar a CPA para que una clave mal escrita no gaste la prohibición por intentos fallidos de CPA sobre la dirección compartida (ADR 0069); los modelos usan únicamente la autorización de cliente de la página. Respuestas nativas pueden contener secretos de upstream/cliente, por lo que cada lectura y escritura de la API se audita y no se almacena en caché. El host nunca expone la clave de administración almacenada. Instalar un plugin es la decisión de confianza: su página comparte la autoridad de sesión del operador. Puentes salientes arbitrarios de `api-call` permanecen rechazados (ADR 0067).
+- **Ajustes del sistema de plugins**: Las tres claves propiedad del host de la sección `plugins`: `enabled` (si CPA carga plugins en absoluto), `store-sources` (registros leídos además del oficial integrado) y `store-auth` (reglas de autenticación para solicitudes de registro, metadatos y artefactos, coincidentes por prefijo de URL). Una entrada de `store-sources` es gestionada en lugar de configurada: el **Origen de Plugins de Shell-PAMC** (ADR 0104). Una regla nombra variables de entorno; la credencial en sí nunca aparece en el archivo ni en la consola. Se editan en la página de plugins, no en la de configuración, y se guardan contra la revisión cargada (ADR 0029).
+- **Origen de plugins de Shell-PAMC**: El registro de plugins que este proyecto publica (`plugins/registry.json`, servido desde la rama `master` del repositorio) y mantiene en `plugins.store-sources`. Su dirección está compilada, no configurada: el servidor la escribe cuando la preferencia `omc_plugin_source_enabled` está activada (predeterminado), repara un guardado de configuración que la haya eliminado y la quita cuando la preferencia está desactivada. Es una fila fija en la pestaña de ajustes de plugins, activable en Ajustes de Shell-PAMC.
 
-- **Plugin**: A CPA extension loaded into the gateway process from its plugin directory. A plugin is *installed* when CPA discovers its file, *configured* when `plugins.configs.<id>` exists, *registered* when the running host loaded it, and *running* (`effective_enabled`) only when it is enabled, registered and the plugin system is on; the console states which of these holds rather than a bare on/off. A plugin's **declared fields** are the settings its manifest describes (name, type, enum values, description); its **settings document** is `plugins.configs.<id>`, which also holds the host's own `enabled` and `priority`, the **install record** CPA writes under `store` when it installs the plugin from a registry (shown as where the plugin came from, never edited), and may hold keys the plugin never declared. Editing keeps those undeclared keys.
-- **Plugin Auth Provider**: A plugin that implements CPA's credential-handling provider interface. CPA reports this capability as `supports_oauth`, but that flag alone does not establish an interactive OAuth login flow; a provider can handle API-key credentials instead. The installed-plugin capability badge therefore says **Auth provider**, without inferring the credential type or login method. The connection picker labels these entries **Plugin-managed**, uses the registered plugin page when available, and otherwise requests interactive login only on an explicit user action. A successful CPA login response determines the session flow: recognized labels take precedence, while absent or unknown labels fall back to a returned device code or a login URL with session state. Incomplete responses remain plugin-managed; existing credentials do not depend on login capability.
-- **Plugin Page**: A page a running plugin registers with CPA (`menus`): an HTML resource the plugin serves under `/v0/resource/plugins/<id>/`, listed in the console's navigation under the label the plugin gave it and shown in a frame. The page is the plugin's own document and calls the plugin's own management routes. Only a running plugin has pages.
-- **Plugin Host**: The authenticated route tree (`/api/v1/plugin-host/`) through which trusted Plugin Pages use CPA-native `/v0/management/*`, `/v8/management/*`, and the fixed `GET /v1/models` directory. Resources carry no credentials; management calls always reach CPA with the stored server key: a page that sends no credential acts with the session, and a page that sends Authorization or X-Management-Key has that credential compared with the stored key inside Shell-PAMC, a mismatch answered `401` without contacting CPA so a mistyped key cannot spend CPA's failed-attempt ban on the console's shared address (ADR 0069); models use only the page's client Authorization. Native responses can contain upstream/client secrets, so every API read and write is audited and uncached. The host never exposes the stored management key itself. Installing a plugin is the trust decision: its page shares the operator's session authority. Arbitrary outbound `api-call` bridges remain refused (ADR 0067).
-- **Plugin System Settings**: The three host-owned keys of the `plugins` section - `enabled` (whether CPA loads plugins at all), `store-sources` (registries read in addition to the built-in official one) and `store-auth` (authentication rules for registry, metadata and artifact requests, matched by URL prefix). One entry of `store-sources` is managed rather than configured: the **Shell-PAMC Plugin Source** (ADR 0104). A rule names environment variables; the credential itself never appears in the file or the console. They are edited on the plugin page, not the configuration page, and saved against the loaded revision (ADR 0029).
-- **Shell-PAMC Plugin Source**: The plugin registry this project publishes (`plugins/registry.json`, served from the repository's `master` branch) and keeps in `plugins.store-sources`. Its address is compiled in, not configured: the server writes it when the `omc_plugin_source_enabled` preference is on (the default), repairs a configuration save that removed it, and removes it when the preference is off. It is one fixed row on the plugin settings tab, switched on Shell-PAMC Settings.
+- **Registro de la pasarela (Gateway Log)**: El propio archivo de registro de CPA y sus archivos de error de solicitudes, leídos mediante la API de administración. Es el registro de CPA, no de Shell-PAMC: la consola solo lo sigue en tiempo real, y truncarlo actúa sobre CPA.
+- **Registro del servicio (Service Log)**: El registro propio del proceso de Shell-PAMC. El proceso escribe cada registro en stderr, que sigue siendo el registro duradero recopilado por el despliegue; la consola lee una copia acotada y redactada en memoria de los últimos 2.000 registros que se inicia vacía en cada reinicio. Los valores de campo se limpian con la misma redacción de las filas de auditoría, y cualquier campo cuyo nombre sugiera una credencial (incluido cualquier nombre `*key`) se reemplaza por completo.
+- **Pista de auditoría (Audit Trail)**: El registro de adición exclusiva de lo que operadores y el Agente realizaron a través de Shell-PAMC (`audit_events`). Una escritura registra una fila `attempt` antes de actuar y una fila de resultado después; la pista las interpreta como una sola **Entrada de Auditoría** cuyo resultado es el desenlace, emparejando filas mediante el ID de solicitud asignado a cada petición a su llegada (filas escritas antes de existir este emparejamiento — anteriores a la migración 027 — se cotejan por acción, objetivo y una ventana de un minuto). Un intento sin resultado permanece visible como incompleto y constituye un filtro propio. La pista se consulta en su propia página de Auditoría, filtrada por resultado, categoría de acción, texto y rango temporal, contabilizándose cada resultado y categoría sobre toda la pista y no solo sobre la página en pantalla. Leer la pista no se audita; exportarla sí se audita, reteniéndose la exportación cuando ese registro no puede escribirse.
 
-- **Gateway Log**: CPA's own log file and its request error files, read through the Management API. It is CPA's record, not Shell-PAMC's: the console only tails it, and truncating it acts on CPA.
-- **Service Log**: Shell-PAMC's own process log. The process writes every record to stderr, which remains the durable log a deployment collects; the console reads a bounded, redacted in-memory copy of the latest 2,000 records that starts empty on every restart. Field values are scrubbed with the same redaction as audit rows, and any field whose name marks a credential (including every `*key` name) is replaced outright.
-- **Audit Trail**: The append-only record of what operators and the Agent did through Shell-PAMC (`audit_events`). A write records an `attempt` row before it acts and an outcome row after; the trail reads them as one **Audit Entry** whose result is the outcome, pairing the rows by the request id every request is given on arrival (rows written before that pairing existed - older than migration 027 - are matched by action, target and a one-minute window). An attempt with no outcome stays visible as unfinished, and is a filter of its own. The trail is read on its own Audit page, narrowed by outcome, action category, text and time range, with each outcome and category counted over the whole trail rather than the page on screen. Reading the trail is not audited; exporting it is, and the export is withheld when that record cannot be written.
+- **Origen (Source)**: El origen del servicio reconocido por el usuario, como OpenAI, OpenCode Go, Command Code GOAT, DeepSeek o una estación repetidora. No es lo mismo que el campo técnico de proveedor de CPA.
+- **Suscripción (Subscription)**: Un plan adquirido o derecho asociado a un Origen. Una suscripción puede tener múltiples cuentas o credenciales. Una lectura de nivel de suscripción en vivo es independiente de una lectura de ventana de cuota: la ausencia de una no invalida la otra. Un nivel o estado de suscripción activa desconocido no es una afirmación de nivel de pago ni una suscripción inactiva. Un estado inactivo explícito no significa por sí mismo que todas las ventanas de cuota estén agotadas.
+- **Cuenta (Account)**: Un usuario o identidad de upstream asociada a un Origen o Suscripción. Un ID de cuenta local es estable incluso si el correo o identificador de upstream cambia.
+- **Credencial (Credential)**: Material de autenticación utilizable por CPA, como un archivo de autenticación OAuth, clave API, cuenta de servicio o credencial exclusiva en tiempo de ejecución. Shell-PAMC referencia y describe credenciales; no expone secretos en respuestas ordinarias de recursos. Los campos de enrutamiento de archivos de autenticación pueden leerse y escribirse mediante una proyección segura explícita, y una escritura solo se reporta como exitosa una vez que la entrada en tiempo de ejecución de CPA coincide con ella: los campos contenidos en el JSON descargado se verifican adicionalmente contra una proyección del lado del servidor, y la respuesta de actualización porta esa proyección solo cuando fue reída.
+- **Espacio de trabajo de gestión OAuth**: El destino centralizado de credenciales de la consola en `/oauth-management`. Los archivos de autenticación definen la membresía en la colección; las observaciones de cuota se asocian únicamente mediante un `auth_index` exacto, único y no vacío, permaneciendo un índice faltante o duplicado visible como diagnóstico operacional en lugar de seleccionar un archivo, correo, proveedor o respaldo posicional. Autorización, configuración, listas de modelos y reglas de modelos por proveedor son tareas contextuales dentro de este espacio, mientras que las URLs históricas `/oauth`, `/auth-files` y `/quota` permanecen como redirecciones compatibles que preservan parámetros.
+- **Clave de proveedor de visualización (Display Provider Key)**: La familia canónica de proveedor utilizada por los filtros del espacio de trabajo y la resolución de marca. Es identidad de presentación, no el índice de autenticación de la credencial ni necesariamente la ruta de autorización del proveedor.
+- **ID de proveedor de autorización**: El ID asignado por la consola para un proveedor de inicio de sesión OAuth. Se declara por proveedor de login (por ejemplo, la familia Claude inicia con `anthropic`), puede proceder del `oauth_provider` de un plugin y se resuelve sin coincidencias difusas a partir de la clave de visualización. El ID esperado por el endpoint compartido de login de CPA puede diferir: el cliente de administración lo traduce al iniciar un flujo (`anthropic` se envía como `provider=claude`) y el ID de un plugin pasa intacto.
+- **Alias de modelo OAuth**: Un mapeo propiedad de CPA y acotado por proveedor desde un ID de modelo upstream respaldado por OAuth/archivo hacia un ID de modelo visible para el cliente. Es global al proveedor y no a una sola credencial; Shell-PAMC reemplaza el mapeo de un proveedor a través de una fachada permitida y verifica la relectura de CPA antes de reportar éxito.
+- **Exclusión de modelo OAuth**: Un valor predeterminado de exclusión propiedad de CPA para credenciales respaldadas por OAuth/archivo de un proveedor (la precedencia de anulación a continuación requiere CPA v8.0.33 o posterior): una lista `excluded_models` no vacía en la credencial reemplaza, en lugar de extender, el `oauth.excluded-models` del proveedor; una lista faltante, vacía o nula hereda las reglas vigentes del proveedor. IDs exactos y patrones `*` coinciden sin distinguir mayúsculas antes de los alias OAuth, por lo que `*` a nivel de proveedor excluye todos los modelos únicamente en credenciales que heredan; limpiar una anulación en la credencial restaura la herencia, permaneciendo CPA como autoritativo para la disponibilidad.
+- **Formato del flujo de autorización**: Cómo se completa un inicio de sesión OAuth y la distinción que muestra la interfaz. Un **flujo de redirección** finaliza en una URL de callback que porta el código de autorización, la cual un operador en un navegador remoto puede tener que pegar manualmente (el callback de Devin es una dirección de loopback en el host de CPA, siendo pegar la ruta normal allí y no un respaldo); un **flujo de dispositivo** solicita al operador confirmar un código corto en la página del propio proveedor mientras la consola realiza sondeos (Kimi, Kimi Internacional, Meta Muse). Los dos sistemas de cuentas de Kimi — kimi.com y kimi.ai — son proveedores de login separados (`kimi`, `kimi-ai`) que comparten una pestaña de proveedor; la observación de cuotas sigue al sistema reconocido sin probar el token contra ambos hosts. La ausencia de metadatos del sistema de cuentas es una limitación de compatibilidad. El formato se declara una vez por proveedor en lugar de inferirse de su nombre, informándolo CPA al iniciar un flujo para que la consola renderice la vista correspondiente.
+- **Endpoint**: Un destino de red, representado por una URL base y detalles de conexión afines. Un Endpoint es hacia dónde se dirige el tráfico, no necesariamente quién proporciona el servicio.
+- **Extracción de modelos de proveedor (Model Pull)**: La solicitud de lista de modelos realizada en el servidor por la consola hacia un endpoint de proveedor suministrado por el operador utilizando la credencial de este. Las extracciones requieren HTTPS; HTTP plano se limita a localhost, loopback e IPs privadas literales. Solo se sigue una redirección cuando su esquema y host permanecen idénticos, evitando que credenciales y encabezados personalizados se reenvíen a un destino no ingresado por el operador.
+- **Conexión (Connection)**: Una línea utilizable de cara al usuario formada por un Origen, Suscripción y Cuenta opcionales, Credencial, Endpoint y Controlador de Protocolo. Es el recurso principal que los usuarios organizan y nombran.
+- **Controlador de protocolo (Protocol Driver)**: El adaptador técnico de protocolos utilizado por CPA, como Codex/Responses, OpenAI-compatible Chat Completions, Anthropic Messages o Gemini. Son metadatos de implementación, no el Origen visible para el usuario.
+- **Vinculación CPA (CPA Binding)**: El vínculo entre una Conexión y un recurso concreto en una instancia de CPA, incluyendo el tipo de recurso de CPA y el índice de autenticación en tiempo de ejecución.
+- **Línea base CPA v8**: Shell-PAMC requiere CPA v8.0.0 o posterior y utiliza la API de administración v8 (`/v8/management`). Si una pasarela la sirve se observa leyendo `/v8/management/config/config-version` y exigiendo el valor `8`, nunca infiriéndose de una cadena de versión. Una pasarela que responda "no v8" se rechaza antes de cualquier solicitud (`cpa_v8_required`), reportándola `/api/healthz` como `cpa_management_api: unsupported` y mostrando la consola orientación de actualización en lugar de cada página. Una pasarela sin secreto de administración responde 404 en ambos árboles de administración; se reporta como `disabled` (`cpa_management_disabled`) y la consola muestra el ajuste de secreto de administración en su lugar, al no poder observarse su versión. Fuera de la excepción del Plugin Host confiable (ADR 0067), `/v0/management`, que v8 todavía sirve, se usa solo para lecturas que v8 no ofrece: el `auth-index` de cada clave upstream y el archivo de configuración almacenado (ADR 0034, ADR 0037, ADR 0038). Toda escritura ordinaria de configuración en la fachada pasa por la API de configuración v8. Las páginas de plugins confiables conservan la semántica nativa de escritura v0/v8 de CPA.
+- **Diseño de configuración (Configuration Layout)**: El formato en el que se almacena el `config.yaml` de CPA: `v8` (las secciones v8, marcado con `config-version: 8`) o `legacy` (un archivo previo a v8, que una pasarela v8 lee sin cambios). Los editores ordinarios de la consola leen y escriben únicamente el formato v8: CPA renderiza cualquier archivo almacenado en él y cada guardado de editor nombra rutas v8. La primera escritura de configuración v8 sobre un archivo heredado hace que CPA convierta el archivo completo una vez (Respaldo de Configuración). En el formato v8, la clave raíz `api-keys` almacena los grupos de proveedores upstream y las claves de cliente residen en `access.api-keys`.
+- **Respaldo de configuración (Configuration Backup)**: La copia cifrada del `config.yaml` de CPA tal como está almacenado, guardada por Shell-PAMC antes de cada escritura de configuración (`cpa_config_backups`, ADR 0051), etiquetada con el tipo de escritura que precedió (su motivo) y su Diseño de Configuración. No se guarda dos veces una copia idéntica a la más reciente. Copias v8 se conservan según la retención fijada por el operador (por defecto 20, entre 5 y 100); copias heredadas, que incluyen el archivo tal como estaba antes de la conversión por CPA, se guardan por separado (las diez más recientes). Una escritura cuya copia no pueda crearse se rechaza antes de enviarse nada (`config_backup_failed`). La página de configuración lista las copias, toma una a demanda y descarga o elimina copias; cada lectura o eliminación es auditada.
+- **Restauración de configuración**: Escribir un Respaldo de Configuración v8 de vuelta hacia la pasarela como guardado completo de documento, ejecutado en el servidor (el documento nunca llega al navegador). El guardado conserva el archivo reemplazado como cualquier otra escritura, haciendo la restauración reversible. Una copia heredada no puede restaurarse mediante la API v8 y es de solo descarga. La restauración se retiene mientras el editor de configuración tenga cambios no guardados y no constituye una capacidad de agente.
+- **Conjunto de cambios de configuración (Configuration Change Set)**: Lo que envía un guardado visual o de la página de Claves: las rutas v8 que modificó el borrador, cada una con su nuevo valor o marcada para eliminación, contra la revisión en la que se cargó el borrador. CPA escribe cada ruta en el lugar, de modo que ajustes no nombrados ni se envían ni se sobrescriben. Una ruta, valor o nombre no aceptado por CPA se rechaza sin escribir esa solicitud, indicando el motivo de CPA (`config_rejected`).
+- **Recurso no reclamado**: Un recurso de CPA descubierto por Shell-PAMC que aún no cuenta con una identidad local confirmada por el usuario o anulación. El motor de descubrimiento persiste filas en `discovered_resources` y `cpa_bindings` (consultadas mediante `/resources`), por lo que el modelo de dominio sigue siendo estructural incluso sin una pantalla de triaje dedicada.
+- **Precio del modelo**: El catálogo actual de modelos de CPA constituye el alcance de mantenimiento. Cada identidad de catálogo tiene una proyección de precio actual: cuatro tarifas por cada 1M de tokens (prompt, completado, lectura de caché, escritura de caché), un multiplicador de modelo y Niveles de Precio opcionales. La lista pública de modelos de OpenRouter es la única fuente automática; una tarifa de caché no publicada toma la tarifa de prompt, nunca cero.
+- **Membresía de proveedores en precios**: El conjunto exacto de identidades de modelos actuales servido por un proveedor configurado de clave API u OAuth, capturado con el catálogo completo de precios de CPA. Un modelo tiene un Precio de Modelo compartido y puede tener una anulación personalizada por canal de CPA y modelo de upstream registrado (ADR 0101). Un prefijo de enrutamiento no es una identidad de canal.
+- **Modo de precio**: Cómo se mantiene el Precio de un Modelo. `auto` sigue la coincidencia automática de OpenRouter, `linked` sigue un modelo de OpenRouter elegido por el operador (fijado), `custom` utiliza las tarifas propias del operador. Las sincronizaciones actualizan `auto` y `linked`, nunca tocando `custom`.
+- **Candidato de precio**: Un modelo de OpenRouter que un Precio de Modelo `custom` o `linked` podría adoptar y que el operador no ha respondido. Guardar el precio o ignorar el candidato lo registra como respondido, de modo que solo un candidato diferente volverá a anunciarse.
+- **Nivel de precio (Price Tier)**: Una anulación condicional de las tarifas de un precio: un conjunto de niveles de servicio upstream en los que se facturó la solicitud, un umbral de contexto largo sobre la entrada completa (tokens en caché incluidos), una ventana horaria leída desde la marca de tiempo de la solicitud en la **zona horaria de facturación** del nivel (una zona IANA según el reloj del proveedor; UTC si no se indica ninguna, independiente de la Zona Horaria de Shell-PAMC), o cualquier combinación.
+- **Nivel de servicio resuelto (Resolved Service Tier)**: Interpretación consciente del proveedor de los niveles de cliente, salida y respuesta registrados. Codex prefiere un `effective_service_tier` no vacío informado por CPA tras la traducción de protocolos y reglas de payload; un `auto` saliente explícito no nombra carril y nunca recurre a un nivel Fast solicitado por el cliente. Sin evidencia de salida, Codex conserva su política de solicitud de cliente. Otros proveedores priorizan la respuesta. El origen es `outbound`, `request` o `response`.
+- **Nivel de servicio facturado (Billed Service Tier)**: El nivel de servicio seleccionado al fijarse el costo de la solicitud, junto con la indicación de si provino de la solicitud del cliente, la solicitud saliente o la respuesta. Nuevas solicitudes usan el Nivel de Servicio Resuelto; instantáneas históricas de costo conservan su política de selección original.
+- **Multiplicador de canal**: Un multiplicador aplicado sobre cada solicitud que respondió una etiqueta de proveedor de CPA (`usage_events.provider`), añadido al precio del modelo. Se versiona y bloquea por solicitud como un precio; un canal sin multiplicador toma 1×.
+- **Versión de precio**: Una instantánea de precio (o multiplicador de canal) inmutable y con vigencia temporal. Una modificación genera una nueva versión; eliminar un precio actual crea una marca de borrado (tombstone) para que solicitudes futuras permanezcan sin precio mientras instantáneas existentes siguen siendo válidas.
+- **Instantánea de costo de solicitud**: La versión de precio, versión de canal, nivel (incluyendo el Nivel de Servicio Facturado coincidente) y monto en nanos de USD seleccionado en la misma transacción que el evento de uso, utilizando la marca de tiempo de la solicitud. Nunca se recalcula a partir de la proyección de precios actual; el detalle de la solicitud reconstruye un desglose a partir de las versiones fijadas únicamente para explicarlo.
+- **Dirección de cliente para diagnóstico**: El par exacto de conexión y la cadena ordenada `X-Forwarded-For` asociada a un registro de solicitud. Se preservan para el detalle protegido de un registro individual, nunca expuestas por la lista de solicitudes, búsquedas o lógica de autorización.
+- **Uso sin precio**: Una solicitud para la cual no existía una versión de precio válida en el momento de realizarse. Permanece solo como uso, queda excluida de los totales de costos y nunca se retroalimenta al añadir un precio posteriormente. Filas históricas sin instantánea almacenada son `legacy_unpriced`.
+- **Estado de actualización**: La respuesta de Información del Sistema respecto a un producto, con uno de cuatro valores: `update_available`, `up_to_date`, `update_ahead` (la compilación es más nueva que cualquier versión publicada), o `indeterminate`. Solo se comparan versiones comparables; sufijos como `v0.1.0-dev` o `v0.1.0-demo` arrojan `indeterminate` y portan un **motivo**.
+- **Registro de versión (Release Record)**: Una versión publicada de un producto — su tag, nombre, hora de publicación y si fue publicada como pre-lanzamiento. Son el índice almacenado por la consola, reemplazado como unidad por producto cada vez que se lee un feed.
+- **Desestimación de actualización (Update Dismissal)**: La elección del operador de no recibir recordatorios sobre un tag específico de un producto, almacenada como la preferencia `update_dismissals`. Silencia el indicador de actualización en la navegación para ese tag exacto.
+- **Notas de la versión**: La descripción propia en Markdown de una versión, conservada únicamente en la memoria del proceso en ejecución. Al no almacenarse en disco, un índice sin notas es normal tras reiniciar.
+- **Registro de cambios combinado (Merged Change Log)**: Las versiones estables en el intervalo entre la versión en ejecución y la más reciente publicada, agrupadas por versión, abiertas como superposición sobre la página.
+- **Huella de base de datos**: Los tamaños medidos del archivo principal de SQLite y, de existir, sus archivos `-wal` y `-shm`, informados por separado.
+- **Páginas libres**: Páginas dentro del archivo de base de datos que escrituras posteriores reutilizan, reportadas mediante `page_count`, `page_size` y `freelist_count`. Nunca se presentan como espacio recuperable o desperdiciado: el archivo no reduce su tamaño hasta ser reconstruido (`VACUUM`).
+- **Acción de mantenimiento**: Una de las dos operaciones de base de datos emitidas por el operador que la consola puede ejecutar: un punto de control que trunca el WAL o una reconstrucción (`VACUUM`). Se ejecuta como tarea de fondo y se rechaza mientras otra esté en curso.
+- **Barrera de escritura (Write Gate)**: La regla de que ninguna escritura ordinaria puede superponerse a una Acción de Mantenimiento. Los escritores esperan la barrera en lugar de fallar; un escritor en cola puede desistir si su propio contexto expira.
+- **Uso de modelos**: Los dos paneles a nivel de modelo en el panel de control — una **Tendencia de Tokens** y un anillo de **Uso de Modelos** — entre los seis mosaicos de KPI y la Cuadrícula de Actividad de Tokens. Siguen el Intervalo Preestablecido para responder qué modelos consumen en esa ventana. Clasifican por volumen de tokens y conservan como máximo cinco modelos nombrados más un resto agrupado marcado con la bandera `folded`. Ambos paneles leen una sola respuesta, garantizando consistencia cromática.
+- **Dimensión de filtro**: Un eje del filtro de registros de solicitudes, como modelo, proveedor o credencial. Las dimensiones se combinan con AND y los valores dentro de una dimensión con OR. Una dimensión ausente no restringe.
+- **Actualización automática**: Un booleano en la vista de registros de solicitudes, no un intervalo variable. La cadencia es fija a 10 segundos.
+- **Alias de clave de cliente**: El nombre asignado por el operador a una clave de cliente de la pasarela, almacenado en `client_key_aliases` y con clave `(instance_id, huella de uso)`. Son metadatos de Shell-PAMC, no configuración de CPA. Donde no existe nombre, se recurre a la máscara.
+- **Registro de uso en streaming**: Si CPA ejecutó una solicitud en modo streaming, capturado desde el campo `stream` de CPA hacia `usage_events.stream`. El Modo de Cálculo de TPS determina si la latencia del primer token se resta.
 
-- **Source**: The service origin a user recognizes, such as OpenAI, OpenCode Go, Command Code GOAT, DeepSeek, or a relay station. It is not the same as CPA's technical provider field.
-- **Subscription**: A purchased plan or entitlement associated with a Source. One subscription may have multiple accounts or credentials. A live subscription-tier reading is separate from a quota-window reading: absence of one does not invalidate the other. Unknown tier or subscription-active state is not a paid-tier claim or an inactive subscription. An explicit inactive state does not itself mean every quota window is exhausted.
-- **Account**: A user or upstream identity associated with a Source or Subscription. A local account ID is stable even if an upstream email or identifier changes.
-- **Credential**: Authentication material that CPA can use, such as an OAuth auth file, API key, service account, or runtime-only credential. Shell-PAMC references and describes credentials; it does not expose secrets in normal resource responses. Auth-file routing fields may be read and written through an explicit safe projection, and a write is only reported as successful once CPA's runtime entry agrees with it: the fields that live in the downloaded JSON are additionally verified against a server-side projection of it, and the update response carries that projection only when it was read back.
-- **OAuth Management Workspace**: The console's single credential-centred destination at `/oauth-management`. Auth files own collection membership; quota observations join only by one unique exact nonempty `auth_index`, and a missing or duplicate index remains visible as an operational diagnostic rather than selecting a filename, email, provider or positional fallback. Authorization, configuration, model lists and provider-scoped model rules are contextual tasks inside this workspace, while the historical `/oauth`, `/auth-files` and `/quota` URLs remain parameter-safe compatibility redirects.
-- **Display Provider Key**: The canonical provider family used by the workspace's filters and brand resolution. It is presentation identity, not the credential's auth index and not necessarily the vendor's authorization route.
-- **Authorization Provider ID**: The console's id for an OAuth sign-in provider. It is declared per sign-in provider (for example the Claude display family starts `anthropic`), may come from a plugin's `oauth_provider`, and is resolved without fuzzy matching from the display key. The id CPA's shared login endpoint expects can differ: the management client translates it when it starts a flow (`anthropic` is sent as `provider=claude`), and a plugin's id passes through unchanged.
-- **OAuth Model Alias**: A CPA-owned, provider-scoped mapping from an upstream OAuth/file-backed model ID to a client-visible model ID. It is global to the provider rather than to one credential; Shell-PAMC replaces one provider's mapping through an allowlisted facade and verifies CPA's readback before reporting success.
-- **OAuth Model Exclusion**: A CPA-owned exclusion default for OAuth/file-backed credentials of a provider (the override precedence below requires CPA v8.0.33 or later): a non-empty credential `excluded_models` list replaces, rather than extends, the provider's `oauth.excluded-models`; a missing, empty or null credential list inherits the current provider rules. Exact IDs and `*` patterns match case-insensitively before OAuth aliases, so provider `*` excludes every model only on inheriting credentials; clearing a credential override restores inheritance, and CPA remains authoritative for availability.
-- **Authorization Flow Shape**: How an OAuth sign-in is completed, and the distinction the sign-in page renders. A **redirect flow** ends at a callback URL carrying the authorization code, which an operator on a remote browser may have to paste back (Devin's callback is a loopback address on the CPA host, so pasting is the normal path there rather than a fallback); a **device flow** asks the operator to confirm a short code on the vendor's own page while the console polls (Kimi, Kimi International, Meta Muse). Kimi's two account systems - kimi.com and kimi.ai - are separate login providers (`kimi`, `kimi-ai`) that share one provider tab; quota observation follows the recognized account system without trying the token against both hosts. Missing account-system metadata is a compatibility limitation. The shape is declared once per provider rather than inferred from its name, and CPA reports it when a flow starts so the console renders the box that actually applies.
-- **Endpoint**: A network destination, represented by a base URL and related connection details. An Endpoint is where traffic goes, not necessarily who provides the service.
-- **Provider Model Pull**: The console's server-side model-list request to an
-  operator-supplied provider endpoint using the provider credential. Model pulls
-  require HTTPS; plain HTTP is limited to localhost, loopback, and private IP
-  literals. A redirect is followed only when both its scheme and host stay
-  unchanged, so credentials and custom headers are never forwarded to a target
-  the operator did not enter.
-- **Connection**: A user-facing usable line formed from a Source, optional Subscription and Account, Credential, Endpoint, and Protocol Driver. It is the primary resource users organize and name.
-- **Protocol Driver**: The technical protocol adapter used by CPA, such as Codex/Responses, OpenAI-compatible Chat Completions, Anthropic Messages, or Gemini. It is implementation metadata, not the user-facing Source.
-- **CPA Binding**: The link between a Connection and a concrete resource on one CPA instance, including the CPA resource type and runtime auth index.
-- **CPA v8 Baseline**: Shell-PAMC requires CPA v8.0.0 or later and speaks the v8 Management API (`/v8/management`). Whether a gateway serves it is observed by reading `/v8/management/config/config-version` and requiring the value `8`, never inferred from a version string. A gateway that answers "not v8" is refused before any request (`cpa_v8_required`), `/api/healthz` reports it as `cpa_management_api: unsupported`, and the console shows upgrade guidance in place of every page. A gateway with no management secret answers 404 on both management trees; it is reported as `disabled` (`cpa_management_disabled`) and the console shows the management-secret setting instead, because its version cannot be observed. Outside the trusted Plugin Host exception (ADR 0067), `/v0/management`, which v8 still serves, is used only for the reads v8 does not offer: each upstream key's `auth-index`, and the configuration file as stored (ADR 0034, ADR 0037, ADR 0038). Every ordinary facade configuration write, provider credentials, OAuth model aliases and plugin settings included, goes through the v8 configuration API. Trusted plugin pages retain CPA-native v0/v8 write semantics. Configuration-affecting native writes receive serialization and pre-write backups; ordinary deep plugin actions remain plugin-owned.
-- **Configuration Layout**: The spelling a CPA `config.yaml` is stored in: `v8` (the v8 sections, marked `config-version: 8`) or `legacy` (a pre-v8 file, which a v8 gateway reads unchanged). The ordinary console editors read and write only the v8 layout: CPA renders any stored file in it, and each editor save names v8 paths. Trusted Plugin Host requests retain the page's native wire contract (ADR 0067). The first v8 configuration write to a legacy file makes CPA convert the whole file once (Configuration Backup). In the v8 layout the root `api-keys` key holds the upstream provider groups and client keys live at `access.api-keys`.
-- **Configuration Backup**: The encrypted copy of CPA's `config.yaml`, as stored, that Shell-PAMC keeps before every configuration write (`cpa_config_backups`, ADR 0051), labelled with the kind of write it preceded (its reason) and its Configuration Layout. A copy identical to the newest one is not kept twice. v8 copies are kept to the operator's retention (default 20, between 5 and 100); legacy copies, which include the file as it was before CPA converted it, are kept apart (the latest ten). A write whose copy cannot be kept is refused before anything is sent (`config_backup_failed`). The configuration page lists the copies, takes one on demand, and downloads or deletes one; every read or removal is audited.
-- **Configuration Restore**: Writing a v8 Configuration Backup back to the gateway as a whole-document save, on the server (the document never reaches the browser). The save keeps the file it replaces like any other write, so a restore is itself undoable. A legacy copy cannot be restored through the v8 API and is download-only. Restore is withheld while the configuration editor has unsaved changes, and it is not an agent capability.
-- **Configuration Change Set**: What a visual or Keys-page save sends: the v8 paths the draft changed, each with its new value or marked removed, against the revision the draft was loaded at. CPA writes each path in place, so settings the save does not name are neither sent nor overwritten. A path, value or name CPA does not accept is refused without writing that request, with CPA's reason (`config_rejected`). Earlier valid requests in the same change set may already have been written; those saves return `config_partially_applied` without rolling them back.
-- **Unclaimed Resource**: A CPA resource discovered by Shell-PAMC that has no confirmed local user identity or override yet. Discovery, the claim status column, and `PATCH /resources/{id}/override` all still exist, but the console no longer routes a triage page: since navigation aligned with gateway surfaces, CPA runtime resources are managed directly through Providers and OAuth management pages instead. The discovery engine persists rows into `discovered_resources` and `cpa_bindings` (queried via `/resources`), so the domain model remains load-bearing even without a dedicated triage screen.
-- **Model Price**: The current CPA model catalog is the maintenance scope. Each catalog identity has one current price projection: four per-1M-token rates (prompt, completion, cache read, cache write), a model multiplier and optional Price Tiers. OpenRouter's public model list is the only automatic source; a cache rate it does not publish is the prompt rate, never zero.
-- **Pricing Provider Membership**: The exact set of current model identities a configured API-key provider or OAuth provider serves, captured with the complete CPA pricing catalog. A model has a shared Model Price and may have a custom override per recorded CPA channel and upstream model (ADR 0101). A routing prefix is not a channel identity. Provider group labels and icons reuse the management identity; model labels remain text-only with a metadata extension point. Groups sort by routing priority and name, and models use case-aware natural name ordering. An alias with conflicting routed targets has an empty price target and remains unpriced unless an operator supplies a link or custom price; it does not invalidate the rest of the catalog.
-- **Price Mode**: How a Model Price is maintained. `auto` follows the automatic OpenRouter match, `linked` follows an OpenRouter model the operator chose (a pin), `custom` uses the operator's own rates. Syncs refresh `auto` and `linked` and never touch `custom`; a name that only resembles an OpenRouter model is offered as a suggestion, never matched. A price synced from models.dev before OpenRouter became the source is a legacy `auto` row until a sync matches it.
-- **Price Candidate**: An OpenRouter model a `custom` or `linked` Model Price could follow that the operator has not answered — typically one OpenRouter started listing after the price was set by hand. A custom price's candidate is its automatic match, else its first suggestion; a linked price's is an automatic match different from its link. Saving the price or ignoring the candidate records it as answered, so only a different candidate is announced again. Following one is an ordinary mode change; ignoring one changes no price.
-- **Price Tier**: A conditional override of a price's rates: a set of upstream service tiers the request was billed on, a long-context threshold over the request's full input (cached tokens included), a time-of-day window read from the request's own timestamp on the tier's **billing time zone** (an IANA zone naming the vendor's clock; UTC when the tier names none, and independent of the OMC Time Zone), or any combination. Exactly one tier governs a request - a service-tier tier, then the highest threshold, then a windowed tier - and rates it leaves out inherit the base price; an explicit zero rate is free, not inherited.
-- **Resolved Service Tier**: A provider-aware interpretation of the recorded client, outbound and response tiers. Codex prefers a nonempty `effective_service_tier` reported by CPA after protocol translation and payload rules; explicit outbound `auto` names no lane and never falls back to a client-requested Fast tier. Without outbound evidence, Codex retains its client-request policy, including response fallback only when the client tier is missing. Other providers remain response-first. The source is `outbound`, `request` or `response`. Missing outbound telemetry is unknown, not proof of a default lane: CPA omits an empty field, including when a payload rule removed it.
-- **Billed Service Tier**: The service tier selected when a request cost was locked, together with whether the client request, outbound request or response supplied it. New requests use the Resolved Service Tier; historical cost snapshots retain their original selection policy. `auto` and empty name no tier, so such a request matches no service-tier Price Tier.
-- **Channel Multiplier**: A multiplier on every request one CPA provider label (`usage_events.provider`) answered, on top of the model's price: a relay that resells at 30% of list is 0.3. It is versioned and locked per request like a price; a channel without one is 1×.
-- **Price Version**: An immutable, time-effective price (or channel multiplier) snapshot. A change creates a new version; deleting a current price creates a tombstone so future requests stay unpriced while existing snapshots remain valid.
-- **Request Cost Snapshot**: The price version, channel version, tier (including the Billed Service Tier it matched) and USD nanos amount selected in the same transaction as a usage event, using the request timestamp. It is never recalculated from the current price projection; the request detail recomputes a breakdown from the locked versions only to explain it.
-- **Diagnostic Client Address**: The exact connection peer and the ordered
-  `X-Forwarded-For` chain associated with one request record. They are preserved
-  for the protected single-record detail, never exposed by the request list,
-  search, or authorization logic. Historical records written before this
-  contract may still contain the earlier `/24` or `/64` network mask; that data
-  cannot be recovered and is never synthetically expanded.
-- **Unpriced Usage**: A request for which no valid price version existed at request time. It remains usage-only, is excluded from cost totals, and is never backfilled when a price is added later. Historical rows without a stored snapshot are `legacy_unpriced`.
-- **Update State**: The System Information page's answer about one product, and one of
-  four values rather than a boolean: `update_available`, `up_to_date`, `update_ahead`
-  (the build is newer than any release - ahead of publication, not an update to
-  install), or `indeterminate`. Only comparable release versions are compared, so a
-  suffixed build version such as `v0.1.0-dev` or `v0.1.0-demo` yields `indeterminate`
-  and carries a **reason**: a development build, nothing published, or a release tag
-  that is not a version. Reporting such a build as "up to date" would assert something
-  the compared data does not support. An empty release feed is established only
-  by a successful check; a failed first attempt remains `not_checked_yet`, with its
-  failure reported separately. An HTTP-successful check response can contain a failure
-  for either product, so its transport status is not an update-check verdict.
-- **Release Record**: One published version of a product - its tag, name, publication
-  time, and whether it was published as a prerelease. Records are the index the console
-  stores. They are replaced as a unit per product each time a feed is read, so a
-  withdrawn release stops being claimed.
-- **Update Dismissal**: The operator's choice to stop being reminded about one published
-  tag of one product, stored as the `update_dismissals` Preference. It silences the
-  navigation's update indicator for exactly that tag: the version card still reports the
-  release as available, and any later release is indicated again.
-- **Release Notes**: A release's own Markdown description, held only in the running
-  process's memory. They are untrusted remote text: the console never executes HTML
-  from them and never loads an image they reference, so opening the page makes no
-  request to a third party. Because they are not stored, an index without notes is a
-  normal state after a restart - the page then names the versions and links to the
-  source rather than rendering an empty change log, which would read as "nothing
-  changed".
-- **Merged Change Log**: The stable releases in the interval between the running
-  version and the newest published one, grouped by version, opened as an overlay over
-  the page rather than expanding inside a card. The interval is exclusive at the
-  bottom, because the running version's own notes describe a version already in use.
-  Prereleases are excluded: a stable operator never received them. When the running
-  version is not comparable no interval is claimed at all, and the newest release is
-  shown alone. That fallback belongs to the uncomparable case only: a build that is up
-  to date or ahead has an empty interval, and its card offers no change log. The log states that the interval is **not fully known** only when a
-  truncated release walk can actually affect it: a walk that stopped at its page limit
-  kept the *newest* releases and dropped older ones, so the interval is still complete
-  whenever the running version is at or above the oldest release that was read. The
-  alarm is real only when the running version is older than that, because the dropped
-  releases then sit inside the interval the reader asked about.
-- **Database Footprint**: The measured sizes of the SQLite database's main file and,
-  when present, its `-wal` and `-shm` files, reported separately. A file that does not
-  exist is absent rather than zero-sized: a cleanly closed database has no WAL file,
-  which is a different measurement from an empty one.
-- **Free Pages**: Pages inside the database file that later writes reuse, reported
-  through `page_count`, `page_size` and `freelist_count`. They are never presented as
-  reclaimable or wasted disk space: the file does not shrink until it is rebuilt, and
-  the rebuild needs comparably free space while it runs.
-- **Maintenance Action**: One of the two operator-issued database operations the console
-  can run - a WAL-truncating checkpoint, or a rebuild (`VACUUM`). It runs as a
-  background job against the database file and is refused while another is in flight. A
-  checkpoint whose own result row says it was blocked is reported as **incomplete**
-  rather than successful, because SQLite reports that outcome in the statement's result
-  rather than as an error. The server retains the last job's status in process memory for
-  the life of the process, so that record is a **retained status** rather than news: the
-  console does not present it as the current reader's result. It shows a job it observed
-  (one already running when the page opened, one it started, or one admitted elsewhere that a
-  later read reported as running) and reports that job's outcome once, which the reader may
-  dismiss; dismissing it is local, so re-reading the server's retained record does not bring it
-  back. A job that finishes and is replaced within one poll interval is followed too: the first
-  sign of the replacement is its own terminal record, and dropping it would leave the page
-  polling for a job the server had already moved past. Which job a record describes is decided by
-  its **job id**, the reservation the job was admitted under: it is monotonic within the process,
-  which the start time cannot promise, since the start time is the wall clock and two jobs can
-  share a millisecond or a synchronised clock can step backwards. A job still running is always
-  shown, because the panel is the reader's only evidence that a Maintenance Action holds the
-  Write Gate, and a reader must not be able to hide live work.
-- **Write Gate**: The rule that no ordinary write may overlap a Maintenance Action.
-  Writers wait for the gate rather than failing, because a failed write stops the usage
-  collector and with it the process; a queued writer may abandon the wait when its own
-  context ends. It is what makes offering the maintenance actions safe at all.
-- **Model Usage**: The dashboard's two model-level panels - a **Token Trend** and a **Model Usage**
-  ring - between the six KPI tiles and the Token Activity Grid. Unlike the grid, whose span is
-  fixed, both follow the Range Preset, so they answer "which models is this window spending on, and
-  when" where the tiles answer "how much, in total". They are ranked by token volume and keep at most
-  five named models plus a folded remainder, because a deployment's model list is open-ended
-  (aliases, dated revisions, per-provider variants) while both a line chart and a legend stop being
-  readable at roughly six series. The remainder is marked with a `folded` flag rather than a reserved
-  name: the label is translated in the frontend, so the API cannot know which name would have to be
-  reserved, and a model whose name collides with it must not be merged into the remainder. Both panels
-  read one response, so a model's colour in the trend cannot disagree with its colour in the ring - see
-  `docs/design.md` §2 for the categorical palette this needs and ADR 0006 for why it is a scoped
-  exception to the semantic-colour rule. Both panels rank by one of two groupings, chosen per
-  **Call Model** (or Call Point) or per requested model and persisted as a Preference; the ranked list also carries each
-  group's priced spend at request-time prices, with the priced share shown when it is partial. The list
-  reads name, spend, volume, share, and its three numeric columns are tracks declared once on the list
-  rather than per row, so a group's spend, volume and share start on the same edge as every other
-  group's regardless of how wide any single amount happens to be.
-- **Filter Dimension**: One axis of the request-record filter, such as model, provider or credential. Dimensions combine with AND and the values inside one dimension combine with OR, so adding a value widens a dimension while adding a dimension narrows the result. An absent dimension does not narrow at all — a cleared filter must be indistinguishable from one that was never set, which is why absence rather than an empty value is how "not filtering" is expressed everywhere the filter is stored or serialized.
-- **Auto Refresh**: A boolean on the request-record view, not an interval. The cadence is fixed at 10 seconds, because the operator only ever wants one of two answers — keep this list current, or stop moving it. Polling is a wall-clock cadence and skips a tick rather than queueing one, so a slow query cannot build a backlog that fires the moment it resolves.
-- **Client Key Alias**: The operator-assigned name for one gateway client key, stored in `client_key_aliases` and keyed by `(instance_id, usage fingerprint)`. It is Shell-PAMC metadata, not CPA configuration: the secret stays in CPA's document and naming a key never writes that document. The identity is the keyed fingerprint that `usage_events.api_group_key` carries (HMAC purpose `usage-api-key`), never a configuration array index and never the display mask — an index moves when CPA reorders its `api-keys` list, and a mask is not unique because it preserves only a short head and tail. Aliases are deliberately never pruned: historical requests keep their fingerprint forever, so a deleted key's records still need their name, and a rename is read-time resolution rather than a rewrite of stored usage. Duplicate names are allowed, because a name is a label rather than an identity. Where no name exists, every surface falls back to the mask.
-- **Streaming Usage Record**: Whether CPA executed a request in streaming mode, captured from CPA's `stream` field into `usage_events.stream` (`1` for streaming, `0` for non-streaming, `NULL` for historical rows where the flag was not recorded). The flag is operator-facing metadata, not the sole classifier for TTFT validity: an upstream executor can capture a genuine first-token boundary even when the client requested `stream: false`. TPS Calculation Mode controls whether the first-token measurement is subtracted. Exclusion requires a measurable residual window of at least 50 ms and otherwise falls back to total latency; inclusion always uses total latency. The recorded `stream` flag does not override the formula or first-token validity. A collapsed window means the proxy observed the response at completion rather than a progressive stream, so subtracting it would create timer artifacts such as 768,588 t/s. Presentation shows TTFT only when the window is measurable and shows the non-stream badge when an explicit `stream: false` record has no measurable TTFT or when the residual window collapsed. Historical records (`stream IS NULL`) use the same residual-window heuristic.
+## Modo de demostración (Demo mode)
 
-## Demo mode
+- **Modo demo**: Un despliegue del mismo binario que sirve la consola a partir de un fixture y rechaza operaciones que un despliegue público no debe realizar, activado mediante `SHELLPAMC_DEMO_MODE`. Las páginas que leen datos propios de Shell-PAMC leen la base de datos real en memoria.
+- **Demostración pública**: La página enlazada desde el README. Sirve la misma consola compilada como recursos estáticos, respondiendo la API a través de un Cloudflare Worker a partir de un conjunto de datos generado por los controladores reales, con una marca temporal de referencia fija que se recalcula sobre el reloj del visitante. Es de solo lectura; las escrituras en servidor son rechazadas.
+- **Conjunto de datos generado**: Las respuestas capturadas a partir de las cuales se sirve la demostración pública, producidas por `internal/api/demo_export_test.go` y confirmadas bajo `deploy/cloudflare/data/`.
+- **Rebasado temporal (Re-basing)**: Ajustar las marcas de tiempo de las respuestas capturadas al reloj del espectador mediante un único delta antes de servirlas, garantizando que los datos no parezcan desactualizados.
+- **Fixture de demo**: El sustituto en proceso de CLIProxyAPI que responde a la API de administración leída por la consola en un socket loopback. Nunca realiza peticiones salientes.
+- **Rechazo en demo**: Un `403` emitido por la clasificación de rutas indicando el motivo correspondiente.
+- **Aviso de no persistencia**: El mensaje emitido por la consola tras una escritura permitida en modo demo, alertando que el cambio desaparecerá al reiniciar el proceso.
 
-- **Demo mode**: A deployment of the same binary that serves the console from a fixture and refuses the operations a public deployment must not perform, switched on by `SHELLPAMC_DEMO_MODE` and off unless it is. It is not a second product and not a second frontend: every page, DTO and read path is the operator's own. What it changes is where the gateway's answers come from, which credential the session is derived from, where the database lives, and which routes answer at all - see `docs/architecture.md` §13 and ADR 0016. It is also the generator for the public demonstration's dataset, so it stays in use now that the public deployment no longer runs this binary.
-- **Public demonstration**: The page linked from the README. It serves the same console build as static assets, with its API answered by a Cloudflare Worker from a dataset generated out of the real handlers, on a fixed reference instant that is re-based onto the viewer's clock as each response is served. It shows the console rather than running the product: no gateway, database, capture pipeline or authentication is behind it, and server writes are refused. The Agent offers a browser-local recorded example conversation, never provider inference (ADR 0092). It is read-only in a way demo mode is not - demo mode lets a visitor's write land in the in-memory fixture, and the demonstration has nowhere to put one. The one choice a visitor does keep is the theme: under demo mode and the public demonstration alike it lives in that browser only, neither pushed to the server nor adopted from it, because visitors share one server and a refused push would be retried, and reported, on every later page load. See ADR 0021 and `docs/ops/cloudflare-demo.md`.
-- **Generated dataset**: The captured responses the public demonstration is served from, produced by `internal/api/demo_export_test.go` through the real handlers and committed under `deploy/cloudflare/data/`. Generated rather than hand-written so every response carries a shape the product actually emits, and gated by `pnpm check:demo`, which fails when a console route loses coverage, when a source it derives from changes, or when it carries a value that must not be public.
-- **Re-basing**: Moving a captured response's timestamps onto the viewer's clock by one delta before serving it. One delta per response rather than per field, so a window's bounds, its buckets and the rows inside it keep describing a single span. It is what stops a generated dataset from being visibly stale: the console asks for a window by name, and a frozen capture would describe one that ended when it was generated. An instant is recognised by field name (`*_at_ms`) and text instants only when the whole string is an RFC 3339 instant - `Date.parse` reads `claude-haiku-4-5` as a date.
-- **Demo fixture**: The in-process stand-in for CLIProxyAPI that answers the management API the console reads, on a loopback socket, with a key minted per process. It never contacts the URL it is handed: a provider quota read is resolved against its own catalogue and anything else is refused, so a demo performs no outbound request. It stands in for the *gateway*, not for the console: pages that read Shell-PAMC's own stored data read the real database.
-- **Demo refusal**: A `403` from the route classification, marked with its own header and naming the reason. It is what a route the demonstration must not serve answers, and it is the boundary - a control the console hides or disables is a courtesy to the reader, never the protection.
-- **Not-persisted notice**: The statement the console makes after a write demo mode permits. Such a write lands either in the fixture (a credential's enabled state or its metadata) or in the instance's own temporary database (a caller-key name, a preference, a price row, a resource override), and in both cases it is gone when the process is replaced. The public demonstration never reaches this notice, because it refuses every write. Sign-in is excluded: it is not a write, and the notice beside a successful sign-in would say the opposite of what happened. It is shown because "the button worked" and "the change is durable" are different claims, and only the first is true here.
+## Regla de nomenclatura
 
-## Naming rule
+Nombres visibles para el usuario, iconos, colores, propiedad y metadatos de suscripción pertenecen a Shell-PAMC. Nombres técnicos de controladores de CPA, índices de autenticación, URLs base y campos de proveedores permanecen como detalles técnicos mostrados de forma secundaria.
+Excepción: un proveedor registrado por un plugin de CPA porta el logotipo publicado por ese plugin, obtenido e incrustado por el proceso de Shell-PAMC.
 
-User-facing names, icons, colors, ownership, and subscription metadata belong to Shell-PAMC. CPA driver names, auth indexes, base URLs, and raw provider fields remain technical details and are shown secondarily.
+## Regla de deshabilitación de proveedores
 
-One exception, and only for the icon: a provider a CPA plugin registers carries the logo that plugin publishes, because the plugin is the only authority on it and the console's own catalog cannot be updated by installing a plugin. The logo is fetched by the Shell-PAMC process and inlined rather than loaded from the plugin's host, and the console's catalog mark is the fallback when the plugin publishes nothing usable — so an operator icon override does not apply to a plugin-owned provider. See `docs/architecture.md` §3.
+Alternar un proveedor debe modificar la pasarela, no la consola. Entradas `openai-compatibility` portan el campo nativo `disabled` de CPA; credenciales `{family}-api-key` no tienen ninguno, por lo que Shell-PAMC aplica el marcador `*` en `excluded-models`.
+La consola serializa alternancias **por proveedor** mediante una cola de última intención (`useLastIntentQueue.ts`). Asimismo, las escrituras completas de listas de proveedores se serializan del lado de la consola para evitar colisiones entre proveedores de la misma familia. Un proveedor counts como deshabilitado cuando su propio interruptor está apagado o cuando la pasarela no posee credenciales habilitadas de su tipo.
 
-## Provider disable rule
+## Modelo de autenticación
 
-A provider toggle must change the gateway, not the console. `openai-compatibility`
-entries carry CPA's native `disabled` field; a `{family}-api-key` credential
-(claude, codex, gemini, meta, xai, vertex, interactions) has none, so Shell-PAMC applies CPA's own mechanism
-instead: the excluded-all marker `*` in `excluded-models`
-(`management.SetExcludedAll`). Writing a local preference only used to repaint
-the UI while fallback kept routing into the "disabled" credential.
+Existe exactamente una credencial de inicio de sesión de administrador en todo el sistema: la clave de administración de CPA (`management.secret-key`), provista como `SHELLPAMC_CPA_MANAGEMENT_KEY`. Esto es independiente de `SHELLPAMC_MASTER_KEY` (secreto de cifrado del sistema para AES-GCM en reposo). El formulario de login toma la clave de administración y deriva la firma de sesión mediante HMAC-SHA256 (`HttpOnly SameSite=Strict`). Todo otro secreto se ingresa mediante `SecretInput` para evitar autocompletados indebidos del navegador. La misma clave autoriza los endpoints externos de capacidades (`/api/v1/capabilities...`) al presentarse como `Authorization: Bearer`. Superficies administrativas autenticadas que revelan secretos escriben su registro de auditoría antes de emitir la respuesta; si esa escritura falla, la lectura se rechaza.
 
-Because a toggle is a gateway write followed by a re-read, the operator's second
-click lands in that gap. The console serialises toggles **per provider** through a
-last-intent queue (`web/src/hooks/useLastIntentQueue.ts`, policy in
-`web/src/hooks/lastIntentQueue.ts`): one write in flight per provider, a click
-during that window replaces the remembered value instead of racing it or being
-dropped, and the switch renders the remembered intent until the gateway confirms
-it.
+## Internacionalización (i18n)
 
-That per-provider queue is not sufficient on its own, and the difference is the
-reason the gateway side is also serialised. CPA has no per-entry write, so a
-toggle reads the family's whole list and writes the whole list back. Two toggles
-of **different** providers in one family run concurrently by design, and if both
-read before either writes, they submit the same baseline and the later write
-discards the earlier one — a switch silently reverts while both requests report
-success. Whole-list provider writes are therefore serialised console-side, and
-**last-intent** is a property of the per-provider queue, not of that
-serialisation: the gateway writer orders writes but does not merge them.
+Interfaz nativa en chino simplificado, chino tradicional, inglés y malayo. El diccionario base reside en `web/src/i18n/index.tsx` como pares `[zh, en]`, mientras que `web/src/i18n/locales/zh-Hant.ts` y `web/src/i18n/locales/ms.ts` contienen los catálogos adicionales. El idioma persiste en `localStorage('omc-lang')`. Cada idioma registrado se localiza completamente.
+Los idiomas admitidos se listan en `web/src/i18n/language.ts`, conservando cada fila su endónimo sin traducir para que el usuario siempre pueda reconocer su propia lengua.
+Excepción intencional: etiquetas de ventanas de cuota, planes, motivos de recomendación y texto de errores a nivel de transporte son compuestos por normalizadores en Go y se renderizan textualmente.
 
-An existing provider can change its protocol driver. Its source id and observed
-identity still address the row being edited; the selected family names the destination.
-A migration keeps credentials and common settings, removes settings specific to the old
-protocol, and preserves every key (one destination row per key for single-key families).
-Both family lists change in one backed-up, revision-guarded write. Names, websites and
-icons move with the provider, and later source rows keep their own metadata.
+## Sistema visual
 
-A confirmed write settles from its own response rather than a second list read,
-and a list read that a confirmation overtook is discarded instead of published,
-so a confirmed value is never replaced by an older one. A transient failure is
-retried a bounded number of times, re-reading the newest intent before each
-attempt; the whole burst carries one deadline measured from its first click,
-which neither a retry nor a later click extends. Passing that deadline abandons
-the burst, and because an aborted request does not prove the gateway did not
-commit, the row is reconciled against a fresh read and reports an unknown outcome
-rather than the value it asked for.
+`docs/design.md` es la única fuente de verdad para colores de marca, tipografía, espaciado y mapeo de tokens antd. `web/src/theme/palette.ts` define las paletas: nueve **tokens autorados** y dieciocho **tokens derivados** calculados a partir de ellos.
+La consola ofrece dos **modos de tema**, claro y oscuro, más **seguir al sistema**. Cada modo contiene una paleta propia.
 
-Retrying is safe because a toggle names the provider it meant, not only its
-position: the write carries the identity the operator saw, and the gateway-side
-handler refuses it when that position now holds a different provider. Without
-that check the retry itself would be a defect — a deletion during the retry delay
-shifts the positions, and repeating the old position would toggle a provider the
-operator never clicked.
+## Ventanas de tiempo
 
-Disablement is also what a surface reads back, and reading it is not the toggle's
-own field alone: a provider counts as disabled when its own toggle is off **or**
-when the gateway holds no enabled credential for its type — the per-type
-`disabled` tally `/management/overview` returns beside each type's credential
-count. The dashboard's provider fleet orders on that answer before any traffic
-number (`web/src/components/dashboard/dashboardProvidersLogic.ts`): every enabled
-channel precedes every disabled one, and request volume only orders the rows
-inside each group, because a disabled channel's requests are history rather than
-capacity in play. That claim is matched on the exact normalized type key and never
-by containment, and only against the credential types the row owns — the
-`{family}-api-key` family a configured provider belongs to, or the channel a
-plugin-driven row names — since CPA's tally covers every auth-file type, and
-calling a channel off on another channel's files would assert something false
-about who can still serve.
+- **Intervalo preestablecido (Range Preset)**: Una ventana relativa — En vivo (15m), 1h, 6h, 24h, 7d, 30d, 90d y, solo en el panel, Todo el tiempo. Se desliza con el tiempo actual.
+- **Todo el tiempo (All time)**: Comienza en el primer uso registrado por este despliegue y termina en el momento actual. No está sujeto al tope de 365 días de rangos personalizados.
+- **Hechos de uso (Usage Facts)**: Estadísticas permanentes leídas por los paneles: solicitudes, fallos, tokens, latencia y costo por cada 15 minutos y por día. Sobreviven a la eliminación de registros de solicitudes.
+- **Retención de registros de solicitudes**: Los registros de solicitudes y cargas útiles decodificadas se conservan durante un número configurable de días y luego se purgan en segundo plano sin alterar los números del panel.
+- **Horizonte de detalle**: El instante antes del cual los Registros de Solicitudes han sido eliminados.
+- **En vivo (15m)**: Quince minutos con un intervalo de un minuto por punto, sondeado cada cinco segundos.
+- **Rango personalizado**: Ventana absoluta elegida en el calendario, ya sea cerrada (congelada) o abierta (inicio fijo, final dinámico).
+- **Resolución de ventana**: Los intervalos relativos y abiertos finalizan según el "ahora" del servidor, nunca del navegador.
+- **Ventana de cuota**: Período medido de la cuota de una credencial de proveedor (por ejemplo, ventanas de 5 horas y semanales en Codex).
+- **Lectura de cuota no publicada**: Observación donde el proveedor respondió exitosamente pero no publicó ninguna ventana medible, preservándose como estado explícito.
+- **Lectura de cuota**: La última observación exitosa de la cuota de una credencial.
+- **Intento de lectura de cuota**: El último intento de lectura registrado, reflejado como `last_refresh`.
+- **Actualización automática de cuota**: Relectura en segundo plano bajo la política `omc_quota_auto_refresh`, activada por reinicio de ventana o cronograma programado.
+- **Capacidad estimada de ventana**: Uso registrado dividido por el porcentaje de uso reportado por el upstream, representando la capacidad total al 100%.
+- **Referencia de capacidad del ciclo anterior**: Última estimación válida retenida del ciclo inmediatamente anterior, etiquetada explícitamente como histórica.
+- **Preferencia**: Estado de consola almacenado en el servidor bajo claves cerradas (`repository.Preference*`), persistiendo en todos los dispositivos.
+- **Distribución del panel (Dashboard Arrangement)**: Orden, ancho y visibilidad de los widgets almacenados en la preferencia `omc_dashboard_layout`.
+- **Visibilidad de barra lateral**: Entradas ocultas de la barra almacenadas en `omc_nav_hidden`.
+- **Biblioteca de fuentes**: Tipografías instaladas para los roles `ui` y `mono`, almacenadas en `omc_fonts`.
+- **Suavizado de desplazamiento**: Movimiento gradual de rueda o teclas de dirección (`omc_scroll_smoothing`: `on`, `system`, `off`).
+- **Estilo de unidades de tokens**: Formato de abreviación (`en-compact`, `zh`, `full`) almacenado en `omc_token_style`.
+- **Modelo servido**: El modelo que el upstream informó haber servido (`response_model`), marcando sustituciones cuando difiere del solicitado.
+- **Detalle de fallo**: Código de estado HTTP y cuerpo de error devuelto por upstream, almacenado en `fail_status_code` y `fail_body`.
+- **Rechazo no registrado**: Solicitud que CPA responde por sí mismo antes de seleccionar credencial (por ejemplo, 503 auth_unavailable).
+- **Instantánea de encabezados de respuesta**: Encabezados diagnósticos de upstream almacenados en `usage_events.response_headers`.
+- **Ruta de acceso / Clave nativa**: Si la clave del invocador provino del proveedor de claves configuradas nativas de CPA (`is_native_key`).
+- **Call Model / Call Point**: Identidad de cara al cliente de una solicitud de modelo (alias solicitado o nombre de modelo).
+- **Identidad de precios OAuth**: Resolución de alias registrados de credenciales a través de reglas globales de alias OAuth del proveedor.
+- **Modelo solicitado**: Nombre del modelo solicitado a upstream por CPA (`usage_events.model`).
+- **Modelo real / Modelo servido**: Modelo reportado por upstream (`usage_events.response_model`).
+- **Agrupación por origen**: Modo de lista que agrupa por proveedor más credencial subyacente.
+- **Máscara de clave de proveedor**: Máscara de visualización de la credencial upstream resuelta dinámicamente en servidor.
+- **Tráfico de proveedor configurado**: Solicitudes servidas computadas a partir del `auth_index` de tiempo de ejecución de la credencial.
+- **Sitio web de proveedor**: URL absoluta de inicio del proveedor almacenada como metadatos de Shell-PAMC.
+- **Cuadrícula de actividad de tokens (Mapa de calor)**: Campo anual de tokens por días calendario del espectador organizado en 7 filas por 53 semanas.
+- **Estado de celda del mapa de calor**: `measured` (con tráfico), `empty` (cero medido) o `unrecorded` (sin datos almacenados).
+- **Información sobre herramientas (Tooltip) del mapa de calor**: Despliegue de datos activado por clic en cada celda con enlace a los registros del día.
+- **Posición en la rampa**: Gradiente continuo calculado mediante la raíz cuadrada del volumen del día respecto al día más activo.
+- **Cuota de credenciales**: Panel del tablero que lista credenciales ordenadas por urgencia operativa con barras de porcentaje restante.
+- **Cubo (Bucket)**: Punto individual de la serie temporal del panel.
+- **Cola (Tail)**: `/management/dashboard/tail`, totales y métricas de la ventana más los últimos cuatro cubos.
 
-## Auth model
+## Invariantes de adopción y coexistencia con CPA preexistente
 
-There is exactly one administrator login credential in the whole system: the
-CPA management key (`management.secret-key`), passed as
-`SHELLPAMC_CPA_MANAGEMENT_KEY`. This is distinct from `SHELLPAMC_MASTER_KEY` (which is a
-system encryption secret used for AES-GCM at rest). Shell-PAMC has no separate
-admin password: the login form takes the management key, submits it to the
-server, and derives the session signature from it (HMAC-SHA256 over a fixed
-label). Because it is the site's only login credential, the sign-in form is the
-only password field in the console: every other secret (an upstream provider key,
-a gateway client key) is entered through `SecretInput`, a text field masked by
-style, so the browser neither fills the management key into it nor offers to save
-a provider key as the console login. The key is never persisted in browser storage and is omitted from normal
-API responses; sessions are HttpOnly SameSite=Strict cookies. Rotating the CPA
-key invalidates existing sessions once Shell-PAMC reloads the new key (e.g. upon
-restart or configuration reload). No key configured means the app boots but
-sign-in answers 503 until `SHELLPAMC_CPA_MANAGEMENT_KEY` is set. The same key
-authorises the external capability endpoints (`/api/v1/capabilities...`) when
-presented as `Authorization: Bearer`; there is no second external credential
-store. Holding it is therefore administrator-equivalent, and approval, private
-secret submission, and OAuth authorization still require a signed-in browser. Demo mode is the one
-exception, and it is not a relaxation of this rule: there the session is derived
-from the fixture's own per-process key and issued on first sight, because a public
-demonstration has no administrator whose identity it could be establishing.
-Authenticated secret-management surfaces (such as raw YAML source viewing or
-explicit caller-key and provider-key reveals) explicitly return credentials to
-authorized administrators. Each reveal writes its audit record before the
-response is emitted; if that write fails, the read is refused rather than served
-unaudited.
+1. **Adopción de configuración sin destrucción**: Shell-PAMC nunca borra, sobrescribe ni muta configuraciones previas de CPA que no le pertenezcan. Las escrituras ordinarias nombran solo las rutas modificadas y conservan un respaldo previo cifrado.
+2. **Descubrimiento inmediato sin modificar configuración**: Claves de cliente existentes se descubren de inmediato en `/api-keys` sin escribir en disco. Los alias se guardan en la tabla SQLite `client_key_aliases`.
+3. **Límite de eliminación de claves de cliente**: CPA autentica estrictamente por presencia en `access.api-keys`. Shell-PAMC no modela estados suspendidos ficticios; eliminar una clave la quita de dicha lista mediante una transacción protegida por revisión. El secreto eliminado es irrecuperable.
+4. **Observabilidad y filtrado multidimensional**: Registros y paneles admiten filtrado por huella HMAC de clave de cliente (`api_key`) para tráfico previo y actual.
 
-## i18n
+## Zona horaria
 
-Native Simplified Chinese, Traditional Chinese, English and Malay UI. The base
-dictionary lives in `web/src/i18n/index.tsx` as `[zh, en]` pairs, while
-`web/src/i18n/locales/zh-Hant.ts` and `web/src/i18n/locales/ms.ts` carry the
-additional catalogs. All four are accessed through `t(key, vars)`; language
-persists in `localStorage('omc-lang')` and the antd locale follows. Rule: every
-registered language fully localizes — a localized UI must not show untranslated
-captions from another language beside its own copy (proper nouns and industry
-terms excepted).
+- **Zona horaria del despliegue**: Calendario local del servidor, resuelto desde `TZ` o el SO.
+- **Zona horaria de Shell-PAMC (OMC Time Zone)**: Calendario seleccionado en Ajustes de Shell-PAMC que rige marcas de tiempo en consola, agrupamiento de auditoría y totales diarios de tokens. Los instantes almacenados en epoch permanecen absolutos. Ventanas de Niveles de Precio utilizan la zona de facturación propia de cada nivel.
 
-The supported languages are listed once in `web/src/i18n/language.ts`, and every
-switcher reads that registry. A row carries the language's **endonym** — its own
-name in its own script — its stable id, two-glyph code and BCP 47 locale. `id`,
-`name` and `code` are stable in every reading, and the endonym is the one part of
-the interface the dictionary does not translate: a switcher that renamed 简体中文
-to "Simplified Chinese" could not be used by the reader who needs it most, since
-someone who cannot read the console's current language cannot recognize their own
-behind a translation of it and would have no way back.
+## Biblioteca de iconos personalizados
 
-The two additional catalogs are separate chunks, fetched when the language is
-selected, so the stored preference is a **choice** rather than a guarantee: a tab
-older than the deployment serving it asks for a chunk name that no longer exists.
-A catalog that cannot be fetched leaves the console reading in its default language
-while `omc-lang` keeps the operator's choice, and a switch that cannot fetch one
-leaves the reading where it was — never a blank page, and never a leaked rejection.
-A browser does not re-fetch a module whose import has already failed in a document,
-so the language arrives on the next load rather than on a second click.
+Un **Icono personalizado** es un recurso estático propiedad del operador en el despliegue. Nombres y arte pueden modificarse sin alterar asignaciones. La eliminación limpia asignaciones persistidas y restaura proveedores a sus iconos predeterminados en una sola transacción. Importaciones limitadas a 512 KiB y 1024 × 1024; capacidad de hasta 100 iconos.
 
-One deliberate exception is in the code rather than the dictionary: quota
-window labels, plan labels, recommendation reasons, and the discovery fallback
-source name are composed by the Go normalizers and rendered verbatim, so an
-English console shows those strings as the backend wrote them. The same is true
-of transport-level error text: a failed `fetch`, an unreadable error body, or an
-upstream `last_error` arrives as a technical English sentence and is injected
-into an otherwise translated message (for example `dash.error_title — message`).
-Localizing any of these means returning stable identifiers instead of display
-text — the frontend already has `apiErrorCode()` for the cases where that
-matters, and the rest are deliberately shown as payload.
+### Conversación de demostración grabada
 
-## Visual system
+Reproducción de una pregunta localizada procesada por los reductores de producción, incluyendo razonamiento, llamadas e interfaz generada, sin inferencia real ni escrituras en servidor.
 
-`docs/design.md` is the single source of truth for brand color, typography,
-spacing, and the antd token mapping. `web/src/theme/palette.ts` is the single
-source of truth for the palettes: a **palette** is nine **authored tokens**
-(`bg`, `surface`, `elevated`, `fg`, `fg2`, `muted`, `meta`, `border`, `accent`)
-and eighteen **derived tokens** computed from them, so the six **registered
-palettes** and an operator's own are the same kind of object. `themeConfig.ts`
-projects a resolved palette onto Ant Design and onto the stylesheet's custom
-properties; every other surface - charts, the heatmap, the Monaco editor, the
-brand artwork - reads that same resolved palette. Never hardcode colors in
-components.
+## Calentamiento de ventana de credenciales
 
-The console has two **theme modes**, light and dark, plus **follow the system**.
-Each mode holds one **palette** of its own, so choosing a palette for the mode
-that is not in force records it without moving the console. A **custom palette**
-is a palette the operator authored; it is labelled 自定义/自訂/Custom/Tersuai
-rather than named, and it carries the registered palette it started from, which
-is what its reset returns to. See ADR 0011 for the derivation, its constants,
-and the places it deliberately differs from the hand-tuned values it replaced.
-
-## Time windows
-
-- **Range Preset**: A relative window — Live (last 15m), 1h, 6h, 24h, 7d, 30d,
-  90d, and on the dashboard only, All time. It slides with the current time, so its totals move on every poll even
-  when no request arrived: the left edge keeps dropping old events. That is why
-  a relative window cannot answer "nothing changed".
-- **All time**: The dashboard preset that starts at the first usage this
-  deployment recorded and ends at now. The server places its start; it is not a
-  custom range and is not subject to the custom range's 365-day cap. The request
-  list does not offer it, because it reads Request Records, which roll out of
-  retention; a dashboard drill-down from All time opens the list on its longest
-  preset.
-- **Usage Facts**: The permanent statistics every dashboard panel reads: requests,
-  failures, tokens, latency and request-time cost per fifteen minutes and per day,
-  by client key, model, call point, credential and provider. They are derived from
-  Request Records and outlive them. They cannot answer a question about a single
-  request.
-- **Request Record retention**: Request Records, and the captured payloads they
-  were decoded from, are detail: they are kept for a configured number of days
-  and then deleted in the background. Deleting them never changes a dashboard
-  number. A request record is never deleted before Usage Facts hold it.
-- **Detail horizon**: The instant before which Request Records have been
-  deleted. A dashboard window that reaches behind it is widened to whole
-  fifteen-minute buckets and drawn no finer than that; the response reports the
-  bounds actually read.
-- **Live (15m)**: The shortest preset, fifteen minutes at one bucket per minute.
-  It is a preset, not a mode: it slides and is polled like the rest, at the
-  cadence its own bucket width implies (five seconds). Five minutes was too
-  narrow to read as a trend and an hour too coarse to feel live.
-- **Custom Range**: An absolute window picked from the calendar, at day
-  granularity. It comes in two kinds. A **closed range** is frozen — the console
-  shows exactly what was asked for and stops polling, and a picked end means
-  through that day. An **open-ended range** (expressed by leaving the end empty)
-  keeps its start fixed while its end tracks the current time, so it is polled
-  like a preset and grows as it runs.
-- **Window resolution**: A preset and an open-ended range end at the server's
-  "now", never the browser's. Every read of stored records sends the window as
-  chosen (a preset name, or the picked bounds) and the server resolves it, because
-  records are stamped on the server's clock: an end computed in a browser whose
-  clock runs behind hides every record newer than that clock, and no refresh
-  brings them back. The console may still estimate the bounds locally to print
-  them.
-- **Quota Window**: One metered period of a provider credential's quota (for
-  Codex, the 5-hour and weekly windows), each carrying its own used share. A
-  window's period is the one its payload states, never the slot it arrived in: a
-  Codex free plan reports a monthly limit as its primary window, and that window's
-  id, label and length then follow the stated duration, because the id keys every
-  cycle calculation. A
-  provider flag that marks a whole rate limit as reached (Codex
-  `limit_reached` / `allowed: false`) does not say which window tripped, so it
-  never overrides a window's own reading: it pins to 100% only a window that
-  reports no usage, or, when every window reports usage below 100 because
-  upstream rounds, the most used one. Pinning every window would show the weekly
-  quota as spent whenever the 5-hour window runs out.
-- **Unpublished Quota Reading**: A quota observation a provider answered without
-  publishing any window — the endpoint replied successfully, and the document
-  carried nothing this deployment can meter. It is recorded and preserved as its
-  own status instead of as an absence, so the console never asks the operator to
-  repeat the read that just came back empty; a credential nobody has read keeps the
-  idle reading that does ask for one.
-- **Quota Reading**: The last successful observation of a credential's quota, stamped
-  with the instant it was taken. A failed read is not a reading: it never replaces the one
-  on record, so the console keeps presenting the previous numbers beside the instant they
-  were observed at.
-- **Quota Read Attempt**: The last try to read a Quota Reading, whichever surface asked -
-  a manual refresh, the background loop, a warmup probe or the Agent. It records when, and
-  the provider's redacted reason when the try produced no reading (migration 044). The
-  console presents it as `last_refresh` beside the reading, and it decides what the row
-  says: an authentication failure reads as `error` and offers re-authorization, any other
-  failure leaves the previous numbers standing as `stale`, a credential nobody has read
-  reads as `error` with a refresh hint instead (there is no snapshot to call out of date),
-  and a reading whose own window reset has passed unseen also reads as `stale` because
-  nobody has data about the cycle that began. It outlives the toast that announced it,
-  which is the point.
-- **Quota Auto Refresh**: The background re-reading of stored quota observations,
-  under the deployment-wide `omc_quota_auto_refresh` policy edited on Shell-PAMC Settings
-  (ADR 0094). It has two independent triggers. A **reset-driven read** (on by default)
-  reads a credential once, about a minute after a window its latest reading reported
-  has reset, so an exhausted credential reads as recovered without anyone asking; a
-  credential nobody has read has no reset to wait for. A **scheduled read** (every six
-  hours by default; 5 minutes to 24 hours, or off) reads every credential whose reading is that
-  old, including one nobody has read. Automatic reads are the manual refresh with the
-  same persistence rule - a failed read never replaces the last good one - and are not
-  repeated every minute when they fail: a failed reset-driven read is retried every ten
-  minutes during the hour after the reset, and a failed scheduled read waits a whole
-  interval. Disabled credentials, providers with no probe,
-  an `auth_index` two credentials claim, and Meta credentials (whose read exchanges a
-  key upstream and is an audited operator action) are never read automatically.
-  A read that shows room in every window releases a credential still held in a CPA
-  cooldown, and the loop releases one whose recorded recovery times have all passed.
-- **Estimated Window Capacity**: What a whole Quota Window is worth: usage this
-  deployment recorded in the indicated cycle and metered model scope divided by
-  the share upstream reports as used. It is capacity at 100%, not a forecast of
-  consumption when the window ends. Usage stops at the observation, and cost uses
-  Request Cost Snapshots. Below 5% consumption no current-cycle estimate is given;
-  dollar estimates additionally require at least 95% of recorded requests to be
-  priced. Unknown boundaries, expired or failed readings, unresolved model scopes,
-  unavailable evidence and observed mid-cycle resets also withhold estimates.
-  The rounding allowance covers half a percentage point, not statistical confidence.
-  Codex and Claude global windows, model-metered windows and reviewed Antigravity
-  groups can be estimated. An opaque historical alias without an identifiable served
-  model makes a scoped estimate unavailable; it is never treated as zero usage.
-  Unrecorded traffic is invisible, late-arriving recorded events can revise an
-  estimate, and the figure varies with model mix. It never feeds routing or status.
-- **Previous-Cycle Capacity Reference**: The last retained valid capacity estimate
-  from the immediately preceding scheduled cycle, offered when a fresh current
-  cycle has too little usage, no recorded traffic or no used-share reading. It is
-  explicitly labelled as historical and carries its observation and cycle bounds;
-  it is neither current capacity nor the previous cycle's actual total consumption.
-  A changed scope or period, a missing adjacent cycle or an observed early reset
-  makes the reference unavailable. Detected reset evidence and failed history-read
-  evidence remain attached to subsequent observations of that cycle even after the original readings expire.
-  An evidence failure withholds estimates but does not block saving a fresh reading.
-- **Preference**: Console state stored server-side rather than in the browser,
-  so it follows the deployment across devices, browsers, incognito windows, and
-  cleared browser storage rather than binding to a single client instance.
-  Values are JSON documents under a closed set of named keys
-  (`repository.Preference*`); the API rejects any key not on that list, so the
-  preference endpoint cannot become a general blob store reachable through the
-  session. The keys in use are the dashboard window, the log page's filters,
-  the provider icon, display-name and website overrides, the usage-event view
-  and column layout, and the console's own display settings — the token unit
-  style (`omc_token_style`), TPS calculation mode (`omc_tps_calculation_mode`),
-  the model display view (`omc_models_view`), request list model brand icons
-  (`omc_request_model_icons`, boolean, default true), the theme (`omc_theme`), scroll smoothing
-  (`omc_scroll_smoothing`), the typeface roles (`omc_fonts`), the rail entries the
-  console hides (`omc_nav_hidden`) and the dashboard's widget arrangement
-  (`omc_dashboard_layout`).
-- **Dashboard Arrangement**: The order, width and visibility of the dashboard's widgets, stored as
-  the `omc_dashboard_layout` preference - every widget the console knows, in reading order, with its
-  width in columns of four and whether it is hidden. A widget a later release adds is missing from an
-  older document and is placed where the default order puts it, visible. It is edited in an
-  arrangement mode on the dashboard itself and stored only when the operator chooses Done. Like the
-  rail visibility it is console state: it changes what the dashboard draws, never what is served or
-  read for another page. See [[Preference]].
-- **Sidebar Visibility**: Which of the rail's entries this console shows, stored as the
-  `omc_nav_hidden` preference - the set of *hidden* route keys, so a destination a later release
-  adds arrives already visible rather than waiting to be re-enabled. The entries are turned off
-  in a panel that a single row on Shell-PAMC Settings opens - the panel lists the same model the rail
-  draws, so a plugin's page or a later release's destination appears there without a second list
-  to maintain - and the row states how many entries are out of the rail, so the page reads without
-  opening it. It is console state rather
-  than a deployment capability: it changes nothing about what the gateway serves, the pages it
-  hides stay reachable by URL, the filter applies to the expanded rail, the collapsed rail and
-  the phone sheet from one model, and Shell-PAMC Settings - the page that owns the choice - cannot be
-  hidden. See [[Preference]].
-- **Font Library**: The deployment's installed typefaces, from which the two
-  **Font Roles** are chosen: `ui` (the interface) and `mono` (code, identifiers and
-  aligned figures), stored as `omc_fonts` (`builtin:<id>` or `font:<library id>`; a
-  role left out uses the bundled Sarasa Mono SC). A family arrives by upload or by
-  installing from Google Fonts, which the *server* downloads; either way its files are
-  stored in the database and served from the console's own origin, so the browser never
-  loads a font from another host and an installed family needs no network. Deleting a
-  family returns the roles that used it to the default (ADR 0100).
-- **Scroll Smoothing**: Whether a wheel notch or a scrolling key glides to its
-  destination instead of jumping — `on` (default), `system` (glide unless the
-  system reports reduced motion) or `off`, stored as `omc_scroll_smoothing`.
-  It smooths only discrete input; trackpads and touch are never glided.
-  It is the one motion that does not follow `prefers-reduced-motion` by
-  default, because it is the reader's own input and on Windows that signal is
-  the switch that removes the browser's glide (ADR 0046).
-- **Token Unit Style**: How the console abbreviates token counts — `en-compact`
-  (300K, 300M, 1.2B), `zh` (30万, 300万, 12亿) or `full` (300,000,000) — stored as
-  the `omc_token_style` preference and applied by one shared frontend layer
-  (`web/src/types/tokenDisplay.ts`) so every token readout on the dashboard,
-  the request records and the detail drawer changes together. The abbreviation is
-  a reading, never a loss: every surface that prints a rounded token number keeps
-  the exact count reachable beside it — as the value's own `title`, or in the
-  accessible name where the value is decorative — because a rounded value scanned
-  in a chart is fine while the same rounding presented as the only number on offer
-  is a wrong number. The Chinese scale is a *word*, not just a notation,
-  so it belongs only to a Chinese console: a stored `zh` resolves to
-  `en-compact` whenever the reading language is neither Simplified nor Traditional
-  Chinese, and the option is shown disabled there. The stored value itself is
-  never rewritten, so returning the console to Chinese restores the operator's own
-  choice. `full` is language-neutral and reads the same in every language.
-- **Served Model**: The model an upstream reported having served for one request,
-  as CPA v8 publishes it in the usage record (`response_model`) and Shell-PAMC
-  stores it beside the requested model. It is an upstream's own statement, not a
-  measurement: it shows rerouting, a canary under a new name and which snapshot
-  an alias resolved to, and it cannot show a model whose quality changed under
-  an unchanged name. Unknown is a distinct state - an upstream that declared no
-  model, or a record ingested before the field was stored - and is never read as
-  "served as requested". A request is **substituted** when the Served Model
-  names a different model than both the upstream model name and the alias the
-  client asked for; a dated snapshot, a `-latest` alias, a provider prefix and a
-  thinking suffix of the same model are not substitutions. The verdict is decided
-  once at ingestion (`internal/usage/served_model.go`, following CPA's own
-  substitution rule) and stored, so the list, the filter and the detail view
-  agree on it.
-- **Failure Detail**: Why one failed request failed, as CPA publishes it in the
-  `fail` block of the usage record: the HTTP status the request ended with and
-  the upstream's own error body. Shell-PAMC stores both on the request record
-  (`usage_events.fail_status_code`, `fail_body`), the body redacted and bounded
-  (`usage.MaxFailBodyRunes`). It belongs to the request itself, unlike a
-  correlated credential error, which is matched by credential and time. Unknown
-  is a distinct state - a CPA that published no failure block, or a record
-  ingested before the fields were stored - and such a record shows the failed
-  state alone. A successful record carries none: CPA stamps status 200 on every
-  success, which is not recorded as an outcome. The request list carries the
-  status only; the body can quote account detail, so it is read from the
-  single-record view. It is the primary way to read a failure, because CPA keeps
-  a per-request log file only while its `request-log` setting is on and
-  otherwise retains just its newest few error logs.
-- **Unrecorded Refusal**: A request CPA answers itself before choosing a
-  credential, so no executor runs and no usage record is published - typically
-  `503 auth_unavailable` when every matching credential is cooling down, which a
-  client's automatic retry after an upstream `500` hits within a second. The
-  request list and every usage total are built from usage records, so such a
-  request appears in neither; it exists only as a line in the gateway log and,
-  while CPA retains it, as an error log file. The Logs page reads that file by
-  the request id on the line. It is not a failed request record with a missing
-  status, and Shell-PAMC does not synthesise one.
-- **Response Header Snapshot**: The diagnostic part of the upstream's response
-  headers for one request, from `response_headers` on CPA's usage record, stored
-  on the request record (`usage_events.response_headers`) for successes and
-  failures alike. It answers what the body does not: the upstream's own request
-  id, the edge that answered, and the rate-limit or quota state at that moment.
-  It is deliberately not the full header set. Transport headers (content type,
-  date, CORS, caching) are dropped because they are the same on every request,
-  and any header whose name suggests a credential or session (cookie,
-  authorization, token, key, signature, session) is dropped before storage;
-  values are redacted and bounded (`internal/usage/response_headers.go`). Only
-  the single-record view carries it. The console groups it by purpose - request
-  identifiers, quota and rate limits, routing and edge, other - by header-name
-  fragments (`web/src/types/responseHeaderGroups.ts`), without interpreting any
-  provider's values.
-- **Access Path / Native Key**: Which of CPA's access providers authenticated the caller, and whether the caller's key came from CPA's native configured-key provider (`access_provider` / `is_native_key` on CPA's usage record, stored on the request record (`usage_events.access_provider`,
-  `is_native_key`). Caller authentication and the upstream credential type are independent facts: a caller on a native key can still be served by an upstream OAuth credential, so these fields never answer which upstream credential executed the request. An empty `access_provider` means the publishing gateway predates both fields; with a path present, `is_native_key` is a real answer — false on an OAuth path reads as a negative, not as unknown. Only the single-record view carries them, beside the
-authentication facts.
-- **Call Model / Call Point**: The client-facing identity of a model request: the model alias
-  a client requested, or the model name when no alias was set. It is a
-  *grouping key*, not a display rewrite — in the model panels' and request list's call view one
-  call model served by several upstream model variants (the gateway's routing
-  detail) reads as one line, because the split between them is not a difference
-  the caller chose. The requested-model view keeps the model CPA actually routed to distinct.
-  Call view is the default; the choice is stored as the `omc_models_view` preference.
-  An aliased request leads with its call model and shows the routed upstream on a
-  neutral second line. A served substitution takes that line instead; the routed
-  upstream remains in the tooltip. Requested-model view does not repeat it.
-- **OAuth pricing identity**: An enabled credential's registered alias resolves
-  through its provider's global OAuth alias rules. Both the alias and its upstream
-  belong to the pricing catalog even if CPA only advertises the alias; this does
-  not make the upstream a callable Model Square entry. An unreadable alias map
-  cannot replace the last complete catalog. Locks use the recorded requested
-  model, and linking a price never changes historical unpriced snapshots.
-- **Requested Model**: The model name that CPA routed and requested from the upstream
-  provider (`usage_events.model`).
-- **Actual Model / Served Model**: The model an upstream reported having served for one
-  request (`usage_events.response_model`).
-- **Source Grouping**: One mode of the request-record list that groups by the
-  source a record came from — the provider plus the credential underneath it — so
-  the provider context and the auth source are the same axis read at one zoom
-  level. The credential half is printed only for a provider the page served
-  through more than one credential; a line served by a single credential would
-  otherwise repeat the same file name on every header. Records with no provider
-  or no credential land in an `unknown` bucket rather than being dropped or
-  folded into a named source.
-- **Provider Key Mask**: The display mask of the upstream credential that answered one request, shown beneath the provider name on a request record. CPA's usage payload does not carry the key: it carries the credential's runtime `auth_index`, and the keys live only in CPA's configuration. The mask is therefore resolved on the server as the request list is read, by matching that index — inside the one credential list the record's own provider label names, and only for the two label shapes CPA writes for a key-backed provider — against the credential lists CPA currently reports: the config API-key families and the `openai-compatibility` providers. It is **current-config resolution, not a snapshot taken with the request**: a credential that has since been rotated or deleted stops claiming its index, so the row prints nothing — from the moment the operator changes it here, or within the cached read's short TTL when it is changed outside the console. A provider that has only been switched off is not a removal: it reports no index to claim, and the key that served an earlier request stays named. Nothing is ever reconstructed or guessed, and the resolved value is absent rather than empty when there is none. An index claimed by more than one credential resolves to nothing as well, even when the masks are alike, because neither an index nor a mask is an identity (the same rule the resource join follows). Only API-key records have one — an OAuth record names the account it used instead — and the mask is display only: it exists on no stored row and is never a filter value.
-- **Configured Provider Traffic**: The requests a configured provider served, counted from the runtime `auth_index` of the credential that answered each of them — one index belongs to one provider's key, and that is the only exact identity available. CPA's `provider` label names the upstream *family*, which every key of that family and that family's OAuth channel share, so a family label, a display name and a substring are all matches that credit one surface with another's requests; none of them is used. Only an `openai-compatibility` provider also claims a label, and only the exact `openai-compatible-<name>` one CPA derives from that provider's own name, because those records carry no index. Every configured provider is a row of its own: two providers left at CPA's default name, and two keys of one family, are distinct providers and neither is merged into the other. Traffic that names no index — records stored before the index was captured, and records whose credential has since been deleted — is credited to no configured provider, and is never inferred onto one.
-- **Provider Website**: A provider's own homepage, stored as Shell-PAMC management
-  metadata. CPA has no field for it, so it is never written into CPA's config;
-  only an absolute http/https URL is accepted, because the provider list renders
-  the provider's name as a link to it.
-- **Token Activity Grid (Heatmap)**: The dashboard's day-by-day token field, sharing a half-width
-  desktop row with Credential Quota below the six KPI tiles — a contribution-graph shape of seven weekday rows (Monday first) by one column
-  per week, fifty-three whole weeks ending today. Its span is fixed rather than derived from
-  the Range Preset: it answers "how has this year gone" where the tiles answer "how is this
-  window going". The panel shows as many of the newest weeks as fit at a comfortable cell size and
-  scrolls to the older ones, so a square stays readable and hittable in a half-width column; the field
-  opens on today's column and stays pinned there until the reader scrolls away. It carries no caption
-  and no quantities of its own - the panel's title names it, a key names only the ramp's direction,
-  and the cells' tooltips carry the numbers - which is why the two ranges are told apart by the shape
-  of the field rather than by a sentence. Seven rows are what make a weekly rhythm a row and a
-  trend a direction, which is why the grid is not a single-row timeline. Each day is the **viewer's** local calendar day,
-  resolved server-side from the IANA zone the browser sends; a day is 23, 24 or 25 hours as
-  the zone requires, and the exact interval a cell aggregated is the same interval its click
-  opens in the request list.
-- **Heatmap Cell State**: One of `measured` (carried traffic), `empty` (stored, no traffic), or
-  `unrecorded` (nothing stored for that day — it precedes the deployment's first usage, or is later
-  this week than today). There is no separate `pending` state: the panel distinguishes "there is
-  stored data" from "there is not", and a reader comparing days cannot act on the difference between
-  a day that has not happened and one before recording began. The days after today in the final
-  column are drawn as ordinary unrecorded cells so the current week stays a complete column.
-  `empty` and `unrecorded` are **solid fills ordered against the card**, not outlines: the window is
-  a rolling year, read from permanent Usage Facts, so a day is unrecorded only before the
-  deployment's first usage — but the window still ends on today, and outlining the zero cells turned the field into a wire mesh regardless of
-  how many there were. Their order carries the meaning — unrecorded is closest to the card (no
-  information), empty is a step further (a measured zero), and only a measured day is clearly louder.
-  **Every cell is interactive**, including one with nothing stored: its tooltip says so rather than
-  refusing the question, and omits the two counts instead of printing zeros that would assert a
-  measurement the panel cannot make. That is also why the panel carries no caption and no readout —
-  the counts live in the cells' own tooltips and accessible names.
-- **Heatmap Tooltip**: The panel's only readout, opened by **clicking** any cell — not by
-  hovering, because on a field this dense a hover tooltip fires continuously and competes with
-  the hover ring. It shows the date, the request count and the token volume, and carries the
-  drill-down to that day's request records as an anchor inside it, opening the exact interval the
-  cell aggregated. Its token volume prints in the console's **Token Unit Style** like every other token
-  readout, keeping the exact count on the value for the reason that style states; the request count is a
-  count rather than a token volume, so it keeps grouped digits whatever the token style is.
-  The cell itself never navigates: the day's list is a place, so it is a link that
-  can be opened in a new tab and copied, and a stray click cannot throw the operator out of the
-  dashboard.
-- **Recorded Cell**: A cell whose day has a stored record at or after the first stored request. A
-  day before that marker is drawn *unrecorded* — a solid fill one step quieter than an empty day, not
-  a hairline — and the copy says "nothing stored" rather than claiming the gateway was idle.
-- **Ramp Position**: A cell's place on the Token Activity Grid's **continuous** colour ramp, from the
-  cell's own empty fill (no traffic) to the accent (the window's busiest day). A continuous scale
-  rather than fixed steps, because a stepped one paints every day between two steps identically —
-  which is the day-to-day difference the panel exists to show. The mapping is the square root of the
-  day's volume against the window's busiest day: volume spans several orders of magnitude in one
-  window, so a linear ramp collapses the middle of the range into one invisible shade and a logarithm
-  over-amplifies the bottom. The scale is relative to the window, so the same shape of traffic paints
-  the same field whatever the absolute volume.
-- **Credential Quota**: The dashboard panel beside the Token Activity Grid, listing every enabled
-  credential of the deployment by urgency - sign-in required, cooling down, exhausted, unavailable,
-  running low, healthy, no quota reading - with the ones that cannot serve first, because on a
-  deployment holding many credentials the rows that need a decision are the ones in view. A row
-  draws its credential's plan - its two shortest **Quota Windows** as remaining-share bars and the
-  countdown to the tightest of them refilling - except in the four states that have no reading to
-  draw (sign-in required, cooling down, unavailable, no quota reading), which state the reason in
-  the bars' place. An exhausted credential keeps its windows, all of them at zero, because that is
-  the statement, with the countdown to when it serves again. Disabled credentials are the
-  operator's own decision and are only counted, in the header. It is a **live read of stored readings, not a measurement of its own**: the
-  panel reads the credential list and the last recorded quota observations, and never a provider,
-  so it answers "can this deployment serve traffic, and for how much longer" where the grid answers
-  "how has the year gone". That is why it sits outside the Range Preset's reach, and why its numbers
-  are never read as traffic. Freshness, not the window, decides its states: a refresh that fails
-  while rows are on screen keeps those rows and states the failure beside them, and only a credential
-  list that never produced one is reported as unknown, with a retry. A deployment holding no
-  credential is **empty** rather than unknown - nothing is in doubt, it has none - and that state
-  links to the page that connects one. Its rows are deliberately not interactive, so a touch meant to
-  move the list cannot leave the page; its one control is a header refresh that asks the providers
-  for fresh readings, and its footer links to `/oauth-management`.
-
-- **Bucket**: One point of the sparkline. Width is chosen per window so the
-  series stays near 48 points on a human step. The newest bucket is always
-  partial, and the grid is aligned to bucket multiples so a sliding window does
-  not redraw every past point.
-- **Tail**: `/management/dashboard/tail` — the whole window's totals and
-  metrics, plus the last four buckets. The browser splices it onto the grid it
-  already holds; when the two do not line up it refetches the window rather than
-  draw a hole in the line. Coverage is deliberately absent: it describes the
-  collector, not the window.
-
-A future per-request live feed should follow the same convention — cheap
-repeated poll, server-issued cursor, client-side splice — and key on the
-`usage_events` row `id`, which is monotonic, rather than on a timestamp, which
-a sliding window keeps invalidating. The request list itself already does this:
-it is ordered and paged by request time (`timestamp_ms`), while "what has
-arrived since" is a separate count anchored on the row `id`.
-
-## Pre-existing CPA adoption and co-existence invariants
-
-A deployment may connect Shell-PAMC to a CLIProxyAPI (CPA) instance that was already configured, deployed, and serving traffic independently before Shell-PAMC was introduced. Architecture decisions and surface designs must maintain these backward-compatibility and non-destructive adoption invariants:
-
-1. **Zero-destructive configuration adoption**:
-   Shell-PAMC must never wipe, overwrite, or mutate pre-existing CPA configuration entries that it does not own. Ordinary facade configuration writes are revision-guarded and name only the paths the operator changed (Configuration Change Set), so unrelated provider definitions, routing rules and plugin settings are never sent or rewritten. Trusted plugin pages retain CPA-native last-write contracts under ADR 0067 and can deliberately replace configuration. CPA's own conversion of a legacy file on the first v8 write also changes the document, which reformats the file, adds CPA's defaults and turns unknown sections into comments; Shell-PAMC keeps the file as it was before that write, as before every write (Configuration Backup), and refuses the write when it cannot.
-
-2. **Immediate discovery without configuration modification**:
-   When connecting to an existing CPA instance:
-   - Pre-configured client keys (`access.api-keys` in CPA's v8 rendering, which is where a legacy file's root `api-keys:` list appears too) are immediately discovered and rendered in the Key Management console (`/api-keys`), without writing the file.
-   - Discovered keys start with no alias and fall back to displaying their masked key, but their HMAC usage fingerprints (`api_group_key` with purpose `usage-api-key`) immediately join with any historical request traffic captured in `usage_events`.
-   - Adding, renaming, or clearing a custom name (alias) is stored as Shell-PAMC presentation metadata in the SQLite table `client_key_aliases`, keyed by `(instance_id, key_fingerprint)`. It **never** mutates CPA's `config.yaml`, never rotates CPA configuration revisions, and never disrupts running proxy traffic.
-   - When adding new keys, operators can optionally supply a custom name immediately; leaving it blank keeps the key unnamed.
-
-3. **Client key removal boundary**:
-   CPA authenticates inbound caller requests strictly against its active client-key list (`api-keys:`, or `access.api-keys` in a v8-layout file), and that list is the only state a client key has: present (accepted) or absent (rejected with 401 Unauthorized). Shell-PAMC deliberately models no suspended or disabled state of its own, because a flag stored here could not stop CPA from accepting the key and would therefore read as a security control it is not. Stopping a key means removing it from that list, through the same revision-guarded draft transaction as other ordinary facade configuration writes (see ADR 0010).
-   - Removal is irreversible for the secret: Shell-PAMC stores no copy of a key value, so the console's delete confirmation states that the value cannot be recovered and must be copied first if it is wanted.
-   - A custom name and the key's historical traffic outlive its removal, because `client_key_aliases` and `usage_events` are keyed by the usage fingerprint rather than by the key text.
-   - The list on the Key Management console (`/api-keys`) carries no status filter, because there is no status to filter: it is exactly what CPA will accept. Its tiles filter by observed use over the last 24 hours (used, idle), which is traffic this console recorded, not a state of the key.
-
-4. **Multi-dimensional observability and filtering**:
-   - Both the Request Records console (`/usage/events`) and the Dashboard (`/dashboard`) support filtering metrics, throughput, token volume, model ranking, and drill-down links by specific client key fingerprint (`api_key`).
-   - Pre-existing traffic with or without custom names remains fully filterable via the stable HMAC fingerprint.
-
-## Time zone
-
-- **Deployment Time Zone**: The server's local calendar, resolved from `TZ` when configured or the operating system's timezone otherwise. Container deployments pass an IANA name through `TZ`; the supplied Compose stacks default to UTC and give CPA and Shell-PAMC the same value.
-- **OMC Time Zone**: The deployment-wide calendar chosen in Shell-PAMC Settings. An unset choice uses the Deployment Time Zone. A manual IANA choice takes precedence until the operator selects the server's zone again. Browser timezone does not override this choice. UTC offsets are evaluated at each instant, including daylight-saving changes.
-- The OMC Time Zone governs console timestamps, audit day grouping, calendar selections, daily token totals and Shell-PAMC service-log timestamps. Stored epoch timestamps, durations, rolling windows and wire-format instants remain absolute. Switching zones never moves or rewrites historical events. Raw upstream logs remain evidence in their original form; offset-free CPA log timestamps are interpreted in the shared Deployment Time Zone before display. Price Tier time-of-day windows use each tier's billing time zone, defaulting to UTC when none is specified. The price editor saves entered hours unchanged; the OMC Time Zone only governs the console-clock display.
-
-## Custom icon library
-
-A **Custom Icon** is reusable, operator-owned static artwork in the current deployment. Its name and artwork can change without changing its identity or its provider assignments. A saved icon exists independently of an unfinished provider edit. Replacing its artwork changes every assignment; deletion removes every matching persisted override in the same transaction and restores affected providers to their normal default icon or placeholder. The confirmation explains this reset before deletion. Plugin-owned providers retain the plugin's branding authority.
-
-### Recorded demonstration conversation
-
-A demonstration replay is one localized recorded question folded by the production reducers,
-including reasoning, calls and generated UI. It is neither model inference nor a capability
-execution. Agent replay needs no configured caller key or model; an open approval still blocks
-sending in both demo and normal mode. Agent replay state lasts for the page lifetime. No
-operation identifier in a recording authorizes a live action. The activity fixture is a deterministic synthetic year
-with normally distributed daily variation, quieter weekends and a small set of idle dates.
-
-## Credential window warmup
-
-- **Window Warmup** is an explicitly approved tiny consuming request on one exact Codex
-  or Claude OAuth credential. It starts idle subscription windows; it does not replenish
-  quota, redeem reset entitlements, clear cooldowns or guarantee a monetary charge.
-- **Warmup Policy** has a selected model, reset mode (`off`, `weekly`, `all`), a daily
-  enable flag and one `HH:mm` daily time. Provider defaults apply to existing and future
-  inheriting credentials; overrides replace the complete policy. Automation defaults
-  off and the daily time defaults to `06:00` in the effective OMC Time Zone.
-- **Activation Observation** records a quota-observed activation for a credential identity
-  and selected model. It describes a completed attempt, not automatic readiness. An enabled,
-  approved policy admits its first automatic attempt through current model, billing and
-  window evidence. HTTP completion without observed activation is pending, then uncertain
-  after bounded confirmation reads.
-- **Paid Fallback Evidence** is `disabled`, `enabled` or `unknown`, with its source and
-  observation instant. Missing fields never mean disabled. Enabled or unknown paid
-  fallback pauses every consuming warmup request; reset credits are not billing evidence.
-  The console labels it "Paid overage" ("超额付费") and a policy "warmup settings"; console
-  copy describes what warmup does for the user (starts the credential's quota window) rather
-  than restating its guards. A credential's warmup leads with a status (on, off or paused and
-  why; next run; last run; charges), shows an inherited policy as plain rules, and reports a
-  manual run's outcome as a toast.
-- Only main five-hour and overall weekly windows are activation targets. Zero usage with
-  a fixed future boundary remains active; missing or malformed evidence is unknown.
-  Explicit unused windows or repeated full-duration sliding boundaries can establish idle.
-- The daily start takes precedence when a new five-hour window would overlap it. A running
-  window skips that daily start. Missed daily starts are recovered only within one hour;
-  daylight-saving repeated hours retain one calendar task identity.
-- Early quota resets invalidate the prior cycle after observation. Redeeming a Codex reset
-  credit retains its independent success even if cooldown clearing, refresh or warmup fails.
-  Claude reset grants remain display-only.
+- **Calentamiento de ventana**: Solicitud mínima consumidora explícitamente aprobada sobre una credencial OAuth de Codex o Claude para iniciar ventanas de suscripción inactivas.
+- **Política de calentamiento**: Modelo seleccionado, modo de reinicio (`off`, `weekly`, `all`), bandera diaria y hora `HH:mm`.
+- **Observación de activación**: Registro de activación observada por cuota para una credencial y modelo.
+- **Evidencia de respaldo de pago**: `disabled`, `enabled` o `unknown`. El respaldo habilitado o desconocido pausa solicitudes de calentamiento.
+- Inicios diarios tienen prioridad sobre ventanas superpuestas. Los derechos de reinicio nunca se consumen automáticamente.

@@ -5,9 +5,9 @@
   <img src="web/src/assets/brand/omc-wordmark-light.svg" alt="Shell-PAMC" width="340">
 </picture>
 
-### Manage APIs and OAuth in one place, visualize requests, cost and usage
+### Gestiona APIs y OAuth en un solo lugar, visualiza solicitudes, costos y uso
 
-MCP · Visualization · Management
+MCP · Visualización · Gestión
 
 <br />
 
@@ -20,84 +20,81 @@ MCP · Visualization · Management
 
 <br />
 
-[Install](#install) ·
-[Features](#features) ·
-[Agents and MCP](#agents-and-mcp) ·
-[Documentation](#documentation) ·
-[简体中文](README.zh-CN.md)
+[Instalación](#instalación) ·
+[Características](#características) ·
+[Agentes y MCP](#agentes-y-mcp) ·
+[Documentación](#documentación)
 
 <br />
 
-
-  <img src="docs/images/readme/hero-split.en.webp" alt="The Shell-PAMC dashboard, half in the light theme and half in the dark theme" width="100%">
-
+  <img src="docs/images/readme/hero-split.en.webp" alt="El panel de control de Shell-PAMC, mitad en tema claro y mitad en tema oscuro" width="100%">
 
 </div>
 
-CLIProxyAPI (CPA) is an API gateway: it
-adapts protocols, holds credentials and proxies requests. **Shell-PAMC** is a web
-console for it. Shell-PAMC manages the gateway's providers, credentials and configuration, and
-records the usage and cost of every request. It is a single Go
-binary with the React console embedded and a local SQLite database, runs offline, and
-signs in with CPA's management key.
+CLIProxyAPI (CPA) es una pasarela de API: adapta
+protocolos, almacena credenciales y proxifica solicitudes. **Shell-PAMC** es una consola
+web para ella. Shell-PAMC gestiona los proveedores, las credenciales y la configuración de la pasarela,
+y registra el uso y costo de cada solicitud. Es un único binario
+en Go con la consola React incrustada y una base de datos SQLite local, funciona sin conexión
+e inicia sesión con la clave de administración de CPA.
 
-## Screenshots
+## Capturas de pantalla
 
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/readme/usage-events.en.webp" alt="Request records with latency, tokens and cost per request">
-<p align="center"><b>Request records</b><br />Every request, filterable by model, provider, key, status and cost</p>
+<img src="docs/images/readme/usage-events.en.webp" alt="Registros de solicitudes con latencia, tokens y costo por solicitud">
+<p align="center"><b>Registros de solicitudes</b><br />Cada solicitud, filtrable por modelo, proveedor, clave, estado y costo</p>
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/readme/pricing.en.webp" alt="Model price book grouped by provider">
-<p align="center"><b>Cost &amp; usage</b><br />A price book matched from OpenRouter, with custom overrides</p>
+<img src="docs/images/readme/pricing.en.webp" alt="Libro de precios de modelos agrupado por proveedor">
+<p align="center"><b>Costos y uso</b><br />Un libro de precios cotejado desde OpenRouter, con anulaciones personalizadas</p>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/readme/oauth-management.en.webp" alt="OAuth credentials with their state and quota">
-<p align="center"><b>OAuth management</b><br />Sign in, inspect quota and configure each credential in one place</p>
+<img src="docs/images/readme/oauth-management.en.webp" alt="Credenciales OAuth con su estado y cuota">
+<p align="center"><b>Gestión de OAuth</b><br />Inicia sesión, inspecciona cuotas y configura cada credencial en un solo lugar</p>
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/readme/ai-providers.en.webp" alt="AI provider list with enable switches and traffic">
-<p align="center"><b>AI providers</b><br />Endpoints, models, priority and an enable switch enforced by the gateway</p>
+<img src="docs/images/readme/ai-providers.en.webp" alt="Lista de proveedores de IA con interruptores de activación y tráfico">
+<p align="center"><b>Proveedores de IA</b><br />Endpoints, modelos, prioridad y un interruptor de activación aplicado por la pasarela</p>
 </td>
 </tr>
 </table>
 
 <div align="center">
-  <img src="docs/images/readme/mobile.en.webp" alt="The dashboard, request records and OAuth management on a phone" width="88%">
-  <p><b>Mobile layout</b><br />Every page adapts to a narrow screen</p>
+  <img src="docs/images/readme/mobile.en.webp" alt="El panel, registros de solicitudes y gestión de OAuth en un móvil" width="88%">
+  <p><b>Diseño móvil</b><br />Cada página se adapta a pantallas estrechas</p>
 </div>
 
-## Install
+## Instalación
 
-### Install with an agent
+### Instalar con un agente
 
-Paste the following into Claude Code, Codex, Cursor or another coding agent. The agent
-inspects the machine, picks the matching method and installs it:
+Pega lo siguiente en Claude Code, Codex, Cursor u otro agente de desarrollo. El agente
+inspecciona la máquina, elige el método correspondiente y lo instala:
 
 ```text
 Install Shell-PAMC for me by following
 https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/docs/install-for-agents.md
 ```
 
-### Install with Docker Compose
+### Instalar con Docker Compose
 
-Requires Docker Engine with the Compose plugin and CLIProxyAPI v8.0.0 or later. The
-commands assume a Linux or macOS shell with `curl` and `openssl`. The console's sign-in
-password is CPA's management key.
+Requiere Docker Engine con el plugin Compose y CLIProxyAPI v8.0.0 o posterior. Los
+comandos asumen una shell de Linux o macOS con `curl` y `openssl`. La contraseña de
+inicio de sesión de la consola es la clave de administración de CPA.
 
-| Scenario | Method |
+| Escenario | Método |
 | --- | --- |
-| CPA is not deployed yet | [New install](#new-install) |
-| CPA is deployed with Docker Compose | [CLIProxyAPI is already installed](#cliproxyapi-is-already-installed) |
-| CPA is deployed another way | [Standalone](#standalone) |
+| CPA aún no está desplegado | [Nueva instalación](#nueva-instalación) |
+| CPA está desplegado con Docker Compose | [CLIProxyAPI ya está instalado](#cliproxyapi-ya-está-instalado) |
+| CPA está desplegado de otra manera | [Independiente (Standalone)](#independiente-standalone) |
 
-#### New install
+#### Nueva instalación
 
-Save the following as `compose.yml` in a new directory:
+Guarda lo siguiente como `compose.yml` en un directorio nuevo:
 
 ```yaml
 services:
@@ -143,8 +140,8 @@ volumes:
   shell-pamc-data:
 ```
 
-In that directory, download CPA's starter configuration, generate the two keys and start
-both services:
+En ese directorio, descarga la configuración inicial de CPA, genera las dos claves e inicia
+ambos servicios:
 
 ```bash
 curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
@@ -153,16 +150,15 @@ chmod 600 .env
 docker compose up -d
 ```
 
-Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
-from `.env`. Providers and client keys are added in the console; clients send requests
-to CPA at `http://127.0.0.1:8317`.
+Abre **`http://127.0.0.1:8080/shell-pamc/`** e inicia sesión con el valor `CPA_MANAGEMENT_KEY`
+de `.env`. Los proveedores y las claves de cliente se añaden en la consola; los clientes envían solicitudes
+a CPA en `http://127.0.0.1:8317`.
 
-#### CLIProxyAPI is already installed
+#### CLIProxyAPI ya está instalado
 
-Add the services under `services:` in the Compose file that runs CPA, and merge
-`shell-pamc-data:` into the top-level `volumes:` key if one exists. `cli-proxy-api` is
-the service name in CPA's own Compose file; replace it if the service is named
-differently.
+Añade los servicios bajo `services:` en el archivo Compose que ejecuta CPA, y fusiona
+`shell-pamc-data:` en la clave `volumes:` superior si existe. `cli-proxy-api` es
+el nombre del servicio en el Compose propio de CPA; cámbialo si tu servicio tiene un nombre diferente.
 
 ```yaml
   shell-pamc:
@@ -192,24 +188,24 @@ volumes:
   shell-pamc-data:
 ```
 
-Add two lines to `.env` in the same directory:
+Añade dos líneas a `.env` en el mismo directorio:
 
 ```dotenv
-SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
-SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<clave de administración de CPA en texto plano, no el hash de config.yaml>
+SHELLPAMC_MASTER_KEY=<salida de: openssl rand -hex 32>
 ```
 
-Add the `shell-pamc-updater` service from the snippet as well to update from the console.
-Run `docker compose up -d shell-pamc shell-pamc-updater`, which leaves the CPA container
-running as it is.
-Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
+Añade también el servicio `shell-pamc-updater` del fragmento para actualizar desde la consola.
+Ejecuta `docker compose up -d shell-pamc shell-pamc-updater`, lo que deja el contenedor de CPA
+funcionando tal como está.
+Abre **`http://127.0.0.1:8080/shell-pamc/`** e inicia sesión con la clave de administración.
 
-#### Standalone
+#### Independiente (Standalone)
 
-Save the following as `compose.yml` in a new directory. `SHELLPAMC_CPA_BASE_URL` is CPA's
-address as seen from inside the container: the value below reaches a CPA on the same
-machine that listens on all interfaces, and [reaching CPA](docs/install.md#reaching-cpa)
-lists the other cases.
+Guarda lo siguiente como `compose.yml` en un directorio nuevo. `SHELLPAMC_CPA_BASE_URL` es la
+dirección de CPA vista desde dentro del contenedor: el valor a continuación alcanza un CPA en la misma
+máquina que escucha en todas las interfaces, y [alcanzar CPA](docs/install.md#reaching-cpa)
+enumera los demás casos.
 
 ```yaml
 services:
@@ -242,128 +238,128 @@ volumes:
   shell-pamc-data:
 ```
 
-Create `.env` in the same directory:
+Crea `.env` en el mismo directorio:
 
 ```dotenv
-SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
-SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<clave de administración de CPA en texto plano, no el hash de config.yaml>
+SHELLPAMC_MASTER_KEY=<salida de: openssl rand -hex 32>
 ```
 
-Run `docker compose up -d`, then open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with
-the management key.
+Ejecuta `docker compose up -d`, luego abre **`http://127.0.0.1:8080/shell-pamc/`** e inicia sesión con
+la clave de administración.
 
-### Updating
+### Actualización
 
-With the `shell-pamc-updater` service in place, **System Information** in the console shows
-**Update now** beside a newer release of Shell-PAMC or CLIProxyAPI. The updater pulls the
-image, replaces the container with its settings, volumes and networks unchanged, and
-restores the previous container if the new one does not start.
+Con el servicio `shell-pamc-updater` activo, **Información del Sistema** en la consola muestra
+**Actualizar ahora** junto a una versión más reciente de Shell-PAMC o CLIProxyAPI. El actualizador descarga
+la imagen, reemplaza el contenedor manteniendo intactos sus ajustes, volúmenes y redes, y
+restaura el contenedor anterior si el nuevo no arranca.
 
-A deployment installed before this service existed gains it with one command on the
-Docker host; the Compose file is not edited:
+Un despliegue instalado antes de que existiera este servicio lo obtiene con un solo comando en el
+host de Docker; el archivo Compose no se modifica:
 
 ```bash
 docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-The command adds an `shell-pamc-updater` container and brings Shell-PAMC up to the current
-release in the same step. `docker rm -f shell-pamc-updater` removes it. An image pinned to
-a version tag is never changed from the console. [Upgrading](docs/install.md#upgrading)
-describes each case and the manual alternative.
+El comando añade un contenedor `shell-pamc-updater` y actualiza Shell-PAMC a la versión
+actual en el mismo paso. `docker rm -f shell-pamc-updater` lo elimina. Una imagen fijada a
+un tag de versión nunca se actualiza desde la consola. [Actualizaciones](docs/install.md#upgrading)
+describe cada caso y la alternativa manual.
 
-### Install a native executable
+### Instalar un ejecutable nativo
 
-[Tagged releases](https://github.com/Bizasbot/Shell-PAMC/releases) include executables
-for macOS (Darwin), Windows, Linux and FreeBSD, on amd64 and arm64. Each archive embeds
-the console and includes an environment template; verify its SHA-256 hash against the
-release's `checksums.txt`. No Go, Node or Docker is required. CPA must be installed
-separately. Follow the [native installation guide](docs/install.md#native-executable)
-for configuration, permissions and upgrades.
+Los [Releases etiquetados](https://github.com/Bizasbot/Shell-PAMC/releases) incluyen ejecutables
+para macOS (Darwin), Windows, Linux y FreeBSD, en amd64 y arm64. Cada archivo empaqueta
+la consola e incluye una plantilla de entorno; verifique su hash SHA-256 contra el
+`checksums.txt` de la versión. No se requiere Go, Node ni Docker. CPA debe instalarse
+por separado. Siga la [guía de instalación nativa](docs/install.md#native-executable)
+para configuración, permisos y actualizaciones.
 
-### Notes
+### Notas
 
 > [!IMPORTANT]
-> Back up `.env`. `SHELLPAMC_MASTER_KEY` encrypts the database, and the data cannot be read
-> without it.
+> Haga una copia de seguridad de `.env`. `SHELLPAMC_MASTER_KEY` cifra la base de datos, y los datos no pueden leerse
+> sin ella.
 
-CPA hands each usage record to a single reader. If another usage tracker reads the same
-CPA, stop it, or add `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` to use Shell-PAMC
-for management only. Other management panels do not conflict.
+CPA entrega cada registro de uso a un único lector. Si otro rastreador de uso lee el mismo
+CPA, deténgalo, o añada `SHELLPAMC_USAGE_INGEST_MODE: "off"` bajo `environment:` para usar Shell-PAMC
+únicamente para administración. Otros paneles de administración no generan conflicto.
 
-`shell-pamc-updater` mounts the Docker socket, which amounts to control of Docker on that
-host. Console updates are turned off by deleting the service from the Compose file and
-removing its running container with `docker rm -f shell-pamc-updater`; Compose leaves a
-container whose service was deleted running. Updates are then applied with
+`shell-pamc-updater` monta el socket de Docker, lo que equivale al control de Docker en ese
+host. Las actualizaciones desde la consola se desactivan eliminando el servicio del archivo Compose y
+removiendo su contenedor en ejecución con `docker rm -f shell-pamc-updater`; Compose deja funcionando
+el contenedor cuyo servicio fue eliminado. Las actualizaciones luego se aplican con
 `docker compose pull && docker compose up -d`.
 
-The [installation guide](docs/install.md) covers the hardened Compose files published
-with each release, remote access, HTTPS, building from source, upgrades and
-troubleshooting.
+La [guía de instalación](docs/install.md) cubre los archivos Compose protegidos publicados
+con cada versión, acceso remoto, HTTPS, compilación desde código fuente, actualizaciones y
+resolución de problemas.
 
-## Features
+## Características
 
 <details open>
-<summary><b>Gateway & providers</b></summary>
+<summary><b>Pasarela y proveedores</b></summary>
 
-- **AI providers**: Codex, Claude, Gemini, Meta Muse, xAI, Vertex AI, Gemini Interactions, DeepSeek and OpenAI-compatible services, each with credentials, advanced model options, runtime retry/error policies, priority, weight, proxy and an enable switch enforced by the gateway.
-- **OAuth management**: sign in from the console for Codex, Claude, Antigravity, xAI, Kimi (kimi.com and kimi.ai), Devin and Meta Muse, or import a Vertex service account key. Auth files, manual token refresh, model lists, Meta quota, live xAI/Antigravity plan readings and credential-specific aliases are managed per credential; shared model aliases and exclusion rules apply provider-wide. Window capacity is estimated for Codex, Claude and supported Antigravity groups, with the previous cycle shown as a labelled reference. Quota readings refresh themselves about a minute after a window resets and every six hours by default, adjustable in Shell-PAMC Settings. Codex/Claude window warmup adds opt-in reset and daily schedules, credential overrides and an optional confirmed tiny request. Approved schedules check current quota and billing before sending, then observe window activation.
-- **Client keys**: create, name and revoke gateway API keys. Names appear in request records and filters.
-- **Model catalog**: pull model lists straight from upstream providers.
-- **Plugins**: installed plugins, typed settings forms, and trusted plugin pages with native CPA management/model-directory compatibility. See [the trust boundary](docs/operations.md#plugin-pages).
-
-</details>
-
-<details>
-<summary><b>Observability</b></summary>
-
-- **Dashboard**: request volume, token throughput, cache hit rate and cost over presets from 15 minutes to 90 days, an all-time window since installation, or any custom range, plus a year-long token heatmap. Statistics are kept permanently; request records roll out of a configurable retention.
-- **Live routing**: a rolling minute of which models were called and which credentials and providers CPA sent them to. Each new request travels the map out to its credential and back, rerouted attempts and cooldowns included. The panel updates as records are stored, falls back to a short poll when the live stream is unavailable, and is shown on desktop widths.
-- **Model panels**: token trend and usage ring by call model or by requested model, with cost shares.
-- **Request records**: multi-select facets and full-text search; with auto-refresh on, new records appear as soon as they are stored; a detail drawer with duration, TTFT, token breakdown and the raw per-request log. Each record keeps the model the upstream reported serving, and flags the ones where it differs from the model requested.
-- **Background collection**: usage is ingested by stream or polling, even with no browser open.
-- **Logs and audit trail**: tail the gateway log, read the console's own service log, and review an append-only audit trail with filters and JSON export.
+- **Proveedores de IA**: Codex, Claude, Gemini, Meta Muse, xAI, Vertex AI, Gemini Interactions, DeepSeek y servicios compatibles con OpenAI, cada uno con credenciales, opciones avanzadas de modelo, políticas de reintento/error en tiempo de ejecución, prioridad, peso, proxy y un interruptor de activación aplicado por la pasarela.
+- **Gestión de OAuth**: inicie sesión desde la consola para Codex, Claude, Antigravity, xAI, Kimi (kimi.com y kimi.ai), Devin y Meta Muse, o importe una clave de cuenta de servicio de Vertex. Los archivos de autenticación, la renovación manual de tokens, las listas de modelos, la cuota de Meta, las lecturas de planes en vivo de xAI/Antigravity y los alias específicos de credenciales se gestionan por credencial; los alias de modelo compartidos y las reglas de exclusión se aplican a nivel de proveedor. La capacidad de ventana se estima para Codex, Claude y grupos admitidos de Antigravity, mostrando el ciclo anterior como una referencia etiquetada. Las lecturas de cuota se actualizan aproximadamente un minuto después de que se reinicia una ventana y cada seis horas de forma predeterminada, ajustable en Ajustes de Shell-PAMC. El calentamiento de ventana de Codex/Claude agrega reinicio voluntario y programaciones diarias, anulaciones de credenciales y una solicitud mínima opcional confirmada. Las programaciones aprobadas verifican la cuota y facturación actual antes de enviar, luego observan la activación de la ventana.
+- **Claves de cliente**: cree, nombre y revoque claves API de la pasarela. Los nombres aparecen en los registros y filtros de solicitudes.
+- **Catálogo de modelos**: obtenga listas de modelos directamente de los proveedores de upstream.
+- **Plugins**: plugins instalados, formularios de ajustes tipados y páginas de plugins confiables con compatibilidad nativa de administración/directorio de modelos de CPA. Consulte [el límite de confianza](docs/operations.md#plugin-pages).
 
 </details>
 
 <details>
-<summary><b>Pricing & cost</b></summary>
+<summary><b>Observabilidad</b></summary>
 
-- **Request-time snapshots**: a request's cost is fixed by immutable price versions when it completes.
-- **OpenRouter price book**: every served model priced from OpenRouter's public list, including long-context and time-of-day tiers.
-- **Linked and custom prices**: pin a model to an OpenRouter entry or set custom rates, with tier presets and a calculator.
-- **Channel multipliers**: scale everything one provider answers, for example a relay billed at 30% of list.
-- **Channel model prices**: give the same model different custom rates and time tiers on different channels, with shared prices as the default.
+- **Panel de control (Dashboard)**: volumen de solicitudes, rendimiento de tokens, tasa de aciertos de caché y costo en intervalos preestablecidos de 15 minutos a 90 días, una ventana histórica total desde la instalación o cualquier rango personalizado, además de un mapa de calor de tokens anual. Las estadísticas se conservan de forma permanente; los registros de solicitudes se eliminan según una retención configurable.
+- **Enrutamiento en vivo**: un minuto continuo de qué modelos fueron invocados y a qué credenciales y proveedores los envió CPA. Cada nueva solicitud recorre el mapa hasta su credencial y de vuelta, incluidos intentos redirigidos y enfriamientos. El panel se actualiza a medida que se almacenan los registros, recurre a sondeo corto si el stream en vivo no está disponible y se muestra en anchos de escritorio.
+- **Paneles de modelos**: tendencia de tokens y anillo de uso por modelo invocado o por modelo solicitado, con distribución de costos.
+- **Registros de solicitudes**: facetas de selección múltiple y búsqueda de texto completo; con la actualización automática activada, los nuevos registros aparecen tan pronto como se almacenan; un panel lateral de detalle con duración, TTFT, desglose de tokens y el registro en crudo por solicitud. Cada registro conserva el modelo que el upstream informó haber servido, y señala aquellos en los que difiere del modelo solicitado.
+- **Recolección en segundo plano**: el uso se ingiere mediante stream o sondeo, incluso sin ningún navegador abierto.
+- **Registros y pista de auditoría**: siga el registro de la pasarela en tiempo real, lea el registro de servicio propio de la consola y revise una pista de auditoría append-only con filtros y exportación a JSON.
 
 </details>
 
 <details>
-<summary><b>Configuration & security</b></summary>
+<summary><b>Precios y costos</b></summary>
 
-- **Dual-mode config editor**: structured forms, or a Monaco YAML editor that preserves comments.
-- **Automatic config backups**: an encrypted copy of `config.yaml` before every change, restorable from the console.
-- **Encryption at rest**: stored credentials and raw usage messages are AES-GCM encrypted.
-- **Audited sensitive actions**: revealing keys, downloading auth files and exporting logs are written to the audit log, and refused if that write fails.
-- **Offline operation**: bundled assets are embedded in the binary; installed and uploaded fonts are stored and served by the deployment. The browser contacts no CDN.
-- **Personalization**: four interface languages, light and dark themes with custom palettes, interface and monospace fonts from a font library (bundled, uploaded or installed from Google Fonts and served by the console itself), a deployment time zone, and K/M/B or 万/亿 number units.
+- **Instantáneas al momento de la solicitud**: el costo de una solicitud queda fijado por versiones de precio inmutables al completarse.
+- **Libro de precios de OpenRouter**: cada modelo servido tarifado a partir de la lista pública de OpenRouter, incluyendo niveles de contexto largo y horarios del día.
+- **Precios vinculados y personalizados**: vincule un modelo a una entrada de OpenRouter o configure tarifas personalizadas, con valores preestablecidos por niveles y calculadora.
+- **Multiplicadores de canal**: escale todo lo que responde un proveedor, por ejemplo un repetidor facturado al 30% del catálogo.
+- **Precios de modelo por canal**: asigne al mismo modelo diferentes tarifas personalizadas y niveles horarios en diferentes canales, con precios compartidos de forma predeterminada.
 
 </details>
 
-## Agents and MCP
+<details>
+<summary><b>Configuración y seguridad</b></summary>
 
-**In the console:** On the `/agent` page, a model routed through CPA answers questions
-and operates the console: usage and request analysis, providers, OAuth, quota, client
-keys, configuration and pricing. Reads run directly. Changes are prepared server-side
-and run only after an Allow in the console. Secrets, tokens and OAuth authorization
-never enter the model's context. Answers can mix text with inline interactive components that
-appear while they are generated: local filters, calculators, diagrams and charts. Components
-use the console's visual system; follow-ups needing new data or actions stay in the reviewed
-conversation flow.
+- **Editor de configuración de modo dual**: formularios estructurados o un editor Monaco YAML que preserva comentarios.
+- **Respaldos automáticos de configuración**: una copia cifrada de `config.yaml` antes de cada cambio, restaurable desde la consola.
+- **Cifrado en reposo**: las credenciales almacenadas y los mensajes de uso sin procesar se cifran con AES-GCM.
+- **Acciones sensibles auditadas**: revelar claves, descargar archivos de autenticación y exportar registros se registran en la auditoría, y se rechazan si esa escritura falla.
+- **Operación sin conexión**: los recursos empaquetados están incrustados en el binario; las fuentes instaladas y subidas son almacenadas y servidas por el propio despliegue. El navegador no se conecta a ninguna CDN.
+- **Personalización**: cuatro idiomas de interfaz, temas claro y oscuro con paletas personalizadas, fuentes de interfaz y monoespaciadas desde una biblioteca de fuentes (empaquetadas, subidas o instaladas desde Google Fonts y servidas por la propia consola), zona horaria de despliegue y unidades numéricas K/M/B o 万/亿.
 
-**From an external agent:** The same capabilities are served over MCP at
-`<console URL>/api/mcp` (Streamable HTTP), so an agent on another machine connects by
-URL with the CPA management key as a bearer token. Nothing is installed on the agent's
-side. The **Connect** action at the top of `/agent` shows the deployment's own endpoint
-with ready-to-copy configuration.
+</details>
+
+## Agentes y MCP
+
+**En la consola:** En la página `/agent`, un modelo enrutado a través de CPA responde preguntas
+y opera la consola: análisis de uso y solicitudes, proveedores, OAuth, cuota, claves
+de cliente, configuración y precios. Las lecturas se ejecutan directamente. Los cambios se preparan en el servidor
+y se ejecutan solo tras un Permitir en la consola. Secretos, tokens y autorización de OAuth
+nunca ingresan al contexto del modelo. Las respuestas pueden combinar texto con componentes interactivos en línea que
+aparecen mientras se generan: filtros locales, calculadoras, diagramas y gráficos. Los componentes
+utilizan el sistema visual de la consola; los seguimientos que requieren nuevos datos o acciones permanecen en el
+flujo de conversación revisado.
+
+**Desde un agente externo:** Las mismas capacidades se sirven a través de MCP en
+`<console URL>/api/mcp` (Streamable HTTP), de modo que un agente en otra máquina se conecta mediante
+URL con la clave de administración de CPA como token portador. No se instala nada en el lado del
+agente. La acción **Conectar** en la parte superior de `/agent` muestra el endpoint propio del despliegue
+con configuración lista para copiar.
 
 Claude Code:
 
@@ -380,7 +376,7 @@ url = "https://cpa.example.com/shell-pamc/api/mcp"
 bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
-Clients configured in JSON, such as Cursor:
+Clientes configurados en JSON, como Cursor:
 
 ```json
 {
@@ -394,9 +390,9 @@ Clients configured in JSON, such as Cursor:
 ```
 
 <details>
-<summary>Clients that only support stdio</summary>
+<summary>Clientes que solo admiten stdio</summary>
 
-The binary carries a stdio bridge that forwards to the console:
+El binario incluye un puente stdio que reenvía hacia la consola:
 
 ```json
 {
@@ -415,96 +411,96 @@ The binary carries a stdio bridge that forwards to the console:
 
 </details>
 
-An external agent reads state and makes low-risk writes, such as display names and
-preferences, directly. Every other change it can only prepare: it cannot approve the
-operation, submit a secret or complete an OAuth sign-in, and the prepared change returns a
-link that opens its approval in the console. The management key is administrator-equivalent, so connect only
-trusted agents and serve the console over HTTPS before connecting one remotely.
-[`docs/agent-capabilities.md`](docs/agent-capabilities.md) is the contract.
+Un agente externo lee el estado y realiza escrituras de bajo riesgo, como nombres para mostrar y
+preferencias, directamente. Cualquier otro cambio solo puede prepararlo: no puede aprobar la
+operación, enviar un secreto ni completar un inicio de sesión de OAuth, y el cambio preparado devuelve un
+enlace que abre su aprobación en la consola. La clave de administración equivale a privilegios de administrador, por lo que conecte únicamente
+agentes de confianza y sirva la consola sobre HTTPS antes de conectar uno de forma remota.
+[`docs/agent-capabilities.md`](docs/agent-capabilities.md) es el contrato.
 
-## Configuration
+## Configuración
 
-| Variable | Default | Purpose |
+| Variable | Valor por defecto | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_CPA_BASE_URL` | required | CPA's address |
-| `SHELLPAMC_CPA_MANAGEMENT_KEY` | required | CPA's management key, and the console's sign-in password |
-| `SHELLPAMC_MASTER_KEY` | required | At-rest encryption key (`openssl rand -hex 32`) |
-| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Sub-path the console is served under |
-| `SHELLPAMC_DATA_DIR` | `./data` | Directory of the SQLite database; the Compose files set `/data` |
-| `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use; `https://` marks the session cookie `Secure` |
-| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another service collects this CPA's usage |
-| `TZ` | system zone | Server calendar; keep it equal to CPA's. Containers default to UTC |
+| `SHELLPAMC_CPA_BASE_URL` | obligatorio | Dirección de CPA |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | obligatorio | Clave de administración de CPA y contraseña de inicio de sesión de la consola |
+| `SHELLPAMC_MASTER_KEY` | obligatorio | Clave de cifrado en reposo (`openssl rand -hex 32`) |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Subruta bajo la cual se sirve la consola |
+| `SHELLPAMC_DATA_DIR` | `./data` | Directorio de la base de datos SQLite; los archivos Compose establecen `/data` |
+| `SHELLPAMC_PUBLIC_URL` | no establecido | La dirección que usan los navegadores; `https://` marca la cookie de sesión como `Secure` |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` cuando otro servicio recolecta el uso de este CPA |
+| `TZ` | zona del sistema | Calendario del servidor; manténgalo igual al de CPA. Los contenedores usan por defecto UTC |
 
-The full reference, with deployment constraints and operational notes, is
+La referencia completa, con restricciones de despliegue y notas operativas, está en
 [`docs/operations.md`](docs/operations.md).
 
-## Architecture
+## Arquitectura
 
 ```text
-Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Shell-PAMC (:8080)
-                                                 ├─ Embedded React SPA (/shell-pamc/)
-                                                 ├─ SQLite WAL (/data)
-                                                 └─ Usage collector ──▶ CLIProxyAPI (:8317)
+Navegador ──▶ Listener directo / ingress HTTPS existente ──▶ Shell-PAMC (:8080)
+                                                    ├─ SPA React incrustada (/shell-pamc/)
+                                                    ├─ SQLite WAL (/data)
+                                                    └─ Recolector de uso ──▶ CLIProxyAPI (:8317)
 ```
 
-- **Single binary**: the React console is embedded in the Go executable.
-- **Single replica**: SQLite in WAL mode, one process per data directory.
-- **Sub-path native**: served under `/shell-pamc` by default (`SHELLPAMC_BASE_PATH`), so it shares a host with CPA.
-- **Allowlisted facade**: ordinary console APIs project safe DTOs; trusted plugin pages use the bounded native contract. Arbitrary target URLs remain refused.
+- **Binario único**: la consola React está incrustada en el ejecutable Go.
+- **Réplica única**: SQLite en modo WAL, un proceso por directorio de datos.
+- **Nativo de subruta**: servido bajo `/shell-pamc` de forma predeterminada (`SHELLPAMC_BASE_PATH`), compartiendo host con CPA.
+- **Fachada con lista permitida**: las APIs ordinarias de la consola proyectan DTOs seguros; las páginas de plugins confiables usan el contrato nativo delimitado. URLs de destino arbitrarias siguen siendo rechazadas.
 
-[`docs/architecture.md`](docs/architecture.md) has the module map, data flows and invariants.
+[`docs/architecture.md`](docs/architecture.md) contiene el mapa de módulos, flujos de datos e invariantes.
 
-## Documentation
+## Documentación
 
-**Using Shell-PAMC**
+**Uso de Shell-PAMC**
 
-| Document | Contents |
+| Documento | Contenido |
 | --- | --- |
-| [`docs/install.md`](docs/install.md) | Installation, verification, upgrades, troubleshooting |
-| [`docs/install-for-agents.md`](docs/install-for-agents.md) | The same install, as steps for a coding agent |
-| [`docs/operations.md`](docs/operations.md) | Settings reference and operational notes |
-| [`docs/ops/sqlite-operations.md`](docs/ops/sqlite-operations.md) | Backup, restore and master-key runbook |
-| [`docs/agent-capabilities.md`](docs/agent-capabilities.md) | Agent capability contract and the MCP bridge |
-| [`docs/cpa-v8-compat.md`](docs/cpa-v8-compat.md) | CPA v8 baseline and configuration relocation |
-| [`docs/cpamc-parity.md`](docs/cpamc-parity.md) | Feature parity with the official CPA management center |
+| [`docs/install.md`](docs/install.md) | Instalación, verificación, actualizaciones, resolución de problemas |
+| [`docs/install-for-agents.md`](docs/install-for-agents.md) | La misma instalación, en pasos para un agente de desarrollo |
+| [`docs/operations.md`](docs/operations.md) | Referencia de ajustes y notas operativas |
+| [`docs/ops/sqlite-operations.md`](docs/ops/sqlite-operations.md) | Guía de respaldo, restauración y clave maestra |
+| [`docs/agent-capabilities.md`](docs/agent-capabilities.md) | Contrato de capacidades del agente y puente MCP |
+| [`docs/cpa-v8-compat.md`](docs/cpa-v8-compat.md) | Línea base de CPA v8 y reubicación de configuración |
+| [`docs/cpamc-parity.md`](docs/cpamc-parity.md) | Paridad de características con el centro de administración oficial de CPA |
 
-**Developing Shell-PAMC**
+**Desarrollo de Shell-PAMC**
 
-| Document | Contents |
+| Documento | Contenido |
 | --- | --- |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Development setup and the verification workflow |
-| [`AGENTS.md`](AGENTS.md) | The contract coding agents follow in this repository |
-| [`docs/architecture.md`](docs/architecture.md) | Module boundaries, data flows and invariants |
-| [`CONTEXT.md`](CONTEXT.md) · [`docs/design.md`](docs/design.md) | Domain vocabulary · visual system |
-| [`docs/releasing.md`](docs/releasing.md) | Tag-triggered GHCR images, native archives and GitHub releases |
-| [`docs/ops/cloudflare-demo.md`](docs/ops/cloudflare-demo.md) | How the public demo is deployed |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Configuración de desarrollo y flujo de verificación |
+| [`AGENTS.md`](AGENTS.md) | El contrato que siguen los agentes de desarrollo en este repositorio |
+| [`docs/architecture.md`](docs/architecture.md) | Límites de módulos, flujos de datos e invariantes |
+| [`CONTEXT.md`](CONTEXT.md) · [`docs/design.md`](docs/design.md) | Vocabulario del dominio · sistema visual |
+| [`docs/releasing.md`](docs/releasing.md) | Imágenes GHCR activadas por tag, archivos nativos y GitHub releases |
+| [`docs/ops/cloudflare-demo.md`](docs/ops/cloudflare-demo.md) | Cómo se despliega la demostración pública |
 
-## Contributing
+## Contribuir
 
-Issues and pull requests are welcome. Development needs Go 1.26+, Node.js 22+ and
+Los reportes de problemas y solicitudes de extracción son bienvenidos. El desarrollo requiere Go 1.26+, Node.js 22+ y
 pnpm 11+:
 
 ```bash
 pnpm install --frozen-lockfile
 cp .env.example .env
-pnpm dev          # Air + Vite with hot reload at http://127.0.0.1:5173/shell-pamc/
+pnpm dev          # Air + Vite con recarga rápida en http://127.0.0.1:5173/shell-pamc/
 ```
 
-Run `pnpm verify` and `pnpm check:ui` before pushing.
-[`CONTRIBUTING.md`](CONTRIBUTING.md) covers setup and the verification workflow.
+Ejecute `pnpm verify` y `pnpm check:ui` antes de hacer push.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) cubre la configuración y el flujo de trabajo de verificación.
 
-## Security
+## Seguridad
 
-Report vulnerabilities privately as described in [`SECURITY.md`](SECURITY.md), not in a
-public issue.
+Informe vulnerabilidades de forma privada como se describe en [`SECURITY.md`](SECURITY.md), no en un
+issue público.
 
-## Acknowledgements
+## Agradecimientos
 
-Shell-PAMC is built on CLIProxyAPI, which
-handles protocol adaptation, credentials and request proxying.
+Shell-PAMC está construido sobre CLIProxyAPI, que
+maneja la adaptación de protocolos, credenciales y proxificado de solicitudes.
 
-Thanks also to the [Linux.do community](https://linux.do).
+Agradecimientos también a la [comunidad Linux.do](https://linux.do).
 
-## License
+## Licencia
 
 [MIT](LICENSE)
