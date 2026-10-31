@@ -24,14 +24,14 @@ test('gate expands actual reads, is exact-origin/path, and forwards released rea
     async route(match, handle) { matcher = match; handler = handle; },
     async unroute(match, handle) { assert.equal(match, matcher); assert.equal(handle, handler); },
   };
-  const gate = await installArrivalFixture(context, 'http://127.0.0.1:1234/omc');
+  const gate = await installArrivalFixture(context, 'http://127.0.0.1:1234/shell-pamc');
   assert.throws(() => gate.release(), /Initial real API reads/);
-  assert.ok(matcher(new URL('http://127.0.0.1:1234/omc/api/v1/usage/events?limit=1')));
-  assert.equal(matcher(new URL('http://elsewhere.test/omc/api/v1/usage/events')), false);
-  assert.equal(matcher(new URL('http://127.0.0.1:1234/omc/api/v1/usage/events/export')), false);
+  assert.ok(matcher(new URL('http://127.0.0.1:1234/shell-pamc/api/v1/usage/events?limit=1')));
+  assert.equal(matcher(new URL('http://elsewhere.test/shell-pamc/api/v1/usage/events')), false);
+  assert.equal(matcher(new URL('http://127.0.0.1:1234/shell-pamc/api/v1/usage/events/export')), false);
   let fulfilled;
   const route = {
-    request: () => ({ method: () => 'GET', url: () => 'http://127.0.0.1:1234/omc/api/v1/usage/events?limit=1&since=3&model=fixture' }),
+    request: () => ({ method: () => 'GET', url: () => 'http://127.0.0.1:1234/shell-pamc/api/v1/usage/events?limit=1&since=3&model=fixture' }),
     async fetch(options) {
       if (options) {
         const url = new URL(options.url);

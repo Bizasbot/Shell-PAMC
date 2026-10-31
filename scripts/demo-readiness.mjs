@@ -2,7 +2,7 @@
 export const DEMO_ROUTES = [
   { path: '/dashboard', heading: '仪表盘', reads: ['/management/dashboard', '/management/dashboard/models', '/management/dashboard/token-heatmap', '/management/overview', '/management/dashboard/providers', '/management/auth-files', '/management/quota', '/usage/routing'], content: '.heatmap-panel .heatmap-grid' },
   { path: '/model-square', heading: '模型广场', reads: ['/management/model-square', '/pricing', '/usage/facets'], content: '.model-square-page [data-model-identity]' },
-  { path: '/agent', heading: 'Oh My CPA', headingSelector: '[data-testid="agent-empty"] [aria-label="Oh My CPA"]', reads: ['/agent/session', '/capabilities'], content: '[data-testid="agent-empty"]' },
+  { path: '/agent', heading: 'Shell-PAMC', headingSelector: '[data-testid="agent-empty"] [aria-label="Shell-PAMC"]', reads: ['/agent/session', '/capabilities'], content: '[data-testid="agent-empty"]' },
   // Nothing can be prepared in the demonstration, so the page states that instead of reading an operation.
   { path: '/authorize/:id', heading: '授权外部 Agent', reads: [], content: '[data-testid="agent-authorize-demo"]' },
   { path: '/ai-providers', heading: 'AI 提供商', reads: ['/management/providers'], content: '.providers-page .ant-table-row' },
@@ -13,7 +13,7 @@ export const DEMO_ROUTES = [
   { path: '/usage/events', heading: '请求记录', reads: ['/usage/events'], content: '.request-list' },
   { path: '/pricing', heading: '费用与用量', reads: ['/pricing'], content: '[data-testid="pricing-model-list"]' },
   { path: '/config', heading: '配置面板', reads: ['/management/config'], content: '.config-workbench' },
-  { path: '/omc-settings', heading: 'OMC 设置', reads: ['/preferences'], content: '.omc-settings-group' },
+  { path: '/omc-settings', heading: 'Shell-PAMC 设置', reads: ['/preferences'], content: '.omc-settings-group' },
   { path: '/plugins', heading: '插件管理', reads: ['/management/plugins'], content: '[data-plugin-status]' },
   { path: '/plugins/settings', heading: '插件管理', reads: ['/management/plugins', '/management/plugins/settings'], content: '[data-plugin-panel="settings"]' },
   { path: '/system', heading: '系统信息', reads: ['/management/system'], content: '[data-testid="sys-card-versions"]' },

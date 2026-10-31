@@ -13,10 +13,10 @@ func TestNormalizeBasePath(t *testing.T) {
 		in   string
 		want string
 	}{
-		{name: "default", in: "", want: "/omc"},
-		{name: "plain", in: "omc", want: "/omc"},
-		{name: "trailing", in: "/omc/", want: "/omc"},
-		{name: "nested", in: "/tools/omc/", want: "/tools/omc"},
+		{name: "default", in: "", want: "/shell-pamc"},
+		{name: "plain", in: "shell-pamc", want: "/shell-pamc"},
+		{name: "trailing", in: "/shell-pamc/", want: "/shell-pamc"},
+		{name: "nested", in: "/tools/shell-pamc/", want: "/tools/shell-pamc"},
 		{name: "root", in: "/", want: ""},
 	}
 	for _, test := range tests {
@@ -33,24 +33,24 @@ func TestNormalizeBasePath(t *testing.T) {
 }
 
 func TestLoadReadsAuthenticationConfiguration(t *testing.T) {
-	t.Setenv("OMCPA_BASE_PATH", "/omc")
+	t.Setenv("SHELLPAMC_BASE_PATH", "/shell-pamc")
 
-	t.Setenv("OMCPA_MASTER_KEY", "01234567890123456789012345678901")
-	t.Setenv("OMCPA_PUBLIC_URL", "https://example.test/omc")
-	for _, name := range []string{"OMCPA_DATA_DIR", "OMCPA_LISTEN_ADDR", "OMCPA_CPA_BASE_URL", "OMCPA_CPA_USAGE_ADDR", "OMCPA_REQUEST_TIMEOUT", "OMCPA_CPA_TLS_SKIP_VERIFY", "OMCPA_CPA_MANAGEMENT_KEY", "OMCPA_VERSION"} {
+	t.Setenv("SHELLPAMC_MASTER_KEY", "01234567890123456789012345678901")
+	t.Setenv("SHELLPAMC_PUBLIC_URL", "https://example.test/shell-pamc")
+	for _, name := range []string{"SHELLPAMC_DATA_DIR", "SHELLPAMC_LISTEN_ADDR", "SHELLPAMC_CPA_BASE_URL", "SHELLPAMC_CPA_USAGE_ADDR", "SHELLPAMC_REQUEST_TIMEOUT", "SHELLPAMC_CPA_TLS_SKIP_VERIFY", "SHELLPAMC_CPA_MANAGEMENT_KEY", "SHELLPAMC_VERSION"} {
 		_ = os.Unsetenv(name)
 	}
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.PublicURL != "https://example.test/omc" {
+	if cfg.PublicURL != "https://example.test/shell-pamc" {
 		t.Fatalf("authentication config = %#v", cfg)
 	}
 }
 
 func TestNormalizeBasePathRejectsURLSyntax(t *testing.T) {
-	for _, value := range []string{"/omc?x=1", "/omc#fragment", "/../omc"} {
+	for _, value := range []string{"/shell-pamc?x=1", "/shell-pamc#fragment", "/../shell-pamc"} {
 		if _, err := NormalizeBasePath(value); err == nil {
 			t.Fatalf("NormalizeBasePath(%q) unexpectedly succeeded", value)
 		}
@@ -62,10 +62,10 @@ func TestNormalizeBasePathRejectsURLSyntax(t *testing.T) {
 func clearConfigEnv(t *testing.T) {
 	t.Helper()
 	for _, name := range []string{
-		"OMCPA_BASE_PATH", "OMCPA_DATA_DIR", "OMCPA_LISTEN_ADDR", "OMCPA_MASTER_KEY",
-		"OMCPA_PUBLIC_URL", "OMCPA_VERSION", "OMCPA_CPA_BASE_URL", "OMCPA_CPA_USAGE_ADDR",
-		"OMCPA_CPA_MANAGEMENT_KEY", "OMCPA_TRUSTED_PROXY_CIDRS", DemoModeEnv, "PORT",
-		"OMCPA_UPDATE_CHECK_ENABLED", "OMCPA_OMC_REPO", "OMCPA_CPA_REPO",
+		"SHELLPAMC_BASE_PATH", "SHELLPAMC_DATA_DIR", "SHELLPAMC_LISTEN_ADDR", "SHELLPAMC_MASTER_KEY",
+		"SHELLPAMC_PUBLIC_URL", "SHELLPAMC_VERSION", "SHELLPAMC_CPA_BASE_URL", "SHELLPAMC_CPA_USAGE_ADDR",
+		"SHELLPAMC_CPA_MANAGEMENT_KEY", "SHELLPAMC_TRUSTED_PROXY_CIDRS", DemoModeEnv, "PORT",
+		"SHELLPAMC_UPDATE_CHECK_ENABLED", "SHELLPAMC_OMC_REPO", "SHELLPAMC_CPA_REPO",
 	} {
 		t.Setenv(name, "")
 	}
@@ -80,13 +80,13 @@ func TestLoadLeavesSelfHostDefaultsAlone(t *testing.T) {
 	if cfg.IsDemoMode {
 		t.Fatal("demo mode must be off unless it is asked for")
 	}
-	if cfg.BasePath != "/omc" {
-		t.Fatalf("base path = %q, want the documented /omc", cfg.BasePath)
+	if cfg.BasePath != "/shell-pamc" {
+		t.Fatalf("base path = %q, want the documented /shell-pamc", cfg.BasePath)
 	}
 	if cfg.DataDir != "data" {
 		t.Fatalf("data dir = %q, want ./data", cfg.DataDir)
 	}
-	if cfg.DatabasePath != filepath.Join("data", "oh-my-cpa.db") {
+	if cfg.DatabasePath != filepath.Join("data", "shell-pamc.db") {
 		t.Fatalf("database = %q, want the self-hosted file", cfg.DatabasePath)
 	}
 	if cfg.ListenAddr != ":8080" {
@@ -105,7 +105,7 @@ func TestLoadLeavesSelfHostDefaultsAlone(t *testing.T) {
 
 func TestLoadParsesTrustedProxyCIDRs(t *testing.T) {
 	clearConfigEnv(t)
-	t.Setenv("OMCPA_TRUSTED_PROXY_CIDRS", "172.18.0.0/16, 2001:db8::/32")
+	t.Setenv("SHELLPAMC_TRUSTED_PROXY_CIDRS", "172.18.0.0/16, 2001:db8::/32")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +114,7 @@ func TestLoadParsesTrustedProxyCIDRs(t *testing.T) {
 		t.Fatalf("trusted proxies = %v", cfg.TrustedProxyCIDRs)
 	}
 
-	t.Setenv("OMCPA_TRUSTED_PROXY_CIDRS", "not-a-cidr")
+	t.Setenv("SHELLPAMC_TRUSTED_PROXY_CIDRS", "not-a-cidr")
 	if _, err := Load(); err == nil {
 		t.Fatal("invalid trusted proxy CIDR was accepted")
 	}
@@ -140,8 +140,8 @@ func TestLoadIgnoresPlatformVariablesOutsideIsDemoMode(t *testing.T) {
 func TestLoadIsDemoModeIsSelfContained(t *testing.T) {
 	clearConfigEnv(t)
 	t.Setenv(DemoModeEnv, "true")
-	t.Setenv("OMCPA_CPA_BASE_URL", "http://10.0.0.9:8317")
-	t.Setenv("OMCPA_CPA_MANAGEMENT_KEY", "inherited-management-key")
+	t.Setenv("SHELLPAMC_CPA_BASE_URL", "http://10.0.0.9:8317")
+	t.Setenv("SHELLPAMC_CPA_MANAGEMENT_KEY", "inherited-management-key")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -152,10 +152,10 @@ func TestLoadIsDemoModeIsSelfContained(t *testing.T) {
 	if cfg.BasePath != "" {
 		t.Fatalf("base path = %q, want the site root", cfg.BasePath)
 	}
-	if cfg.DataDir != filepath.Join(os.TempDir(), "oh-my-cpa-demo") {
+	if cfg.DataDir != filepath.Join(os.TempDir(), "shell-pamc-demo") {
 		t.Fatalf("data dir = %q, want a temporary directory", cfg.DataDir)
 	}
-	if cfg.DatabasePath != filepath.Join(cfg.DataDir, "oh-my-cpa-demo.db") {
+	if cfg.DatabasePath != filepath.Join(cfg.DataDir, "shell-pamc-demo.db") {
 		t.Fatalf("demo database = %q, want the demo's own file", cfg.DatabasePath)
 	}
 	if len(cfg.MasterKey) != 64 {
@@ -172,16 +172,16 @@ func TestLoadIsDemoModeIsSelfContained(t *testing.T) {
 func TestLoadIsDemoModeHonoursExplicitOverrides(t *testing.T) {
 	clearConfigEnv(t)
 	t.Setenv(DemoModeEnv, "true")
-	t.Setenv("OMCPA_BASE_PATH", "/omc")
-	t.Setenv("OMCPA_DATA_DIR", "/data")
-	t.Setenv("OMCPA_MASTER_KEY", "01234567890123456789012345678901")
-	t.Setenv("OMCPA_LISTEN_ADDR", "127.0.0.1:9000")
-	t.Setenv("OMCPA_PUBLIC_URL", "https://demo.example.test")
+	t.Setenv("SHELLPAMC_BASE_PATH", "/shell-pamc")
+	t.Setenv("SHELLPAMC_DATA_DIR", "/data")
+	t.Setenv("SHELLPAMC_MASTER_KEY", "01234567890123456789012345678901")
+	t.Setenv("SHELLPAMC_LISTEN_ADDR", "127.0.0.1:9000")
+	t.Setenv("SHELLPAMC_PUBLIC_URL", "https://demo.example.test")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.BasePath != "/omc" || cfg.DataDir != filepath.Clean("/data") || cfg.ListenAddr != "127.0.0.1:9000" {
+	if cfg.BasePath != "/shell-pamc" || cfg.DataDir != filepath.Clean("/data") || cfg.ListenAddr != "127.0.0.1:9000" {
 		t.Fatalf("explicit configuration was overridden: %#v", cfg)
 	}
 	if cfg.MasterKey != "01234567890123456789012345678901" || cfg.PublicURL != "https://demo.example.test" {
@@ -207,7 +207,7 @@ func TestLoadIsDemoModeAdoptsThePlatformPort(t *testing.T) {
 func TestLoadIsDemoModeUsesTheConfiguredOrigin(t *testing.T) {
 	clearConfigEnv(t)
 	t.Setenv(DemoModeEnv, "true")
-	t.Setenv("OMCPA_PUBLIC_URL", "https://demo.example.test")
+	t.Setenv("SHELLPAMC_PUBLIC_URL", "https://demo.example.test")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -256,8 +256,8 @@ func TestUsageIdleIntervals(t *testing.T) {
 		{"invalid", "1s", "abc", 0, 0, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("OMCPA_USAGE_IDLE_INTERVAL", tc.base)
-			t.Setenv("OMCPA_USAGE_MAX_IDLE_INTERVAL", tc.maximum)
+			t.Setenv("SHELLPAMC_USAGE_IDLE_INTERVAL", tc.base)
+			t.Setenv("SHELLPAMC_USAGE_MAX_IDLE_INTERVAL", tc.maximum)
 			cfg, err := loadUsageConfig()
 			if tc.invalid {
 				if err == nil {
@@ -279,13 +279,13 @@ func TestUsageIdleIntervals(t *testing.T) {
 // every other boolean in this file.
 //
 // Ignoring an unparsable value would be worse here than elsewhere: an operator who typed
-// `OMCPA_UPDATE_CHECK_ENABLED=flase` asking to stop the process reaching the internet would get
+// `SHELLPAMC_UPDATE_CHECK_ENABLED=flase` asking to stop the process reaching the internet would get
 // a deployment that keeps reaching it, with nothing to say the setting had not been understood.
 func TestReleaseCheckConfigReportsAMalformedSwitch(t *testing.T) {
 	clearConfigEnv(t)
-	t.Setenv("OMCPA_UPDATE_CHECK_ENABLED", "flase")
+	t.Setenv("SHELLPAMC_UPDATE_CHECK_ENABLED", "flase")
 	if _, err := Load(); err == nil {
-		t.Fatal("a malformed OMCPA_UPDATE_CHECK_ENABLED was accepted")
+		t.Fatal("a malformed SHELLPAMC_UPDATE_CHECK_ENABLED was accepted")
 	}
 
 	// The defaults and the fork overrides still resolve.
@@ -305,8 +305,8 @@ func TestReleaseCheckConfigReportsAMalformedSwitch(t *testing.T) {
 	}
 
 	clearConfigEnv(t)
-	t.Setenv("OMCPA_UPDATE_CHECK_ENABLED", "false")
-	t.Setenv("OMCPA_CPA_REPO", "someone/fork")
+	t.Setenv("SHELLPAMC_UPDATE_CHECK_ENABLED", "false")
+	t.Setenv("SHELLPAMC_CPA_REPO", "someone/fork")
 	cfg, err = Load()
 	if err != nil {
 		t.Fatal(err)
@@ -331,7 +331,7 @@ func TestLoadUsesBuildVersionUnlessOperatorOverridesIt(t *testing.T) {
 	if loaded.Version != "v0.1.0" {
 		t.Fatalf("version = %q, want embedded release", loaded.Version)
 	}
-	t.Setenv("OMCPA_VERSION", "v0.2.0-fork")
+	t.Setenv("SHELLPAMC_VERSION", "v0.2.0-fork")
 	loaded, err = Load()
 	if err != nil {
 		t.Fatal(err)

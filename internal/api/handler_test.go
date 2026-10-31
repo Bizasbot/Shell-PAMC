@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/discovery"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/cpa/discovery"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func testHandler(t *testing.T, basePath string) *Handler {
@@ -37,24 +37,24 @@ func testHandler(t *testing.T, basePath string) *Handler {
 }
 
 func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
-	handler := testHandler(t, "/omc")
+	handler := testHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 
 	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
-	response, err := client.Get(server.URL + "/omc")
+	response, err := client.Get(server.URL + "/shell-pamc")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if response.StatusCode != http.StatusPermanentRedirect {
-		t.Fatalf("/omc status = %d, want 308", response.StatusCode)
+		t.Fatalf("/shell-pamc status = %d, want 308", response.StatusCode)
 	}
-	if location := response.Header.Get("Location"); location != "/omc/" {
+	if location := response.Header.Get("Location"); location != "/shell-pamc/" {
 		t.Fatalf("redirect location = %q", location)
 	}
 	response.Body.Close()
 
-	response, err = http.Get(server.URL + "/omc/some/route")
+	response, err = http.Get(server.URL + "/shell-pamc/some/route")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,12 +67,12 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 	body := make([]byte, 4096)
 	n, _ := response.Body.Read(body)
 	response.Body.Close()
-	if !strings.Contains(string(body[:n]), `"basePath":"/omc"`) && !strings.Contains(string(body[:n]), `basePath: "/omc"`) {
+	if !strings.Contains(string(body[:n]), `"basePath":"/shell-pamc"`) && !strings.Contains(string(body[:n]), `basePath: "/shell-pamc"`) {
 		t.Fatalf("SPA did not include runtime base path: %s", string(body[:n]))
 	}
 
 	// The application API is protected, while the static shell remains public.
-	response, err = http.Get(server.URL + "/omc/api/v1/not-found")
+	response, err = http.Get(server.URL + "/shell-pamc/api/v1/not-found")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 		t.Fatal(err)
 	}
 	authenticatedClient := &http.Client{Jar: jar}
-	loginResponse, err := authenticatedClient.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
+	loginResponse, err := authenticatedClient.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 	}
 	loginResponse.Body.Close()
 
-	sessionResponse, err := authenticatedClient.Get(server.URL + "/omc/api/auth/session")
+	sessionResponse, err := authenticatedClient.Get(server.URL + "/shell-pamc/api/auth/session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 		t.Fatalf("session payload = %#v", sessionPayload)
 	}
 
-	response, err = authenticatedClient.Get(server.URL + "/omc/api/v1/not-found")
+	response, err = authenticatedClient.Get(server.URL + "/shell-pamc/api/v1/not-found")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 		t.Fatalf("authenticated API miss payload = %#v", payload)
 	}
 
-	invalidCookieRequest, err := http.NewRequest(http.MethodGet, server.URL+"/omc/api/v1/not-found", nil)
+	invalidCookieRequest, err := http.NewRequest(http.MethodGet, server.URL+"/shell-pamc/api/v1/not-found", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 	}
 	invalidCookieResponse.Body.Close()
 
-	logoutResponse, err := authenticatedClient.Post(server.URL+"/omc/api/auth/logout", "application/json", nil)
+	logoutResponse, err := authenticatedClient.Post(server.URL+"/shell-pamc/api/auth/logout", "application/json", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 		t.Fatalf("logout cache-control = %q", cache)
 	}
 	logoutResponse.Body.Close()
-	response, err = authenticatedClient.Get(server.URL + "/omc/api/v1/not-found")
+	response, err = authenticatedClient.Get(server.URL + "/shell-pamc/api/v1/not-found")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 	}
 	response.Body.Close()
 
-	response, err = http.Get(server.URL + "/omc/assets/does-not-exist.js")
+	response, err = http.Get(server.URL + "/shell-pamc/assets/does-not-exist.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 	// A missing icon must stop at the static handler. If it falls through to
 	// the SPA fallback, the browser receives index.html with a 200 response and
 	// reports a broken provider icon instead of a missing asset.
-	response, err = http.Get(server.URL + "/omc/lobe-icons/does-not-exist.svg")
+	response, err = http.Get(server.URL + "/shell-pamc/lobe-icons/does-not-exist.svg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +203,7 @@ func TestRouterSeparatesSPAFromAPIAndRedirectsBasePath(t *testing.T) {
 	}
 	response.Body.Close()
 
-	headResponse, err := http.Head(server.URL + "/omc/")
+	headResponse, err := http.Head(server.URL + "/shell-pamc/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func TestResourceResponseDoesNotExposeCredentialBearingURLs(t *testing.T) {
 }
 
 func TestHTTPSSessionCookieIsSecure(t *testing.T) {
-	manager, err := auth.New("test-management-key", "/omc", "https://example.test/omc")
+	manager, err := auth.New("test-management-key", "/shell-pamc", "https://example.test/shell-pamc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +280,7 @@ func TestRootBasePathServesAPIAtRoot(t *testing.T) {
 }
 
 func TestProtectedMutationRequiresSameOrigin(t *testing.T) {
-	handler := testHandler(t, "/omc")
+	handler := testHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	jar, err := cookiejar.New(nil)
@@ -288,12 +288,12 @@ func TestProtectedMutationRequiresSameOrigin(t *testing.T) {
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	login, err := client.Post(server.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
+	login, err := client.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"management-secret"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	login.Body.Close()
-	request, err := http.NewRequest(http.MethodPost, server.URL+"/omc/api/v1/instances/default/discover", nil)
+	request, err := http.NewRequest(http.MethodPost, server.URL+"/shell-pamc/api/v1/instances/default/discover", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,15 +309,15 @@ func TestProtectedMutationRequiresSameOrigin(t *testing.T) {
 }
 
 func TestInjectRuntimeConfigReplacesTemplateScript(t *testing.T) {
-	input := `<html><head><script>if (!window.__OMCPA_CONFIG__) { window.__OMCPA_CONFIG__ = {basePath: "/omc"}; }</script></head></html>`
-	output, err := injectRuntimeConfig(input, config.Config{BasePath: "/nested/omc"})
+	input := `<html><head><script>if (!window.__SHELLPAMC_CONFIG__) { window.__SHELLPAMC_CONFIG__ = {basePath: "/shell-pamc"}; }</script></head></html>`
+	output, err := injectRuntimeConfig(input, config.Config{BasePath: "/nested/shell-pamc"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(output, "window.__OMCPA_CONFIG__") != 1 {
-		t.Fatalf("config declaration count in output = %d: %s", strings.Count(output, "window.__OMCPA_CONFIG__"), output)
+	if strings.Count(output, "window.__SHELLPAMC_CONFIG__") != 1 {
+		t.Fatalf("config declaration count in output = %d: %s", strings.Count(output, "window.__SHELLPAMC_CONFIG__"), output)
 	}
-	if !strings.Contains(output, `<base href="/nested/omc/">`) {
+	if !strings.Contains(output, `<base href="/nested/shell-pamc/">`) {
 		t.Fatalf("missing base tag: %s", output)
 	}
 	if !strings.Contains(output, `"demo":false`) {
@@ -329,7 +329,7 @@ func TestInjectRuntimeConfigReplacesTemplateScript(t *testing.T) {
 // rather than from an API call, so the marker is right in the first frame and a
 // visitor never sees a non-demo layout flash before it.
 func TestInjectRuntimeConfigMarksTheDemo(t *testing.T) {
-	input := `<html><head><script>if (!window.__OMCPA_CONFIG__) { window.__OMCPA_CONFIG__ = {basePath: "/omc"}; }</script></head></html>`
+	input := `<html><head><script>if (!window.__SHELLPAMC_CONFIG__) { window.__SHELLPAMC_CONFIG__ = {basePath: "/shell-pamc"}; }</script></head></html>`
 	output, err := injectRuntimeConfig(input, config.Config{BasePath: "/", IsDemoMode: true})
 	if err != nil {
 		t.Fatal(err)

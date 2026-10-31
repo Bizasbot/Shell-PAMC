@@ -74,11 +74,11 @@ beforeEach(() => {
   writes = [];
   vi.stubGlobal('fetch', vi.fn(async (input: string, options: RequestInit) => {
     expect(options.credentials).toBe('same-origin');
-    if (input === '/omc/api/v1/preferences' && options.method === 'GET') {
+    if (input === '/shell-pamc/api/v1/preferences' && options.method === 'GET') {
       reads += 1;
       return readResponse ?? jsonResponse({ preferences: stored, time_zone: { server_timezone: 'UTC' } });
     }
-    if (input.startsWith('/omc/api/v1/preferences/') && options.method === 'PUT') {
+    if (input.startsWith('/shell-pamc/api/v1/preferences/') && options.method === 'PUT') {
       const response = deferred<Response>();
       writes.push({ key: input.split('/').pop()!, value: JSON.parse(String(options.body)), options, response });
       if (isDraining) response.resolve(jsonResponse({ key: writes.at(-1)!.key, value: writes.at(-1)!.value }));

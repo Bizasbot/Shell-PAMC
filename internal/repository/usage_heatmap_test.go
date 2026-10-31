@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // dayWindowsIn builds consecutive local-day windows ending at `end`, using the real

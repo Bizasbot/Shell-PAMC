@@ -1,9 +1,9 @@
 // Sends the dev server's bare mount path to its canonical slash.
 //
-// Vite only serves URLs under its `base`, which ends in a slash, so /omc gets a
+// Vite only serves URLs under its `base`, which ends in a slash, so /shell-pamc gets a
 // 404 hint page there while the Go server redirects the same address
 // (internal/api Router). Development follows the server so a hand-typed or
-// bookmarked /omc opens the console in both.
+// bookmarked /shell-pamc opens the console in both.
 
 // Returns the redirect target for a request URL, or null when the request is
 // not for the bare mount path. The query string survives the redirect. A root

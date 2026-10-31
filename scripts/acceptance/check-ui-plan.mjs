@@ -25,7 +25,7 @@
  * them": `App.tsx` and the layout render on every route, the theme and global
  * stylesheet paint every page, and the API client is the only way any of them talks
  * to a server. `web/index.html` is the document every route is loaded into: it names
- * the module entry and seeds `window.__OMCPA_CONFIG__` with the base path, so it sits
+ * the module entry and seeds `window.__SHELLPAMC_CONFIG__` with the base path, so it sits
  * here rather than with the page it happens to look like.
  */
 const SHELL_PATHS = [
@@ -327,7 +327,7 @@ const SCENARIO_PATHS = [
     prefix: 'web/src/types/tokenHeatmap',
     scenarios: ['dashboard-heatmap', 'dashboard-heatmap-mobile', 'dashboard-heatmap-pruned', 'dashboard-heatmap-error', 'mobile-console'],
   },
-  // The OMC settings page and the preference layer behind it. The page is what the scenario loads,
+  // The Shell-PAMC settings page and the preference layer behind it. The page is what the scenario loads,
   // so a change to the page, its controls or the shared token-display layer reaches it; the token
   // layer and the preference hook also govern the dashboard's own readouts, which is why the
   // dashboard's model panels and the OMC page move together.
@@ -387,7 +387,7 @@ const SCENARIO_PATHS = [
   },
   {
     // The animated shape of a reading: the contract every readout on the dashboard's KPI tiles is
-    // built from. Only those tiles construct one, so the dashboard scenarios and the OMC settings
+    // built from. Only those tiles construct one, so the dashboard scenarios and the Shell-PAMC settings
     // scenario - which reads the same tiles back when it asserts the unit style they print in - are
     // what a change here can reach.
     prefix: 'web/src/types/rollingNumber',

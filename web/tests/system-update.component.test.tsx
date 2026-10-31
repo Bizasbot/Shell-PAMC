@@ -30,7 +30,7 @@ function Card({ onFinished }: { onFinished: (outcome: UpdateOutcome) => void }) 
   const offer = deriveUpdateOffer(VERSION, updater, 'omc');
   return (
     <>
-      <UpdateAction version={VERSION} productTitle="Oh My CPA" offer={offer} isSubmitting={submittingProduct === 'omc'} onUpdate={() => void apply('omc')} />
+      <UpdateAction version={VERSION} productTitle="Shell-PAMC" offer={offer} isSubmitting={submittingProduct === 'omc'} onUpdate={() => void apply('omc')} />
       <UpdateStatusLine offer={offer} />
       <UpdaterSetup updater={updater} />
     </>
@@ -64,19 +64,19 @@ function mount(fixture = createSystemUpdaterFixture()) {
 }
 
 async function startUpdate() {
-  fireEvent.click(await screen.findByRole('button', { name: 'Update Oh My CPA to v1.1.0' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Update Shell-PAMC to v1.1.0' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Update now' }));
   await screen.findByText('Pulling the new image…');
 }
 
 it('asks before updating and sends nothing until the question is answered', async () => {
   const surface = mount();
-  fireEvent.click(await screen.findByRole('button', { name: 'Update Oh My CPA to v1.1.0' }));
-  await screen.findByText('Update Oh My CPA to v1.1.0?');
+  fireEvent.click(await screen.findByRole('button', { name: 'Update Shell-PAMC to v1.1.0' }));
+  await screen.findByText('Update Shell-PAMC to v1.1.0?');
   expect(surface.requests.some((entry) => entry.method === 'POST')).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: 'Update now' }));
   await screen.findByText('Pulling the new image…');
-  expect(surface.requests.filter((entry) => entry.method === 'POST').map((entry) => entry.path)).toEqual(['/omc/api/v1/management/system/updater/apply']);
+  expect(surface.requests.filter((entry) => entry.method === 'POST').map((entry) => entry.path)).toEqual(['/shell-pamc/api/v1/management/system/updater/apply']);
   surface.close();
 });
 

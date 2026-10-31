@@ -3,7 +3,7 @@ package updater
 import (
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // Reference is a parsed image reference.
@@ -56,7 +56,7 @@ func (r Reference) IsPinned() bool {
 }
 
 // CanonicalRepository removes the spellings of Docker Hub that name the same
-// repository, so "docker.io/wiziscool/oh-my-cpa" and "wiziscool/oh-my-cpa" compare
+// repository, so "docker.io/library/nginx" and "nginx" compare
 // equal.
 func CanonicalRepository(repository string) string {
 	canonical := strings.ToLower(strings.TrimSpace(repository))

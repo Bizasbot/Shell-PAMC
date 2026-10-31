@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const providersEndpoint = "/omc/api/v1/management/providers"
+const providersEndpoint = "/shell-pamc/api/v1/management/providers"
 
 func listedProvider(t *testing.T, fixture providerTestFixture, id string) ProviderItemDTO {
 	t.Helper()

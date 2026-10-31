@@ -3,9 +3,9 @@ package auth
 import "testing"
 
 func TestCapabilityIdentityUsesTheExistingAuthority(t *testing.T) {
-	current, _ := New("management-key-one", "/omc", "")
+	current, _ := New("management-key-one", "/shell-pamc", "")
 	same, _ := New("management-key-one", "/different", "")
-	rotated, _ := New("management-key-two", "/omc", "")
+	rotated, _ := New("management-key-two", "/shell-pamc", "")
 	if current.CapabilityIdentity() == "" || current.CapabilityIdentity() != same.CapabilityIdentity() {
 		t.Fatal("authority depends on session or path")
 	}

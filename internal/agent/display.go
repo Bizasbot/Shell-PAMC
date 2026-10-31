@@ -9,8 +9,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/jsonschema-go/jsonschema"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
 )
 
 // render_ui is the Agent's model-selected presentation tool (ADR 0073, 0085, 0087):

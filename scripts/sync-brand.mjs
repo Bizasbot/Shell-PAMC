@@ -100,34 +100,9 @@ export function renderBrandSvg(shape, colors) {
 }
 
 /**
- * Renders the mark as the favicon: one file holding both default palettes.
- *
- * A tab has no console theme to follow, so the two palettes are selected by `prefers-color-scheme`
- * inside the file. The fills therefore move from attributes into a stylesheet; an attribute cannot
- * sit behind a media query.
+ * The favicon is the cat logo, embedded as an image. It is a committed file, not generated: the
+ * script only knows the drawings in `markup.ts`, and the test checks the file still carries the cat.
  */
-export function renderFaviconSvg(colors) {
-  const drawing = extractDrawing('mark');
-  const body = drawing.body
-    .split('fill="__INK__"').join('class="omc-ink"')
-    .split('fill="__ACCENT__"').join('class="omc-accent"');
-  if (body.includes('__')) {
-    throw new Error("brand markup's mark drawing still carries a placeholder after substitution");
-  }
-  const rules = (palette) => `.omc-ink { fill: ${palette.ink}; } .omc-accent { fill: ${palette.accent}; }`;
-  return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${drawing.viewBox}" width="${drawing.width}" height="${drawing.height}">`,
-    '<title>Oh My CPA</title>',
-    '<style>',
-    `  ${rules(colors.light)}`,
-    `  @media (prefers-color-scheme: dark) { ${rules(colors.dark)} }`,
-    '</style>',
-    `  ${body}`,
-    '</svg>',
-    '',
-  ].join('\n');
-}
-
 export const FAVICON_FILE = 'web/public/favicon.svg';
 
 /** The files the READMEs reference, and what each should contain. */
@@ -142,7 +117,6 @@ export function brandArtifacts() {
 function brandFiles() {
   return [
     ...brandArtifacts().map((artifact) => ({ file: artifact.file, wanted: renderBrandSvg(artifact.shape, artifact.colors) })),
-    { file: FAVICON_FILE, wanted: renderFaviconSvg(readmeBrandColors()) },
   ];
 }
 

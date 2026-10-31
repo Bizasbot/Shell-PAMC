@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // Seed observations, not estimates: the real handlers join the same locked

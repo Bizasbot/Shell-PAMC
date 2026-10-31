@@ -21,17 +21,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/discovery"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/fontasset"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/web"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/cpa/discovery"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/fontasset"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/web"
 )
 
 type Handler struct {
@@ -305,7 +305,7 @@ func (h *Handler) routes() chi.Router {
 				v1.Get("/management/api-keys", h.listClientAPIKeys)
 				v1.Post("/management/api-keys", h.createClientAPIKey)
 				v1.Delete("/management/api-keys/{index}", h.deleteClientAPIKey)
-				// Key aliases are Oh My CPA's own metadata keyed by the usage
+				// Key aliases are Shell-PAMC's own metadata keyed by the usage
 				// fingerprint, so they are separate from the CPA config writes above.
 				v1.Get("/management/client-key-aliases", h.listClientKeyAliases)
 				v1.Put("/management/client-key-aliases", h.putClientKeyAlias)
@@ -418,7 +418,7 @@ func (h *Handler) login(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	if h.auth == nil {
-		writeError(writer, http.StatusServiceUnavailable, "CPA management key is not configured yet; set OMCPA_CPA_MANAGEMENT_KEY first")
+		writeError(writer, http.StatusServiceUnavailable, "CPA management key is not configured yet; set SHELLPAMC_CPA_MANAGEMENT_KEY first")
 		return
 	}
 	var payload loginRequest
@@ -973,11 +973,11 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 	// script. Paths are validated by NormalizeBasePath before reaching here.
 	// `demo` is injected rather than probed so the console can mark itself in the
 	// first frame, without a request that would flash a non-demo layout first.
-	payload := fmt.Sprintf(`window.__OMCPA_CONFIG__ = %s;`, mustJSON(map[string]any{
+	payload := fmt.Sprintf(`window.__SHELLPAMC_CONFIG__ = %s;`, mustJSON(map[string]any{
 		"basePath":     basePath,
 		"apiBaseUrl":   apiBase,
 		"mediaBaseUrl": mediaBase,
-		"appName":      "Oh My CPA",
+		"appName":      "Shell-PAMC",
 		"demo":         cfg.IsDemoMode,
 		// The running build's own version, so the console names the version this
 		// deployment actually is instead of a second copy of the number maintained
@@ -986,7 +986,7 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 	}))
 	script := "<script>" + payload + "</script>"
 	replacedConfig := false
-	if strings.Contains(indexHTML, "window.__OMCPA_CONFIG__") {
+	if strings.Contains(indexHTML, "window.__SHELLPAMC_CONFIG__") {
 		start := strings.Index(indexHTML, "<script>")
 		for start >= 0 {
 			endRelative := strings.Index(indexHTML[start:], "</script>")
@@ -995,7 +995,7 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 			}
 			end := start + endRelative + len("</script>")
 			block := indexHTML[start:end]
-			if strings.Contains(block, "window.__OMCPA_CONFIG__") {
+			if strings.Contains(block, "window.__SHELLPAMC_CONFIG__") {
 				indexHTML = indexHTML[:start] + script + indexHTML[end:]
 				replacedConfig = true
 				break

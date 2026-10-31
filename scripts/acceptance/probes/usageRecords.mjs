@@ -793,7 +793,7 @@ export async function requestListInteractions({ base, page, check }) {
     await returnToLatest();
     const expectedGrouping = label === 'By source' ? 'source' : 'ua';
     await until(async () => {
-      const saved = await page.evaluate(async () => (await (await fetch('/omc/api/v1/preferences')).json()).preferences.usage_events_view);
+      const saved = await page.evaluate(async () => (await (await fetch('/shell-pamc/api/v1/preferences')).json()).preferences.usage_events_view);
       return saved?.grouping === expectedGrouping;
     }, { label: `saved ${label} request grouping` });
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -826,7 +826,7 @@ export async function requestListInteractions({ base, page, check }) {
   const widthAfter = await providerHeader.evaluate((node) => node.getBoundingClientRect().width);
   check('dragging the resize handle changes the column width', widthAfter > widthBefore, `${widthBefore} -> ${widthAfter}`);
   const storedWidth = await page.evaluate(async () => {
-    const response = await fetch('/omc/api/v1/preferences');
+    const response = await fetch('/shell-pamc/api/v1/preferences');
     const body = await response.json();
     return body?.preferences?.usage_events_columns?.provider ?? null;
   });
@@ -947,7 +947,7 @@ export function refreshRecords() {
 
     // Registered after the shared routes, so these win: the last matching entry is
     // the one that responds.
-    await page.route('**/omc/api/**', async (route) => {
+    await page.route('**/shell-pamc/api/**', async (route) => {
       const url = new URL(route.request().url());
       const fulfill = (body) => fulfillFixture(route, { status: 200, json: body });
       if (url.pathname.endsWith('/usage/ingest-status')) {

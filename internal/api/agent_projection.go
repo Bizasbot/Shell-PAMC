@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agent"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/agent"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
 )
 
 // The console needs the transcript, not the model's private history. An explicit turn DTO keeps

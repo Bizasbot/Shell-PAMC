@@ -1,8 +1,8 @@
-// Browser acceptance for the Oh My CPA management centre.
+// Browser acceptance for the Shell-PAMC management centre.
 //
-// It drives a real Chromium against a running Oh My CPA instance. By default
-// it targets the embedded production build at http://127.0.0.1:8080/omc/;
-// override OMCPA_URL with http://127.0.0.1:5173/omc/ to exercise the Vite dev
+// It drives a real Chromium against a running Shell-PAMC instance. By default
+// it targets the embedded production build at http://127.0.0.1:8080/shell-pamc/;
+// override SHELLPAMC_URL with http://127.0.0.1:5173/shell-pamc/ to exercise the Vite dev
 // entry. The API facade and CPA instance configured in .env remain real.
 // Nothing is mocked: every assertion compares the DOM with the data the real
 // CPA Management API returns through /api/v1/management/*.
@@ -10,8 +10,8 @@
 // Usage:
 //   node scripts/browser-acceptance.mjs
 // Env overrides:
-//   OMCPA_URL, OMCPA_CPA_MANAGEMENT_KEY,
-//   OMCPA_BROWSER (absolute path to a Chromium/Edge/Chrome executable)
+//   SHELLPAMC_URL, SHELLPAMC_CPA_MANAGEMENT_KEY,
+//   SHELLPAMC_BROWSER (absolute path to a Chromium/Edge/Chrome executable)
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,10 +20,10 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const appURL = (process.env.OMCPA_URL || 'http://127.0.0.1:8080/omc/').replace(/\/$/, '');
-// Oh My CPA has no separate admin password: login uses the CPA management key.
-const password = process.env.OMCPA_CPA_MANAGEMENT_KEY || readEnvFile('OMCPA_CPA_MANAGEMENT_KEY') || '';
-const managementKey = process.env.OMCPA_CPA_MANAGEMENT_KEY || readEnvFile('OMCPA_CPA_MANAGEMENT_KEY') || '';
+const appURL = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:8080/shell-pamc/').replace(/\/$/, '');
+// Shell-PAMC has no separate admin password: login uses the CPA management key.
+const password = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
+const managementKey = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
 
 function readEnvFile(name) {
   const file = path.join(root, '.env');
@@ -38,7 +38,7 @@ function readEnvFile(name) {
 
 function browserExecutable() {
   const candidates = [
-    process.env.OMCPA_BROWSER,
+    process.env.SHELLPAMC_BROWSER,
     path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'ms-playwright'),
   ].filter(Boolean);
   for (const candidate of candidates) {
@@ -70,12 +70,12 @@ function check(name, detail, ok) {
 
 async function main() {
   const executable = browserExecutable();
-  if (!executable) throw new Error('no Chromium/Edge/Chrome executable found; set OMCPA_BROWSER');
-  if (!password) throw new Error('OMCPA_CPA_MANAGEMENT_KEY is required (set it or fill .env)');
+  if (!executable) throw new Error('no Chromium/Edge/Chrome executable found; set SHELLPAMC_BROWSER');
+  if (!password) throw new Error('SHELLPAMC_CPA_MANAGEMENT_KEY is required (set it or fill .env)');
 
   const redirect = await fetch(`${appURL}`, { redirect: 'manual' });
-  check('/omc 规范跳转到 /omc/', `status=${redirect.status} location=${redirect.headers.get('location')}`,
-    redirect.status >= 300 && redirect.status < 400 && (redirect.headers.get('location') || '').endsWith('/omc/'));
+  check('/shell-pamc 规范跳转到 /shell-pamc/', `status=${redirect.status} location=${redirect.headers.get('location')}`,
+    redirect.status >= 300 && redirect.status < 400 && (redirect.headers.get('location') || '').endsWith('/shell-pamc/'));
 
   const browser = await chromium.launch({ executablePath: executable, headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -245,7 +245,7 @@ async function main() {
     errorFiles.ok() && (errorText.includes('.log') || errorText.includes('没有错误日志文件')));
   await page.goto(`${appURL}/dashboard`, { waitUntil: 'networkidle' });
 
-  if (process.env.OMCPA_WRITE_TEST === '1') {
+  if (process.env.SHELLPAMC_WRITE_TEST === '1') {
     // The write path runs on the unified workspace: the credential cards this used to drive
     // were retired, so the old selectors would wait out their timeout and the upload, toggle
     // and delete assertions would never run.

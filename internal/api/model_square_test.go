@@ -12,9 +12,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/modelcatalog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/operations"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/modelcatalog"
+	"github.com/bizasbot/shell-pamc/internal/operations"
 )
 
 func TestModelSquareHTTPUsesDefaultKeyAndSafeProvenance(t *testing.T) {
@@ -55,7 +55,7 @@ func TestModelSquareHTTPUsesDefaultKeyAndSafeProvenance(t *testing.T) {
 	}))
 	defer upstream.Close()
 	pointGatewayAt(t, fixture.handler, upstream.URL)
-	path := fixture.baseURL + "/omc/api/v1/management/model-square"
+	path := fixture.baseURL + "/shell-pamc/api/v1/management/model-square"
 	response, body := getJSON(t, fixture.client, path)
 	if response.StatusCode != 200 {
 		t.Fatalf("directory: %d %s", response.StatusCode, body)
@@ -116,7 +116,7 @@ func TestModelSquareLiveDirectorySurvivesEnrichmentFailure(t *testing.T) {
 	}))
 	defer upstream.Close()
 	pointGatewayAt(t, fixture.handler, upstream.URL)
-	response, body := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/model-square")
+	response, body := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/management/model-square")
 	var directory operations.ModelSquareDirectory
 	if err := json.Unmarshal(body, &directory); err != nil {
 		t.Fatal(err)
@@ -155,7 +155,7 @@ func TestModelSquareNativeDefaultsRespectPrefixAndExclusions(t *testing.T) {
 	}))
 	defer upstream.Close()
 	pointGatewayAt(t, fixture.handler, upstream.URL)
-	response, body := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/model-square")
+	response, body := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/management/model-square")
 	var directory operations.ModelSquareDirectory
 	if err := json.Unmarshal(body, &directory); err != nil {
 		t.Fatal(err)

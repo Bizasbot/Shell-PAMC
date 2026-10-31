@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 func TestSIWCLocalStatusClosedProjection(t *testing.T) {
@@ -51,7 +51,7 @@ func TestSIWCUseSwitchPreservesPartitionsAndVerifies(t *testing.T) {
 			fmt.Fprint(w, `{}`)
 		}
 	})
-	endpoint := base + "/omc/api/v1/management/auth-files/fields"
+	endpoint := base + "/shell-pamc/api/v1/management/auth-files/fields"
 	for _, value := range []bool{false, true} {
 		response, raw := doJSON(t, client, http.MethodPatch, endpoint, fmt.Sprintf(`{"name":"codex.json","auth_index":"idx","use_siwc":%t}`, value))
 		if response.StatusCode != 200 || strings.Contains(string(raw), "SYNTHETIC-") || !strings.Contains(string(raw), `"siwc_status":"invalid"`) {
@@ -79,7 +79,7 @@ func TestSIWCUseSwitchPreservesPartitionsAndVerifies(t *testing.T) {
 	if response.StatusCode != 409 {
 		t.Fatalf("stale target: %d %s", response.StatusCode, raw)
 	}
-	response, raw = doJSON(t, client, http.MethodGet, base+"/omc/api/v1/management/oauth/siwc/status?name=codex.json", "")
+	response, raw = doJSON(t, client, http.MethodGet, base+"/shell-pamc/api/v1/management/oauth/siwc/status?name=codex.json", "")
 	if response.StatusCode != 400 {
 		t.Fatalf("credential selector accepted as session: %d %s", response.StatusCode, raw)
 	}
@@ -99,7 +99,7 @@ func TestSIWCUseSwitchRefusesDuplicateNameEvenWithAuthIndex(t *testing.T) {
 	client, base, recorder := startAuthFilesTestServer(t, "management-secret-value", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"files":[{"name":"codex.json","auth_index":"one","provider":"codex"},{"name":"codex.json","auth_index":"two","provider":"codex"}]}`)
 	})
-	response, raw := doJSON(t, client, http.MethodPatch, base+"/omc/api/v1/management/auth-files/fields", `{"name":"codex.json","auth_index":"one","use_siwc":false}`)
+	response, raw := doJSON(t, client, http.MethodPatch, base+"/shell-pamc/api/v1/management/auth-files/fields", `{"name":"codex.json","auth_index":"one","use_siwc":false}`)
 	if response.StatusCode != 409 {
 		t.Fatalf("ambiguous patch: %d %s", response.StatusCode, raw)
 	}
@@ -128,7 +128,7 @@ func TestSIWCUseSwitchRequiresBindingOnlyWhenEnabling(t *testing.T) {
 			fmt.Fprint(w, `{"status":"ok"}`)
 		}
 	})
-	endpoint := base + "/omc/api/v1/management/auth-files/fields"
+	endpoint := base + "/shell-pamc/api/v1/management/auth-files/fields"
 	response, raw := doJSON(t, client, http.MethodPatch, endpoint, `{"name":"codex.json","auth_index":"cx","use_siwc":true}`)
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("unbound enable: %d %s", response.StatusCode, raw)

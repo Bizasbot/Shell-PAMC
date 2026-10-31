@@ -251,7 +251,7 @@ const READ_FOLD = `(() => ({
  */
 async function assertProviderFold({ base, page, check }) {
   // Page routes outrank the scenario's context routes, so this fleet replaces the six-row one.
-  await page.route('**/omc/api/v1/management/providers**', (route) => route.fulfill({
+  await page.route('**/shell-pamc/api/v1/management/providers**', (route) => route.fulfill({
     status: 200,
     json: {
       providers: Array.from({ length: FOLD_FLEET_SIZE }, (_, i) => ({
@@ -281,7 +281,7 @@ async function assertProviderFold({ base, page, check }) {
   const refolded = await page.evaluate(READ_FOLD);
   check('the toggle folds the list again', refolded.rows === FOLD_PREVIEW_LIMIT && refolded.toggle === 'false', JSON.stringify(refolded));
 
-  await page.unroute('**/omc/api/v1/management/providers**');
+  await page.unroute('**/shell-pamc/api/v1/management/providers**');
 }
 
 /**

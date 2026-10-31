@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/image/font/gofont/goregular"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/fontasset"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/fontasset"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func uploadFontFiles(t *testing.T, client *http.Client, url string, family string, files map[string][]byte) (*http.Response, []byte) {
@@ -45,7 +45,7 @@ func uploadFontFiles(t *testing.T, client *http.Client, url string, family strin
 
 func TestFontUploadServesTheStoredFileFromThisOrigin(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	base := baseURL + "/omc/api/v1/fonts"
+	base := baseURL + "/shell-pamc/api/v1/fonts"
 
 	response, payload := uploadFontFiles(t, client, base+"/upload", "", map[string][]byte{"go.ttf": goregular.TTF})
 	var font repository.Font
@@ -79,16 +79,16 @@ func TestFontUploadServesTheStoredFileFromThisOrigin(t *testing.T) {
 		t.Fatalf("an unquotable family was stored: %d %s", response.StatusCode, payload)
 	}
 
-	if response, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/preferences/omc_fonts", `{"ui":"font:`+font.ID+`"}`); response.StatusCode != http.StatusOK {
+	if response, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/preferences/omc_fonts", `{"ui":"font:`+font.ID+`"}`); response.StatusCode != http.StatusOK {
 		t.Fatalf("assign: %d %s", response.StatusCode, payload)
 	}
-	if response, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/preferences/omc_fonts", `{"ui":"font:0123456789abcdef0123456789abcdef"}`); response.StatusCode != http.StatusNotFound {
+	if response, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/preferences/omc_fonts", `{"ui":"font:0123456789abcdef0123456789abcdef"}`); response.StatusCode != http.StatusNotFound {
 		t.Fatalf("a missing family was assigned: %d %s", response.StatusCode, payload)
 	}
 	if response, payload = doJSON(t, client, http.MethodDelete, base+"/"+font.ID, ""); response.StatusCode != http.StatusNoContent {
 		t.Fatalf("delete: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/preferences")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/preferences")
 	if response.StatusCode != http.StatusOK || strings.Contains(string(payload), font.ID) {
 		t.Fatalf("the deleted family is still assigned: %s", payload)
 	}
@@ -111,7 +111,7 @@ func TestGoogleFontInstallStoresTheFamilyLocally(t *testing.T) {
 		}
 		handler.fontInstaller = installer
 	})
-	response, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/fonts/google", `{"family":"Inter"}`)
+	response, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/fonts/google", `{"family":"Inter"}`)
 	var font repository.Font
 	if response.StatusCode != http.StatusCreated || json.Unmarshal(payload, &font) != nil {
 		t.Fatalf("install: %d %s", response.StatusCode, payload)

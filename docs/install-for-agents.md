@@ -1,9 +1,9 @@
-# Install Oh My CPA (for a coding agent)
+# Install Shell-PAMC (for a coding agent)
 
-This runbook is for a coding agent installing Oh My CPA (OMC) on a user's machine. OMC
+This runbook is for a coding agent installing Shell-PAMC (OMC) on a user's machine. OMC
 is a web console for CLIProxyAPI (CPA). It needs **CPA v8.0.0 or later** and CPA's plaintext
 management key, which is also OMC's sign-in password. The Docker image is
-`wiziscool/oh-my-cpa:latest` (amd64 and arm64). Native release archives cover Darwin,
+`ghcr.io/bizasbot/shell-pamc:latest` (amd64 and arm64). Native release archives cover Darwin,
 Windows, Linux and FreeBSD on amd64/arm64; a normal install builds nothing.
 
 The work is: look at what is already there, pick a path, install, verify.
@@ -16,7 +16,7 @@ The work is: look at what is already there, pick a path, install, verify.
    to fill it in.
 2. **Do not change the existing CPA.** No upgrade, no config edit, no restart, no
    stopping another panel or tracker, unless the user agrees to that specific change.
-3. **Never replace an existing `OMCPA_MASTER_KEY`.** If an OMC data directory already
+3. **Never replace an existing `SHELLPAMC_MASTER_KEY`.** If an OMC data directory already
    exists, reuse its key. If the key is lost, stop and say so.
 4. **Ask before** using `sudo`, installing Docker or a toolchain, opening a port beyond
    `127.0.0.1`, giving a container the Docker socket, or sending a model request that
@@ -62,10 +62,10 @@ Paths A and B2 use the Compose files each release publishes. They are the harden
 equivalents of the minimal files in `docs/install.md` (read-only root filesystem,
 dropped capabilities, every setting in `deploy/.env`).
 
-Every container path below includes an `oh-my-cpa-updater` service. It lets the user
+Every container path below includes an `shell-pamc-updater` service. It lets the user
 update OMC and CPA from the console, and it mounts the Docker socket, which amounts to
 control of Docker on the host. Say so before starting it (rule 4). If the user declines,
-delete the `oh-my-cpa-updater` service block from the Compose file before running
+delete the `shell-pamc-updater` service block from the Compose file before running
 `docker compose up`; nothing else depends on it.
 
 ### A. CPA and OMC together
@@ -73,21 +73,21 @@ delete the `oh-my-cpa-updater` service block from the Compose file before runnin
 Use a new directory. If any target file already exists, stop and ask.
 
 ```bash
-mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data,cpa/auths,cpa/logs,cpa/plugins} && cd oh-my-cpa
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
-sudo chown 10001:10001 oh-my-cpa-data
+mkdir -p shell-pamc/{deploy,shell-pamc-data,cpa/auths,cpa/logs,cpa/plugins} && cd shell-pamc
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
+sudo chown 10001:10001 shell-pamc-data
 
 cat > deploy/.env <<EOF
 CPA_MANAGEMENT_KEY=$(openssl rand -hex 24)
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 deploy/.env
 
 docker compose -f deploy/compose.full.yml up -d
 ```
 
-If port 8080 or 8317 is taken, add `OMCPA_BIND=127.0.0.1:<port>` or
+If port 8080 or 8317 is taken, add `SHELLPAMC_BIND=127.0.0.1:<port>` or
 `CPA_BIND=127.0.0.1:<port>` to `deploy/.env`. Do not stop whatever holds the port.
 
 ### B1. OMC in CPA's Compose file
@@ -97,21 +97,21 @@ Find CPA's Compose file (`docker inspect <cpa container>` shows it in the
 these under `services:` and leave every existing line as it is:
 
 ```yaml
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -121,17 +121,17 @@ these under `services:` and leave every existing line as it is:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
-Set the host in `OMCPA_CPA_BASE_URL` to CPA's service name in that file. If a
-top-level `volumes:` key exists, add `oh-my-cpa-data:` under it. Then, in the Compose
+Set the host in `SHELLPAMC_CPA_BASE_URL` to CPA's service name in that file. If a
+top-level `volumes:` key exists, add `shell-pamc-data:` under it. Then, in the Compose
 file's directory:
 
 ```bash
 cat >> .env <<EOF
-OMCPA_CPA_MANAGEMENT_KEY=replace-me
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_CPA_MANAGEMENT_KEY=replace-me
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 .env
 ```
@@ -140,7 +140,7 @@ Have the user fill in the management key, apply the time-zone and usage-collecti
 points from B2 (as `environment:` entries here), and start the new services alone:
 
 ```bash
-docker compose up -d oh-my-cpa oh-my-cpa-updater
+docker compose up -d shell-pamc shell-pamc-updater
 ```
 
 Name the services. A bare `docker compose up -d` would also recreate CPA if its
@@ -150,14 +150,14 @@ time are unchanged. The data lives in a Docker volume, so no `chown` is needed.
 ### B2. OMC beside an existing CPA
 
 ```bash
-mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data} && cd oh-my-cpa
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
-sudo chown 10001:10001 oh-my-cpa-data
+mkdir -p shell-pamc/{deploy,shell-pamc-data} && cd shell-pamc
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
+sudo chown 10001:10001 shell-pamc-data
 
 cat > deploy/.env <<EOF
-OMCPA_CPA_BASE_URL=http://host.docker.internal:8317
-OMCPA_CPA_MANAGEMENT_KEY=replace-me
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_CPA_BASE_URL=http://host.docker.internal:8317
+SHELLPAMC_CPA_MANAGEMENT_KEY=replace-me
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 deploy/.env
 ```
@@ -165,8 +165,8 @@ chmod 600 deploy/.env
 Then adjust `deploy/.env`:
 
 - **CPA URL.** It must be reachable from inside OMC's container.
-  - CPA in Docker: add `OMCPA_NETWORK_NAME=<CPA's network>` and
-    `OMCPA_NETWORK_EXTERNAL=true`, and use `http://<CPA container name>:8317`.
+  - CPA in Docker: add `SHELLPAMC_NETWORK_NAME=<CPA's network>` and
+    `SHELLPAMC_NETWORK_EXTERNAL=true`, and use `http://<CPA container name>:8317`.
   - CPA on this host, all interfaces: keep `http://host.docker.internal:8317`.
   - CPA elsewhere: its private or HTTPS address. Leave TLS verification on.
 - **Management key.** Ask the user to replace `replace-me` with the plaintext key.
@@ -174,7 +174,7 @@ Then adjust `deploy/.env`:
 - **Time zone.** Add `TZ=` matching CPA's if it is not UTC.
 - **Usage collection.** If something else already collects CPA's usage, ask the user:
   stop that tool so OMC records requests, or keep it and add
-  `OMCPA_USAGE_INGEST_MODE=off` (OMC then manages CPA but shows no usage). If that
+  `SHELLPAMC_USAGE_INGEST_MODE=off` (OMC then manages CPA but shows no usage). If that
   cannot be determined, use `off` and say so. Another management panel that does not collect
   usage needs nothing; leave it running.
 
@@ -198,13 +198,13 @@ Do not attempt to verify undownloaded entries or run a mismatched executable.
 Extract into a new user-owned directory. Copy the packaged `.env.example` to `.env`
 only if no existing file is present. Generate a master key without printing it and
 ask the user to fill in the plaintext CPA management key. The template binds loopback,
-uses `/omc` and writes `./data`; preserve those defaults unless the user approves a
-change. Leave `OMCPA_VERSION` unset, match CPA's `TZ`, and apply B2's usage-reader
+uses `/shell-pamc` and writes `./data`; preserve those defaults unless the user approves a
+change. Leave `SHELLPAMC_VERSION` unset, match CPA's `TZ`, and apply B2's usage-reader
 ownership decision. A host CPA listening on loopback needs no remote-management edit.
 Restrict the environment/data files to the service account (Unix permissions or Windows
 ACLs). Use the OS's certificate roots; the binary already embeds IANA zone data.
 
-Run `./oh-my-cpa` or `.\oh-my-cpa.exe` from the extracted directory, then verify as in
+Run `./shell-pamc` or `.\shell-pamc.exe` from the extracted directory, then verify as in
 step 4. Do not bypass macOS/Windows trust controls: unsigned binaries may require an
 explicit user decision after checksum verification. Offer a service manager only if
 requested, retaining the working directory and data path.
@@ -214,19 +214,19 @@ requested, retaining the working directory and data path.
 Needs Go 1.26+, Node.js 22+ and pnpm 11+.
 
 ```bash
-git clone https://github.com/WizisCool/oh-my-cpa.git && cd oh-my-cpa
+git clone https://github.com/Bizasbot/Shell-PAMC.git && cd Shell-PAMC
 pnpm install --frozen-lockfile
 cp -n .env.example .env
 ```
 
-In `.env`, set `OMCPA_MASTER_KEY` (`openssl rand -hex 32`), `OMCPA_CPA_BASE_URL`, and a
-placeholder `OMCPA_CPA_MANAGEMENT_KEY` for the user to fill in. Apply the time zone
+In `.env`, set `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`), `SHELLPAMC_CPA_BASE_URL`, and a
+placeholder `SHELLPAMC_CPA_MANAGEMENT_KEY` for the user to fill in. Apply the time zone
 and usage-collection points from B2. Then:
 
 ```bash
 pnpm build
-go build -trimpath -o bin/oh-my-cpa ./cmd/oh-my-cpa
-./bin/oh-my-cpa
+go build -trimpath -o bin/shell-pamc ./cmd/shell-pamc
+./bin/shell-pamc
 ```
 
 It runs in the foreground. Offer a systemd unit or similar only if the user wants one.
@@ -234,7 +234,7 @@ It runs in the foreground. Offer a systemd unit or similar only if the user want
 ## 4. Verify
 
 ```bash
-curl -fsS http://127.0.0.1:8080/omc/api/healthz
+curl -fsS http://127.0.0.1:8080/shell-pamc/api/healthz
 ```
 
 The install is done only when the response has `"status":"ok"`, `"database_status":"ok"`
@@ -244,7 +244,7 @@ the actual reason. Common ones:
 
 | Symptom | Cause |
 | --- | --- |
-| Database will not open | The `oh-my-cpa-data` directory is not owned by `10001:10001` (A and B2) |
+| Database will not open | The `shell-pamc-data` directory is not owned by `10001:10001` (A and B2) |
 | `degraded`, `cpa_connected: false` | Wrong URL or key, or CPA refuses remote management |
 | `cpa_management_api: unsupported` | CPA is older than v8.0.0; the user must upgrade it |
 
@@ -252,11 +252,11 @@ On a container path with the updater, also check that it is running and that the
 has not lost it:
 
 ```bash
-docker inspect -f '{{.State.Health.Status}}' oh-my-cpa-updater
+docker inspect -f '{{.State.Health.Status}}' shell-pamc-updater
 ```
 
 `healthy` is the expected answer. With the updater in CPA's own Compose file (B1) the
-container is named `<project>-oh-my-cpa-updater-1`; `docker compose ps` lists it.
+container is named `<project>-shell-pamc-updater-1`; `docker compose ps` lists it.
 
 ## 5. Upgrading an existing OMC
 
@@ -270,12 +270,12 @@ For a container installation, find the existing Compose file, data directory and
 `.env`, and back up the data directory and `.env`. Then check for the updater:
 
 ```bash
-docker ps --filter name=oh-my-cpa-updater --format '{{.Names}} {{.Status}}'
+docker ps --filter name=shell-pamc-updater --format '{{.Names}} {{.Status}}'
 ```
 
 **The updater is running.** The user can update from the console's System Information
 page, and nothing needs to be run. To upgrade for them now, use the Compose commands
-below and include `oh-my-cpa-updater` in both.
+below and include `shell-pamc-updater` in both.
 
 **No updater, and OMC's image is not pinned to a version.** One command adds the updater
 and brings OMC to the current release, without editing the Compose file. It mounts the
@@ -283,24 +283,24 @@ Docker socket into a container, so explain that and get the user's agreement fir
 (rule 4):
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
 Keep `--pull always`: without it Docker runs the older `latest` the host already has,
 which has no updater. It prints the console container it found and what it did. If it reports more than one
-Oh My CPA container, rerun it with `--container <name>`. It does not touch CPA (rule 2).
-Afterwards `docker inspect -f '{{.State.Health.Status}}' oh-my-cpa-updater` must print
-`healthy`. `docker rm -f oh-my-cpa-updater` undoes it.
+Shell-PAMC container, rerun it with `--container <name>`. It does not touch CPA (rule 2).
+Afterwards `docker inspect -f '{{.State.Health.Status}}' shell-pamc-updater` must print
+`healthy`. `docker rm -f shell-pamc-updater` undoes it.
 
 **The user declines, or the image is pinned.** Upgrade through Compose:
 
 ```bash
-docker compose -f deploy/compose.omc.yml pull oh-my-cpa
-docker compose -f deploy/compose.omc.yml up -d --no-deps oh-my-cpa
+docker compose -f deploy/compose.omc.yml pull shell-pamc
+docker compose -f deploy/compose.omc.yml up -d --no-deps shell-pamc
 ```
 
 Use `compose.full.yml` if that is the file in place. When OMC is a service in CPA's
-Compose file, run `docker compose pull oh-my-cpa` and `docker compose up -d oh-my-cpa`
+Compose file, run `docker compose pull shell-pamc` and `docker compose up -d shell-pamc`
 in that directory. For a pinned image, change the pin to the wanted release first; do
 not unpin it without asking.
 
@@ -309,22 +309,22 @@ the backup. Verify as in step 4.
 
 ## 6. Tell the user
 
-- The console address, `http://127.0.0.1:8080/omc/` unless the port was changed. On a
+- The console address, `http://127.0.0.1:8080/shell-pamc/` unless the port was changed. On a
   remote server, give them `ssh -L 18080:127.0.0.1:8080 user@server` and
-  `http://127.0.0.1:18080/omc/`.
+  `http://127.0.0.1:18080/shell-pamc/`.
 - That the sign-in password is the CPA management key, and which file holds it. Not
   the key itself.
-- To back up the `.env` file and OMC's data (the `oh-my-cpa-data` directory or volume). Without `OMCPA_MASTER_KEY` the data
+- To back up the `.env` file and OMC's data (the `shell-pamc-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
   cannot be read.
 - Whether OMC is collecting usage, and why not if it is off.
 - Whether the updater is installed. If it is: later releases of OMC and CPA can be
-  installed from the console's System Information page, and the `oh-my-cpa-updater`
+  installed from the console's System Information page, and the `shell-pamc-updater`
   container holds the Docker socket. If it is not: the command that adds it.
-- Anything changed outside the new `oh-my-cpa` directory.
+- Anything changed outside the new `shell-pamc` directory.
 
-OMC redirects the bare `/omc` to `/omc/`. If a reverse proxy sits in front of it,
-route both `/omc` and `/omc/` to OMC (or redirect `/omc` to `/omc/` at the proxy) and
-confirm `curl -sI <public address>/omc` answers `308`; a rule for `/omc/` alone leaves
+OMC redirects the bare `/shell-pamc` to `/shell-pamc/`. If a reverse proxy sits in front of it,
+route both `/shell-pamc` and `/shell-pamc/` to OMC (or redirect `/shell-pamc` to `/shell-pamc/` at the proxy) and
+confirm `curl -sI <public address>/shell-pamc` answers `308`; a rule for `/shell-pamc/` alone leaves
 the bare path unreachable.
 
 More detail, including HTTPS behind a reverse proxy and every setting, is in

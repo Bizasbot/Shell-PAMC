@@ -13,7 +13,7 @@ test('CI collects browser evidence after bundle failure and then enforces its ve
 test('missing, bypassed or reordered bundle verification is refused', () => {
   for (const mutate of [
     (steps) => { steps.find((step) => step.id === 'prepare').run += '\npnpm check:bundle'; },
-    (steps) => { steps.find((step) => step.id === 'prepare').run = 'go build -trimpath -o tmp/oh-my-cpa-browser\npnpm build'; },
+    (steps) => { steps.find((step) => step.id === 'prepare').run = 'go build -trimpath -o tmp/shell-pamc-browser\npnpm build'; },
     (steps) => { delete steps.find((step) => step.id === 'bundle')['continue-on-error']; },
     (steps) => { steps.find((step) => step.id === 'bundle').run = 'true'; },
     (steps) => { steps.find((step) => step.id === 'bundle').if = 'false'; },

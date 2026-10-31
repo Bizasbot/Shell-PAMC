@@ -50,7 +50,7 @@ export async function runLogicChecks(args = process.argv.slice(2)) {
     return true;
   }
   if (!suites.length) return true;
-  const requestedConcurrency = Number(process.env.OMCPA_LOGIC_CONCURRENCY ?? '2');
+  const requestedConcurrency = Number(process.env.SHELLPAMC_LOGIC_CONCURRENCY ?? '2');
   const concurrency = Number.isSafeInteger(requestedConcurrency) && requestedConcurrency > 0 ? requestedConcurrency : 2;
   return runChecks([{ label: 'logic tests', command: 'node', args: logicTestArguments(suites.map(suite => suite.script), concurrency) }], { quiet: true });
 }

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // Result filters for event queries. Kept as a small closed set so every page
@@ -601,7 +601,7 @@ type UsageFacetValue struct {
 
 // ClientKeyUsage is the observed traffic for one caller key in a window.
 //
-// Every number is derived from Oh My CPA's own retained usage events, so it says
+// Every number is derived from Shell-PAMC's own retained usage events, so it says
 // what this console has actually seen rather than what CPA might report. A key
 // with no matching records is simply absent from the result; the console renders
 // that as "no requests observed", never as a fabricated creation date.

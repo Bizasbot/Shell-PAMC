@@ -1,6 +1,6 @@
 {
-  "name": "Oh My CPA",
-  "short_name": "Oh My CPA",
+  "name": "Shell-PAMC",
+  "short_name": "Shell-PAMC",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

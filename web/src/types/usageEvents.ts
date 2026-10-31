@@ -80,7 +80,7 @@ export interface UsageEvent {
   latency_ms: number;
   ttft_ms?: number | null;
   tokens: UsageEventTokens;
-  /** Set when the credential is already triaged in Oh My CPA. */
+  /** Set when the credential is already triaged in Shell-PAMC. */
   resource_id?: string | null;
   resource_name?: string | null;
   has_request_log: boolean;

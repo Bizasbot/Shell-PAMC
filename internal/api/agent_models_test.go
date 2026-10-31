@@ -34,7 +34,7 @@ func TestAgentModelsUseStableKeyAndProjectModels(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := fixture.baseURL + "/omc/api/v1/agent/models?client_key_fingerprint=" + fingerprint
+	path := fixture.baseURL + "/shell-pamc/api/v1/agent/models?client_key_fingerprint=" + fingerprint
 	response, body := getJSON(t, fixture.client, path)
 	if response.StatusCode != 200 || !strings.Contains(string(body), "model-alias") || !strings.Contains(string(body), "call_point") || strings.Contains(string(body), "omit-me") {
 		t.Fatalf("models %d %s", response.StatusCode, body)

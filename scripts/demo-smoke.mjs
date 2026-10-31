@@ -14,9 +14,9 @@
 //
 // Usage:
 //   node scripts/demo-smoke.mjs
-//   OMCPA_DEMO_URL=https://... node scripts/demo-smoke.mjs   # check a deployment
+//   SHELLPAMC_DEMO_URL=https://... node scripts/demo-smoke.mjs   # check a deployment
 // Env overrides:
-//   OMCPA_DEMO_URL (check a deployment instead of starting one), OMCPA_BROWSER
+//   SHELLPAMC_DEMO_URL (check a deployment instead of starting one), SHELLPAMC_BROWSER
 
 import { isolatedAppEnvironment } from './acceptance/environment.mjs';
 import { execFileSync, spawn } from 'node:child_process';
@@ -90,7 +90,7 @@ const REFUSED = [
 
 /**
  * Writes that the demonstration performs instead of refusing. They reach the
- * fixture or Oh My CPA's own metadata, and each one has to answer with success and
+ * fixture or Shell-PAMC's own metadata, and each one has to answer with success and
  * with the header that says the result is not durable.
  */
 const SIMULATED = [
@@ -146,9 +146,9 @@ function waitForExit(child) {
 /** Starts the binary under test, or reports that an existing deployment is used. */
 async function startLocalDemo() {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-demo-smoke-'));
-  const binary = path.join(temporary, process.platform === 'win32' ? 'oh-my-cpa.exe' : 'oh-my-cpa');
+  const binary = path.join(temporary, process.platform === 'win32' ? 'shell-pamc.exe' : 'shell-pamc');
   console.log('building the binary under test...');
-  execFileSync('go', ['build', '-trimpath', '-o', binary, './cmd/oh-my-cpa'], {
+  execFileSync('go', ['build', '-trimpath', '-o', binary, './cmd/shell-pamc'], {
     cwd: root,
     env: { ...process.env, CGO_ENABLED: '0' },
     stdio: 'inherit',
@@ -158,17 +158,17 @@ async function startLocalDemo() {
   const child = spawn(binary, [], {
     cwd: root,
     env: isolatedAppEnvironment({
-      OMCPA_DEMO_MODE: 'true',
-      OMCPA_BASE_PATH: '/',
+      SHELLPAMC_DEMO_MODE: 'true',
+      SHELLPAMC_BASE_PATH: '/',
       // The fixture rebuilds this directory on every boot; see internal/demo.
-      OMCPA_DATA_DIR: path.join(temporary, 'data'),
-      OMCPA_LISTEN_ADDR: `127.0.0.1:${port}`,
-      OMCPA_MASTER_KEY: 'demo-smoke-master-key-000000000000',
-      OMCPA_VERSION: 'v0.1.0-demo-smoke',
+      SHELLPAMC_DATA_DIR: path.join(temporary, 'data'),
+      SHELLPAMC_LISTEN_ADDR: `127.0.0.1:${port}`,
+      SHELLPAMC_MASTER_KEY: 'demo-smoke-master-key-000000000000',
+      SHELLPAMC_VERSION: 'v0.1.0-demo-smoke',
       // Proof that the demonstration does not read a deployment it inherits: the
       // process is handed a real-looking gateway and must ignore it.
-      OMCPA_CPA_BASE_URL: 'http://127.0.0.1:1',
-      OMCPA_CPA_MANAGEMENT_KEY: 'inherited-key-that-must-not-be-used',
+      SHELLPAMC_CPA_BASE_URL: 'http://127.0.0.1:1',
+      SHELLPAMC_CPA_MANAGEMENT_KEY: 'inherited-key-that-must-not-be-used',
       // And that it needs no outbound network: a resolver that answers nothing.
       HTTPS_PROXY: 'http://127.0.0.1:1',
       HTTP_PROXY: 'http://127.0.0.1:1',
@@ -201,7 +201,7 @@ async function startLocalDemo() {
 }
 
 async function main() {
-  const configured = process.env.OMCPA_DEMO_URL?.trim();
+  const configured = process.env.SHELLPAMC_DEMO_URL?.trim();
 
   let demo;
   if (configured) {
@@ -263,7 +263,7 @@ async function main() {
       );
       if (definition.redirectedPath) {
         // The path's tail rather than the whole pathname: a deployment served under a base path
-        // (`OMCPA_DEMO_URL=https://host/omc`) reaches this route as `/omc/<route>`, and the local
+        // (`SHELLPAMC_DEMO_URL=https://host/shell-pamc`) reaches this route as `/shell-pamc/<route>`, and the local
         // fixture reaches it as `/<route>`. Comparing the whole pathname would fail the deployed
         // form and pass the local one, which is the reverse of what this check is for.
         check(
@@ -409,7 +409,7 @@ async function main() {
   if (failures.length > 0) {
     console.error(`\n${failures.length} check(s) failed:`);
     for (const failure of failures) console.error(`  - ${failure}`);
-    if (process.env.OMCPA_DEMO_URL) console.error('\n(no server log: the deployment under test is remote)');
+    if (process.env.SHELLPAMC_DEMO_URL) console.error('\n(no server log: the deployment under test is remote)');
     else console.error(`\nserver log:\n${demo.log()}`);
     process.exit(1);
   }

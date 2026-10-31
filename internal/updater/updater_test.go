@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	OMC_REPOSITORY = "wiziscool/oh-my-cpa"
+	OMC_REPOSITORY = "ghcr.io/bizasbot/shell-pamc"
 	TEST_DIGEST    = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 	MASTER_KEY     = "test-master-key"
 )
@@ -62,10 +62,10 @@ func newDeployment(t *testing.T, consoleImage string) deployment {
 	}
 	daemon.publish(OMC_REPOSITORY+"@"+TEST_DIGEST, "sha256:new", "v1.1.0", "PATH=/bin:/new")
 	daemon.addContainer(containerSpec{
-		name:        "oh-my-cpa",
+		name:        "shell-pamc",
 		image:       consoleImage,
-		environment: []string{"OMCPA_MASTER_KEY=" + MASTER_KEY, "OMCPA_CPA_BASE_URL=http://cli-proxy-api:8317"},
-		networks:    map[string][]string{"stack": {"oh-my-cpa"}},
+		environment: []string{"SHELLPAMC_MASTER_KEY=" + MASTER_KEY, "SHELLPAMC_CPA_BASE_URL=http://cli-proxy-api:8317"},
+		networks:    map[string][]string{"stack": {"shell-pamc"}},
 	})
 	updater := daemon.addContainer(containerSpec{name: SIDECAR_NAME, image: OMC_REPOSITORY + ":latest", command: []string{ROLE_COMMAND, "serve"}})
 	service := NewService(Options{Engine: engine, Timing: testTiming(), PublicKey: keys.publicKey, SelfID: updater.ID})
@@ -89,15 +89,15 @@ func TestParseReferenceAndPinning(t *testing.T) {
 		tag        string
 		isPinned   bool
 	}{
-		{"wiziscool/oh-my-cpa", "wiziscool/oh-my-cpa", "latest", false},
-		{"wiziscool/oh-my-cpa:latest", "wiziscool/oh-my-cpa", "latest", false},
-		{"wiziscool/oh-my-cpa:v0.2.9", "wiziscool/oh-my-cpa", "v0.2.9", true},
+		{"ghcr.io/bizasbot/shell-pamc", "ghcr.io/bizasbot/shell-pamc", "latest", false},
+		{"ghcr.io/bizasbot/shell-pamc:latest", "ghcr.io/bizasbot/shell-pamc", "latest", false},
+		{"ghcr.io/bizasbot/shell-pamc:v0.2.9", "ghcr.io/bizasbot/shell-pamc", "v0.2.9", true},
 		{"eceasy/cli-proxy-api:8.0.16", "eceasy/cli-proxy-api", "8.0.16", true},
 		// A registry port is not a tag.
 		{"registry.example:5000/team/app", "registry.example:5000/team/app", "latest", false},
 		{"registry.example:5000/team/app:edge", "registry.example:5000/team/app", "edge", false},
-		{"wiziscool/oh-my-cpa@" + TEST_DIGEST, "wiziscool/oh-my-cpa", "latest", true},
-		{"wiziscool/oh-my-cpa:latest@" + TEST_DIGEST, "wiziscool/oh-my-cpa", "latest", true},
+		{"ghcr.io/bizasbot/shell-pamc@" + TEST_DIGEST, "ghcr.io/bizasbot/shell-pamc", "latest", true},
+		{"ghcr.io/bizasbot/shell-pamc:latest@" + TEST_DIGEST, "ghcr.io/bizasbot/shell-pamc", "latest", true},
 	}
 	for _, testCase := range cases {
 		reference := ParseReference(testCase.raw)
@@ -105,8 +105,8 @@ func TestParseReferenceAndPinning(t *testing.T) {
 			t.Errorf("%s: got repository=%q tag=%q pinned=%v", testCase.raw, reference.Repository, reference.EffectiveTag(), reference.IsPinned())
 		}
 	}
-	if CanonicalRepository("docker.io/Wiziscool/oh-my-cpa") != OMC_REPOSITORY {
-		t.Errorf("Docker Hub spellings must compare equal")
+	if CanonicalRepository("docker.io/Library/Nginx") != "nginx" {
+		t.Errorf("registry spellings must compare equal")
 	}
 }
 
@@ -211,9 +211,9 @@ func TestVerifyManifest(t *testing.T) {
 // The release workflow signs with Node and the updater verifies with Go; this vector
 // was produced by scripts/sign-release-manifest.mjs.
 func TestVerifyManifestAcceptsTheReleaseScriptsSignature(t *testing.T) {
-	publicKey := "tnEjBVLjIWZZqc5M7Au8EHXqH2pRDHM/r6dTl2zArvE="
-	manifest := "{\n  \"schema\": 1,\n  \"version\": \"v1.2.3\",\n  \"image\": {\n    \"repository\": \"wiziscool/oh-my-cpa\",\n    \"digest\": \"sha256:abababababababababababababababababababababababababababababababab\"\n  }\n}\n"
-	signature := "5cSe9MESI6GouSjcbFWf9lrrQa1jn4VKC+mpcA6yqYv1sT0ZAz/oA1GjCNfZv1ntprWwr6vU4cDQEGY10OAuAA=="
+	publicKey := "6EL+3NdWhov3IbKjdNjRRIaD35I+9NrLrtAYGwiEY/k="
+	manifest := "{\n  \"schema\": 1,\n  \"version\": \"v1.2.3\",\n  \"image\": {\n    \"repository\": \"ghcr.io/bizasbot/shell-pamc\",\n    \"digest\": \"sha256:abababababababababababababababababababababababababababababababab\"\n  }\n}\n"
+	signature := "6USmDIHjx+LY2J8kTuddqaBcuej8k9rLeSNaO7LwuzWlrG55k/ZvL7i/Ngr4nHfFB4IP1i4UVY++ztwOCPrrCg=="
 	verified, err := VerifyManifest(publicKey, []byte(manifest), signature)
 	if err != nil || verified.Version != "v1.2.3" {
 		t.Fatalf("verify: %+v %v", verified, err)
@@ -234,7 +234,7 @@ func TestControlTokenMatchesAnIndependentHMAC(t *testing.T) {
 func TestSignedUpdateReplacesTheConsoleAndRetagsItsImage(t *testing.T) {
 	stack := newDeployment(t, OMC_REPOSITORY+":latest")
 	manifest, signature := stack.signer.manifest("v1.1.0", OMC_REPOSITORY, TEST_DIGEST)
-	before := stack.daemon.named("oh-my-cpa")
+	before := stack.daemon.named("shell-pamc")
 
 	if _, err := stack.service.Start(context.Background(), ProductOMC, manifest, signature); err != nil {
 		t.Fatalf("start: %v", err)
@@ -243,14 +243,14 @@ func TestSignedUpdateReplacesTheConsoleAndRetagsItsImage(t *testing.T) {
 	if job.Stage != StageDone || job.FromVersion != "v1.0.0" || job.ToVersion != "v1.1.0" {
 		t.Fatalf("job = %+v", job)
 	}
-	after := stack.daemon.named("oh-my-cpa")
+	after := stack.daemon.named("shell-pamc")
 	if after.ID == before.ID || after.ImageID != "sha256:new" || !after.IsRunning {
 		t.Fatalf("the console must be a new running container on the new image: %+v", after)
 	}
-	if stack.daemon.named("oh-my-cpa"+PREVIOUS_SUFFIX) != nil {
+	if stack.daemon.named("shell-pamc"+PREVIOUS_SUFFIX) != nil {
 		t.Errorf("the previous container must be removed once the replacement is up")
 	}
-	if !slices.Contains(stringList(after.Config["Env"]), "OMCPA_MASTER_KEY="+MASTER_KEY) {
+	if !slices.Contains(stringList(after.Config["Env"]), "SHELLPAMC_MASTER_KEY="+MASTER_KEY) {
 		t.Errorf("the operator's environment must survive: %v", after.Config["Env"])
 	}
 	if slices.Contains(stringList(after.Config["Env"]), "PATH=/bin") {
@@ -311,7 +311,7 @@ func TestFailedReplacementRestoresThePreviousContainerAndTag(t *testing.T) {
 	stack := newDeployment(t, OMC_REPOSITORY+":latest")
 	stack.daemon.crashing["sha256:new"] = true
 	manifest, signature := stack.signer.manifest("v1.1.0", OMC_REPOSITORY, TEST_DIGEST)
-	before := stack.daemon.named("oh-my-cpa")
+	before := stack.daemon.named("shell-pamc")
 
 	if _, err := stack.service.Start(context.Background(), ProductOMC, manifest, signature); err != nil {
 		t.Fatalf("start: %v", err)
@@ -320,7 +320,7 @@ func TestFailedReplacementRestoresThePreviousContainerAndTag(t *testing.T) {
 	if job.Stage != StageRolledBack || job.Error == "" {
 		t.Fatalf("job = %+v", job)
 	}
-	after := stack.daemon.named("oh-my-cpa")
+	after := stack.daemon.named("shell-pamc")
 	if after == nil || after.ID != before.ID || !after.IsRunning {
 		t.Fatalf("the previous container must hold its name and run again: %+v", after)
 	}
@@ -369,7 +369,7 @@ func TestStartRefusesWhatItMustNotInstall(t *testing.T) {
 	})
 	t.Run("an unknown product", func(t *testing.T) {
 		stack := newDeployment(t, OMC_REPOSITORY+":latest")
-		if _, err := stack.service.Start(context.Background(), "oh-my-cpa", nil, ""); err == nil {
+		if _, err := stack.service.Start(context.Background(), "shell-pamc", nil, ""); err == nil {
 			t.Fatalf("a caller names a product, never a container")
 		}
 	})
@@ -396,7 +396,7 @@ func TestGatewayIsFoundByTheAddressTheConsoleUses(t *testing.T) {
 	if gateway := target(ProductCPA); gateway.Container != "gateway-1" || gateway.Action != ActionAvailable {
 		t.Fatalf("the container answering to the console's CPA host is the gateway, whatever its image: %+v", gateway)
 	}
-	if console := target(ProductOMC); console.Container != "oh-my-cpa" || console.RunningVersion != "v1.0.0" || console.Action != ActionAvailable {
+	if console := target(ProductOMC); console.Container != "shell-pamc" || console.RunningVersion != "v1.0.0" || console.Action != ActionAvailable {
 		t.Fatalf("console = %+v", console)
 	}
 }
@@ -533,11 +533,11 @@ func TestInstallAddsTheUpdaterAndUpgradesAnOlderConsole(t *testing.T) {
 	daemon, engine := newFakeDaemon(t)
 	daemon.addImage(OMC_REPOSITORY+":latest", "sha256:old", "v1.0.0")
 	console := daemon.addContainer(containerSpec{
-		name:        "stack-oh-my-cpa-1",
+		name:        "stack-shell-pamc-1",
 		image:       OMC_REPOSITORY + ":latest",
-		environment: []string{"OMCPA_MASTER_KEY=" + MASTER_KEY},
+		environment: []string{"SHELLPAMC_MASTER_KEY=" + MASTER_KEY},
 		labels:      map[string]string{COMPOSE_PROJECT_LABEL: "stack"},
-		networks:    map[string][]string{"stack_default": {"oh-my-cpa"}},
+		networks:    map[string][]string{"stack_default": {"shell-pamc"}},
 	})
 	// The operator pulled the new image to run the installer, moving the tag.
 	daemon.addImage(OMC_REPOSITORY+":latest", "sha256:new", "v1.1.0")
@@ -567,7 +567,7 @@ func TestInstallAddsTheUpdaterAndUpgradesAnOlderConsole(t *testing.T) {
 		t.Errorf("an endpoint on the project network would make `docker compose down` fail")
 	}
 
-	upgraded := daemon.named("stack-oh-my-cpa-1")
+	upgraded := daemon.named("stack-shell-pamc-1")
 	if upgraded.ID == console.ID || upgraded.ImageID != "sha256:new" {
 		t.Fatalf("an older console on the installer's tag must be upgraded: %+v\n%s", upgraded, output.String())
 	}
@@ -585,7 +585,7 @@ func TestInstallLeavesAPinnedConsoleAlone(t *testing.T) {
 	daemon, engine := newFakeDaemon(t)
 	daemon.addImage(OMC_REPOSITORY+":v1.0.0", "sha256:old", "v1.0.0")
 	daemon.addImage(OMC_REPOSITORY+":latest", "sha256:new", "v1.1.0")
-	console := daemon.addContainer(containerSpec{name: "oh-my-cpa", image: OMC_REPOSITORY + ":v1.0.0", networks: map[string][]string{"stack": nil}})
+	console := daemon.addContainer(containerSpec{name: "shell-pamc", image: OMC_REPOSITORY + ":v1.0.0", networks: map[string][]string{"stack": nil}})
 	installer := daemon.addContainer(containerSpec{name: "installer", image: OMC_REPOSITORY + ":latest", command: []string{ROLE_COMMAND, "install"}})
 	installer.Mounts = []map[string]any{{"Type": "bind", "Source": DEFAULT_SOCKET_PATH, "Destination": DEFAULT_SOCKET_PATH}}
 
@@ -593,7 +593,7 @@ func TestInstallLeavesAPinnedConsoleAlone(t *testing.T) {
 	if err := Install(context.Background(), InstallOptions{Engine: engine, Timing: testTiming(), SelfID: installer.ID, Out: &output}); err != nil {
 		t.Fatalf("install: %v", err)
 	}
-	if after := daemon.named("oh-my-cpa"); after.ID != console.ID {
+	if after := daemon.named("shell-pamc"); after.ID != console.ID {
 		t.Fatalf("a pinned console must not be replaced")
 	}
 	if !strings.Contains(output.String(), "pinned") {

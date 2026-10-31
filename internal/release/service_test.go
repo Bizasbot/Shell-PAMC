@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // releaseServiceCounter names each test database uniquely.
@@ -38,7 +38,7 @@ func newTestService(t *testing.T, handler http.HandlerFunc) (*Service, *stubGitH
 
 	service, err := New(Options{
 		Repository:    repository.New(db),
-		OMCRepository: "WizisCool/oh-my-cpa",
+		OMCRepository: "Bizasbot/Shell-PAMC",
 		CPARepository: "router-for-me/CLIProxyAPI",
 		Client:        NewClientWithTransport(server.Client().Transport, server.URL),
 	})
@@ -345,7 +345,7 @@ func TestFailedCheckKeepsThePreviousIndexAndReportsWhy(t *testing.T) {
 
 func TestCheckFailureDoesNotEraseTheOtherProduct(t *testing.T) {
 	service, _ := newTestService(t, func(writer http.ResponseWriter, request *http.Request) {
-		// The gateway's feed fails; Oh My CPA's succeeds. They have separate sources
+		// The gateway's feed fails; Shell-PAMC's succeeds. They have separate sources
 		// and must fail independently.
 		if strings.Contains(request.URL.Path, "CLIProxyAPI") {
 			writer.WriteHeader(http.StatusNotFound)
@@ -406,7 +406,7 @@ func TestConditionalRequestAvoidsSpendingQuotaButOnlyWhileBodiesAreHeld(t *testi
 	// would claim "unchanged" about content this process cannot render.
 	fresh, err := New(Options{
 		Repository:    service.repository,
-		OMCRepository: "WizisCool/oh-my-cpa",
+		OMCRepository: "Bizasbot/Shell-PAMC",
 		CPARepository: "router-for-me/CLIProxyAPI",
 		Client:        NewClientWithTransport(stub.serverTransport(), stub.serverURL()),
 	})

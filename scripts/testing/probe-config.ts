@@ -43,7 +43,7 @@ export default defineConfig({
   ],
   use: {
     browserName: 'chromium',
-    baseURL: `http://127.0.0.1:${port}/omc`,
+    baseURL: `http://127.0.0.1:${port}/shell-pamc`,
     viewport: { width: 1440, height: 1000 },
     contextOptions: { reducedMotion: 'reduce', serviceWorkers: 'block' },
     actionTimeout: 10_000,

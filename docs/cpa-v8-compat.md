@@ -1,6 +1,6 @@
 # CPA v8 compatibility
 
-Oh My CPA (OMC) requires CLIProxyAPI (CPA) v8.0.0 or later and speaks its v8 Management
+Shell-PAMC (OMC) requires CLIProxyAPI (CPA) v8.0.0 or later and speaks its v8 Management
 API (ADR 0034, which supersedes the one-build-for-v7-and-v8 decision of ADR 0028). This
 document records what v8 changed, what was measured against real binaries, how OMC
 decides that a gateway is v8, how it edits the configuration (ADR 0037), which routes it

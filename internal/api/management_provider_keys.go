@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 // Config families expose one provider row per credential. A blank first key in

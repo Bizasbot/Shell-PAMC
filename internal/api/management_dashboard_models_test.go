@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // The ranking and the fold are pure functions of the rows and the window, so they are tested

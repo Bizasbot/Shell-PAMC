@@ -46,7 +46,7 @@ var (
 // that publishes that shape rather than assuming what it would need.
 //
 // It exists because a malformed document is not caught by a build: CPA refuses the whole
-// source, so every installation shows an empty Oh My CPA registry and all the console
+// source, so every installation shows an empty Shell-PAMC registry and all the console
 // can print is the gateway's one-line message.
 func validateRegistry(raw []byte) (registryDocument, error) {
 	var document registryDocument
@@ -162,7 +162,7 @@ func TestValidateRegistryRefusesWhatTheGatewayRefuses(t *testing.T) {
 	document := func(schemaVersion int, plugins string) []byte {
 		return []byte(fmt.Sprintf(`{"schema_version":%d,"plugins":[%s]}`, schemaVersion, plugins))
 	}
-	// The shorthand is what made the published Oh My CPA source unreadable: every other
+	// The shorthand is what made the published Shell-PAMC source unreadable: every other
 	// field was valid, so only the repository rule could have caught it.
 	shorthand := strings.Replace(validPlugin, "https://github.com/owner/repo", "owner/repo", 1)
 
@@ -235,7 +235,7 @@ func TestValidateRegistryRefusesWhatTheGatewayRefuses(t *testing.T) {
 // which registry CPA thinks a saved install came from. Pinning it makes that a
 // deliberate edit to this value rather than an accident in a constant.
 func TestSourceIDPinsThePublishedRegistry(t *testing.T) {
-	if got := SourceID(OMCSourceURL); got != "source-91d6a8a15335" {
+	if got := SourceID(OMCSourceURL); got != "source-0cf9df7a749e" {
 		t.Fatalf("SourceID(%q) = %q; a new registry address means a new source id, so update this value with the URL", OMCSourceURL, got)
 	}
 	if got := SourceID("  https://example.test/registry.json  "); got != SourceID("https://example.test/registry.json") {

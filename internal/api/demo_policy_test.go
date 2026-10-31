@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func demoHandler(t *testing.T, basePath string) *Handler {
@@ -43,7 +43,7 @@ func demoHandler(t *testing.T, basePath string) *Handler {
 // blocked feature is still a defect, and this is what turns it into a failing test
 // at the moment the route is added rather than a bug report later.
 func TestDemoPolicyClassifiesEveryRegisteredRoute(t *testing.T) {
-	const basePath = "/omc"
+	const basePath = "/shell-pamc"
 	handler := demoHandler(t, basePath)
 	routes := handler.routes()
 
@@ -159,7 +159,7 @@ func TestDemoPolicyKeepsTheReadingSurface(t *testing.T) {
 		{http.MethodGet, "/api/v1/pricing/models/gpt-5"},
 		{http.MethodGet, "/api/v1/resources"},
 		{http.MethodGet, "/api/v1/agent/models"},
-		// Writes the demonstration can perform on its own fixture or on Oh My CPA's
+		// Writes the demonstration can perform on its own fixture or on Shell-PAMC's
 		// own metadata.
 		{http.MethodPatch, "/api/v1/management/auth-files/status"},
 		{http.MethodPatch, "/api/v1/management/auth-files/fields"},
@@ -208,7 +208,7 @@ func TestDemoPolicyRefusesAnUnclassifiedRoute(t *testing.T) {
 		}
 	}
 
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	client := demoClient(t, server.URL)
@@ -216,8 +216,8 @@ func TestDemoPolicyRefusesAnUnclassifiedRoute(t *testing.T) {
 	// The other half of the property: the wildcard still serves the console, including its
 	// own routes that begin with `/api-`, which are pages rather than API paths.
 	for _, probe := range []struct{ method, path string }{
-		{http.MethodGet, "/omc/api/v1/management/some/future/read"},
-		{http.MethodGet, "/omc/api/v1/usage/events/1/export"},
+		{http.MethodGet, "/shell-pamc/api/v1/management/some/future/read"},
+		{http.MethodGet, "/shell-pamc/api/v1/usage/events/1/export"},
 	} {
 		request, err := http.NewRequest(probe.method, server.URL+probe.path, nil)
 		if err != nil {
@@ -239,7 +239,7 @@ func TestDemoPolicyRefusesAnUnclassifiedRoute(t *testing.T) {
 		}
 	}
 
-	for _, path := range []string{"/omc/api-keys", "/omc/dashboard", "/omc/usage/events"} {
+	for _, path := range []string{"/shell-pamc/api-keys", "/shell-pamc/dashboard", "/shell-pamc/usage/events"} {
 		response, err := client.Get(server.URL + path)
 		if err != nil {
 			t.Fatal(err)
@@ -261,7 +261,7 @@ func firstLine(value string) string {
 // The refusal has to be the server's answer, not the browser's. These calls go
 // straight to the router with no page in front of them.
 func TestDemoGuardRefusesOverHTTP(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	client := demoClient(t, server.URL)
@@ -269,19 +269,19 @@ func TestDemoGuardRefusesOverHTTP(t *testing.T) {
 	for _, call := range []struct {
 		method, path, body string
 	}{
-		{http.MethodPost, "/omc/api/v1/agent/run", `{}`},
-		{http.MethodPost, "/omc/api/v1/management/oauth/start", `{"provider":"codex"}`},
-		{http.MethodPost, "/omc/api/v1/management/auth-files", `{"type":"codex"}`},
-		{http.MethodGet, "/omc/api/v1/management/auth-files/download?name=x.json", ""},
-		{http.MethodDelete, "/omc/api/v1/management/auth-files", `{"names":["x.json"]}`},
-		{http.MethodGet, "/omc/api/v1/management/request-error-logs/x.log", ""},
-		{http.MethodGet, "/omc/api/v1/management/request-logs/41dbb9ee", ""},
-		{http.MethodGet, "/omc/api/v1/usage/events/1/request-log", ""},
-		{http.MethodPut, "/omc/api/v1/management/config/source", `{"source":"debug: true"}`},
-		{http.MethodPost, "/omc/api/v1/management/quota/redeem-credit", `{"auth_index":"a"}`},
-		{http.MethodPost, "/omc/api/v1/management/providers/pull-models", `{}`},
-		{http.MethodPost, "/omc/api/v1/management/providers/probe", `{}`},
-		{http.MethodPost, "/omc/api/v1/pricing/sync", `{}`},
+		{http.MethodPost, "/shell-pamc/api/v1/agent/run", `{}`},
+		{http.MethodPost, "/shell-pamc/api/v1/management/oauth/start", `{"provider":"codex"}`},
+		{http.MethodPost, "/shell-pamc/api/v1/management/auth-files", `{"type":"codex"}`},
+		{http.MethodGet, "/shell-pamc/api/v1/management/auth-files/download?name=x.json", ""},
+		{http.MethodDelete, "/shell-pamc/api/v1/management/auth-files", `{"names":["x.json"]}`},
+		{http.MethodGet, "/shell-pamc/api/v1/management/request-error-logs/x.log", ""},
+		{http.MethodGet, "/shell-pamc/api/v1/management/request-logs/41dbb9ee", ""},
+		{http.MethodGet, "/shell-pamc/api/v1/usage/events/1/request-log", ""},
+		{http.MethodPut, "/shell-pamc/api/v1/management/config/source", `{"source":"debug: true"}`},
+		{http.MethodPost, "/shell-pamc/api/v1/management/quota/redeem-credit", `{"auth_index":"a"}`},
+		{http.MethodPost, "/shell-pamc/api/v1/management/providers/pull-models", `{}`},
+		{http.MethodPost, "/shell-pamc/api/v1/management/providers/probe", `{}`},
+		{http.MethodPost, "/shell-pamc/api/v1/pricing/sync", `{}`},
 	} {
 		request, err := http.NewRequest(call.method, server.URL+call.path, strings.NewReader(call.body))
 		if err != nil {
@@ -325,12 +325,12 @@ func TestDemoGuardRefusesOverHTTP(t *testing.T) {
 // Every response says it is the demonstration, and a write says its result is not
 // durable. A page that renders a stored value has no other way to know.
 func TestDemoResponsesAreMarked(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	client := demoClient(t, server.URL)
 
-	response, err := client.Get(server.URL + "/omc/api/v1/management/dashboard")
+	response, err := client.Get(server.URL + "/shell-pamc/api/v1/management/dashboard")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,7 +342,7 @@ func TestDemoResponsesAreMarked(t *testing.T) {
 		t.Fatal("a read reports a persistence caveat it does not have")
 	}
 
-	request, err := http.NewRequest(http.MethodPatch, server.URL+"/omc/api/v1/management/auth-files/status", strings.NewReader(`{"name":"x.json","disabled":true}`))
+	request, err := http.NewRequest(http.MethodPatch, server.URL+"/shell-pamc/api/v1/management/auth-files/status", strings.NewReader(`{"name":"x.json","disabled":true}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,12 +361,12 @@ func TestDemoResponsesAreMarked(t *testing.T) {
 // so the session endpoint hands one out. It grants nothing: the refusals above are
 // what protects the surface.
 func TestDemoSessionIsIssuedOnFirstSight(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 
 	client := &http.Client{}
-	response, err := client.Get(server.URL + "/omc/api/auth/session")
+	response, err := client.Get(server.URL + "/shell-pamc/api/auth/session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +379,7 @@ func TestDemoSessionIsIssuedOnFirstSight(t *testing.T) {
 	}
 
 	// And the API is reachable with no further interaction.
-	request, err := http.NewRequest(http.MethodGet, server.URL+"/omc/api/v1/management/dashboard", nil)
+	request, err := http.NewRequest(http.MethodGet, server.URL+"/shell-pamc/api/v1/management/dashboard", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,13 +402,13 @@ func TestDemoSessionIsIssuedOnFirstSight(t *testing.T) {
 // that minted the cookie - so a 401 here would turn a working page into a sign-in
 // card. Each such request is served and handed the cookie it was missing.
 func TestDemoServesAnUnauthenticatedRead(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 
 	// No jar at all: every request is as unauthenticated as the first one of a page.
 	client := &http.Client{}
-	for _, path := range []string{"/omc/api/v1/preferences", "/omc/api/v1/management/dashboard", "/omc/api/v1/usage/events"} {
+	for _, path := range []string{"/shell-pamc/api/v1/preferences", "/shell-pamc/api/v1/management/dashboard", "/shell-pamc/api/v1/usage/events"} {
 		response, err := client.Get(server.URL + path)
 		if err != nil {
 			t.Fatal(err)
@@ -424,7 +424,7 @@ func TestDemoServesAnUnauthenticatedRead(t *testing.T) {
 
 	// A cross-site mutation is still refused, so the demonstration cannot be driven
 	// from another origin.
-	request, err := http.NewRequest(http.MethodPut, server.URL+"/omc/api/v1/preferences/dashboard.range", strings.NewReader(`{"value":"24h"}`))
+	request, err := http.NewRequest(http.MethodPut, server.URL+"/shell-pamc/api/v1/preferences/dashboard.range", strings.NewReader(`{"value":"24h"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -443,11 +443,11 @@ func TestDemoServesAnUnauthenticatedRead(t *testing.T) {
 // The sign-in form is still reachable - a visitor whose cookie was cleared lands on
 // it - and it must not be a dead end.
 func TestDemoLoginAcceptsAnyPassword(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 
-	response, err := http.Post(server.URL+"/omc/api/auth/login", "application/json", strings.NewReader(`{"password":"anything"}`))
+	response, err := http.Post(server.URL+"/shell-pamc/api/auth/login", "application/json", strings.NewReader(`{"password":"anything"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -460,11 +460,11 @@ func TestDemoLoginAcceptsAnyPassword(t *testing.T) {
 // A self-hosted deployment must be untouched by any of this. Same routes, no demo
 // header, no issued session, and the dangerous calls reach their handlers.
 func TestSelfHostedRouterIsUnchanged(t *testing.T) {
-	handler := testHandler(t, "/omc")
+	handler := testHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 
-	response, err := http.Get(server.URL + "/omc/api/auth/session")
+	response, err := http.Get(server.URL + "/shell-pamc/api/auth/session")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -478,7 +478,7 @@ func TestSelfHostedRouterIsUnchanged(t *testing.T) {
 
 	// The demo guard is not installed, so an unclassified path is answered by the
 	// ordinary API rather than refused with a demo message.
-	response, err = http.Post(server.URL+"/omc/api/v1/management/oauth/start", "application/json", strings.NewReader(`{"provider":"codex"}`))
+	response, err = http.Post(server.URL+"/shell-pamc/api/v1/management/oauth/start", "application/json", strings.NewReader(`{"provider":"codex"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -493,7 +493,7 @@ func TestSelfHostedRouterIsUnchanged(t *testing.T) {
 // wire, including the two markers a caller may branch on and the base path the console
 // is mounted under.
 func TestDemoGuardWireContract(t *testing.T) {
-	handler := demoHandler(t, "/omc")
+	handler := demoHandler(t, "/shell-pamc")
 	server := httptest.NewServer(handler.Router())
 	defer server.Close()
 	client := demoClient(t, server.URL)
@@ -510,16 +510,16 @@ func TestDemoGuardWireContract(t *testing.T) {
 		// wantPersistence is whether the "not durable" marker must be present.
 		wantPersistence bool
 	}{
-		{"an allowed read", http.MethodGet, "/omc/api/v1/management/dashboard", "", http.StatusOK, false, false},
+		{"an allowed read", http.MethodGet, "/shell-pamc/api/v1/management/dashboard", "", http.StatusOK, false, false},
 		// A write the demonstration performs, on a route that needs no CPA instance: the
 		// fixture-backed writes are exercised against the fixture in internal/demo.
-		{"an allowed write", http.MethodPut, "/omc/api/v1/preferences/dashboard_range", `"24h"`, http.StatusOK, false, true},
-		{"a refused write", http.MethodPost, "/omc/api/v1/management/oauth/start", `{"provider":"codex"}`, http.StatusForbidden, true, false},
-		{"a refused read", http.MethodGet, "/omc/api/v1/management/auth-files/download?name=x.json", "", http.StatusForbidden, true, false},
-		{"an unclassified API read", http.MethodGet, "/omc/api/v1/management/some/future/read", "", http.StatusForbidden, true, false},
-		{"an unclassified API write", http.MethodPost, "/omc/api/v1/management/some/future/write", `{}`, http.StatusForbidden, true, false},
-		{"a console page", http.MethodGet, "/omc/dashboard", "", http.StatusOK, false, false},
-		{"a page whose name begins with the API prefix", http.MethodGet, "/omc/api-keys", "", http.StatusOK, false, false},
+		{"an allowed write", http.MethodPut, "/shell-pamc/api/v1/preferences/dashboard_range", `"24h"`, http.StatusOK, false, true},
+		{"a refused write", http.MethodPost, "/shell-pamc/api/v1/management/oauth/start", `{"provider":"codex"}`, http.StatusForbidden, true, false},
+		{"a refused read", http.MethodGet, "/shell-pamc/api/v1/management/auth-files/download?name=x.json", "", http.StatusForbidden, true, false},
+		{"an unclassified API read", http.MethodGet, "/shell-pamc/api/v1/management/some/future/read", "", http.StatusForbidden, true, false},
+		{"an unclassified API write", http.MethodPost, "/shell-pamc/api/v1/management/some/future/write", `{}`, http.StatusForbidden, true, false},
+		{"a console page", http.MethodGet, "/shell-pamc/dashboard", "", http.StatusOK, false, false},
+		{"a page whose name begins with the API prefix", http.MethodGet, "/shell-pamc/api-keys", "", http.StatusOK, false, false},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -575,7 +575,7 @@ func TestDemoGuardWireContract(t *testing.T) {
 	// The bare mount path redirects to its slash before the guard sees it, so this is
 	// checked separately rather than in the table.
 	noRedirect := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	response, err := noRedirect.Get(server.URL + "/omc")
+	response, err := noRedirect.Get(server.URL + "/shell-pamc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -595,7 +595,7 @@ func demoClient(t *testing.T, baseURL string) *http.Client {
 		t.Fatal(err)
 	}
 	client := &http.Client{Jar: jar}
-	response, err := client.Get(baseURL + "/omc/api/auth/session")
+	response, err := client.Get(baseURL + "/shell-pamc/api/auth/session")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,7 +6,7 @@
  */
 
 /** The environment variable every snippet reads the management key from, matching the stdio bridge. */
-export const MANAGEMENT_KEY_VARIABLE = 'OMCPA_CPA_MANAGEMENT_KEY';
+export const MANAGEMENT_KEY_VARIABLE = 'SHELLPAMC_CPA_MANAGEMENT_KEY';
 
 export const CONNECT_CLIENTS = ['claude', 'codex', 'other', 'stdio'] as const;
 export type ConnectClient = typeof CONNECT_CLIENTS[number];
@@ -55,18 +55,18 @@ export function connectSnippet(client: ConnectClient, origin: string, basePath: 
     case 'claude':
       return {
         lang: 'bash',
-        code: `claude mcp add --transport http oh-my-cpa ${endpoint} \\\n  --header "Authorization: Bearer $${MANAGEMENT_KEY_VARIABLE}"`,
+        code: `claude mcp add --transport http shell-pamc ${endpoint} \\\n  --header "Authorization: Bearer $${MANAGEMENT_KEY_VARIABLE}"`,
       };
     case 'codex':
       return {
         lang: 'toml',
-        code: `[mcp_servers.oh-my-cpa]\nurl = "${endpoint}"\nbearer_token_env_var = "${MANAGEMENT_KEY_VARIABLE}"`,
+        code: `[mcp_servers.shell-pamc]\nurl = "${endpoint}"\nbearer_token_env_var = "${MANAGEMENT_KEY_VARIABLE}"`,
       };
     case 'other':
       return {
         lang: 'json',
         code: JSON.stringify({
-          mcpServers: { 'oh-my-cpa': { url: endpoint, headers: { Authorization: `Bearer <${keyPlaceholder}>` } } },
+          mcpServers: { 'shell-pamc': { url: endpoint, headers: { Authorization: `Bearer <${keyPlaceholder}>` } } },
         }, null, 2),
       };
     case 'stdio':
@@ -74,10 +74,10 @@ export function connectSnippet(client: ConnectClient, origin: string, basePath: 
         lang: 'json',
         code: JSON.stringify({
           mcpServers: {
-            'oh-my-cpa': {
-              command: '/path/to/oh-my-cpa',
+            'shell-pamc': {
+              command: '/path/to/shell-pamc',
               args: ['mcp'],
-              env: { OMCPA_SERVER_URL: consoleUrl(origin, basePath), [MANAGEMENT_KEY_VARIABLE]: `<${keyPlaceholder}>` },
+              env: { SHELLPAMC_SERVER_URL: consoleUrl(origin, basePath), [MANAGEMENT_KEY_VARIABLE]: `<${keyPlaceholder}>` },
             },
           },
         }, null, 2),

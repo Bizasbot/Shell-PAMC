@@ -1,6 +1,6 @@
 package quota
 
-import "github.com/oh-my-cpa/oh-my-cpa/internal/security"
+import "github.com/bizasbot/shell-pamc/internal/security"
 
 // ReadAttempt is the last time somebody tried to read a credential's quota, as the console
 // needs it: when, and the provider's own reason when the try produced no reading.

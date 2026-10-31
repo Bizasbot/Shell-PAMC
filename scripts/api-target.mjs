@@ -1,7 +1,7 @@
-// Resolves the Go API address the Vite dev server proxies /omc/api to.
+// Resolves the Go API address the Vite dev server proxies /shell-pamc/api to.
 //
-// The Go process reads OMCPA_LISTEN_ADDR from its dotenv file (internal/config:
-// OMCPA_ENV_FILE selects the file, real environment variables win over it), so
+// The Go process reads SHELLPAMC_LISTEN_ADDR from its dotenv file (internal/config:
+// SHELLPAMC_ENV_FILE selects the file, real environment variables win over it), so
 // the proxy has to follow the same value instead of assuming 127.0.0.1:8080: a
 // developer machine can already have the default port taken by an unrelated
 // service.
@@ -14,7 +14,7 @@ const DEFAULT_LISTEN_ADDR = '127.0.0.1:8080';
 // Mirrors config.DotEnvPath: a relative override resolves against the process
 // working directory, which is the repository root for `pnpm dev` and Vite.
 function dotEnvPath(root) {
-  const configured = (process.env.OMCPA_ENV_FILE || '').trim();
+  const configured = (process.env.SHELLPAMC_ENV_FILE || '').trim();
   if (!configured) return path.join(root, '.env');
   return path.isAbsolute(configured) ? configured : path.join(root, configured);
 }
@@ -52,7 +52,7 @@ function readDotEnvValue(root, name) {
     const body = trimmed.startsWith('export ') ? trimmed.slice('export '.length) : trimmed;
     const separator = body.indexOf('=');
     if (separator < 0) continue;
-    // Go trims the key, so `OMCPA_LISTEN_ADDR = value` is the same setting.
+    // Go trims the key, so `SHELLPAMC_LISTEN_ADDR = value` is the same setting.
     if (body.slice(0, separator).trim() !== name) continue;
     // First assignment wins, matching os.LookupEnv inside LoadDotEnv.
     return parseDotEnvValue(file, name, body.slice(separator + 1));
@@ -69,11 +69,11 @@ function readEnvOrFile(root, name) {
 }
 
 export function resolveListenAddr(root) {
-  return readEnvOrFile(root, 'OMCPA_LISTEN_ADDR') || DEFAULT_LISTEN_ADDR;
+  return readEnvOrFile(root, 'SHELLPAMC_LISTEN_ADDR') || DEFAULT_LISTEN_ADDR;
 }
 
 export function resolveApiTarget(root) {
-  const explicit = (process.env.OMCPA_API_TARGET || '').trim();
+  const explicit = (process.env.SHELLPAMC_API_TARGET || '').trim();
   if (explicit) return explicit;
 
   const listenAddr = resolveListenAddr(root);

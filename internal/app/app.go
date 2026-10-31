@@ -12,20 +12,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/api"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/discovery"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/demo"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/timezone"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/updater"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/ingest"
+	"github.com/bizasbot/shell-pamc/internal/api"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/cpa/discovery"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/demo"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/timezone"
+	"github.com/bizasbot/shell-pamc/internal/updater"
+	"github.com/bizasbot/shell-pamc/internal/usage/ingest"
 )
 
 type App struct {
@@ -90,13 +90,13 @@ func newApp(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, 
 		return nil, fmt.Errorf("create data directory: %w", err)
 	}
 	if cfg.MasterKey == "" {
-		return nil, errors.New("OMCPA_MASTER_KEY is required")
+		return nil, errors.New("SHELLPAMC_MASTER_KEY is required")
 	}
 	cipher, err := crypto.New(cfg.MasterKey)
 	if err != nil {
 		return nil, fmt.Errorf("initialize secret cipher: %w", err)
 	}
-	// Oh My CPA has no separate administrator password: the CPA management key
+	// Shell-PAMC has no separate administrator password: the CPA management key
 	// is the only login credential. The app still boots without one so the UI
 	// can explain what to configure; the login endpoint then reports 503.
 	var authManager *auth.Manager
@@ -113,6 +113,16 @@ func newApp(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, 
 		// would be empty on a page whose whole point is that it is alive.
 		if err := demo.ResetDatabase(cfg.DatabasePath); err != nil {
 			return nil, err
+		}
+	}
+	if !cfg.IsDemoMode {
+		// An installation upgraded in place still holds its data under the old file name.
+		moved, err := repository.MigrateLegacyDatabaseName(cfg.DataDir)
+		if err != nil {
+			return nil, err
+		}
+		if moved {
+			logger.Info("renamed the database to its new name", "data_dir", cfg.DataDir)
 		}
 	}
 	db, err := repository.Open(ctx, cfg.DatabasePath,
@@ -413,7 +423,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	// The release sweep is best-effort in the same way and for the same reason: a
 	// version that was not checked is stale information, not a broken deployment.
-	// OMCPA_UPDATE_CHECK_ENABLED=false switches it off while leaving the page's own
+	// SHELLPAMC_UPDATE_CHECK_ENABLED=false switches it off while leaving the page's own
 	// check and the manual button working, because those are an operator asking a
 	// question rather than the process deciding to reach the internet.
 	// Never in a demo, and that is not implied by the service being nil-safe: the demo

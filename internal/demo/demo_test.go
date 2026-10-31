@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
 )
 
 const testMasterKey = "01234567890123456789012345678901"
@@ -59,7 +59,7 @@ func seededDatabase(t *testing.T) (*repository.Repository, time.Time, SeedStats)
 			return
 		}
 		db, err := repository.Open(context.Background(),
-			filepath.Join(seedDir, "oh-my-cpa-demo.db"),
+			filepath.Join(seedDir, "shell-pamc-demo.db"),
 			repository.WithCipher(cipher),
 		)
 		if err != nil {
@@ -280,7 +280,7 @@ func TestSeedAggregatesRollups(t *testing.T) {
 	}
 }
 
-// The caller-key names are Oh My CPA's own metadata, and they are what the request
+// The caller-key names are Shell-PAMC's own metadata, and they are what the request
 // list shows instead of a mask. The alias has to be stored under the same fingerprint
 // the seeded records carry, or the list would show the mask.
 func TestSeedNamesTheCallerKeys(t *testing.T) {
@@ -453,8 +453,8 @@ func TestSeedAttributesRequestsToConfiguredCredentials(t *testing.T) {
 // and the application deletes it rather than appending to it.
 func TestResetDatabaseLeavesTheSelfHostedDatabaseAlone(t *testing.T) {
 	dir := t.TempDir()
-	demoPath := filepath.Join(dir, "oh-my-cpa-demo.db")
-	realPath := filepath.Join(dir, "oh-my-cpa.db")
+	demoPath := filepath.Join(dir, "shell-pamc-demo.db")
+	realPath := filepath.Join(dir, "shell-pamc.db")
 	for _, path := range []string{demoPath, demoPath + "-wal", demoPath + "-shm", realPath} {
 		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 			t.Fatal(err)
@@ -673,7 +673,7 @@ func TestFixturePublishesNoPluginLogoURL(t *testing.T) {
 }
 
 // A store entry is joined to its registry by the entry's own source_url: the console
-// decides whether an entry belongs to Oh My CPA's managed registry from that field. A
+// decides whether an entry belongs to Shell-PAMC's managed registry from that field. A
 // fixture that omits it makes every entry look like it came from nowhere, so the managed
 // entries cannot be marked, pinned first, or withheld when the switch is off - the whole
 // feature would silently be a no-op in the demonstration.

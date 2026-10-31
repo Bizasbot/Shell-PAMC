@@ -1,4 +1,4 @@
-# Oh My CPA architecture
+# Shell-PAMC architecture
 
 Module map, data flows, and the invariants that hold them together. Domain
 vocabulary lives in `CONTEXT.md`; visual rules live in `docs/design.md`; the
@@ -18,7 +18,7 @@ Go process ──▶ CPA management API (/v8/management; CPA v8+) ──▶ upst
 Go process ──▶ CPA RESP usage channel
 ```
 
-One process, one SQLite file, one Oh My CPA replica. The Go process owns the
+One process, one SQLite file, one Shell-PAMC replica. The Go process owns the
 base path contract: the SPA is served at `<base>/`, the API at `<base>/api/v1`,
 media at `<base>/media`. The embedded bundle's hashed assets are served from
 `<base>/assets/` and provider SVGs from `<base>/lobe-icons/`; unknown non-API
@@ -36,7 +36,7 @@ The console is installable as a web app. The hand-written
 those icons are renders of the brand mark in `web/public/favicon.svg`; re-render them
 from that drawing when it changes. Every URL inside
 the manifest is relative, and `start_url`, `scope` and the icon sources resolve against
-the manifest URL, so one committed file is correct at the site root, under `/omc` and
+the manifest URL, so one committed file is correct at the site root, under `/shell-pamc` and
 under a nested base path, with no per-deployment generation. The manifest carries no
 `id`: a relative id resolves against `start_url`'s origin rather than the manifest URL,
 so `"./"` would give every mount point the same installed identity; omitted, the identity
@@ -59,7 +59,7 @@ The same image is the updater when its command is `updater serve` (ADR 0099): th
 then asks the updater instead, so that role needs no health check of its own, and both
 release Compose files declare it as a second service that alone mounts the Docker socket.
 
-Docker Hub distributes `wiziscool/oh-my-cpa` for amd64 and arm64. The full Compose
+GitHub Container Registry distributes `ghcr.io/bizasbot/shell-pamc` for amd64 and arm64. The full Compose
 file pulls CPA and OMC with loopback host ports; OMC-only Compose attaches to a fresh
 or explicitly selected external network. Neither builds locally or installs a proxy.
 `deploy/cpa.config.example.yaml` is solely for fresh gateways; existing installations
@@ -91,7 +91,7 @@ and ADR 0056 the publication ordering and immutable version identity.
 
 ### Demo mode is the same process with the gateway replaced
 
-`OMCPA_DEMO_MODE=true` runs this binary against its own fixture; see §13. The shape
+`SHELLPAMC_DEMO_MODE=true` runs this binary against its own fixture; see §13. The shape
 above still describes it, with two edges replaced and one added:
 
 ```text
@@ -138,7 +138,7 @@ cycle even though the `internal/usage` directory appears in both directions.
 | `internal/usage/ingest` | Collector loop, decode processor, usage-fact fold and data-lifecycle maintenance | `repository`, `management`, `security`, `usage` |
 | `internal/quota` | Per-provider quota probes and normalization | `management` |
 | `internal/release` | Published-version observation: version comparison, the release feed client, the stored index, and the project's star count for the header link | `repository` |
-| `internal/updater` | The updater role of the binary (`oh-my-cpa updater serve\|install\|healthcheck`, ADR 0099): a Docker Engine API client over the unix socket, container replacement with rollback, signed-manifest verification, the two-request control service, the one-command installer, and the client the console uses to reach it | `release` |
+| `internal/updater` | The updater role of the binary (`shell-pamc updater serve\|install\|healthcheck`, ADR 0099): a Docker Engine API client over the unix socket, container replacement with rollback, signed-manifest verification, the two-request control service, the one-command installer, and the client the console uses to reach it | `release` |
 | `internal/demo` | The publication fixture: an in-process CPA stand-in, the seeded history, and the capture state the console renders | `domain`, `pricing`, `quota`, `repository`, `security`, `usage`, `usage/ingest` |
 | `internal/capability` | Agent capability declarations, JSON Schema validation, permission/risk rules, pending-operation store, executor audit | `repository`, `crypto` |
 | `internal/operations` | Shared management operations (usage analysis, requests, providers, OAuth, quota, keys, config, pricing, system, model directory) used by both console handlers and capabilities | `capability`, `cpa/management`, `cpa/gateway`, `modelcatalog`, `pricing`, `quota`, `repository` |
@@ -184,14 +184,14 @@ on their `plugins.*` paths (`configyaml.PluginSettingsEdit`), under the provider
 gate, the configuration mutex and the revision the page loaded, exactly like a
 configuration save.
 
-Oh My CPA's own registry is a managed entry of that list rather than a configured one
+Shell-PAMC's own registry is a managed entry of that list rather than a configured one
 (`internal/api/management_plugin_source.go`, ADR 0104). `internal/pluginregistry`
 compiles in the address published from `plugins/registry.json`; the server reads the
 `omc_plugin_source_enabled` preference (default on) and keeps `plugins.store-sources`
 in agreement with it. A plugin-settings save and both
 configuration save paths add or remove the address under the gate and the mutex, and a
 configuration save that removed it is repaired inside the save's own lock scope so the
-revision it reports already contains it. The plugin settings tab names the source `Oh My CPA` instead of CPA's URL host as one fixed line.
+revision it reports already contains it. The plugin settings tab names the source `Shell-PAMC` instead of CPA's URL host as one fixed line.
 
 The facade preserves CPA's `supports_oauth` wire field. CPA derives it from the presence
 of an auth provider, so the installed-plugin badge names the **Auth provider** capability
@@ -412,7 +412,7 @@ one tool per capability offered to the `mcp` adapter, plus `omc_operation_status
   outside `/api/v1` and its session middleware: it accepts the management key as a
   bearer token only, spends the login throttle on a wrong one, is stateless with plain
   JSON responses, and is refused by the demo policy.
-- `oh-my-cpa mcp` is a stdio process whose backend forwards to the `/api/v1/capabilities`
+- `shell-pamc mcp` is a stdio process whose backend forwards to the `/api/v1/capabilities`
   endpoints with the same bearer credential. The subcommand is dispatched before
   configuration, database, and CPA client initialization, so it opens no data directory.
   Non-loopback URLs must be HTTPS, redirects are refused, responses are bounded, and only
@@ -478,7 +478,7 @@ Three properties hold across the loop:
   was one, the parameter it named, and whether the attempt bound was exhausted.
 
 The latest Agent session, images and pending or terminal operations live in `agent_documents`
-(migrations 026 and 036), encrypted with `OMCPA_MASTER_KEY`. Sessions are exempt from the
+(migrations 026 and 036), encrypted with `SHELLPAMC_MASTER_KEY`. Sessions are exempt from the
 repository's 8 MiB document bound and remain until reset or explicit turn replacement; terminal
 operations are retained for 7 days. Image admission owns only its newly saved rows: validation,
 image-storage or initial session-save failure attempts to delete those rows with a detached,
@@ -617,7 +617,7 @@ Properties to preserve when changing this code:
 
 ### The CPA v8 baseline
 
-Oh My CPA requires CPA v8.0.0 or later (ADR 0034, superseding ADR 0028; the mapping and
+Shell-PAMC requires CPA v8.0.0 or later (ADR 0034, superseding ADR 0028; the mapping and
 measurements are in `docs/cpa-v8-compat.md`). The management client addresses
 `/v8/management` for every operation and never follows a redirect: the management key
 rides on every request, so a redirect is returned to the caller as the response it is
@@ -693,7 +693,7 @@ apart (`CONFIG_LEGACY_BACKUP_RETENTION`), so everyday writes never push out the 
 before a conversion. A write whose copy cannot be kept is refused before anything is sent
 (`503 config_backup_failed`); only a v8 file with no store configured is written uncopied.
 The file is read before every write rather than remembered, which also captures an edit
-made outside Oh My CPA since the last one. The v8 writes after which CPA itself saves the
+made outside Shell-PAMC since the last one. The v8 writes after which CPA itself saves the
 file (`InstallPlugin`, `DeletePlugin`, `PatchAuthFileStatus`) take the same copy first. A
 change set CPA stops partway through is `ErrConfigPartiallyApplied`
 (`502 config_partially_applied`), and CPA's reason for a refused save has the stored
@@ -996,7 +996,7 @@ than by following a tail. An older `/logs?source=audit` link redirects there.
   read as `request_log.download` and is refused in demo mode. This route, not the
   request list, is how a request with no usage record is read (see Failure Detail in
   `CONTEXT.md`).
-- **Service log** — Oh My CPA's own process log. `cmd/oh-my-cpa` builds the logger as
+- **Service log** — Shell-PAMC's own process log. `cmd/shell-pamc` builds the logger as
   `applog.NewHandler(jsonStderrHandler, buffer)`, so stderr remains the durable log a
   deployment collects, and `NewHandler` in `internal/api` finds the buffer through
   `applog.BufferOf`. The buffer keeps the latest `applog.DefaultCapacity` records,
@@ -1117,7 +1117,7 @@ eager so sign-in and recovery do not wait for authenticated code. Brand/provider
 as SVG URLs. The small catalog used for lookup and grouping is vendored in
 `web/src/generated/lobeIconCatalog.json`; the React icon package is not a
 dependency, because importing it would pull hundreds of components into the
-eager bundle; the OMC Settings page is lazy for the same reason, because the palette editor it carries
+eager bundle; the Shell-PAMC Settings page is lazy for the same reason, because the palette editor it carries
 pulls in Ant Design's colour picker. Dashboard KPI cards use `@ant-design/charts` in a dedicated
 `vendor-charts` chunk, lazily loaded so the entry bundle stays small. Their
 numbers animate through `@number-flow/react`, which the dashboard page imports
@@ -1314,14 +1314,14 @@ geometry; the virtualizer continues measuring real item and group-header heights
 ## 4. Request and session flow
 
 1. `POST <base>/api/auth/login` with the CPA management key. The handler
-   compares it against `OMCPA_CPA_MANAGEMENT_KEY`; there is no second password.
+   compares it against `SHELLPAMC_CPA_MANAGEMENT_KEY`; there is no second password.
    Failed attempts are throttled by the direct peer address. Forwarding headers
-   are consulted only when that peer belongs to `OMCPA_TRUSTED_PROXY_CIDRS`, and
+   are consulted only when that peer belongs to `SHELLPAMC_TRUSTED_PROXY_CIDRS`, and
    the rightmost untrusted address in the chain is used, so a client-supplied
    leftmost value cannot mint a fresh limiter bucket.
 2. On success the session manager derives an HMAC key from the management key
    and issues an HttpOnly, SameSite=Strict cookie (`Secure` when
-   `OMCPA_PUBLIC_URL` is HTTPS) with a 12-hour expiry.
+   `SHELLPAMC_PUBLIC_URL` is HTTPS) with a 12-hour expiry.
 3. `requireAuthentication` wraps every `/api/v1` route and rejects an absent or
    stale cookie with 401.
 4. Rotating the CPA management key changes the derived signing key, so every
@@ -1347,7 +1347,7 @@ geometry; the virtualizer continues measuring real item and group-header heights
    failure answers `500` and no credential is returned; masked reads are not
    audited because no credential leaves the server (ADR 0018).
 
-The key itself is encrypted with `OMCPA_MASTER_KEY` and stored on the
+The key itself is encrypted with `SHELLPAMC_MASTER_KEY` and stored on the
 `cpa_instances` row, where `bootstrapDefaultInstance` refreshes it at every
 startup so a rotation needs no SQLite surgery.
 
@@ -1546,7 +1546,7 @@ panel's reading; the exception is scoped in `docs/design.md` §7 rule 9 and ADR 
 
 ### Manual sync versus background collection
 
-The request list reads Oh My CPA's own database, so a manual refresh that only
+The request list reads Shell-PAMC's own database, so a manual refresh that only
 re-read it could never show a request CPA accepted a moment ago. `POST
 /usage/ingest/refresh` therefore drains CPA first: `ingest.Pipeline.RefreshNow`
 hands a request to the collector goroutine (a second consumer would divert
@@ -1816,7 +1816,7 @@ Three consequences shape the implementation:
   deleted key's history still needs its name; an alias belongs to the identity, not
   to the current configuration. Renaming is read-time resolution, so it changes how
   historical rows read without rewriting a single usage record.
-- **Alias writes never touch CPA's configuration.** Naming a key is Oh My CPA
+- **Alias writes never touch CPA's configuration.** Naming a key is Shell-PAMC
   metadata with its own endpoint, because routing it through `PUT /config.yaml`
   would rotate the revision for every other editor and rewrite a secret the
   operator did not touch.
@@ -1983,7 +1983,7 @@ Four properties are load-bearing:
 ### Streaming status and throughput (TPS) derivation
 
 CPA usage payloads include a boolean `stream` field indicating whether the request
-was executed in streaming mode. Oh My CPA records this in `usage_events.stream`
+was executed in streaming mode. Shell-PAMC records this in `usage_events.stream`
 (migration 023) as a nullable integer: `1` for streaming, `0` for non-streaming,
 and `NULL` for historical rows where the flag was not captured.
 
@@ -2005,7 +2005,7 @@ its whole payload in one chunk. `eventTokensPerSecond` in
   the subtraction is not a measurement of pure generation time.
 
 `TokenDisplayProvider` owns the setting through the existing optimistic, per-key
-serialized preference hook. OMC Settings and request rows share
+serialized preference hook. Shell-PAMC Settings and request rows share
 one value; changing it recalculates historical readouts without touching stored observations.
 The calculation result exposes `basis` (`exclude_ttft`, `include_ttft`, `fallback_total`,
 or `null`) so both surfaces select the same accurate formula tooltip. The closed preference
@@ -2490,11 +2490,11 @@ is no collector to lose and no sync loop to let prices go stale. §13 and
 The release sweep is the only loop that talks to a host outside the deployment's own
 gateway, and it is the one loop whose absence is invisible rather than harmful:
 without it the page shows the last known index. It can be switched off with
-`OMCPA_UPDATE_CHECK_ENABLED=false`, which stops the sweep while leaving the page's own
+`SHELLPAMC_UPDATE_CHECK_ENABLED=false`, which stops the sweep while leaving the page's own
 check and the manual button working — those are an operator asking a question rather
 than the process deciding to reach the internet.
 
-`OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false` is separate because it answers a separate question: may
+`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` is separate because it answers a separate question: may
 opening a page spend a request from a budget shared per address? A self-hosted deployment wants
 that enabled — the page exists to answer "is there a newer version" — while an air-gapped install
 or a test suite wants it off, since a page visit there is not a reader asking anything. The manual
@@ -2541,7 +2541,7 @@ learn it again.
 
 The read has its own floor, `StargazerFloor`, of one hour measured from the last attempt,
 because the header is mounted on every page and the read spends the same shared budget. A
-page load may trigger it only when `OMCPA_UPDATE_CHECK_ON_PAGE_LOAD` allows page visits to
+page load may trigger it only when `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` allows page visits to
 check; the six-hour sweep refreshes it regardless, so a deployment that forbids page-visit
 requests still learns the count. A failed read keeps the previous count. The read is an
 optional interface on the feed source (`release.StargazerSource`), which the demonstration's
@@ -2593,7 +2593,7 @@ System Information page
        ├─ omc only: stored release answer says update_available
        │            └─ internal/release downloads release-manifest.json + .sig (forwarded unread)
        ├─ audit system.update.apply = admitted   (a failed audit write refuses the update)
-       └─ POST http://oh-my-cpa-updater:8090/v1/update   Authorization: Bearer HMAC(master key)
+       └─ POST http://shell-pamc-updater:8090/v1/update   Authorization: Bearer HMAC(master key)
             ├─ omc: verify signature, repository and non-regressing version; pull repo@digest; tag
             ├─ cpa: pull the configured tag
             ├─ stop old, rename it to <name>-omc-previous, create + start replacement, await healthy
@@ -2604,7 +2604,7 @@ System Information page
 `GET /management/system/updater` reduces every way of not having an updater to a state
 the page can explain: `ready`, `not_installed` (a containerised console with no answer,
 which the install command fixes), `not_containerised` (a native install), `disabled`
-(`OMCPA_UPDATER_ENABLED=false`) and `rejected` (an updater that does not accept this
+(`SHELLPAMC_UPDATER_ENABLED=false`) and `rejected` (an updater that does not accept this
 console's token). The read is `200` in all of them. Products carry `action` and
 `reason`: `pinned`, `not_a_local_container`, `signature_unavailable`,
 `container_not_found`, `ambiguous_container`. Demo mode wires no updater: the read
@@ -2810,7 +2810,7 @@ claim, and it stays in Chromium only when the claim is about the engine.
 | API wire contract | `pnpm test:components` + `go test ./...` + `pnpm test:self` | A reviewed corpus is independently checked by real authenticated Go handlers/SQLite, the actual typed client in Vitest Node, and per-context Browser Mock dispatch. Reuse the integration runner without simulating DOM or changing API contracts (ADR 0090). |
 | Mechanical repository gates | `pnpm test:self` | Every `*.test.mjs` under `scripts/` and `deploy/cloudflare/`, discovered: path references, translation keys, CSS class references, the dev proxy target, the embedded-distribution sync, the Chromium installer's decision, both planners, the probe shards, the workflow structure and the fixed-wait ratchet. |
 | **UI fast path** (development only) | `pnpm check:ui` | The subset of browser claims a change can affect, against the **dev server** with mocked routes. No `pnpm build`, no Go binary, no fake CPA. Like the full probe catalog, this runs `React.StrictMode` double-invocation checks that a production build cannot expose. |
-| Cross-stack smoke | `pnpm verify:browser:smoke` | A local quick check of the thin path: `/omc` redirect, sign-in rejection and success, the dashboard and request list rendering their seeded rows, no console or page error. |
+| Cross-stack smoke | `pnpm verify:browser:smoke` | A local quick check of the thin path: `/shell-pamc` redirect, sign-in rejection and success, the dashboard and request list rendering their seeded rows, no console or page error. |
 | Focused local cross-stack acceptance | `pnpm verify:browser:p0` | An optional focused local lane: the smoke path and its checks, then the request-record/live-tail suite and the OAuth management scheduling-field suite, using the same built binary and deterministic fixture. |
 | Cross-stack acceptance | `pnpm verify:browser` | The whole stack against the fake CPA: auth, every route's render and secret boundary, key aliases, provider enable/disable and its concurrent path, live-tail polling, and the unified OAuth management workspace. |
 | Browser-only probes | `pnpm verify:probes` | The full scenario catalog on the Vite dev server with mocked routes; this is not built-artifact coverage. CI runs it as three weight-balanced shards (`--shard i/3`) on every pull request and master push. Complete local catalogs reuse the three CI partitions sequentially. Playwright Test executes shared scenarios with at most two isolated workers (`--workers 1` for serial reproduction), then marked frame-timing scenarios alone; the native runner owns budgets, cleanup and reports, while project fixtures retain strict runtime/network fault checks and failure artifacts. Drawer/modal stacking and hit-testing, column geometry and truncation, the responsive alignment override, dashboard trend mark paint, refresh sequencing under a held response, the platform's Back dismissing each overlay class, the phone rendering of each list surface against its table, and the touch rules on a deliberately coarse-and-hoverless context. |
@@ -3120,8 +3120,8 @@ screenshot, DOM, URL and page-error evidence as a thrown error, and each run cle
 earlier evidence first.
 
 The application processes spawned by cross-stack acceptance and Go demo smoke use
-`scripts/acceptance/environment.mjs`: inherited `OMCPA_*`, `PORT` and transport proxy
-variables are removed, fixture overrides are explicit, and `OMCPA_ENV_FILE` points
+`scripts/acceptance/environment.mjs`: inherited `SHELLPAMC_*`, `PORT` and transport proxy
+variables are removed, fixture overrides are explicit, and `SHELLPAMC_ENV_FILE` points
 to the platform's empty device. Startup must not log a loaded dotenv file. This
 prevents a developer's working-directory `.env` or operator settings from silently
 changing the fixture. Explicit live-system smoke remains separate.
@@ -3130,7 +3130,7 @@ changing the fixture. Explicit live-system smoke remains separate.
 
 A public demonstration has to show the product without a gateway behind it, without
 any credential, and without becoming a second frontend to maintain. Demo mode is
-that, expressed as a thin layer over the ordinary process: `OMCPA_DEMO_MODE=true`
+that, expressed as a thin layer over the ordinary process: `SHELLPAMC_DEMO_MODE=true`
 changes where the data comes from and refuses what must not happen, and nothing
 declares itself a demo at compile time.
 
@@ -3141,8 +3141,8 @@ the alternatives).
 | Concern | Self-hosted | Demo |
 | --- | --- | --- |
 | Upstream | The configured CPA instance | `internal/demo`'s fixture, over a loopback socket, with a key minted per process |
-| Management key | `OMCPA_CPA_MANAGEMENT_KEY` | The fixture's own key; an inherited one is discarded, never encrypted into the instance row |
-| Database | `oh-my-cpa.db` under `OMCPA_DATA_DIR` | `oh-my-cpa-demo.db`, deleted and rebuilt on every boot |
+| Management key | `SHELLPAMC_CPA_MANAGEMENT_KEY` | The fixture's own key; an inherited one is discarded, never encrypted into the instance row |
+| Database | `shell-pamc.db` under `SHELLPAMC_DATA_DIR` | `shell-pamc-demo.db`, deleted and rebuilt on every boot |
 | Capture and sync | Collector and pricing loop run | Neither starts; the fixture is the history and the price list |
 | Sign-in | The CPA management key | A session on first sight, so a link can be opened by anyone |
 | Dangerous routes | Served | Refused by `internal/api/demo_policy.go` |

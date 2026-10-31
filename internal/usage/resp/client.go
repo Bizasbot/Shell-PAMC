@@ -1,4 +1,4 @@
-// Package resp implements the minimal RESP2 client Oh My CPA needs to consume
+// Package resp implements the minimal RESP2 client Shell-PAMC needs to consume
 // CLIProxyAPI's built-in Redis-compatible usage channel.
 //
 // CPA multiplexes HTTP and RESP on the same listening port by sniffing the

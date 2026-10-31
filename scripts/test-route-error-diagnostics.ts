@@ -70,7 +70,7 @@ test('credential forms are removed from both visible and copied diagnostics', ()
 });
 
 test('bracketed relative paths keep their code location but remove query and fragment values', () => {
-  const paths = ['./[id]', '../[provider]/[id].js', '/omc/assets/[chunk].js'];
+  const paths = ['./[id]', '../[provider]/[id].js', '/shell-pamc/assets/[chunk].js'];
   const suffixes = ['?credential=fixture-query#fixture-fragment', '?credential=fixture-query', '#fixture-fragment'];
   for (const path of paths) {
     for (const suffix of suffixes) {

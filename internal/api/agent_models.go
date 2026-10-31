@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 // writeRunError answers a browser-facing run or Agent request with a stable machine code.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
 )
 
 func TestPublicURLRemovesCredentialsQueryAndFragment(t *testing.T) {

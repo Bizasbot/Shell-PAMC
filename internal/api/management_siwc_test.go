@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 const SIWC_TEST_FILE = `{"id":"managed-id","name":"codex.json","auth_index":"idx","provider":"codex","siwc_bind_supported":true,"use_siwc":true,"siwc_bound":true,"siwc_expires_at":"2026-10-21T00:00:00Z","metadata":{"siwc":{"access_token":"SYNTHETIC-TOKEN"}},"refresh_token":"SYNTHETIC-TOKEN"}`
@@ -59,7 +59,7 @@ func TestSIWCBindingLifecyclePreservesCallbackAndConfirmsReadback(t *testing.T) 
 			fmt.Fprint(w, `{}`)
 		}
 	})
-	base := baseURL + "/omc/api/v1/management/oauth/siwc"
+	base := baseURL + "/shell-pamc/api/v1/management/oauth/siwc"
 	response, raw := doJSON(t, client, "POST", base+"/bind", `{"name":"codex.json","auth_index":"idx","rebind":true}`)
 	if response.StatusCode != 200 || !strings.Contains(string(raw), `"flow":"siwc_bind"`) {
 		t.Fatalf("start: %d %s", response.StatusCode, raw)
@@ -73,7 +73,7 @@ func TestSIWCBindingLifecyclePreservesCallbackAndConfirmsReadback(t *testing.T) 
 		{"DELETE", "/session?state=fixture-state", ""},
 		{"POST", "/callback", `{"provider":"codex","redirect_url":"http://127.0.0.1:1455/auth/callback?state=fixture-state&code=SYNTHETIC-CODE&client_id=issued"}`},
 	} {
-		response, raw := doJSON(t, client, endpoint.method, baseURL+"/omc/api/v1/management/oauth"+endpoint.path, endpoint.body)
+		response, raw := doJSON(t, client, endpoint.method, baseURL+"/shell-pamc/api/v1/management/oauth"+endpoint.path, endpoint.body)
 		if response.StatusCode != 400 {
 			t.Fatalf("provider flow consumed binding: %d %s", response.StatusCode, raw)
 		}
@@ -133,7 +133,7 @@ func TestSIWCBindingRejectsUnsafeAndUnsupportedTargets(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			client, base, recorder := startAuthFilesTestServer(t, "management-secret-value", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, `{"files":[%s]}`, tc.files) })
-			response, raw := doJSON(t, client, "POST", base+"/omc/api/v1/management/oauth/siwc/bind", tc.body)
+			response, raw := doJSON(t, client, "POST", base+"/shell-pamc/api/v1/management/oauth/siwc/bind", tc.body)
 			if response.StatusCode != tc.status {
 				t.Fatalf("status %d, want %d: %s", response.StatusCode, tc.status, raw)
 			}
@@ -160,7 +160,7 @@ func TestSIWCCallbackScopeConflictsAndSecretExclusion(t *testing.T) {
 			fmt.Fprint(w, `{}`)
 		}
 	})
-	base += "/omc/api/v1/management/oauth/siwc"
+	base += "/shell-pamc/api/v1/management/oauth/siwc"
 	doJSON(t, client, "POST", base+"/bind", `{"name":"codex.json","auth_index":"idx","rebind":true}`)
 	for _, redirect := range []string{
 		"http://127.0.0.1:1455/auth/callback?state=other&code=SYNTHETIC-CODE&client_id=issued",
@@ -208,7 +208,7 @@ func TestSIWCBindingAuditsFailClosedAtEveryMutation(t *testing.T) {
 						fmt.Fprint(w, `{"status":"ok","cancelled":true}`)
 					}
 				})
-				base += "/omc/api/v1/management/oauth/siwc"
+				base += "/shell-pamc/api/v1/management/oauth/siwc"
 				if action != "bind" {
 					response, raw := doJSON(t, client, "POST", base+"/bind", `{"name":"codex.json","auth_index":"idx","rebind":true}`)
 					if response.StatusCode != 200 {
@@ -285,7 +285,7 @@ func TestSIWCBindingExpiryAndGatewayIsolation(t *testing.T) {
 				gateway = "http://other.test"
 			}
 			handler.siwcBindings.sessions = map[string]*siwcBinding{"fixture": {gateway: gateway, expiresAt: now.Add(SIWC_BINDING_TTL - tc.age), retainUntil: now.Add(time.Minute)}}
-			response, raw := getJSON(t, client, base+"/omc/api/v1/management/oauth/siwc/status?state=fixture")
+			response, raw := getJSON(t, client, base+"/shell-pamc/api/v1/management/oauth/siwc/status?state=fixture")
 			if response.StatusCode != tc.status || upstreamCalls.Load() != 0 {
 				t.Fatalf("status %d want %d, CPA calls=%d: %s", response.StatusCode, tc.status, upstreamCalls.Load(), raw)
 			}
@@ -351,7 +351,7 @@ func TestSIWCRejectedStartAuditsFailureAndCleansUpWithAuditGate(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			response, raw := doJSON(t, client, "POST", base+"/omc/api/v1/management/oauth/siwc/bind", `{"name":"codex.json","auth_index":"idx","rebind":true}`)
+			response, raw := doJSON(t, client, "POST", base+"/shell-pamc/api/v1/management/oauth/siwc/bind", `{"name":"codex.json","auth_index":"idx","rebind":true}`)
 			if response.StatusCode != tc.wantStatus || cancellations.Load() != tc.wantCancels || ordinaryLogins.Load() != 0 || strings.Contains(string(raw), "SYNTHETIC-CODE") {
 				t.Fatalf("start %d cancellations %d logins %d body %s", response.StatusCode, cancellations.Load(), ordinaryLogins.Load(), raw)
 			}

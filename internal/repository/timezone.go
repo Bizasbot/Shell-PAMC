@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/timezone"
+	"github.com/bizasbot/shell-pamc/internal/timezone"
 )
 
 const PreferenceTimezone = "omc_timezone"

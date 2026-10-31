@@ -10,8 +10,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/iconasset"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/iconasset"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func decodeCustomIconRequest(writer http.ResponseWriter, request *http.Request, target any) bool {

@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // storedRelease answers only the stored status; a check is a nil dereference, which is
@@ -30,7 +30,7 @@ func (s *storedRelease) Status(_ context.Context, product, runningVersion string
 func readSystemUpdates(t *testing.T, handler *Handler) SystemUpdatesDTO {
 	t.Helper()
 	recorder := httptest.NewRecorder()
-	handler.getSystemUpdates(recorder, httptest.NewRequest(http.MethodGet, "/omc/api/v1/management/system/updates", nil))
+	handler.getSystemUpdates(recorder, httptest.NewRequest(http.MethodGet, "/shell-pamc/api/v1/management/system/updates", nil))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
 	}

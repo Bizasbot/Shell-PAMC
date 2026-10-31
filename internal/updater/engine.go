@@ -1,6 +1,6 @@
-// Package updater replaces the containers of an Oh My CPA deployment with newer images.
+// Package updater replaces the containers of an Shell-PAMC deployment with newer images.
 //
-// It runs as a sidecar (`oh-my-cpa updater serve`) because it needs the Docker socket,
+// It runs as a sidecar (`shell-pamc updater serve`) because it needs the Docker socket,
 // which is equivalent to root on the host. Keeping that authority in a process with a
 // two-verb control interface lets the console itself stay read-only, unprivileged and
 // without any path to the daemon (ADR 0099).
@@ -191,7 +191,7 @@ type Container struct {
 func (c Container) ContainerName() string { return strings.TrimPrefix(c.Name, "/") }
 
 // ImageReference is the image as the container was configured, for example
-// "wiziscool/oh-my-cpa:latest".
+// "ghcr.io/bizasbot/shell-pamc:latest".
 func (c Container) ImageReference() string { return stringField(c.Config, "Image") }
 
 // Label returns one container label.

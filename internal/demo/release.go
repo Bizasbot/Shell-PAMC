@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // releaseFixture is the demonstration's release feed.
@@ -128,7 +128,7 @@ const demoFeedValidator = `W/"omc-demo-release-feed"`
 // the links on the page go somewhere meaningful, while the content comes from the
 // fixture.
 const (
-	DefaultOMCRepository = "WizisCool/oh-my-cpa"
+	DefaultOMCRepository = "Bizasbot/Shell-PAMC"
 	DefaultCPARepository = "router-for-me/CLIProxyAPI"
 )
 

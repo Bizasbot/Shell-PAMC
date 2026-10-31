@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // modelEventAt is `usageEventAt` with the model chosen, which is the whole point of this

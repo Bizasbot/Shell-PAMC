@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func TestCustomIconHTTPCRUDAndCaching(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	base := baseURL + "/omc/api/v1/custom-icons"
+	base := baseURL + "/shell-pamc/api/v1/custom-icons"
 	imageData := base64.StdEncoding.EncodeToString([]byte(`<svg viewBox="0 0 24 24"><circle r="10"/></svg>`))
 	response, payload := doJSON(t, client, http.MethodPost, base+"/preview", `{"data":"`+imageData+`"}`)
 	if response.StatusCode != http.StatusOK || !strings.Contains(string(payload), "data:image/svg+xml;base64,") {
@@ -64,7 +64,7 @@ func TestCustomIconHTTPCRUDAndCaching(t *testing.T) {
 	if contentResponse.Header.Get("ETag") == tag {
 		t.Fatal("replacement reused ETag")
 	}
-	preferenceURL := baseURL + "/omc/api/v1/preferences/provider_icons"
+	preferenceURL := baseURL + "/shell-pamc/api/v1/preferences/provider_icons"
 	response, payload = doJSON(t, client, http.MethodPut, preferenceURL, `{"provider":"custom:`+icon.ID+`"}`)
 	if response.StatusCode != 200 {
 		t.Fatalf("assign: %s", payload)
@@ -73,7 +73,7 @@ func TestCustomIconHTTPCRUDAndCaching(t *testing.T) {
 	if response.StatusCode != 204 {
 		t.Fatalf("referenced deletion: %d %s", response.StatusCode, payload)
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/preferences")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/preferences")
 	if response.StatusCode != 200 || strings.Contains(string(payload), "custom:"+icon.ID) {
 		t.Fatalf("provider reference was not cleared: %d %s", response.StatusCode, payload)
 	}

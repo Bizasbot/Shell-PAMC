@@ -6,11 +6,11 @@ import { createReleasePlan, compareReleaseTags } from './release-plan.mjs';
 
 import { validateReleaseWorkflow } from './release-workflow.mjs';
 
-const INPUT = {tag: 'v0.1.0', packageVersion: '0.1.0', webVersion: '0.1.0', image: 'wiziscool/oh-my-cpa'};
+const INPUT = {tag: 'v0.1.0', packageVersion: '0.1.0', webVersion: '0.1.0', image: 'ghcr.io/bizasbot/shell-pamc'};
 
 test('first stable release names the image and both version aliases, then latest', () => {
   assert.deepEqual(createReleasePlan(INPUT).tags,
-    ['wiziscool/oh-my-cpa:v0.1.0', 'wiziscool/oh-my-cpa:0.1.0', 'wiziscool/oh-my-cpa:latest']);
+    ['ghcr.io/bizasbot/shell-pamc:v0.1.0', 'ghcr.io/bizasbot/shell-pamc:0.1.0', 'ghcr.io/bizasbot/shell-pamc:latest']);
 });
 test('backports cannot move latest backwards, regardless of publication order', () => {
   const plan = createReleasePlan({...INPUT, releases: [
@@ -27,7 +27,7 @@ test('malformed or mismatched release identities never reach Docker or GitHub', 
   }
   assert.throws(() => createReleasePlan({...INPUT, packageVersion: '0.2.0'}));
   assert.throws(() => createReleasePlan({...INPUT, webVersion: '0.2.0'}));
-  for (const image of ['WizisCool/omc', 'docker.io/wiziscool/omc', 'wiziscool/omc:latest', 'wiziscool/omc\nkey=bad']) {
+  for (const image of ['ghcr.io/BizasBot/shell-pamc', 'docker.io/bizasbot/shell-pamc', 'bizasbot/shell-pamc', 'ghcr.io/bizasbot/shell-pamc:latest', 'ghcr.io/bizasbot/shell-pamc\nkey=bad']) {
     assert.throws(() => createReleasePlan({...INPUT, image}));
   }
 });

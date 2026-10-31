@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
 )
 
 func detachedBrowserRequest(id, body string) *http.Request {
@@ -143,12 +143,12 @@ func TestBrowserRunCancelAcknowledgesOnlyAnUnfinishedTask(t *testing.T) {
 	entered := make(chan struct{})
 	fixture.handler.startBrowserRun("agent", func(writer http.ResponseWriter, request *http.Request) { close(entered); <-request.Context().Done() }, httptest.NewRecorder(), detachedBrowserRequest("stop-target", `{}`))
 	<-entered
-	response, body := doJSON(t, fixture.client, "POST", fixture.baseURL+"/omc/api/v1/agent/runs/stop-target/cancel", `{}`)
+	response, body := doJSON(t, fixture.client, "POST", fixture.baseURL+"/shell-pamc/api/v1/agent/runs/stop-target/cancel", `{}`)
 	if response.StatusCode != 200 || !strings.Contains(string(body), `"is_cancelled":true`) {
 		t.Fatalf("stop: %d %s", response.StatusCode, body)
 	}
 	<-fixture.handler.browserRuns.find("agent", "stop-target").finished
-	response, body = doJSON(t, fixture.client, "POST", fixture.baseURL+"/omc/api/v1/agent/runs/stop-target/cancel", `{}`)
+	response, body = doJSON(t, fixture.client, "POST", fixture.baseURL+"/shell-pamc/api/v1/agent/runs/stop-target/cancel", `{}`)
 	if response.StatusCode != 200 || !strings.Contains(string(body), `"is_cancelled":false`) {
 		t.Fatalf("settled stop: %d %s", response.StatusCode, body)
 	}

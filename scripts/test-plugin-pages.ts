@@ -59,12 +59,12 @@ assert.equal(findPluginPage(entries, 'stopped', '0'), undefined);
 assert.equal(findPluginPage(entries, undefined, '0'), undefined);
 
 // The frame reads through the console's plugin host, under whatever sub-path the console is served from.
-assert.equal(pluginPageFrameURL('/omc/api/v1', '/v0/resource/plugins/bridge/console'), '/omc/api/v1/plugin-host/v0/resource/plugins/bridge/console');
+assert.equal(pluginPageFrameURL('/shell-pamc/api/v1', '/v0/resource/plugins/bridge/console'), '/shell-pamc/api/v1/plugin-host/v0/resource/plugins/bridge/console');
 assert.equal(pluginPageFrameURL('/api/v1/', '/v0/resource/plugins/bridge/console'), '/api/v1/plugin-host/v0/resource/plugins/bridge/console');
 
-const shell = pluginFrameShell('/omc/api/v1/plugin-host/v0/resource/plugins/bridge/console?a=1&b="2"', 'Con<sole>', 'dark');
+const shell = pluginFrameShell('/shell-pamc/api/v1/plugin-host/v0/resource/plugins/bridge/console?a=1&b="2"', 'Con<sole>', 'dark');
 assert.match(shell, /<html data-theme="dark" style="color-scheme:dark">/);
-assert.ok(shell.includes('src="/omc/api/v1/plugin-host/v0/resource/plugins/bridge/console?a=1&amp;b=&quot;2&quot;"'));
+assert.ok(shell.includes('src="/shell-pamc/api/v1/plugin-host/v0/resource/plugins/bridge/console?a=1&amp;b=&quot;2&quot;"'));
 assert.ok(shell.includes('title="Con&lt;sole&gt;"'));
 assert.ok(shell.includes('referrerpolicy="no-referrer"'));
 

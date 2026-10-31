@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 var AGENT_CONFIG_KEYS = map[string]bool{"request_retry": true, "max_retry_interval": true, "max_retry_credentials": true, "routing_strategy": true, "force_model_prefix": true}

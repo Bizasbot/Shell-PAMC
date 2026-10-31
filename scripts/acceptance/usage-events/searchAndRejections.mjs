@@ -126,12 +126,12 @@ export async function searchAndRejectionsSection(context) {
   // The rows rendering proves the shell mounted, which is also what registers the
   // popstate listener the two pushes below depend on.
   // Client-side navigation to the same view with a different unrelated dimension.
-  await page.evaluate(() => history.pushState({}, '', '/omc/usage/events?preset=24h&q=keep-me&provider=claude'));
+  await page.evaluate(() => history.pushState({}, '', '/shell-pamc/usage/events?preset=24h&q=keep-me&provider=claude'));
   await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
   await page.locator('.request-search input').click();
   await page.keyboard.type('stale-typing', { delay: 20 });
   // Navigate again before the debounce commits.
-  await page.evaluate(() => history.pushState({}, '', '/omc/usage/events?preset=24h&q=keep-me&provider=gemini'));
+  await page.evaluate(() => history.pushState({}, '', '/shell-pamc/usage/events?preset=24h&q=keep-me&provider=gemini'));
   await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
   // Negative claim, irreducible window: the queued keystroke has to be given the
   // full debounce deadline to fail to arrive. The slack matches the flat window

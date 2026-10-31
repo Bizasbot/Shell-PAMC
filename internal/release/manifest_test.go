@@ -26,7 +26,7 @@ func TestFetchManifestReturnsThePublishedBytes(t *testing.T) {
 	t.Cleanup(server.Close)
 	client := NewManifestClientWithTransport(http.DefaultTransport, server.URL)
 
-	manifest, signature, err := client.FetchManifest(context.Background(), "WizisCool/oh-my-cpa", "v1.2.3")
+	manifest, signature, err := client.FetchManifest(context.Background(), "Bizasbot/Shell-PAMC", "v1.2.3")
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
@@ -34,16 +34,16 @@ func TestFetchManifestReturnsThePublishedBytes(t *testing.T) {
 	if string(manifest) != "{\n  \"schema\": 1\n}\n" || signature != "c2lnbmF0dXJl" {
 		t.Errorf("manifest = %q signature = %q", manifest, signature)
 	}
-	if requested[0] != "/WizisCool/oh-my-cpa/releases/download/v1.2.3/"+ManifestAssetName {
+	if requested[0] != "/Bizasbot/Shell-PAMC/releases/download/v1.2.3/"+ManifestAssetName {
 		t.Errorf("path = %q", requested[0])
 	}
 
-	if _, _, err := client.FetchManifest(context.Background(), "WizisCool/oh-my-cpa", "v1.2.4"); !errors.Is(err, ErrManifestMissing) {
+	if _, _, err := client.FetchManifest(context.Background(), "Bizasbot/Shell-PAMC", "v1.2.4"); !errors.Is(err, ErrManifestMissing) {
 		t.Errorf("a release without a manifest is reported as such: %v", err)
 	}
 	before := len(requested)
 	for _, tag := range []string{"../../../other/repo", "latest", "v1.2.3-rc1"} {
-		if _, _, err := client.FetchManifest(context.Background(), "WizisCool/oh-my-cpa", tag); err == nil {
+		if _, _, err := client.FetchManifest(context.Background(), "Bizasbot/Shell-PAMC", tag); err == nil {
 			t.Errorf("tag %q must be refused", tag)
 		}
 	}

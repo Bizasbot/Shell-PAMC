@@ -37,7 +37,7 @@ tmp-*
 *.db
 *.db-shm
 *.db-wal
-oh-my-cpa-data/
+shell-pamc-data/
 /cpa/
 caddy-data/
 caddy-config/

@@ -20,8 +20,8 @@ ARG TARGETARCH
 ARG VERSION=v0.1.0-dev
 RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
-    -ldflags="-s -w -X github.com/oh-my-cpa/oh-my-cpa/internal/config.BuildVersion=${VERSION}" \
-    -o /out/oh-my-cpa ./cmd/oh-my-cpa
+    -ldflags="-s -w -X github.com/bizasbot/shell-pamc/internal/config.BuildVersion=${VERSION}" \
+    -o /out/shell-pamc ./cmd/shell-pamc
 
 # Certificates, timezone data and account files are architecture-independent. Preparing
 # them natively keeps cross-platform builds from needing privileged QEMU registration.
@@ -34,9 +34,9 @@ RUN apk add --no-cache ca-certificates tzdata \
 FROM alpine:3.21
 ARG VERSION=v0.1.0-dev
 ARG REVISION=unknown
-LABEL org.opencontainers.image.title="Oh My CPA" \
+LABEL org.opencontainers.image.title="Shell-PAMC" \
     org.opencontainers.image.description="Self-hosted management and usage observability for CLIProxyAPI" \
-    org.opencontainers.image.source="https://github.com/WizisCool/oh-my-cpa" \
+    org.opencontainers.image.source="https://github.com/Bizasbot/Shell-PAMC" \
     org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.version=$VERSION \
     org.opencontainers.image.revision=$REVISION
@@ -44,7 +44,7 @@ COPY --from=runtime-data /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-ce
 COPY --from=runtime-data /usr/share/zoneinfo/ /usr/share/zoneinfo/
 COPY --from=runtime-data /etc/passwd /etc/group /etc/
 COPY --from=runtime-data --chown=10001:10001 /data/ /data/
-COPY --from=server /out/oh-my-cpa /usr/local/bin/oh-my-cpa
+COPY --from=server /out/shell-pamc /usr/local/bin/shell-pamc
 COPY deploy/base-path.sh /usr/local/bin/omc-base-path
 COPY deploy/healthcheck.sh /usr/local/bin/omc-healthcheck
 USER 10001:10001
@@ -52,4 +52,4 @@ VOLUME ["/data"]
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
     CMD sh /usr/local/bin/omc-healthcheck
-ENTRYPOINT ["/usr/local/bin/oh-my-cpa"]
+ENTRYPOINT ["/usr/local/bin/shell-pamc"]

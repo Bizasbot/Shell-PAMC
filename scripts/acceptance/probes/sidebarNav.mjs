@@ -31,10 +31,10 @@ export async function sidebarNavCustomization({ base, page, check }) {
   const writes = [];
   const hiddenWrites = () => writes.filter((write) => write.key === 'omc_nav_hidden');
   const bodyOf = (write) => JSON.stringify(JSON.parse(write.body));
-  await page.route('**/omc/api/**/preferences', (route) => route.fulfill({
+  await page.route('**/shell-pamc/api/**/preferences', (route) => route.fulfill({
     json: { preferences, time_zone: { server_timezone: 'UTC' } },
   }));
-  await page.route('**/omc/api/**/preferences/*', async (route) => {
+  await page.route('**/shell-pamc/api/**/preferences/*', async (route) => {
     if (route.request().method() === 'PUT') {
       const key = new URL(route.request().url()).pathname.split('/').pop();
       writes.push({ key, body: route.request().postData() });

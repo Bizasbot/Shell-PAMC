@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // modelEventFor is `eventFor` with the model chosen, since the whole point of this endpoint is the
@@ -20,7 +20,7 @@ func modelEventFor(id, model string, at time.Time, totalTokens int64) usage.Even
 	return event
 }
 
-const modelsPath = "/omc/api/v1/management/dashboard/models"
+const modelsPath = "/shell-pamc/api/v1/management/dashboard/models"
 
 // describeGroups renders just the ranking, so a failed assertion prints the claim under test rather
 // than several hundred bucket timestamps.

@@ -151,7 +151,7 @@ trusting that a name change was a deletion.
 
 | Claim | Class | Why it must stay |
 | --- | --- | --- |
-| `/omc` redirects, sign-in rejects a wrong key, a valid key creates a session | `CROSS-STACK` | The auth boundary. Cookie attributes, redirect status and the `Secure` derivation are browser/HTTP facts. |
+| `/shell-pamc` redirects, sign-in rejects a wrong key, a valid key creates a session | `CROSS-STACK` | The auth boundary. Cookie attributes, redirect status and the `Secure` derivation are browser/HTTP facts. |
 | Every route renders with no document overflow | `BROWSER` | Layout, not presence. A route can render and still overflow. |
 | OAuth management overview density, six-window Quota tab completeness, Connect non-start and 320/375px reflow | `BROWSER` | Density and geometry are measured from rendered rows; the old three-page UI claims now have one canonical replacement. |
 | The overview row bars its own family's five-hour and weekly windows, names a kindless window from its period, keeps its secondary actions in the row menu, and reaches the full reading through one Details action | `BROWSER` | Which windows a row can afford, whether it truncates and how many rows the 1440×900 overview shows are measured from the rendered rows. |

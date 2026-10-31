@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func TestCustomIconCapabilitiesAcrossAdapters(t *testing.T) {

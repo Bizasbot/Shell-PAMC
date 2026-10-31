@@ -1,7 +1,7 @@
 # Publishing a release
 
-The stable distribution is **`wiziscool/oh-my-cpa`** on Docker Hub, for
-`linux/amd64` and `linux/arm64`. GitHub Releases in `WizisCool/oh-my-cpa` are the
+The stable distribution is **`ghcr.io/bizasbot/shell-pamc`** on GitHub Container Registry, for
+`linux/amd64` and `linux/arm64`. GitHub Releases in `Bizasbot/Shell-PAMC` are the
 console's version/update source and carry native executables and installation assets. A Git tag
 alone is not a published release and is not discovered by update checks.
 
@@ -16,8 +16,8 @@ Every release publishes eight executables matching CPA's OS/architecture coverag
 | Linux | amd64, arm64 | tar.gz |
 | FreeBSD | amd64, arm64 | tar.gz |
 
-Names follow `oh-my-cpa_VERSION_OS_ARCH.tar.gz` (Windows uses `.zip`), with the
-numeric version without `v`. Each archive contains the executable (`oh-my-cpa.exe`
+Names follow `shell-pamc_VERSION_OS_ARCH.tar.gz` (Windows uses `.zip`), with the
+numeric version without `v`. Each archive contains the executable (`shell-pamc.exe`
 on Windows), MIT license, both READMEs, installation/operations/SQLite guides and `.env.example` from
 `deploy/native.env.example`. No secrets or runtime data are included. `checksums.txt`
 contains SHA-256 hashes for all eight archives and the three Compose/CPA installation
@@ -52,22 +52,16 @@ extra metadata. GNU tar creation uses `--force-local`, so drive-letter archive p
 are treated as local files rather than remote hosts. A clean output directory
 prevents stale assets from entering a retry.
 The smoke check extracts the host-architecture Linux archive into a new directory
-and checks SQLite, login, `/omc`, root and nested base paths, embedded JavaScript and
+and checks SQLite, login, `/shell-pamc`, root and nested base paths, embedded JavaScript and
 the running tag. Foreign targets are cross-compiled, not executed on Linux.
 
 ## One-time configuration
 
-Create a Docker Hub access token for `wiziscool` with repository read/write permission,
-and put it in the GitHub repository's Actions secret **`DOCKERHUB_TOKEN`**. Never
-commit or paste the value into an issue, run log or chat:
-
-```bash
-gh secret set DOCKERHUB_TOKEN --repo WizisCool/oh-my-cpa
-```
-
-The workflow uses the repository-scoped `GITHUB_TOKEN` to create the release; only its
-release job has `contents: write`. No GitHub personal token is required. Keep
-Docker Hub repository visibility public so an installation can pull without logging in.
+The workflow signs in to `ghcr.io` with the repository-scoped `GITHUB_TOKEN`; only the
+`publish` and `promote` jobs hold `packages: write`, and only the `release` job holds
+`contents: write`. No registry secret and no personal token is required. After the first
+publication, set the `shell-pamc` package visibility to public in the GitHub package
+settings, and link it to the repository, so an installation can pull without logging in.
 Enable Actions in the repository. Restrict creation/movement of release tags to trusted
 maintainers with repository rules; a version tag is a publishing authority.
 
@@ -76,7 +70,7 @@ pair once, on a trusted machine:
 
 ```bash
 node scripts/sign-release-manifest.mjs --generate-key release-signing-key.txt
-gh secret set RELEASE_SIGNING_KEY --repo WizisCool/oh-my-cpa < release-signing-key.txt
+gh secret set RELEASE_SIGNING_KEY --repo Bizasbot/Shell-PAMC < release-signing-key.txt
 ```
 
 The command writes the private key to the named file and the public key to
@@ -97,13 +91,13 @@ updated by hand once.
   claim stable currency for those versions (ADR 0019).
 - A release embeds its exact tag into `internal/config.BuildVersion` with the Go
   linker. The config, health endpoint, SPA runtime config, System Information and
-  outbound default User-Agent all use that value. `OMCPA_VERSION` remains an operator
+  outbound default User-Agent all use that value. `SHELLPAMC_VERSION` remains an operator
   override; the Compose files do not override the embedded version.
 - Docker version aliases are `v0.3.9` and `0.3.9`; `latest` advances only for the
   numerically newest stable release. A backport never moves either Docker `latest`
   or GitHub's latest pointer backwards. Compose defaults to `latest` for both
   OMC and CPA. Operators can override
-  `OMCPA_IMAGE` and `CPA_IMAGE` with a tested version or digest for controlled upgrades.
+  `SHELLPAMC_IMAGE` and `CPA_IMAGE` with a tested version or digest for controlled upgrades.
 - Publish a new version for changed application content. Do not move a published tag
   or intentionally rebuild its identity with different source.
 
@@ -128,7 +122,7 @@ the [v0.3.9 release notes](releases/v0.3.9.md).
    git switch master
    git pull --ff-only
    test -z "$(git status --porcelain)"
-   git tag -a v0.3.9 -m "Oh My CPA v0.3.9"
+   git tag -a v0.3.9 -m "Shell-PAMC v0.3.9"
    git push origin v0.3.9
    ```
 
@@ -143,7 +137,7 @@ the [v0.3.9 release notes](releases/v0.3.9.md).
      the actual non-root/read-only package, SQLite permissions, canonical base paths,
      health, login and version endpoints, and that `updater install` creates a hardened
      updater the console reaches with no setting on either side. It then builds/pushes the amd64/arm64 image
-     with provenance and SBOM to Docker Hub.
+     with provenance and SBOM to GitHub Container Registry.
    - **native** runs after verification, builds the eight archives and checksum
      manifest, smoke-tests the extracted Linux package, asserts clean generated state
      and transfers the complete asset directory with pinned upload/download actions.
@@ -171,9 +165,9 @@ the native packaged-image smoke complements the product's built-browser acceptan
 ## Verification and recovery
 
 ```bash
-gh run list --workflow release.yml --repo WizisCool/oh-my-cpa
-docker buildx imagetools inspect wiziscool/oh-my-cpa:v0.3.9
-gh release view v0.3.9 --repo WizisCool/oh-my-cpa
+gh run list --workflow release.yml --repo Bizasbot/Shell-PAMC
+docker buildx imagetools inspect ghcr.io/bizasbot/shell-pamc:v0.3.9
+gh release view v0.3.9 --repo Bizasbot/Shell-PAMC
 ```
 
 Workflows use a serialized `queue: max` concurrency group: pending releases queue
@@ -194,7 +188,7 @@ work around a failed gate.
 
 ## Update checks after publishing
 
-The console reads stable release metadata from `api.github.com`, not Docker Hub tags.
+The console reads stable release metadata from `api.github.com`, not registry tags.
 It orders comparable versions numerically, ignores drafts and pre-releases, distinguishes
 newer/equal/ahead/indeterminate outcomes, and keeps its last successful index on a failed
 request. Its per-product 15-minute attempt floor, six-hour sweep, offline switches,

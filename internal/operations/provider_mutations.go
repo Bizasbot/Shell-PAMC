@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 type ProviderModel struct {

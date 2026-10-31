@@ -163,7 +163,7 @@ record grouping, auto-refresh and advanced-filter restoration from bare and
 explicit entry routes. The OAuth management and request interaction probes retain
 the real control wiring, reload and rendered collection-order claims.
 
-This layer owns rendered state, not engine facts. The OMC settings probe still owns
+This layer owns rendered state, not engine facts. The Shell-PAMC settings probe still owns
 its actual radio wiring, reload and phone geometry; context readout geometry and
 real navigation/keepalive remain browser claims. No assertion is removed merely
 because a component test passes. ADR 0089 and the phase-two ledger in
@@ -236,7 +236,7 @@ and running-version endpoints. It also runs the image as the updater: the image'
 health probe must report that role healthy, and `updater install` must create a hardened
 updater beside a running console, leave the console in place, and let the console read
 the updater's status with no setting on either side. That check replaces a container
-named `oh-my-cpa-updater`, so it refuses to start on a host that already has one. It is
+named `shell-pamc-updater`, so it refuses to start on a host that already has one. It is
 not part of `test:fast` or ordinary static gates.
 Release identity is resolved first, then static, full built-browser/demo and three probe shards run on the exact revision in parallel. The `verify` aggregate requires every result to succeed before native packaging or container publication. The browser lanes provision and launch-probe Chromium with
 `scripts/install-chromium.mjs`; local parity is `pnpm verify:full`. Dependency installation alone does not install the browser binary.
@@ -764,7 +764,7 @@ which is the only check that catches a readback falling back to the default.
 
 ### Managed plugin source reconciliation coverage
 
-`internal/api/management_plugin_source_test.go` owns Oh My CPA's registry as a store
+`internal/api/management_plugin_source_test.go` owns Shell-PAMC's registry as a store
 source (ADR 0104): a store read adds the address, both configuration save paths restore
 it, the plugin settings save keeps it out of the editable list, an install adds it again
 before CPA is called, the switch removes it, and a demonstration filters its entries
@@ -831,7 +831,7 @@ before measuring geometry and SVG fills, because the shell download can complete
 `start_url` and `scope`, no `id`, standalone display, the declared icon sizes), each icon
 decoding at the size it declares, `application/manifest+json` with `Cache-Control:
 no-cache`, HEAD parity, a missing icon answering 404 instead of the SPA shell, the same
-routes at the root, `/omc` and a nested base, and the demonstration's allow/refuse
+routes at the root, `/shell-pamc` and a nested base, and the demonstration's allow/refuse
 boundary around them. `scripts/acceptance/pwa.mjs` owns what only Chromium can
 establish: `Page.getAppManifest` parses the manifest deployed by the built binary with
 no errors, `Page.getInstallabilityErrors` is empty in a browser context that blocks service

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
 )
 
 func (r *Repository) ListChannelModelPrices(ctx context.Context) ([]pricing.ModelPrice, error) {

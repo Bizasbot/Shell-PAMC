@@ -1,7 +1,7 @@
 // Package mcpbridge maps the capability registry to MCP tools for external agents.
 //
 // One server definition serves two transports: OMC's own Streamable HTTP endpoint, which
-// reaches the executor in-process, and the `oh-my-cpa mcp` stdio process, which reaches it
+// reaches the executor in-process, and the `shell-pamc mcp` stdio process, which reaches it
 // through the capability HTTP endpoints. Neither carries business logic or approval policy.
 package mcpbridge
 
@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 // OPERATION_STATUS_TOOL is the one tool the bridge adds to the registry's own; the registry
@@ -33,7 +33,7 @@ const MAX_STATUS_WAIT_SECONDS = 30
 // statusPollInterval is a variable so the wait test does not sleep for real seconds.
 var statusPollInterval = 2 * time.Second
 
-const SERVER_INSTRUCTIONS = `Oh My CPA (OMC) is the control plane of a CLIProxyAPI deployment. These tools read and change it.
+const SERVER_INSTRUCTIONS = `Shell-PAMC (OMC) is the control plane of a CLIProxyAPI deployment. These tools read and change it.
 
 Results are JSON envelopes with a "status":
 - "success": "data" holds the result.
@@ -77,7 +77,7 @@ func NewServer(ctx context.Context, backend Backend, options Options) (*mcp.Serv
 	if err != nil {
 		return nil, err
 	}
-	server := mcp.NewServer(&mcp.Implementation{Name: "oh-my-cpa", Title: "Oh My CPA", Version: options.Version}, &mcp.ServerOptions{Instructions: SERVER_INSTRUCTIONS})
+	server := mcp.NewServer(&mcp.Implementation{Name: "shell-pamc", Title: "Shell-PAMC", Version: options.Version}, &mcp.ServerOptions{Instructions: SERVER_INSTRUCTIONS})
 	approvalLink := func(request *mcp.CallToolRequest, operationID string) string {
 		if options.ConsoleURL == nil {
 			return ""

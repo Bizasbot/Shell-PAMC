@@ -115,7 +115,7 @@ export const EXPECTED_ABSENT_PATHS = [
     path: 'deploy/cloudflare/.wrangler/',
     reason: "the local demonstration server's simulated bindings are per-machine state, gitignored",
   },
-  { path: 'oh-my-cpa-data/', reason: 'runtime data directory, gitignored' },
+  { path: 'shell-pamc-data/', reason: 'runtime data directory, gitignored' },
   { path: 'internal/web/dist/index.html', reason: 'build output synced by pnpm build, gitignored' },
   { path: 'web/dist/', reason: 'build output, gitignored' },
   { path: 'web/public/lobe-icons/', reason: 'generated SVG assets, gitignored and recreated by scripts/sync-lobe-icons.mjs' },

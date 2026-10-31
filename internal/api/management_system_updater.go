@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/updater"
+	"github.com/bizasbot/shell-pamc/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/updater"
 )
 
 // UpdateManager is the updater sidecar as the console uses it. The console never

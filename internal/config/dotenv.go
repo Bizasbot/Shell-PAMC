@@ -14,10 +14,10 @@ import (
 // keep local CPA endpoints, keys and passwords out of the shell.
 const DefaultDotEnvFile = ".env"
 
-// DotEnvPath returns the dotenv file this process should load. OMCPA_ENV_FILE
+// DotEnvPath returns the dotenv file this process should load. SHELLPAMC_ENV_FILE
 // overrides the default so CI or a second instance can point elsewhere.
 func DotEnvPath() string {
-	if value := strings.TrimSpace(os.Getenv("OMCPA_ENV_FILE")); value != "" {
+	if value := strings.TrimSpace(os.Getenv("SHELLPAMC_ENV_FILE")); value != "" {
 		return value
 	}
 	return DefaultDotEnvFile
@@ -26,7 +26,7 @@ func DotEnvPath() string {
 // LoadDotEnv applies KEY=VALUE pairs from path to the process environment.
 //
 // Real environment variables always win: the file only fills gaps. That keeps
-// container/CI injection working while still allowing `go run ./cmd/oh-my-cpa`
+// container/CI injection working while still allowing `go run ./cmd/shell-pamc`
 // to pick up a local debug file. A missing file is not an error; the number of
 // applied variables is returned so callers can log that the file was read.
 // Values are never logged by this package because they hold credentials.

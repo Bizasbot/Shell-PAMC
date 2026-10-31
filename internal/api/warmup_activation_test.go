@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/warmup"
+	"github.com/bizasbot/shell-pamc/internal/warmup"
 )
 
 // Codex reports an unused window with a reset that slides with every read.

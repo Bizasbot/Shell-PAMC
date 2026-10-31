@@ -46,7 +46,7 @@ func TestFetchStargazersReadsTheRepositoryDocument(t *testing.T) {
 	service, _ := newTestService(t, func(writer http.ResponseWriter, request *http.Request) {
 		path = request.URL.Path
 		writer.Header().Set("Content-Type", "application/json")
-		_, _ = writer.Write([]byte(`{"full_name":"WizisCool/oh-my-cpa","stargazers_count":1234}`))
+		_, _ = writer.Write([]byte(`{"full_name":"Bizasbot/Shell-PAMC","stargazers_count":1234}`))
 	})
 	count, err := service.client.(StargazerSource).FetchStargazers(context.Background(), ProjectRepository)
 	if err != nil {

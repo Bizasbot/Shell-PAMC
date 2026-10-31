@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func TestSecurityHeadersApplied(t *testing.T) {
@@ -26,13 +26,13 @@ func TestSecurityHeadersApplied(t *testing.T) {
 	repo := repository.New(db)
 
 	cipher, _ := crypto.New("01234567890123456789012345678901")
-	authManager, _ := auth.New("test-key", "/omc", "")
-	h := NewHandler(config.Config{BasePath: "/omc"}, repo, cipher, nil, authManager)
+	authManager, _ := auth.New("test-key", "/shell-pamc", "")
+	h := NewHandler(config.Config{BasePath: "/shell-pamc"}, repo, cipher, nil, authManager)
 
 	ts := httptest.NewServer(h.Router())
 	defer ts.Close()
 
-	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/omc/api/healthz", nil)
+	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/shell-pamc/api/healthz", nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -65,15 +65,15 @@ func TestLoginRateLimiterLockout(t *testing.T) {
 	repo := repository.New(db)
 
 	cipher, _ := crypto.New("01234567890123456789012345678901")
-	authManager, _ := auth.New("correct-secret-password", "/omc", "")
-	h := NewHandler(config.Config{BasePath: "/omc"}, repo, cipher, nil, authManager)
+	authManager, _ := auth.New("correct-secret-password", "/shell-pamc", "")
+	h := NewHandler(config.Config{BasePath: "/shell-pamc"}, repo, cipher, nil, authManager)
 
 	ts := httptest.NewServer(h.Router())
 	defer ts.Close()
 
 	// 1. Attempt 4 failures - should return 401
 	for i := 0; i < 4; i++ {
-		req, _ := http.NewRequest(http.MethodPost, ts.URL+"/omc/api/auth/login", bytes.NewBufferString(`{"password":"wrong-password"}`))
+		req, _ := http.NewRequest(http.MethodPost, ts.URL+"/shell-pamc/api/auth/login", bytes.NewBufferString(`{"password":"wrong-password"}`))
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -86,7 +86,7 @@ func TestLoginRateLimiterLockout(t *testing.T) {
 	}
 
 	// 2. 5th failure triggers lockout
-	req5, _ := http.NewRequest(http.MethodPost, ts.URL+"/omc/api/auth/login", bytes.NewBufferString(`{"password":"wrong-password"}`))
+	req5, _ := http.NewRequest(http.MethodPost, ts.URL+"/shell-pamc/api/auth/login", bytes.NewBufferString(`{"password":"wrong-password"}`))
 	req5.Header.Set("Content-Type", "application/json")
 	resp5, err := http.DefaultClient.Do(req5)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestLoginRateLimiterLockout(t *testing.T) {
 	resp5.Body.Close()
 
 	// 3. 6th attempt while locked should return 429 Too Many Requests (even with correct password!)
-	req6, _ := http.NewRequest(http.MethodPost, ts.URL+"/omc/api/auth/login", bytes.NewBufferString(`{"password":"correct-secret-password"}`))
+	req6, _ := http.NewRequest(http.MethodPost, ts.URL+"/shell-pamc/api/auth/login", bytes.NewBufferString(`{"password":"correct-secret-password"}`))
 	req6.Header.Set("Content-Type", "application/json")
 	resp6, err := http.DefaultClient.Do(req6)
 	if err != nil {
@@ -119,8 +119,8 @@ func TestAuditEventsEndpoints(t *testing.T) {
 	repo := repository.New(db)
 
 	cipher, _ := crypto.New("01234567890123456789012345678901")
-	authManager, _ := auth.New("test-key", "/omc", "")
-	h := NewHandler(config.Config{BasePath: "/omc"}, repo, cipher, nil, authManager)
+	authManager, _ := auth.New("test-key", "/shell-pamc", "")
+	h := NewHandler(config.Config{BasePath: "/shell-pamc"}, repo, cipher, nil, authManager)
 
 	// Record a couple of audit events directly
 	_, _ = repo.RecordAuditEvent(context.Background(), repository.AuditEvent{
@@ -137,13 +137,13 @@ func TestAuditEventsEndpoints(t *testing.T) {
 	cli := &http.Client{Jar: jar}
 
 	// Login
-	loginResp, err := cli.Post(ts.URL+"/omc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"test-key"}`))
+	loginResp, err := cli.Post(ts.URL+"/shell-pamc/api/auth/login", "application/json", bytes.NewBufferString(`{"password":"test-key"}`))
 	if err != nil || loginResp.StatusCode != http.StatusOK {
 		t.Fatalf("login failed: %v", err)
 	}
 
 	// 1. List audit events
-	listResp, err := cli.Get(ts.URL + "/omc/api/v1/management/audit/events")
+	listResp, err := cli.Get(ts.URL + "/shell-pamc/api/v1/management/audit/events")
 	if err != nil || listResp.StatusCode != http.StatusOK {
 		t.Fatalf("list audit events failed: %v, status: %d", err, listResp.StatusCode)
 	}
@@ -158,7 +158,7 @@ func TestAuditEventsEndpoints(t *testing.T) {
 
 	// 2. Summarize them. The search narrows the matrix to the fixture row; the outcome filter
 	// is ignored, because each facet's counts must hold the other facet's selection.
-	summaryResp, err := cli.Get(ts.URL + "/omc/api/v1/management/audit/summary?outcome=unfinished&q=config.test")
+	summaryResp, err := cli.Get(ts.URL + "/shell-pamc/api/v1/management/audit/summary?outcome=unfinished&q=config.test")
 	if err != nil || summaryResp.StatusCode != http.StatusOK {
 		t.Fatalf("summarize audit events failed: %v, status: %d", err, summaryResp.StatusCode)
 	}
@@ -171,14 +171,14 @@ func TestAuditEventsEndpoints(t *testing.T) {
 	if len(summaryData.Buckets) != 1 || fmt.Sprint(summaryData.Buckets[0]) != fmt.Sprint(wantBucket) {
 		t.Errorf("summary buckets = %v, want exactly %v", summaryData.Buckets, wantBucket)
 	}
-	badResp, err := cli.Get(ts.URL + "/omc/api/v1/management/audit/summary?outcome=sideways")
+	badResp, err := cli.Get(ts.URL + "/shell-pamc/api/v1/management/audit/summary?outcome=sideways")
 	if err != nil || badResp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("unknown outcome status = %v, %v; want 400", badResp.StatusCode, err)
 	}
 	badResp.Body.Close()
 
 	// 3. Export audit events
-	exportResp, err := cli.Get(ts.URL + "/omc/api/v1/management/audit/export")
+	exportResp, err := cli.Get(ts.URL + "/shell-pamc/api/v1/management/audit/export")
 	if err != nil || exportResp.StatusCode != http.StatusOK {
 		t.Fatalf("export audit events failed: %v, status: %d", err, exportResp.StatusCode)
 	}

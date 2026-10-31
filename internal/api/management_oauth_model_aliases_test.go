@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 func TestManagementOAuthModelAliasesRoundTrip(t *testing.T) {
@@ -52,7 +52,7 @@ func TestManagementOAuthModelAliasesRoundTrip(t *testing.T) {
 		}
 	}
 	client, baseURL, recorder := startAuthFilesTestServer(t, "management-secret-value", handler)
-	base := baseURL + "/omc/api/v1/management/auth-files/model-aliases"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files/model-aliases"
 
 	response, raw := doJSON(t, client, http.MethodGet, base, "")
 	if response.StatusCode != http.StatusOK {
@@ -125,7 +125,7 @@ func TestManagementOAuthModelAliasesRequireReadback(t *testing.T) {
 	}
 	client, baseURL, _ := startAuthFilesTestServer(t, "management-secret-value", handler)
 	response, raw := doJSON(t, client, http.MethodPatch,
-		baseURL+"/omc/api/v1/management/auth-files/model-aliases",
+		baseURL+"/shell-pamc/api/v1/management/auth-files/model-aliases",
 		`{"provider":"codex","aliases":[{"name":"gpt-5","alias":"new-alias"}]}`)
 	if response.StatusCode != http.StatusBadGateway {
 		t.Fatalf("unverified model alias patch = %d body = %s", response.StatusCode, raw)
@@ -140,7 +140,7 @@ func TestManagementOAuthModelAliasesGuardrails(t *testing.T) {
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write([]byte(`{"codex":[{"name":"gpt-5","alias":"fast"}]}`))
 	})
-	base := baseURL + "/omc/api/v1/management/auth-files/model-aliases"
+	base := baseURL + "/shell-pamc/api/v1/management/auth-files/model-aliases"
 	for _, probe := range []struct {
 		body string
 		want int
@@ -164,7 +164,7 @@ func TestManagementOAuthModelAliasesGuardrails(t *testing.T) {
 		writer.WriteHeader(http.StatusNotFound)
 		_, _ = writer.Write([]byte(`{"error":"not found"}`))
 	})
-	response, raw := doJSON(t, missingClient, http.MethodGet, missingBase+"/omc/api/v1/management/auth-files/model-aliases", "")
+	response, raw := doJSON(t, missingClient, http.MethodGet, missingBase+"/shell-pamc/api/v1/management/auth-files/model-aliases", "")
 	if response.StatusCode != http.StatusNotImplemented || !strings.Contains(string(raw), "capability_missing") {
 		t.Fatalf("missing model alias capability = %d body = %s", response.StatusCode, raw)
 	}

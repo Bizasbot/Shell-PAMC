@@ -1,4 +1,4 @@
-// Command seed-usage writes deterministic request records into a local Oh My CPA
+// Command seed-usage writes deterministic request records into a local Shell-PAMC
 // database so the browser acceptance suite can exercise the request list.
 //
 // It exists because acceptance starts the app with ingestion disabled, which
@@ -21,11 +21,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 const (
@@ -76,7 +76,7 @@ const (
 const fixtureClientKey = "omc-e2e-client-secret"
 
 func main() {
-	databasePath := flag.String("db", "", "path to the Oh My CPA SQLite database")
+	databasePath := flag.String("db", "", "path to the Shell-PAMC SQLite database")
 	// The cipher has to match the one the app runs with, because a caller-key
 	// identity is a keyed fingerprint: seeding under a different key would store an
 	// identity the running application can never produce.

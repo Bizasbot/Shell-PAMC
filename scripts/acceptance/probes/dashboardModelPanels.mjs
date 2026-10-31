@@ -883,7 +883,7 @@ export async function dashboardModelPanelStates({ base, page, check, context }) 
   // Preference writes, so the toggle's persistence can be asserted rather than inferred from a
   // read that a warm cache legitimately skips.
   const preferenceWrites = [];
-  await page.route('**/omc/api/**', async (route) => {
+  await page.route('**/shell-pamc/api/**', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/dashboard/models')) calls.push(url.search);
     const preferenceMatch = url.pathname.match(/\/preferences\/([^/]+)$/);
@@ -975,7 +975,7 @@ export async function dashboardModelPanelStates({ base, page, check, context }) 
 
   // Hold only this preference write until the optimistic selection has been observed. A timer
   // could refuse it before a busy runner sees the intermediate state, or outlive a fast render.
-  const preferenceRoute = '**/omc/api/**/preferences/omc_models_view';
+  const preferenceRoute = '**/shell-pamc/api/**/preferences/omc_models_view';
   let releasePreferenceWrite;
   const preferenceWriteGate = new Promise((resolve) => { releasePreferenceWrite = resolve; });
   let hasPreferenceWriteStarted = false;
@@ -1009,8 +1009,8 @@ export async function dashboardModelPanelStates({ base, page, check, context }) 
   }
 
   // ── a stale refresh keeps the panels and says so ───────────────────────────
-  await page.unroute('**/omc/api/**');
-  await context.route('**/omc/api/**/dashboard/models**', async (route) => {
+  await page.unroute('**/shell-pamc/api/**');
+  await context.route('**/shell-pamc/api/**/dashboard/models**', async (route) => {
     // A failure *after* data existed. The panels must keep what they have, because replacing a month of
     // ranking with an error card because one poll timed out is worse than showing slightly old data.
     return fulfillFixture(route, { status: 503, json: { error: 'database is unavailable' } });
@@ -1041,7 +1041,7 @@ export async function dashboardModelPanelFailures({ base, page, check }) {
   // ── a first load that failed ──────────────────────────────────────────────
   // Nothing was ever read, so there is no panel to keep: the card must say so and offer the retry rather
   // than leaving a skeleton up forever.
-  await page.route('**/omc/api/**/dashboard/models**', async (route) => {
+  await page.route('**/shell-pamc/api/**/dashboard/models**', async (route) => {
     return fulfillFixture(route, { status: 503, json: { error: 'database is unavailable' } });
   });
   await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });

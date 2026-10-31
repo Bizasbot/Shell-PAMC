@@ -21,7 +21,7 @@ const (
 	// DefaultUserAgent is the fallback product token when a deployment supplies no
 	// version of its own. It names the product and a version in the `Product/Version`
 	// form clients conventionally parse.
-	DefaultUserAgent    = "Oh-My-CPA/0.1.0"
+	DefaultUserAgent    = "Shell-PAMC/0.1.0"
 	MaxUserAgentBytes   = 512
 	MaxRequestBytes     = 32 << 20
 	MaxImageBytes       = 5 << 20
@@ -46,7 +46,7 @@ func UserAgentForVersion(version string) string {
 	if !versionTokenPattern.MatchString(token) {
 		return DefaultUserAgent
 	}
-	return "Oh-My-CPA/" + token
+	return "Shell-PAMC/" + token
 }
 
 // versionTokenPattern is the permissive-but-token-safe shape a version may take: an

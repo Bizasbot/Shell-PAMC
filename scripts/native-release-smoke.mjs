@@ -21,9 +21,9 @@ assert.ok(target, 'Runner architecture must be in the release matrix');
 const working = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-native-smoke-'));
 try {
   execFileSync('tar', ['-xzf', path.join(RELEASE_DIRECTORY, target.archive), '-C', working]);
-  assert.ok(fs.readFileSync(path.join(working, '.env.example'), 'utf8').includes('OMCPA_MASTER_KEY='));
+  assert.ok(fs.readFileSync(path.join(working, '.env.example'), 'utf8').includes('SHELLPAMC_MASTER_KEY='));
   assert.ok(fs.statSync(path.join(working, 'docs/install.md')).size > 0);
-  for (const basePath of ['/omc', '/', '/tools/omc']) {
+  for (const basePath of ['/shell-pamc', '/', '/tools/shell-pamc']) {
     const listener = net.createServer();
     listener.listen(0, '127.0.0.1');
     await once(listener, 'listening');
@@ -34,11 +34,11 @@ try {
     const processHandle = spawn(path.join(working, target.binary), [], {
       cwd: working, stdio: ['ignore', 'ignore', 'pipe'],
       env: isolatedAppEnvironment({
-        OMCPA_LISTEN_ADDR: `127.0.0.1:${port}`, OMCPA_BASE_PATH: basePath,
-        OMCPA_DATA_DIR: dataDirectory, OMCPA_MASTER_KEY: randomBytes(32).toString('hex'),
-        OMCPA_CPA_BASE_URL: 'http://127.0.0.1:1', OMCPA_CPA_MANAGEMENT_KEY: secret,
-        OMCPA_USAGE_INGEST_MODE: 'off', OMCPA_UPDATE_CHECK_ENABLED: 'false',
-        OMCPA_UPDATE_CHECK_ON_PAGE_LOAD: 'false', TZ: 'Asia/Kuala_Lumpur',
+        SHELLPAMC_LISTEN_ADDR: `127.0.0.1:${port}`, SHELLPAMC_BASE_PATH: basePath,
+        SHELLPAMC_DATA_DIR: dataDirectory, SHELLPAMC_MASTER_KEY: randomBytes(32).toString('hex'),
+        SHELLPAMC_CPA_BASE_URL: 'http://127.0.0.1:1', SHELLPAMC_CPA_MANAGEMENT_KEY: secret,
+        SHELLPAMC_USAGE_INGEST_MODE: 'off', SHELLPAMC_UPDATE_CHECK_ENABLED: 'false',
+        SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD: 'false', TZ: 'Asia/Kuala_Lumpur',
       }),
     });
     let spawnError;
@@ -89,7 +89,7 @@ try {
       const system = await response.json();
       assert.equal(system.omc_version.running_version, tag);
       assert.equal(system.omc_version.state, 'indeterminate');
-      assert.ok(fs.statSync(path.join(dataDirectory, 'oh-my-cpa.db')).size > 0);
+      assert.ok(fs.statSync(path.join(dataDirectory, 'shell-pamc.db')).size > 0);
       console.log(`PASS native ${target.goarch}: ${basePath} — SQLite, sign-in, embedded SPA assets and version ${tag}`);
     } finally {
       if (processHandle.exitCode === null) processHandle.kill('SIGTERM');

@@ -58,7 +58,7 @@ const SETTINGS = {
   enabled: true,
   dir: 'plugins',
   store_sources: ['https://mirror.example/registry.json'],
-  omc_source_url: 'https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/plugins/registry.json',
+  omc_source_url: 'https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json',
   omc_source_enabled: true,
   store_auth: [
     { match: 'https://mirror.example/', apply_to: ['registry', 'artifact'], type: 'bearer', token_env: 'MIRROR_TOKEN', allow_insecure: false },
@@ -321,9 +321,9 @@ export async function pluginManagement({ base, page, check, writes }) {
   const settings = page.locator('[data-plugin-panel="settings"]');
   await settings.waitFor({ timeout: 10000 });
   const omcRow = settings.locator('[data-plugin-omc-source]');
-  check('the managed Oh My CPA source is a fixed row rather than an editable source',
+  check('the managed Shell-PAMC source is a fixed row rather than an editable source',
     (await omcRow.count()) === 1 && (await omcRow.locator('input').count()) === 0
-      && (await omcRow.innerText()).includes('Oh My CPA'));
+      && (await omcRow.innerText()).includes('Shell-PAMC'));
   const omcRowText = await omcRow.innerText();
   check('the managed source row is one compact line: no registry address and no state label',
     !/https?:\/\//.test(omcRowText) && !/(已启用|已关闭|\bOn\b|\bOff\b)/.test(omcRowText), omcRowText);
@@ -350,9 +350,9 @@ export async function pluginManagement({ base, page, check, writes }) {
       && settingsWrite.body.store_auth[0].token_env === 'MIRROR_TOKEN',
     JSON.stringify(settingsWrite),
   );
-  await omcRow.getByRole('button', { name: /在 OMC 设置中管理|Manage in OMC settings/ }).click();
-  check('the managed source row links to the OMC settings switch',
-    await isTrue(async () => new URL(page.url()).pathname.endsWith('/omc-settings'), 'the OMC settings page'));
+  await omcRow.getByRole('button', { name: /在 Shell-PAMC 设置中管理|Manage in Shell-PAMC settings/ }).click();
+  check('the managed source row links to the Shell-PAMC settings switch',
+    await isTrue(async () => new URL(page.url()).pathname.endsWith('/omc-settings'), 'the Shell-PAMC settings page'));
 
   await page.goto(`${base}/plugins`, { waitUntil: 'domcontentloaded' });
   const removable = page.locator('article[data-plugin-id="quota-notifier"]');

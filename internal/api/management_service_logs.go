@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/applog"
 )
 
 // serviceLogPageDefault is one read when the console does not name a size: enough
@@ -20,7 +20,7 @@ type serviceLogRecordDTO struct {
 	Attrs      []applog.Attr `json:"attrs,omitempty"`
 }
 
-// serviceLogs serves Oh My CPA's own recent log records - the ones it writes to
+// serviceLogs serves Shell-PAMC's own recent log records - the ones it writes to
 // stderr - so an operator can read them without shell access to the container.
 //
 // `after` resumes from the last sequence the console saw. A process built without

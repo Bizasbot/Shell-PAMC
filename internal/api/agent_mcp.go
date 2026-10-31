@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/mcpbridge"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/mcpbridge"
 )
 
 // MCP_CONSOLE_URL_HEADER carries the console address of the request being served to the tool
@@ -80,7 +80,7 @@ func (h *Handler) mcpHandler() (http.Handler, error) {
 func (h *Handler) serveMCP(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Cache-Control", "no-store")
 	if request.Header.Get("Authorization") == "" {
-		writer.Header().Set("WWW-Authenticate", `Bearer realm="oh-my-cpa"`)
+		writer.Header().Set("WWW-Authenticate", `Bearer realm="shell-pamc"`)
 		writeRunError(writer, 401, "authentication_required")
 		return
 	}

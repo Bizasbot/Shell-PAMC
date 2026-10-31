@@ -105,7 +105,7 @@ func TestPreferencesSharedWireContract(t *testing.T) {
 		}
 		t.Setenv("TZ", contract.AlternateServer.Timezone)
 		caller, alternateURL, _ := startDashboardTestServer(t, nil)
-		response, err := caller.Get(alternateURL + "/omc/api/v1/preferences")
+		response, err := caller.Get(alternateURL + "/shell-pamc/api/v1/preferences")
 		if err != nil {
 			t.Fatal(err)
 		}

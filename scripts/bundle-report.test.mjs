@@ -85,7 +85,7 @@ test('missing resources, broken edges, duplicate chunks and stale graph fail clo
 });
 
 test('HTML resource parsing supports attribute order, quotes and mount prefix; external resources fail', () => {
-  const resources = collectStartupResources("<script src='/omc/assets/start.js' type='module'></script><link href='./assets/shared.js' rel='modulepreload'>");
+  const resources = collectStartupResources("<script src='/shell-pamc/assets/start.js' type='module'></script><link href='./assets/shared.js' rel='modulepreload'>");
   assert.equal(resources.entry, 'assets/start.js');
   assert.deepEqual(resources.scripts, ['assets/start.js', 'assets/shared.js']);
   assert.throws(() => collectStartupResources('<script type="module" src="https://cdn.invalid/assets/main.js"></script>'), /External/);

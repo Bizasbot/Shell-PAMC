@@ -3,7 +3,7 @@ import { until, settleLayout } from '../harness.mjs';
 import { LANGUAGES } from '../../../web/src/i18n/language.ts';
 
 /**
- * The OMC settings page: the console's own preferences, and the promise that changing one
+ * The Shell-PAMC settings page: the console's own preferences, and the promise that changing one
  * actually governs the console.
  *
  * The probe context is English (`omc-lang = 'en'`), which is the reading this page has to be
@@ -16,10 +16,10 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   const writes = [];
   const preferences = {};
   let shouldRejectTpsWrite = false;
-  await page.route('**/omc/api/**/preferences', (route) => route.fulfill({
+  await page.route('**/shell-pamc/api/**/preferences', (route) => route.fulfill({
     json: { preferences, time_zone: { server_timezone: 'Asia/Kuala_Lumpur' } },
   }));
-  await page.route('**/omc/api/**/preferences/*', async (route) => {
+  await page.route('**/shell-pamc/api/**/preferences/*', async (route) => {
     if (route.request().method() === 'PUT') {
       const key = new URL(route.request().url()).pathname.split('/').pop();
       if (key === 'omc_tps_calculation_mode' && shouldRejectTpsWrite) {
@@ -84,13 +84,13 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   check('a reloaded settings page reads the saved quota refresh policy',
     await resetSwitch.getAttribute('aria-checked') === 'false' && (await intervalControl.innerText()).includes('Every 30 min'));
 
-  // The managed Oh My CPA plugin registry is the one server-read switch on this page that
+  // The managed Shell-PAMC plugin registry is the one server-read switch on this page that
   // changes the gateway's configuration rather than this console's presentation: the store and
   // the configuration readers consult the same boolean, so the row has to write it as a boolean
   // and nothing else.
-  const pluginSourceSwitch = page.getByRole('switch', { name: 'Oh My CPA plugin registry', exact: true });
+  const pluginSourceSwitch = page.getByRole('switch', { name: 'Shell-PAMC plugin registry', exact: true });
   await until(() => pluginSourceSwitch.isEnabled(), { label: 'the plugin source switch after the preference read' });
-  check('the Oh My CPA plugin registry defaults to on', await pluginSourceSwitch.getAttribute('aria-checked') === 'true');
+  check('the Shell-PAMC plugin registry defaults to on', await pluginSourceSwitch.getAttribute('aria-checked') === 'true');
   await pluginSourceSwitch.click();
   await until(() => preferences.omc_plugin_source_enabled === false, { label: 'the plugin source write' });
   check('the plugin source switch writes the boolean the server reconciles',
@@ -174,7 +174,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   check('every header action names itself on hover', unnamedActions.length === 0, unnamedActions.join(' | '));
 
   const repositoryLink = page.locator('.app-header-actions').getByRole('link', { name: 'Open project on GitHub', exact: true });
-  const repositoryURL = 'https://github.com/WizisCool/oh-my-cpa';
+  const repositoryURL = 'https://github.com/Bizasbot/Shell-PAMC';
   check(
     'the GitHub mark links to the project with isolated external navigation',
     await repositoryLink.getAttribute('href') === repositoryURL
@@ -185,7 +185,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   );
   // The exact, once-only popup is synthetic: it proves navigation without allowing
   // an undeclared destination or contacting the external service.
-  expectProblem({ kind: 'outbound', url: /^https:\/\/github\.com\/WizisCool\/oh-my-cpa$/, method: 'GET', count: 1 });
+  expectProblem({ kind: 'outbound', url: /^https:\/\/github\.com\/Bizasbot\/Shell-PAMC$/, method: 'GET', count: 1 });
   await context.route(repositoryURL, (route) => route.fulfill({ contentType: 'text/html', body: '<title>Repository</title>' }));
   const consoleURL = page.url();
   const [repositoryPage] = await Promise.all([page.waitForEvent('popup'), repositoryLink.click()]);
@@ -220,7 +220,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
     'Model icons in request list',
     'Scheduled quota refresh',
     'Refresh after a quota resets',
-    'Oh My CPA plugin registry',
+    'Shell-PAMC plugin registry',
     'Theme mode',
     'Light-mode palette',
     'Dark-mode palette',
@@ -526,7 +526,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   await page.goto(`${base}/omc-settings`, { waitUntil: 'domcontentloaded' });
   await page.locator('.omc-settings-page').waitFor({ timeout: 20_000 });
   await page.evaluate(async () => {
-    await fetch('/omc/api/v1/preferences/omc_token_style', {
+    await fetch('/shell-pamc/api/v1/preferences/omc_token_style', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify('zh'),
@@ -827,7 +827,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   await languageMenuItems.filter({ hasText: /English/ }).click();
   let becameEnglish = false;
   await until(async () => {
-    becameEnglish = /OMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText());
+    becameEnglish = /Shell-PAMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText());
     return becameEnglish;
   }, { label: 'the header menu to switch the console to English' }).catch(() => {});
   check(
@@ -867,7 +867,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
 
   await languageMenuButton().click();
   await page.locator('.ant-dropdown:visible .language-menu-item').filter({ hasText: /English/ }).click();
-  await until(async () => /OMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText()), {
+  await until(async () => /Shell-PAMC Settings/.test(await page.locator('.omc-settings-page .terminal-title').innerText()), {
     label: 'the header menu to return the console to English',
   });
   await page.keyboard.press('Escape');
@@ -944,7 +944,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   // Assert painted copy as well as attributes: a blank page must not pass.
   const fellBack = await until(async () => {
     const state = await languageState();
-    return /OMC Settings/.test(state.title) ? state : false;
+    return /Shell-PAMC Settings/.test(state.title) ? state : false;
   }, { label: 'the console to render base English copy while the Spanish catalog is unreachable' }).catch(() => null);
   check(
     'an unavailable stored Spanish catalog renders base English copy without replacing the preference',

@@ -230,7 +230,7 @@ const DICT: Record<string, [string, string]> = {
   'omc.timezone_desc': ["应用于时间显示和自然日统计。", "Used for timestamps and calendar-day totals."],
   'omc.timezone_server': ["服务器时区", "Server time zone"],
   // ── app / shell ──────────────────────────────────────────────────────────
-  'app.name': ['oh-my-cpa', 'oh-my-cpa'],
+  'app.name': ['shell-pamc', 'shell-pamc'],
   // The demo markers are the one place copy is deliberately not translated: they
   // label a deployment rather than the product, and a badge that changes width with
   // the interface language moves the controls beside it.
@@ -403,10 +403,10 @@ const DICT: Record<string, [string, string]> = {
   'agent.connect.client': ["客户端", "Client"],
   'agent.connect.client.other': ["其他", "Other"],
   'agent.connect.client.stdio': ["stdio", "stdio"],
-  'agent.connect.client.claude.note': ["在终端运行。管理密钥从环境变量 OMCPA_CPA_MANAGEMENT_KEY 读取。", "Run in a terminal. The management key is read from the OMCPA_CPA_MANAGEMENT_KEY environment variable."],
-  'agent.connect.client.codex.note': ["写入 ~/.codex/config.toml，并在环境变量 OMCPA_CPA_MANAGEMENT_KEY 中提供管理密钥。", "Add to ~/.codex/config.toml, and provide the management key in the OMCPA_CPA_MANAGEMENT_KEY environment variable."],
+  'agent.connect.client.claude.note': ["在终端运行。管理密钥从环境变量 SHELLPAMC_CPA_MANAGEMENT_KEY 读取。", "Run in a terminal. The management key is read from the SHELLPAMC_CPA_MANAGEMENT_KEY environment variable."],
+  'agent.connect.client.codex.note': ["写入 ~/.codex/config.toml，并在环境变量 SHELLPAMC_CPA_MANAGEMENT_KEY 中提供管理密钥。", "Add to ~/.codex/config.toml, and provide the management key in the SHELLPAMC_CPA_MANAGEMENT_KEY environment variable."],
   'agent.connect.client.other.note': ["适用于以 JSON 配置远程 MCP 服务的客户端，例如 Cursor。字段名以客户端文档为准。", "For clients that configure a remote MCP server in JSON, such as Cursor. Field names follow the client's own documentation."],
-  'agent.connect.client.stdio.note': ["只支持 stdio 的客户端运行 oh-my-cpa 二进制自带的桥接进程，由它转发到本控制台。", "A client that only speaks stdio runs the bridge built into the oh-my-cpa binary, which forwards to this console."],
+  'agent.connect.client.stdio.note': ["只支持 stdio 的客户端运行 shell-pamc 二进制自带的桥接进程，由它转发到本控制台。", "A client that only speaks stdio runs the bridge built into the shell-pamc binary, which forwards to this console."],
   'agent.connect.key_placeholder': ["CPA 管理密钥", "CPA management key"],
   'agent.connect.notes': ["接入须知", "Before connecting"],
   'agent.connect.notes.key': ["凭据是 CPA 管理密钥，等同管理员权限。只接入可信的 Agent 与主机，信任变化时轮换密钥。", "The credential is the CPA management key, which is administrator-equivalent. Connect only trusted agents and hosts, and rotate the key when that trust changes."],
@@ -816,7 +816,7 @@ const DICT: Record<string, [string, string]> = {
   'nav.usage_events': ['请求记录', 'Request Events'],
   'nav.pricing': ['费用与用量', 'Cost & Usage'],
   'nav.config': ['配置面板', 'Config'],
-  'nav.omc_settings': ['OMC 设置', 'OMC Settings'],
+  'nav.omc_settings': ['Shell-PAMC 设置', 'Shell-PAMC Settings'],
   'nav.plugins': ['插件管理', 'Plugin management'],
   'nav.system': ['系统信息', 'System Information'],
   'nav.update_available': ['有可用更新', 'Update available'],
@@ -853,7 +853,7 @@ const DICT: Record<string, [string, string]> = {
   // §3 allows a subtitle only when it carries live data, and a sentence
   // explaining why a switch exists is documentation pasted into the interface.
   // A row description survives only when it states something the label cannot.
-  'omc.title': ['OMC 设置', 'OMC Settings'],
+  'omc.title': ['Shell-PAMC 设置', 'Shell-PAMC Settings'],
   'omc.tps_calculation_mode': ["TPS 计算方式", "TPS calculation mode"],
   'omc.tps_calculation_desc': ["输出 Token ÷ 总耗时；排除首字延迟时先从总耗时中扣除，无法扣除时使用总耗时。", "Output tokens ÷ total latency; excluding first-token latency subtracts it when measurable, otherwise total latency is used."],
   'omc.tps_exclude_ttft': ["排除首字延迟", "Exclude first-token latency"],
@@ -868,7 +868,7 @@ const DICT: Record<string, [string, string]> = {
   'agent.capability.quota_auto_refresh_set': ['修改自动刷新额度策略', 'Change automatic quota refresh policy'],
   'agent.capability.quota_auto_refresh_set.description': ['设置后台用凭证读取额度的间隔，以及额度重置后是否自动刷新。', 'Set how often credentials are read in the background, and whether a reset quota is read again.'],
   'omc.section_quota': ['额度', 'Quota'],
-  'omc.section_plugin_source': ['Oh My CPA 插件注册表', 'Oh My CPA plugin registry'],
+  'omc.section_plugin_source': ['Shell-PAMC 插件注册表', 'Shell-PAMC plugin registry'],
   'omc.plugin_source': ['Shell-PAMC 插件源', 'Shell-PAMC plugin registry'],
   'omc.plugin_source_desc': ['把 Shell-PAMC 维护的插件注册表加入插件源，并保持该源启用。', 'Adds the plugin registry Shell-PAMC maintains to the plugin sources and keeps it enabled.'],
   // Both rows say what the process will do on its own, because each automatic read is a
@@ -1023,13 +1023,13 @@ const DICT: Record<string, [string, string]> = {
   'omc.font_error_family': ['字体名称不可用', 'The family name cannot be used'],
   'omc.font_error_missing': ['该字体已不存在', 'That font no longer exists'],
   'omc.font_error_google_missing': ['Google Fonts 没有这个字体，请检查名称拼写', 'Google Fonts has no family by that name; check the spelling'],
-  'omc.font_error_google_unreachable': ['服务器无法连接 Google Fonts，可通过 OMCPA_GOOGLE_FONTS_URL 指定镜像', 'The server cannot reach Google Fonts; a mirror can be set with OMCPA_GOOGLE_FONTS_URL'],
+  'omc.font_error_google_unreachable': ['服务器无法连接 Google Fonts，可通过 SHELLPAMC_GOOGLE_FONTS_URL 指定镜像', 'The server cannot reach Google Fonts; a mirror can be set with SHELLPAMC_GOOGLE_FONTS_URL'],
   'header.logout': ['退出', 'Sign out'],
   'shell.connected': ['已连接', 'connected'],
   'shell.offline': ['离线', 'offline'],
   'shell.cpa_management_disabled_title': ['CPA 未开启管理接口', 'CPA\'s Management API is off'],
   'shell.cpa_management_disabled_desc': ['当前连接的 CLIProxyAPI 没有配置管理密钥，所有管理接口都返回 404，Shell-PAMC 无法读取或管理它，也无法判断它的版本。', 'The connected CLIProxyAPI has no management secret, so it answers 404 on every management path. Shell-PAMC cannot read or manage it, or tell which version it is.'],
-  'shell.cpa_management_disabled_config': ['在 CPA 配置文件中设置管理密钥，与 Shell-PAMC 的 OMCPA_CPA_MANAGEMENT_KEY 保持一致（也可以用 CPA 的 MANAGEMENT_PASSWORD 环境变量）：', 'Set the management secret in the CPA configuration file to the value of Shell-PAMC\'s OMCPA_CPA_MANAGEMENT_KEY (CPA\'s MANAGEMENT_PASSWORD environment variable works too):'],
+  'shell.cpa_management_disabled_config': ['在 CPA 配置文件中设置管理密钥，与 Shell-PAMC 的 SHELLPAMC_CPA_MANAGEMENT_KEY 保持一致（也可以用 CPA 的 MANAGEMENT_PASSWORD 环境变量）：', 'Set the management secret in the CPA configuration file to the value of Shell-PAMC\'s SHELLPAMC_CPA_MANAGEMENT_KEY (CPA\'s MANAGEMENT_PASSWORD environment variable works too):'],
   'shell.cpa_management_disabled_lift': ['CPA 会自动重新加载配置。管理接口开始响应后，本页会自动解除。', 'CPA reloads its configuration on its own. This page lifts as soon as the Management API answers.'],
   'shell.cpa_v8_required_title': ['请将 CPA 升级到 v8', 'Upgrade CPA to v8'],
   'shell.cpa_v8_required_desc': ['当前连接的 CLIProxyAPI 早于 v8，不提供 v8 管理接口。Shell-PAMC 只支持 CPA v8.0.0 及以上版本，升级前各页面无法使用。', 'The connected CLIProxyAPI is older than v8 and does not serve the v8 Management API. Shell-PAMC supports CPA v8.0.0 and later only, so no page can work until it is upgraded.'],
@@ -1100,7 +1100,7 @@ const DICT: Record<string, [string, string]> = {
   'logs.viewer_too_large': ['文件超过 {limit}，下载后查看', 'The file is larger than {limit}; download it to read it'],
   'logs.viewer_empty': ['文件为空', 'The file is empty'],
   'logs.source_cpa': ['CPA 网关', 'CPA gateway'],
-  'logs.source_service': ['OMC 服务', 'OMC service'],
+  'logs.source_service': ['Shell-PAMC 服务', 'Shell-PAMC service'],
   'logs.service_counts': ['显示 {shown} / 共 {total} 条', '{shown} of {total} records'],
   'logs.service_retention': ['内存保留最近 {capacity} 条，自 {since} 起', 'Latest {capacity} kept in memory since {since}'],
   'logs.service_gap': ['部分较早的记录在读取前已被覆盖', 'Some earlier records were overwritten before they were read'],
@@ -1990,8 +1990,8 @@ const DICT: Record<string, [string, string]> = {
   'inst.media_mount': ['媒体/图标挂载', 'Media/icon mount'],
   'inst.proxy_advice': ['反向代理建议', 'Reverse proxy advice'],
   'inst.proxy_advice_val': [
-    'Caddy 或 Nginx 保留 /omc 前缀转发至后端',
-    'Caddy or Nginx should keep the /omc prefix and forward to the backend',
+    'Caddy 或 Nginx 保留 /shell-pamc 前缀转发至后端',
+    'Caddy or Nginx should keep the /shell-pamc prefix and forward to the backend',
   ],
   'inst.faq_title': ['为什么 CPA 统一显示为 Codex？', 'Why does CPA list everything as Codex?'],
   'inst.faq_body': [
@@ -2004,8 +2004,8 @@ const DICT: Record<string, [string, string]> = {
   'tri.retry_conn': ['重试连接', 'Retry connection'],
   'tri.empty_title': ['尚未发现任何 CPA 接入点', 'No CPA endpoints discovered yet'],
   'tri.empty_desc': [
-    '请确保 CPA 实例已正常启动，并配置了正确的 OMCPA_CPA_BASE_URL 与 MANAGEMENT_KEY。',
-    'Make sure the CPA instance is running and OMCPA_CPA_BASE_URL / MANAGEMENT_KEY are configured.',
+    '请确保 CPA 实例已正常启动，并配置了正确的 SHELLPAMC_CPA_BASE_URL 与 MANAGEMENT_KEY。',
+    'Make sure the CPA instance is running and SHELLPAMC_CPA_BASE_URL / MANAGEMENT_KEY are configured.',
   ],
   'tri.scan_now': ['立即扫描 CPA 实例', 'Scan CPA instance now'],
   'tri.all_done': ['太棒了！所有接入点已全部整理完毕', 'All done! Every endpoint has been organized'],
@@ -3364,7 +3364,7 @@ const DICT: Record<string, [string, string]> = {
   'plugin.settings_sources_desc': ['在官方源之外追加插件 registry 地址（plugins.store-sources）。', 'Plugin registries read in addition to the official one (plugins.store-sources).'],
   'plugin.settings_official_source': ['CLIProxyAPI 官方源（始终启用）', 'CLIProxyAPI official registry (always included)'],
   'plugin.settings_omc_source': ['Shell-PAMC 插件源', 'Shell-PAMC registry'],
-  'plugin.settings_omc_source_open': ['在 OMC 设置中管理', 'Manage in OMC settings'],
+  'plugin.settings_omc_source_open': ['在 Shell-PAMC 设置中管理', 'Manage in Shell-PAMC settings'],
   'plugin.settings_add_source': ['添加源', 'Add source'],
   'plugin.settings_source_label': ['插件源 {n}', 'Source {n}'],
   'plugin.settings_remove_source': ['移除插件源 {n}', 'Remove source {n}'],

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agent"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agui"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/agent"
+	"github.com/bizasbot/shell-pamc/internal/agui"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
 )
 
 func queryProjectionFixture() agent.Conversation {
@@ -61,7 +61,7 @@ func TestAgentSessionProjectsStoredQueryResults(t *testing.T) {
 	if _, err := fixture.handler.agent.runtime.Store.Save(context.Background(), "session", "latest", 0, time.Now().Add(time.Hour), &conversation); err != nil {
 		t.Fatal(err)
 	}
-	response, raw := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/agent/session")
+	response, raw := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/agent/session")
 	if response.StatusCode != 200 {
 		t.Fatalf("session status %d: %s", response.StatusCode, raw)
 	}

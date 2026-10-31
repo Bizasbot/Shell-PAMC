@@ -8,30 +8,30 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agent"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agui"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/agent"
+	"github.com/bizasbot/shell-pamc/internal/agui"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 func TestAgentHTTPManagementKeyAndCapabilityBoundary(t *testing.T) {
 	fixture := newProviderTestFixture(t)
-	response, body := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/capabilities")
+	response, body := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/capabilities")
 	if response.StatusCode != 200 || !strings.Contains(string(body), "usage_aggregate") {
 		t.Fatalf("catalog %d %s", response.StatusCode, body)
 	}
-	response, body = getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/agent/session")
+	response, body = getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/agent/session")
 	if response.StatusCode != 200 || !strings.Contains(string(body), `"turns":[]`) {
 		t.Fatalf("session %d %s", response.StatusCode, body)
 	}
 	// An image is served only while the current conversation references it.
-	response, body = getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/agent/images/not-referenced")
+	response, body = getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/agent/images/not-referenced")
 	if response.StatusCode != 404 || !strings.Contains(string(body), "resource_not_found") {
 		t.Fatalf("unreferenced image %d %s", response.StatusCode, body)
 	}
 	external := &http.Client{}
 	call := func(method, path, payload, key string) (int, []byte) {
-		request, _ := http.NewRequest(method, fixture.baseURL+"/omc/api/v1"+path, strings.NewReader(payload))
+		request, _ := http.NewRequest(method, fixture.baseURL+"/shell-pamc/api/v1"+path, strings.NewReader(payload))
 		request.Header.Set("Authorization", "Bearer "+key)
 		response, err := external.Do(request)
 		if err != nil {
@@ -80,7 +80,7 @@ func TestAgentHTTPManagementKeyAndCapabilityBoundary(t *testing.T) {
 		t.Fatal("MCP bearer approved its own operation")
 	}
 	previousIdentity := fixture.handler.auth.CapabilityIdentity()
-	rotated, err := auth.New("rotated-management-value", "/omc", "")
+	rotated, err := auth.New("rotated-management-value", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestAgentCatalogueFitsTheSchemaBudget(t *testing.T) {
 
 func TestAgentApprovalRequiresBrowserOrigin(t *testing.T) {
 	fixture := newProviderTestFixture(t)
-	response, _ := doJSON(t, fixture.client, "POST", fixture.baseURL+"/omc/api/v1/agent/operations/unknown/decision", `{"approve":true}`)
+	response, _ := doJSON(t, fixture.client, "POST", fixture.baseURL+"/shell-pamc/api/v1/agent/operations/unknown/decision", `{"approve":true}`)
 	if response.StatusCode != 403 {
 		t.Fatalf("originless approval: %d", response.StatusCode)
 	}
@@ -127,7 +127,7 @@ func TestAgentApprovalRequiresBrowserOrigin(t *testing.T) {
 	if err != nil || result.Status != "pending" {
 		t.Fatalf("prepare %v %+v", err, result)
 	}
-	request, _ := http.NewRequest("POST", fixture.baseURL+"/omc/api/v1/agent/operations/"+result.OperationID+"/decision", strings.NewReader(`{"approve":true,"secret":"agent-private-key-marker"}`))
+	request, _ := http.NewRequest("POST", fixture.baseURL+"/shell-pamc/api/v1/agent/operations/"+result.OperationID+"/decision", strings.NewReader(`{"approve":true,"secret":"agent-private-key-marker"}`))
 	request.Header.Set("Origin", fixture.baseURL)
 	response, err = fixture.client.Do(request)
 	if err != nil {
@@ -153,7 +153,7 @@ func TestAgentApprovalRequiresBrowserOrigin(t *testing.T) {
 // says RUN_STARTED, which is how the browser knows to hand the message back to the operator.
 func TestAgentRunSpeaksAGUI(t *testing.T) {
 	fixture := newProviderTestFixture(t)
-	url := fixture.baseURL + "/omc/api/v1/agent/run"
+	url := fixture.baseURL + "/shell-pamc/api/v1/agent/run"
 	for _, body := range []string{
 		`{"conversation_id":"","revision":0,"message":"hi","model":"m","client_key_fingerprint":"f"}`,
 		`{"threadId":"","runId":"r1","protocolVersion":"1.0","messages":[{"id":"m1","role":"user","content":"hi"}],"forwardedProps":{"revision":0,"model":"m","client_key_fingerprint":"f","extra":1}}`,

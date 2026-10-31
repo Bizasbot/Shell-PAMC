@@ -59,7 +59,7 @@ const QUOTAS: QuotaItem[] = [
 ];
 
 function QuotaSurface(props: Partial<CredentialQuotaPanelProps>) {
-  return <React.StrictMode><MemoryRouter basename="/omc" initialEntries={['/omc/dashboard']}>
+  return <React.StrictMode><MemoryRouter basename="/shell-pamc" initialEntries={['/shell-pamc/dashboard']}>
     <I18nProvider><CredentialQuotaPanel nowMS={NOW_MS} {...props} /></I18nProvider>
   </MemoryRouter></React.StrictMode>;
 }
@@ -125,7 +125,7 @@ describe('credential quota presentation', () => {
     rerender(<QuotaSurface files={[]} quotas={[]} />);
     expect(panelState()).toBe('empty');
     expect(screen.getByText('No credential connected yet.')).toBeTruthy();
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/omc/oauth-management?action=connect');
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/shell-pamc/oauth-management?action=connect');
   });
 
   it('draws each credential with its windows or the reason it cannot serve', () => {
@@ -149,7 +149,7 @@ describe('credential quota presentation', () => {
     expect(screen.queryByRole('button')).toBeNull();
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('href')).toBe('/omc/oauth-management');
+    expect(links[0].getAttribute('href')).toBe('/shell-pamc/oauth-management');
     expect(links[0].closest('li')).toBeNull();
   });
 

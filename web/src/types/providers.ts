@@ -129,7 +129,7 @@ export interface ProviderItem {
   upstream_name?: string;
   protocol: string;
   base_url?: string;
-  /** The provider's own homepage. Oh My CPA management metadata rather than a CPA
+  /** The provider's own homepage. Shell-PAMC management metadata rather than a CPA
    *  field, so it is stored beside the display name and always an absolute
    *  http/https URL or absent. */
   website?: string;

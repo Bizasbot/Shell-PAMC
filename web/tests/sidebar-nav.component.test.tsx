@@ -65,10 +65,10 @@ beforeEach(() => {
   stored = {};
   writes = [];
   vi.stubGlobal('fetch', vi.fn(async (input: string, options: RequestInit = {}) => {
-    if (input === '/omc/api/v1/preferences' && options.method === 'GET') {
+    if (input === '/shell-pamc/api/v1/preferences' && options.method === 'GET') {
       return jsonResponse({ preferences: stored, time_zone: { server_timezone: 'UTC' } });
     }
-    if (input.startsWith('/omc/api/v1/preferences/') && options.method === 'PUT') {
+    if (input.startsWith('/shell-pamc/api/v1/preferences/') && options.method === 'PUT') {
       const key = input.split('/').pop()!;
       const value = JSON.parse(String(options.body));
       writes.push({ key, value });
@@ -101,9 +101,9 @@ describe('sidebar visibility panel', () => {
       'AI providers', 'OAuth management', 'Key management',
       'Request Events', 'Cost & Usage', 'Logs', 'Audit trail',
       'Plugin management',
-      'Config', 'OMC Settings', 'System Information',
+      'Config', 'Shell-PAMC Settings', 'System Information',
     ]);
-    const settingsToggle = screen.getByRole('switch', { name: 'OMC Settings' });
+    const settingsToggle = screen.getByRole('switch', { name: 'Shell-PAMC Settings' });
     expect(settingsToggle.hasAttribute('disabled')).toBe(true);
     expect(settingsToggle.getAttribute('aria-checked')).toBe('true');
     expect(dialog.querySelector('.settings-toggle-desc')?.textContent).toBe('This entry manages the sidebar, so it always shows.');
@@ -136,7 +136,7 @@ describe('sidebar visibility panel', () => {
     await openPanel();
     const agent = await readySwitch('Agent');
     expect(agent.getAttribute('aria-checked')).toBe('false');
-    const settingsToggle = screen.getByRole('switch', { name: 'OMC Settings' });
+    const settingsToggle = screen.getByRole('switch', { name: 'Shell-PAMC Settings' });
     expect(settingsToggle.getAttribute('aria-checked')).toBe('true');
     expect(settingsToggle.hasAttribute('disabled')).toBe(true);
     expect(LOCKED_NAV_KEYS.has('/omc-settings')).toBe(true);

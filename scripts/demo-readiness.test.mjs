@@ -85,9 +85,9 @@ test('content readiness rejects a sidebar-only heading, loading shells and missi
 
 test('Agent readiness requires its welcome identity and content, not sidebar chrome', () => {
   const route = DEMO_ROUTES.find(candidate => candidate.path === '/agent');
-  const identitySelector = '[data-testid="agent-empty"] [aria-label="Oh My CPA"]';
+  const identitySelector = '[data-testid="agent-empty"] [aria-label="Shell-PAMC"]';
   const welcomeSelector = '[data-testid="agent-empty"]';
-  const visible = () => ({ textContent: '', getClientRects: () => [{}], getAttribute: name => name === 'aria-label' ? 'Oh My CPA' : null });
+  const visible = () => ({ textContent: '', getClientRects: () => [{}], getAttribute: name => name === 'aria-label' ? 'Shell-PAMC' : null });
   let identities = [];
   let loading = [];
   let welcome;

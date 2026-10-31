@@ -398,7 +398,7 @@ export function customIconProbeRoutes() {
 }
 
 export async function customIconLibrary({ base, page, check }) {
-  await page.route('**/omc/api/v1/custom-icons/*/content*', (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle r="10" cx="12" cy="12"/></svg>' }));
+  await page.route('**/shell-pamc/api/v1/custom-icons/*/content*', (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle r="10" cx="12" cy="12"/></svg>' }));
   await page.goto(`${base}/ai-providers`, { waitUntil: 'domcontentloaded' });
   const row = page.locator('.providers-page tbody tr[data-row-key="openai-compat-0"]');
   const providerMark = row.getByRole('button', { name: `Change Icon: ${pickerProvider.name}`, exact: true });

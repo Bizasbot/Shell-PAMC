@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 func TestVertexOAuthAliasOverridesRoundTripAndReadback(t *testing.T) {
@@ -42,7 +42,7 @@ func TestVertexOAuthAliasOverridesRoundTripAndReadback(t *testing.T) {
 					fmt.Fprint(w, `{}`)
 				}
 			})
-			endpoint := base + "/omc/api/v1/management/auth-files/model-aliases"
+			endpoint := base + "/shell-pamc/api/v1/management/auth-files/model-aliases"
 			response, raw := doJSON(t, client, http.MethodGet, endpoint, "")
 			var read struct {
 				Aliases map[string][]managementOAuthModelAlias `json:"aliases"`
@@ -93,14 +93,14 @@ func TestVertexCredentialAliasOverridesPreserveAndClear(t *testing.T) {
 			upstream, stored := vertexOpenAPIUpstream(t)
 			stored()["model_aliases"] = []any{map[string]any{"name": "partner/model", "alias": "one", "openapi": value}, map[string]any{"name": "partner/model", "alias": "two"}}
 			client, base, recorder := startAuthFilesTestServer(t, "management-secret-value", upstream)
-			response, raw := doJSON(t, client, http.MethodGet, base+"/omc/api/v1/management/auth-files/safe-fields?name=vertex-sa.json&auth_index=vertex-1", "")
+			response, raw := doJSON(t, client, http.MethodGet, base+"/shell-pamc/api/v1/management/auth-files/safe-fields?name=vertex-sa.json&auth_index=vertex-1", "")
 			var fields managementAuthFileSafeFields
 			if response.StatusCode != 200 || json.Unmarshal(raw, &fields) != nil || fields.ModelAliases[0].OpenAPI == nil || *fields.ModelAliases[0].OpenAPI != value {
 				t.Fatalf("safe projection: %s", raw)
 			}
 			fields.ModelAliases[1].DisplayName = "Edited"
 			payload, _ := json.Marshal(map[string]any{"name": "vertex-sa.json", "auth_index": "vertex-1", "model_aliases": fields.ModelAliases})
-			endpoint := base + "/omc/api/v1/management/auth-files/fields"
+			endpoint := base + "/shell-pamc/api/v1/management/auth-files/fields"
 			response, raw = doJSON(t, client, http.MethodPatch, endpoint, string(payload))
 			if response.StatusCode != 200 {
 				t.Fatalf("verified aliases: %d %s", response.StatusCode, raw)

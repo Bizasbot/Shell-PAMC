@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { settleLayout, until } from '../harness.mjs';
 
 /**
- * The typeface roles on the OMC settings page and the font library dialog behind them
+ * The typeface roles on the Shell-PAMC settings page and the font library dialog behind them
  * (`web/src/components/settings/FontSettings.tsx`).
  *
  * The logic suite resolves references to `font-family` values; only a browser shows the claims
@@ -42,28 +42,28 @@ export async function fontLibrary({ base, page, check }) {
   });
 
   let holdPreferences;
-  await page.route('**/omc/api/**/preferences', async (route) => {
+  await page.route('**/shell-pamc/api/**/preferences', async (route) => {
     if (holdPreferences) await holdPreferences;
     return route.fulfill({ json: { preferences, time_zone: { server_timezone: 'UTC' } } });
   });
-  await page.route('**/omc/api/**/preferences/*', (route) => {
+  await page.route('**/shell-pamc/api/**/preferences/*', (route) => {
     const key = new URL(route.request().url()).pathname.split('/').pop();
     const value = JSON.parse(route.request().postData());
     writes.push({ key, value });
     preferences[key] = value;
     return route.fulfill({ json: { key, value } });
   });
-  await page.route('**/omc/api/v1/fonts', (route) => route.fulfill({ json: { fonts: library } }));
-  await page.route('**/omc/api/v1/fonts/upload', (route) => {
+  await page.route('**/shell-pamc/api/v1/fonts', (route) => route.fulfill({ json: { fonts: library } }));
+  await page.route('**/shell-pamc/api/v1/fonts/upload', (route) => {
     library = [uploaded, ...library];
     return route.fulfill({ status: 201, json: uploaded });
   });
-  await page.route('**/omc/api/v1/fonts/google', (route) => {
+  await page.route('**/shell-pamc/api/v1/fonts/google', (route) => {
     googleRequests.push(route.request().postDataJSON());
     library = [installed, ...library];
     return route.fulfill({ status: 201, json: installed });
   });
-  await page.route(/\/omc\/api\/v1\/fonts\/[0-9a-f]{32}$/, (route) => {
+  await page.route(/\/shell-pamc\/api\/v1\/fonts\/[0-9a-f]{32}$/, (route) => {
     const id = new URL(route.request().url()).pathname.split('/').pop();
     library = library.filter((font) => font.id !== id);
     for (const [role, ref] of Object.entries(preferences.omc_fonts ?? {})) {
@@ -71,7 +71,7 @@ export async function fontLibrary({ base, page, check }) {
     }
     return route.fulfill({ status: 204, body: '' });
   });
-  await page.route('**/omc/api/v1/fonts/*/faces/*', (route) => route.fulfill({ status: 200, contentType: 'font/woff2', body: shard }));
+  await page.route('**/shell-pamc/api/v1/fonts/*/faces/*', (route) => route.fulfill({ status: 200, contentType: 'font/woff2', body: shard }));
 
   await page.goto(`${base}/omc-settings`, { waitUntil: 'domcontentloaded' });
   await page.locator('.omc-settings-page').waitFor({ timeout: 20_000 });

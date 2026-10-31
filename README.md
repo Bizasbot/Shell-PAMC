@@ -1,10 +1,10 @@
 <div align="center">
 
 <a href="#gh-light-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Shell-PAMC" width="340">
 </a>
 <a href="#gh-dark-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Shell-PAMC" width="340">
 </a>
 
 ### Manage APIs and OAuth in one place, visualize requests, cost and usage
@@ -13,10 +13,10 @@ MCP · Visualization · Management
 
 <br />
 
-[![Release](https://img.shields.io/github/v/release/WizisCool/oh-my-cpa?label=release)](https://github.com/WizisCool/oh-my-cpa/releases)
-[![CI](https://github.com/WizisCool/oh-my-cpa/actions/workflows/ci.yml/badge.svg)](https://github.com/WizisCool/oh-my-cpa/actions/workflows/ci.yml)
-[![Stars](https://img.shields.io/github/stars/WizisCool/oh-my-cpa?style=flat&label=stars)](https://github.com/WizisCool/oh-my-cpa/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/wiziscool/oh-my-cpa?style=flat&logo=docker&logoColor=white)](https://hub.docker.com/r/wiziscool/oh-my-cpa)
+[![Release](https://img.shields.io/github/v/release/Bizasbot/Shell-PAMC?label=release)](https://github.com/Bizasbot/Shell-PAMC/releases)
+[![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
+[![Container image](https://img.shields.io/badge/ghcr.io-bizasbot%2Fshell--pamc-2496ED?style=flat&logo=docker&logoColor=white)](https://github.com/Bizasbot/Shell-PAMC/pkgs/container/shell-pamc)
 [![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
@@ -32,13 +32,13 @@ MCP · Visualization · Management
 <br />
 
 <a href="https://omc-demo.junze.dev">
-  <img src="docs/images/readme/hero-split.en.webp" alt="The Oh My CPA dashboard, half in the light theme and half in the dark theme" width="100%">
+  <img src="docs/images/readme/hero-split.en.webp" alt="The Shell-PAMC dashboard, half in the light theme and half in the dark theme" width="100%">
 </a>
 
 </div>
 
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) (CPA) is an API gateway: it
-adapts protocols, holds credentials and proxies requests. **Oh My CPA** (OMC) is a web
+adapts protocols, holds credentials and proxies requests. **Shell-PAMC** (OMC) is a web
 console for it. OMC manages the gateway's providers, credentials and configuration, and
 records the usage and cost of every request. It is a single Go
 binary with the React console embedded and a local SQLite database, runs offline, and
@@ -85,8 +85,8 @@ Paste the following into Claude Code, Codex, Cursor or another coding agent. The
 inspects the machine, picks the matching method and installs it:
 
 ```text
-Install Oh My CPA for me by following
-https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/docs/install-for-agents.md
+Install Shell-PAMC for me by following
+https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/docs/install-for-agents.md
 ```
 
 ### Install with Docker Compose
@@ -120,23 +120,23 @@ services:
       - ./logs:/CLIProxyAPI/logs
       - ./plugins:/CLIProxyAPI/plugins
 
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     depends_on:
       - cli-proxy-api
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -146,46 +146,46 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 In that directory, download CPA's starter configuration, generate the two keys and start
 both services:
 
 ```bash
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o config.yaml
-printf 'CPA_MANAGEMENT_KEY=%s\nOMCPA_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
+printf 'CPA_MANAGEMENT_KEY=%s\nSHELLPAMC_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
 chmod 600 .env
 docker compose up -d
 ```
 
-Open **`http://127.0.0.1:8080/omc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
+Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
 from `.env`. Providers and client keys are added in the console; clients send requests
 to CPA at `http://127.0.0.1:8317`.
 
 #### CLIProxyAPI is already installed
 
 Add the services under `services:` in the Compose file that runs CPA, and merge
-`oh-my-cpa-data:` into the top-level `volumes:` key if one exists. `cli-proxy-api` is
+`shell-pamc-data:` into the top-level `volumes:` key if one exists. `cli-proxy-api` is
 the service name in CPA's own Compose file; replace it if the service is named
 differently.
 
 ```yaml
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -195,47 +195,47 @@ differently.
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 Add two lines to `.env` in the same directory:
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
-OMCPA_MASTER_KEY=<output of: openssl rand -hex 32>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
+SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 ```
 
-Add the `oh-my-cpa-updater` service from the snippet as well to update from the console.
-Run `docker compose up -d oh-my-cpa oh-my-cpa-updater`, which leaves the CPA container
+Add the `shell-pamc-updater` service from the snippet as well to update from the console.
+Run `docker compose up -d shell-pamc shell-pamc-updater`, which leaves the CPA container
 running as it is.
-Open **`http://127.0.0.1:8080/omc/`** and sign in with the management key.
+Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
 
 #### Standalone
 
-Save the following as `compose.yml` in a new directory. `OMCPA_CPA_BASE_URL` is CPA's
+Save the following as `compose.yml` in a new directory. `SHELLPAMC_CPA_BASE_URL` is CPA's
 address as seen from inside the container: the value below reaches a CPA on the same
 machine that listens on all interfaces, and [reaching CPA](docs/install.md#reaching-cpa)
 lists the other cases.
 
 ```yaml
 services:
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
-      OMCPA_CPA_BASE_URL: http://host.docker.internal:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://host.docker.internal:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -245,23 +245,23 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 Create `.env` in the same directory:
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
-OMCPA_MASTER_KEY=<output of: openssl rand -hex 32>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
+SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 ```
 
-Run `docker compose up -d`, then open **`http://127.0.0.1:8080/omc/`** and sign in with
+Run `docker compose up -d`, then open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with
 the management key.
 
 ### Updating
 
-With the `oh-my-cpa-updater` service in place, **System Information** in the console shows
-**Update now** beside a newer release of Oh My CPA or CLIProxyAPI. The updater pulls the
+With the `shell-pamc-updater` service in place, **System Information** in the console shows
+**Update now** beside a newer release of Shell-PAMC or CLIProxyAPI. The updater pulls the
 image, replaces the container with its settings, volumes and networks unchanged, and
 restores the previous container if the new one does not start.
 
@@ -269,17 +269,17 @@ A deployment installed before this service existed gains it with one command on 
 Docker host; the Compose file is not edited:
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-The command adds an `oh-my-cpa-updater` container and brings Oh My CPA up to the current
-release in the same step. `docker rm -f oh-my-cpa-updater` removes it. An image pinned to
+The command adds an `shell-pamc-updater` container and brings Shell-PAMC up to the current
+release in the same step. `docker rm -f shell-pamc-updater` removes it. An image pinned to
 a version tag is never changed from the console. [Upgrading](docs/install.md#upgrading)
 describes each case and the manual alternative.
 
 ### Install a native executable
 
-[Tagged releases](https://github.com/WizisCool/oh-my-cpa/releases) include executables
+[Tagged releases](https://github.com/Bizasbot/Shell-PAMC/releases) include executables
 for macOS (Darwin), Windows, Linux and FreeBSD, on amd64 and arm64. Each archive embeds
 the console and includes an environment template; verify its SHA-256 hash against the
 release's `checksums.txt`. No Go, Node or Docker is required. CPA must be installed
@@ -289,16 +289,16 @@ for configuration, permissions and upgrades.
 ### Notes
 
 > [!IMPORTANT]
-> Back up `.env`. `OMCPA_MASTER_KEY` encrypts the database, and the data cannot be read
+> Back up `.env`. `SHELLPAMC_MASTER_KEY` encrypts the database, and the data cannot be read
 > without it.
 
 CPA hands each usage record to a single reader. If another usage tracker reads the same
-CPA, stop it, or add `OMCPA_USAGE_INGEST_MODE: "off"` under `environment:` to use OMC
+CPA, stop it, or add `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` to use OMC
 for management only. Other management panels do not conflict.
 
-`oh-my-cpa-updater` mounts the Docker socket, which amounts to control of Docker on that
+`shell-pamc-updater` mounts the Docker socket, which amounts to control of Docker on that
 host. Console updates are turned off by deleting the service from the Compose file and
-removing its running container with `docker rm -f oh-my-cpa-updater`; Compose leaves a
+removing its running container with `docker rm -f shell-pamc-updater`; Compose leaves a
 container whose service was deleted running. Updates are then applied with
 `docker compose pull && docker compose up -d`.
 
@@ -312,7 +312,7 @@ troubleshooting.
 <summary><b>Gateway & providers</b></summary>
 
 - **AI providers**: Codex, Claude, Gemini, Meta Muse, xAI, Vertex AI, Gemini Interactions, DeepSeek and OpenAI-compatible services, each with credentials, advanced model options, runtime retry/error policies, priority, weight, proxy and an enable switch enforced by the gateway.
-- **OAuth management**: sign in from the console for Codex, Claude, Antigravity, xAI, Kimi (kimi.com and kimi.ai), Devin and Meta Muse, or import a Vertex service account key. Auth files, manual token refresh, model lists, Meta quota, live xAI/Antigravity plan readings and credential-specific aliases are managed per credential; shared model aliases and exclusion rules apply provider-wide. Window capacity is estimated for Codex, Claude and supported Antigravity groups, with the previous cycle shown as a labelled reference. Quota readings refresh themselves about a minute after a window resets and every six hours by default, adjustable in OMC Settings. Codex/Claude window warmup adds opt-in reset and daily schedules, credential overrides and an optional confirmed tiny request. Approved schedules check current quota and billing before sending, then observe window activation.
+- **OAuth management**: sign in from the console for Codex, Claude, Antigravity, xAI, Kimi (kimi.com and kimi.ai), Devin and Meta Muse, or import a Vertex service account key. Auth files, manual token refresh, model lists, Meta quota, live xAI/Antigravity plan readings and credential-specific aliases are managed per credential; shared model aliases and exclusion rules apply provider-wide. Window capacity is estimated for Codex, Claude and supported Antigravity groups, with the previous cycle shown as a labelled reference. Quota readings refresh themselves about a minute after a window resets and every six hours by default, adjustable in Shell-PAMC Settings. Codex/Claude window warmup adds opt-in reset and daily schedules, credential overrides and an optional confirmed tiny request. Approved schedules check current quota and billing before sending, then observe window activation.
 - **Client keys**: create, name and revoke gateway API keys. Names appear in request records and filters.
 - **Model catalog**: pull model lists straight from upstream providers.
 - **Plugins**: installed plugins, typed settings forms, and trusted plugin pages with native CPA management/model-directory compatibility. See [the trust boundary](docs/operations.md#plugin-pages).
@@ -374,16 +374,16 @@ with ready-to-copy configuration.
 Claude Code:
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://cpa.example.com/omc/api/mcp \
-  --header "Authorization: Bearer $OMCPA_CPA_MANAGEMENT_KEY"
+claude mcp add --transport http shell-pamc https://cpa.example.com/shell-pamc/api/mcp \
+  --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Codex (`~/.codex/config.toml`):
 
 ```toml
-[mcp_servers.oh-my-cpa]
-url = "https://cpa.example.com/omc/api/mcp"
-bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
+[mcp_servers.shell-pamc]
+url = "https://cpa.example.com/shell-pamc/api/mcp"
+bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Clients configured in JSON, such as Cursor:
@@ -391,8 +391,8 @@ Clients configured in JSON, such as Cursor:
 ```json
 {
   "mcpServers": {
-    "oh-my-cpa": {
-      "url": "https://cpa.example.com/omc/api/mcp",
+    "shell-pamc": {
+      "url": "https://cpa.example.com/shell-pamc/api/mcp",
       "headers": { "Authorization": "Bearer <CPA management key>" }
     }
   }
@@ -407,12 +407,12 @@ The binary carries a stdio bridge that forwards to the console:
 ```json
 {
   "mcpServers": {
-    "oh-my-cpa": {
-      "command": "/path/to/oh-my-cpa",
+    "shell-pamc": {
+      "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
-        "OMCPA_SERVER_URL": "https://cpa.example.com/omc",
-        "OMCPA_CPA_MANAGEMENT_KEY": "<CPA management key>"
+        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/shell-pamc",
+        "SHELLPAMC_CPA_MANAGEMENT_KEY": "<CPA management key>"
       }
     }
   }
@@ -432,13 +432,13 @@ trusted agents and serve the console over HTTPS before connecting one remotely.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_CPA_BASE_URL` | required | CPA's address |
-| `OMCPA_CPA_MANAGEMENT_KEY` | required | CPA's management key, and the console's sign-in password |
-| `OMCPA_MASTER_KEY` | required | At-rest encryption key (`openssl rand -hex 32`) |
-| `OMCPA_BASE_PATH` | `/omc` | Sub-path the console is served under |
-| `OMCPA_DATA_DIR` | `./data` | Directory of the SQLite database; the Compose files set `/data` |
-| `OMCPA_PUBLIC_URL` | unset | The address browsers use; `https://` marks the session cookie `Secure` |
-| `OMCPA_USAGE_INGEST_MODE` | `auto` | `off` when another service collects this CPA's usage |
+| `SHELLPAMC_CPA_BASE_URL` | required | CPA's address |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | required | CPA's management key, and the console's sign-in password |
+| `SHELLPAMC_MASTER_KEY` | required | At-rest encryption key (`openssl rand -hex 32`) |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Sub-path the console is served under |
+| `SHELLPAMC_DATA_DIR` | `./data` | Directory of the SQLite database; the Compose files set `/data` |
+| `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use; `https://` marks the session cookie `Secure` |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another service collects this CPA's usage |
 | `TZ` | system zone | Server calendar; keep it equal to CPA's. Containers default to UTC |
 
 The full reference, with deployment constraints and operational notes, is
@@ -447,15 +447,15 @@ The full reference, with deployment constraints and operational notes, is
 ## Architecture
 
 ```text
-Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Oh My CPA (:8080)
-                                                 ├─ Embedded React SPA (/omc/)
+Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Shell-PAMC (:8080)
+                                                 ├─ Embedded React SPA (/shell-pamc/)
                                                  ├─ SQLite WAL (/data)
                                                  └─ Usage collector ──▶ CLIProxyAPI (:8317)
 ```
 
 - **Single binary**: the React console is embedded in the Go executable.
 - **Single replica**: SQLite in WAL mode, one process per data directory.
-- **Sub-path native**: served under `/omc` by default (`OMCPA_BASE_PATH`), so it shares a host with CPA.
+- **Sub-path native**: served under `/shell-pamc` by default (`SHELLPAMC_BASE_PATH`), so it shares a host with CPA.
 - **Allowlisted facade**: ordinary console APIs project safe DTOs; trusted plugin pages use the bounded native contract. Arbitrary target URLs remain refused.
 
 [`docs/architecture.md`](docs/architecture.md) has the module map, data flows and invariants.
@@ -482,7 +482,7 @@ Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Oh My CPA (
 | [`AGENTS.md`](AGENTS.md) | The contract coding agents follow in this repository |
 | [`docs/architecture.md`](docs/architecture.md) | Module boundaries, data flows and invariants |
 | [`CONTEXT.md`](CONTEXT.md) · [`docs/design.md`](docs/design.md) | Domain vocabulary · visual system |
-| [`docs/releasing.md`](docs/releasing.md) | Tag-triggered Docker Hub images, native archives and GitHub releases |
+| [`docs/releasing.md`](docs/releasing.md) | Tag-triggered GHCR images, native archives and GitHub releases |
 | [`docs/ops/cloudflare-demo.md`](docs/ops/cloudflare-demo.md) | How the public demo is deployed |
 
 ## Contributing
@@ -493,7 +493,7 @@ pnpm 11+:
 ```bash
 pnpm install --frozen-lockfile
 cp .env.example .env
-pnpm dev          # Air + Vite with hot reload at http://127.0.0.1:5173/omc/
+pnpm dev          # Air + Vite with hot reload at http://127.0.0.1:5173/shell-pamc/
 ```
 
 Run `pnpm verify` and `pnpm check:ui` before pushing.
@@ -506,7 +506,7 @@ public issue.
 
 ## Acknowledgements
 
-Oh My CPA is built on [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), which
+Shell-PAMC is built on [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), which
 handles protocol adaptation, credentials and request proxying.
 
 Thanks also to the [Linux.do community](https://linux.do).

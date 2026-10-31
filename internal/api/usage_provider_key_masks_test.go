@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 /**
@@ -198,7 +198,7 @@ type providerKeyMaskPage struct {
 
 func fetchProviderKeyMaskPage(t *testing.T, client *http.Client, baseURL string) providerKeyMaskPage {
 	t.Helper()
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?limit=50")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?limit=50")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("usage events status = %d, body = %s", response.StatusCode, payload)
 	}
@@ -231,7 +231,7 @@ func TestUsageEventsResolveProviderKeyMask(t *testing.T) {
 	client, baseURL, repo := startDashboardTestServer(t, providerKeyMaskFixture(t, reads, 0))
 	seedProviderKeyMaskEvents(t, repo)
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?limit=50")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?limit=50")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.StatusCode, payload)
 	}
@@ -336,7 +336,7 @@ func TestUsageEventDetailMatchesListProviderKeyMask(t *testing.T) {
 
 	resolved, omitted := 0, 0
 	for key, id := range ids {
-		response, payload := getJSON(t, client, fmt.Sprintf("%s/omc/api/v1/usage/events/%d", baseURL, id))
+		response, payload := getJSON(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/events/%d", baseURL, id))
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("detail %s status = %d, body = %s", key, response.StatusCode, payload)
 		}
@@ -507,7 +507,7 @@ func TestProviderKeyMasksSurviveAnUnreadableGateway(t *testing.T) {
 	seedProviderKeyMaskEvents(t, repo)
 
 	started := time.Now()
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?limit=50")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?limit=50")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("an unreadable gateway failed the request list: status %d, body %s", response.StatusCode, payload)
 	}
@@ -603,7 +603,7 @@ func TestProviderKeyMaskIndexReadsOnlyTheListsThePageNeeds(t *testing.T) {
 	}}); err != nil {
 		t.Fatal(err)
 	}
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?limit=50")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?limit=50")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.StatusCode, payload)
 	}

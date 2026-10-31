@@ -9,7 +9,7 @@ import (
 )
 
 func TestManagerIssuesAndValidatesScopedSession(t *testing.T) {
-	manager, err := New("cpa-management-key", "/omc", "https://example.test/omc")
+	manager, err := New("cpa-management-key", "/shell-pamc", "https://example.test/shell-pamc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,17 +21,17 @@ func TestManagerIssuesAndValidatesScopedSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	setCookie := response.Header().Get("Set-Cookie")
-	for _, expected := range []string{"Path=/omc/", "HttpOnly", "Secure", "SameSite=Strict"} {
+	for _, expected := range []string{"Path=/shell-pamc/", "HttpOnly", "Secure", "SameSite=Strict"} {
 		if !strings.Contains(setCookie, expected) {
 			t.Fatalf("session cookie %q does not contain %q", setCookie, expected)
 		}
 	}
-	request := httptest.NewRequest(http.MethodGet, "https://example.test/omc/", nil)
+	request := httptest.NewRequest(http.MethodGet, "https://example.test/shell-pamc/", nil)
 	request.AddCookie(response.Result().Cookies()[0])
 	if !manager.Valid(request) {
 		t.Fatal("issued cookie was not valid")
 	}
-	request = httptest.NewRequest(http.MethodGet, "https://example.test/omc/", nil)
+	request = httptest.NewRequest(http.MethodGet, "https://example.test/shell-pamc/", nil)
 	request.AddCookie(&http.Cookie{Name: CookieName, Value: "v2.invalid.invalid.invalid"})
 	if manager.Valid(request) {
 		t.Fatal("invalid cookie was accepted")
@@ -41,7 +41,7 @@ func TestManagerIssuesAndValidatesScopedSession(t *testing.T) {
 func TestManagerAcceptsShortCpaKeys(t *testing.T) {
 	// CPA owns the strength policy for its management key; short keys such as
 	// "admin" are legitimate local credentials and must still work.
-	manager, err := New("admin", "/omc", "")
+	manager, err := New("admin", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestManagerAcceptsShortCpaKeys(t *testing.T) {
 	if err := manager.Issue(response); err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequest(http.MethodGet, "http://example.test/omc/", nil)
+	request := httptest.NewRequest(http.MethodGet, "http://example.test/shell-pamc/", nil)
 	request.AddCookie(response.Result().Cookies()[0])
 	if !manager.Valid(request) {
 		t.Fatal("session issued for a short key was not valid")
@@ -60,16 +60,16 @@ func TestManagerAcceptsShortCpaKeys(t *testing.T) {
 }
 
 func TestManagerRejectsEmptyConfiguration(t *testing.T) {
-	if _, err := New("", "/omc", ""); err == nil {
+	if _, err := New("", "/shell-pamc", ""); err == nil {
 		t.Fatal("empty management key unexpectedly accepted")
 	}
-	if _, err := New("   ", "/omc", ""); err == nil {
+	if _, err := New("   ", "/shell-pamc", ""); err == nil {
 		t.Fatal("blank management key unexpectedly accepted")
 	}
 }
 
 func TestManagerExpiry(t *testing.T) {
-	manager, err := New("cpa-management-key", "/omc", "")
+	manager, err := New("cpa-management-key", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestManagerExpiry(t *testing.T) {
 	if err := manager.Issue(response); err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequest(http.MethodGet, "http://example.test/omc/", nil)
+	request := httptest.NewRequest(http.MethodGet, "http://example.test/shell-pamc/", nil)
 	request.AddCookie(response.Result().Cookies()[0])
 	if !manager.Valid(request) {
 		t.Fatal("fresh cookie was not valid")
@@ -91,7 +91,7 @@ func TestManagerExpiry(t *testing.T) {
 }
 
 func TestManagerRotationInvalidatesSessions(t *testing.T) {
-	old, err := New("old-cpa-key", "/omc", "")
+	old, err := New("old-cpa-key", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,10 +99,10 @@ func TestManagerRotationInvalidatesSessions(t *testing.T) {
 	if err := old.Issue(response); err != nil {
 		t.Fatal(err)
 	}
-	request := httptest.NewRequest(http.MethodGet, "http://example.test/omc/", nil)
+	request := httptest.NewRequest(http.MethodGet, "http://example.test/shell-pamc/", nil)
 	request.AddCookie(response.Result().Cookies()[0])
 
-	rotated, err := New("new-cpa-key", "/omc", "")
+	rotated, err := New("new-cpa-key", "/shell-pamc", "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,8 +1,8 @@
-# Oh My CPA · Brand & Theme Tokens
+# Shell-PAMC · Brand & Theme Tokens
 
 Single source of truth for the visual system. The information density and engineer-first
 patterns draw on minimalist developer consoles; the brand wordmark, the palettes, the CPA
-information architecture and the security boundaries belong to Oh My CPA.
+information architecture and the security boundaries belong to Shell-PAMC.
 The palette is declared and derived in code at:
 
 - `web/src/theme/palette.ts` — the nine authored tokens per palette, the eighteen derived tokens, and
@@ -164,7 +164,7 @@ accent fill is light cannot carry a white label. It is **computed, never authore
 whichever of white and near-black reads better on the fill, and the fill is deepened until one of them
 clears **4.5:1**. Every palette's label clears it, and the registry check fails a palette that does not.
 
-The OMC Settings page presents two groups of named cards with a four-swatch preview, one per mode, and
+The Shell-PAMC Settings page presents two groups of named cards with a four-swatch preview, one per mode, and
 each group's last card is the operator's own. The header's control presents the mode alone. The appearance
 controls must not introduce a second palette source: both read the registry, so new palettes extend
 `web/src/theme/palette.ts`, and the derivation, contrast and mirror checks in
@@ -784,7 +784,7 @@ chosen span would turn into a report. There is no list of recent requests; that 
 │  [◎] gpt-5.6-luna     12 req · 1.2 s ●╮                     ╭─● [o] Codex  sk-…c002  Answered last │
 │  [✳] claude-opus-5.5   6 req · 2.0 s ●─╲     ┌──────────┐ ╱                                       │
 │  [◇] glm-5.3-flash     2 req · 0.6 s ●──▶    │ [OMC]    │───● [o] Codex  sk-…c001  Rate limited ·   │
-│                                               │ Oh My CPA│ ╲                      back in 21 s      │
+│                                               │ Shell-PAMC│ ╲                      back in 21 s      │
 │                                               │ Round    │  ╰─● [A] Claude sk-…cl01  6 req · 2.0 s  │
 │                                               └──────────┘                                         │
 └────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -812,7 +812,7 @@ lanes, the accent on the gateway, and status colour on a node surface where some
   state column says the one thing that is exceptional - `Rate limited`, `Quota exceeded` or `Cooling
   down` with a countdown, in the warn tone - or else that it answered last (accent), or its count and
   mean latency.
-- **The gateway** is the OMC mark on its own small tinted tile, the product name `Oh My CPA`, the
+- **The gateway** is the OMC mark on its own small tinted tile, the product name `Shell-PAMC`, the
   routing strategy CPA is configured with as a quiet chip, and the minute's attempts. A rail on each side is where the lanes dock, as long as
   the fan of lanes it receives. While any request is on the map its rails and glow brighten, and they settle back over 600ms once the last one
   has gone home.
@@ -1169,12 +1169,12 @@ and corner and becomes the screen.
   accent fill never marks the selection, because the rail is chrome and colour belongs to data.
 - The rail is the operator's: which of its entries a deployment shows is a stored preference
   (`omc_nav_hidden`, holding the *hidden* routes, so an entry a later release adds arrives
-  already visible), set from the OMC settings page - one row that opens the rail's own panel,
+  already visible), set from the Shell-PAMC Settings page - one row that opens the rail's own panel,
   rather than sixteen rows grown onto a page of one-line settings - and applied to the expanded
   rail, the collapsed rail and the phone sheet from one filtered model. The panel lists the model
   the rail draws, including the pages a running plugin registered, so the two cannot disagree
   about which destinations exist. A group whose every entry is hidden goes with
-  them, the OMC settings entry itself is shown switched on and inert - a preference that could
+  them, the Shell-PAMC Settings entry itself is shown switched on and inert - a preference that could
   hide its own surface would leave the console unable to undo it - and everything else on the
   shell reads the unfiltered model, so a page opened by URL still names itself in the breadcrumb
   and the document title.
@@ -1183,7 +1183,7 @@ and corner and becomes the screen.
 
 ### OpenCode-inspired patterns
 
-Oh My CPA draws from OpenCode's minimalist, high-density, engineer-first console philosophy while preserving Oh My CPA's warm charcoal palette, security boundaries, and technical architecture:
+Shell-PAMC draws from OpenCode's minimalist, high-density, engineer-first console philosophy while preserving Shell-PAMC's warm charcoal palette, security boundaries, and technical architecture:
 
 1. **Open List Pattern**
    - Lists of models, credentials, configuration items, etc., favor open rows over nested outer Card wrappers.
@@ -1205,8 +1205,8 @@ Oh My CPA draws from OpenCode's minimalist, high-density, engineer-first console
    - Avoid marketing boilerplate or lengthy guides inside UI cards.
 7. **Top Context Slot**
    - The left side hosts the navigation toggle and the current group/page breadcrumb; product artwork belongs to the side rail or the phone navigation sheet;
-   - The right side houses five fixed-width actions: the project GitHub link, refresh, the theme mode control, the language menu, and sign out. **The mode control cycles and the language control is a menu**, and that asymmetry is deliberate. The theme was a menu while the console carried six palettes and a toggle could only answer "the other one"; the palettes now belong to the modes and are chosen on the OMC Settings page, where each candidate repaints the whole console as it is picked, so the header's remaining question is light or dark - with follow-the-system as the third state, one icon per state (a sun, a moon, a desktop). The control's tooltip is its own name and deliberately not a sentence about its state; the states are named in words on the settings page's own row. The language stays a menu because four languages, one of which the reader may not read, is exactly the case a list answers: it names every choice by its **endonym** - its own name in its own script, never a translation. The settings page's language picker lists the same endonyms.
-   - The project GitHub link uses the existing local Octicons mark and opens `https://github.com/WizisCool/oh-my-cpa` in a new tab with `noopener noreferrer`; it shows no tooltip — the mark names it and the unfolding count answers the hover — while its accessible name follows the reading language, and it remains available in the demonstration. At rest the link is the mark alone; pointed at or focused, it unfolds the project's star count before the mark over `base` — a star glyph and the count, exact below a thousand and truncated thousands with two decimals above (`1.23k`) — once the server has read one, and under reduced motion it still waits for the pointer or focus but appears at once, without the transition. It is the first control of a right-aligned row and the label leads, so unfolding widens it away from the others and the mark stays under the pointer; a device with no hover shows the count throughout. A hairline separates the link from the console's own actions. All five actions are one component, `web/src/components/common/HeaderAction.tsx`: 32px high, borderless at rest, the same hover and the same label treatment for the star count and the language code. **Every header action keeps one width in every reading language.** Labels are the one thing whose length changes with the language, so sign out is an icon button named by its tooltip, and the language trigger holds its code in a fixed slot. A control that resizes moves the actions beside it, which is a real defect rather than a cosmetic one: the pointer is already on one of them.
+   - The right side houses five fixed-width actions: the project GitHub link, refresh, the theme mode control, the language menu, and sign out. **The mode control cycles and the language control is a menu**, and that asymmetry is deliberate. The theme was a menu while the console carried six palettes and a toggle could only answer "the other one"; the palettes now belong to the modes and are chosen on the Shell-PAMC Settings page, where each candidate repaints the whole console as it is picked, so the header's remaining question is light or dark - with follow-the-system as the third state, one icon per state (a sun, a moon, a desktop). The control's tooltip is its own name and deliberately not a sentence about its state; the states are named in words on the settings page's own row. The language stays a menu because four languages, one of which the reader may not read, is exactly the case a list answers: it names every choice by its **endonym** - its own name in its own script, never a translation. The settings page's language picker lists the same endonyms.
+   - The project GitHub link uses the existing local Octicons mark and opens `https://github.com/Bizasbot/Shell-PAMC` in a new tab with `noopener noreferrer`; it shows no tooltip — the mark names it and the unfolding count answers the hover — while its accessible name follows the reading language, and it remains available in the demonstration. At rest the link is the mark alone; pointed at or focused, it unfolds the project's star count before the mark over `base` — a star glyph and the count, exact below a thousand and truncated thousands with two decimals above (`1.23k`) — once the server has read one, and under reduced motion it still waits for the pointer or focus but appears at once, without the transition. It is the first control of a right-aligned row and the label leads, so unfolding widens it away from the others and the mark stays under the pointer; a device with no hover shows the count throughout. A hairline separates the link from the console's own actions. All five actions are one component, `web/src/components/common/HeaderAction.tsx`: 32px high, borderless at rest, the same hover and the same label treatment for the star count and the language code. **Every header action keeps one width in every reading language.** Labels are the one thing whose length changes with the language, so sign out is an icon button named by its tooltip, and the language trigger holds its code in a fixed slot. A control that resizes moves the actions beside it, which is a real defect rather than a cosmetic one: the pointer is already on one of them.
    - On phones the action cluster keeps its full control widths with a 4px gap and 12px safe-area-aware edge padding; the navigation toggle does not shrink, and the current breadcrumb truncates with an ellipsis rather than overlapping actions. Connection status and version are the System Information page's, not the header's: this slot carries actions. Never display fabricated avatars, dummy balances, or mock workspace selectors before real capabilities exist.
 8. **Form Workbench & Setting Group Panels**
    - **Full-width Toolbar & Viewport Anchoring**: The top action toolbar and its 1px bottom border span 100% of the viewport, with right-side actions (search / refresh / save) pinned to the far right (vertically aligned with the global header actions) to eliminate awkward empty gaps. The form workbench below maintains a three-track grid: 216px sticky section navigation + 920px reading width + 216px balancing gutter (used solely to center content on wide viewports), establishing an anchored layout that keeps forms focused and legible.
@@ -2135,7 +2135,7 @@ on close.
 returns on release, so a click is felt before what it starts has answered; a field never does,
 which is why the time window, drawn as a field, is exempt. A side sheet decelerates into place on
 `--ease-out` and accelerates away, instead of antd's symmetric `ease`. A palette change - the
-header's mode button, a mode or palette choice in OMC Settings - cross-fades the whole page over
+header's mode button, a mode or palette choice in Shell-PAMC Settings - cross-fades the whole page over
 `slow` through the View Transitions API, one composited layer rather than every element easing its
 own colours; for the two frames the repaint takes, `data-theme-switching` on the root holds every
 element's own transition off, so nothing smears behind the fade. Under reduced motion, or without the
@@ -2448,7 +2448,7 @@ first notch — says so with `consumeWheel`, since `preventDefault` from a React
 The glide is on by default and is **not** switched off by `prefers-reduced-motion`: it is the
 reader's own input following their hand, as inertial scrolling stays on under Reduce Motion on
 macOS and iOS, and on Windows the reduced-motion signal is the same switch that removed the
-browser's glide. The OMC settings page's **Smooth scrolling** row (`On` / `Follow system` / `Off`,
+browser's glide. The Shell-PAMC Settings page's **Smooth scrolling** row (`On` / `Follow system` / `Off`,
 the `omc_scroll_smoothing` preference) hands the decision to that signal or turns the glide off.
 The return-to-top gesture above is page-initiated travel and keeps honouring reduced motion.
 
@@ -2491,7 +2491,7 @@ Three rules keep the two identifiers from being confused:
 | Unnamed falls back to the mask, never to a fingerprint | The fingerprint is a hashed identity; printing it would name a filter in a form the operator never chose. |
 
 **Counts must state their scope.** Per-key request counts and last-used times come
-from Oh My CPA's own stored events in one window, not from CPA and not from the
+from Shell-PAMC's own stored events in one window, not from CPA and not from the
 key's whole life. The table says so next to them: a count that reads as a lifetime
 total would be a fact the system does not have. A key with no matching records
 shows "not linked" rather than a fabricated `0` or an invented creation date — CPA
@@ -3022,7 +3022,7 @@ footprint is not repeated as allocated pages or record counts; internal geometry
 and connection settings belong in the sanitized diagnostics bundle.
 
 Component health has four divided rows, each with a component name, semantic status and one
-short inline operational summary. The gateway shows its credential count, Oh My CPA its start
+short inline operational summary. The gateway shows its credential count, Shell-PAMC its start
 age and memory, SQLite its request count, and the collector the latest usage age. Each summary
 uses at most two paired facts, with labels beside values rather than separate metric grids.
 Positive ingestion backlog and collection gaps appear as warning readings; healthy zero values

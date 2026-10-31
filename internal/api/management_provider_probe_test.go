@@ -249,7 +249,7 @@ func TestProbeProviderAuditsAttemptsAndOutcomes(t *testing.T) {
 	}
 	// The trail folds an attempt into its outcome by default; the unfolded
 	// read proves both rows were written.
-	resp, payload := doJSON(t, fixture.client, http.MethodGet, fixture.baseURL+"/omc/api/v1/management/audit/events?limit=10&fold=0", "")
+	resp, payload := doJSON(t, fixture.client, http.MethodGet, fixture.baseURL+"/shell-pamc/api/v1/management/audit/events?limit=10&fold=0", "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("audit events = %d %s", resp.StatusCode, payload)
 	}

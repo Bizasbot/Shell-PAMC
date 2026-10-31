@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // decodeFilterJSON reads an endpoint payload, failing the test rather than an
@@ -55,7 +55,7 @@ func TestUsageEventsRejectMalformedFilters(t *testing.T) {
 		"q=" + strings.Repeat("x", 300):     "at most",
 		"model=" + strings.Repeat("m", 300): "at most",
 	} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -73,7 +73,7 @@ func TestUsageEventsRejectOversizedMultiSelect(t *testing.T) {
 	for index := 0; index <= repository.MaxUsageEventFilterValues; index++ {
 		query += fmt.Sprintf("&model=m%d", index)
 	}
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?"+query)
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?"+query)
 	if response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -96,7 +96,7 @@ func TestUsageEventsMultiSelectUsesRepeatedParameters(t *testing.T) {
 	})
 
 	requestIDs := func(suffix string) []string {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -148,7 +148,7 @@ func TestUsageEventsGlobalSearchIsLiteralAndScoped(t *testing.T) {
 	seedEvents(t, repo, now, []repository.UsageDecoded{{Event: event}})
 
 	count := func(suffix string) int {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -177,7 +177,7 @@ func TestUsageEventsGlobalSearchIsLiteralAndScoped(t *testing.T) {
 		t.Fatalf("the explicit endpoint filter must still work, matched %d", got)
 	}
 	// The list payload never carries the endpoint or the client address.
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&endpoint=internal-relay")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&endpoint=internal-relay")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -212,7 +212,7 @@ func TestUsageEventsRangeFiltersAndCostConversion(t *testing.T) {
 	})
 
 	ids := func(suffix string) []string {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -268,7 +268,7 @@ func TestUsageEventsReversedRangeIsRejected(t *testing.T) {
 		"tokens_min=10&tokens_max=5",
 		"cost_min=0.5&cost_max=0.1",
 	} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -337,7 +337,7 @@ func TestUsageEventsNanoDollarCostBoundRoundTrip(t *testing.T) {
 		"cost_max=0.000000001",
 		"cost_min=0.000000001&cost_max=1.000000001",
 	} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -348,7 +348,7 @@ func TestUsageEventsNanoDollarCostBoundRoundTrip(t *testing.T) {
 	// one-nano floor selects nothing. If the parameter had been discarded the way a
 	// malformed one used to be, both records would come back, which is what makes
 	// this a real assertion rather than a status check.
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&cost_min=0.000000001")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&cost_min=0.000000001")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -359,7 +359,7 @@ func TestUsageEventsNanoDollarCostBoundRoundTrip(t *testing.T) {
 	if len(bounded.Items) != 0 {
 		t.Fatalf("an unpriced record must not satisfy a cost bound, got %d", len(bounded.Items))
 	}
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h")
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -373,7 +373,7 @@ func TestUsageEventsNanoDollarCostBoundRoundTrip(t *testing.T) {
 
 	// A value outside the grammar is a 400, not a silently ignored filter.
 	for _, suffix := range []string{"cost_min=1e-9", "cost_min=.", "cost_min=1.2.3"} {
-		response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&"+suffix)
+		response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&"+suffix)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Fatalf("%s: status = %d body %s", suffix, response.StatusCode, payload)
 		}
@@ -392,7 +392,7 @@ func TestUsageEventsEndpointFilterNarrowsWithoutLeaking(t *testing.T) {
 		})},
 	})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&endpoint=relay.example")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&endpoint=relay.example")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -421,7 +421,7 @@ func TestUsageFacetsCoverEveryDropdownDimension(t *testing.T) {
 		})},
 	})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/facets?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/facets?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d body %s", response.StatusCode, payload)
 	}
@@ -463,7 +463,7 @@ func TestUsageEventsModelAliasFacetAndFilter(t *testing.T) {
 		{Event: filterEventFor("plain", now.Add(-time.Minute), nil)},
 	})
 
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/facets?preset=24h")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/facets?preset=24h")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("facets status = %d body %s", response.StatusCode, payload)
 	}
@@ -477,7 +477,7 @@ func TestUsageEventsModelAliasFacetAndFilter(t *testing.T) {
 		t.Fatalf("alias facet = %+v", body.Facets.ModelAliases)
 	}
 
-	response, payload = getJSON(t, client, baseURL+"/omc/api/v1/usage/events?preset=24h&model_alias="+alias)
+	response, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/events?preset=24h&model_alias="+alias)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("filter status = %d body %s", response.StatusCode, payload)
 	}

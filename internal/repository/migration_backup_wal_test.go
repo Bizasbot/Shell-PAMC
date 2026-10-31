@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
 	"os"
 	"path/filepath"
 	"testing"

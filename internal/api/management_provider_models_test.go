@@ -34,7 +34,7 @@ func TestPullProviderModels(t *testing.T) {
 
 	// 1. Successful pull from endpoint
 	pullReq := fmt.Sprintf(`{"base_url":"%s/v1","api_key":"sk-test-upstream-key"}`, fakeUpstream.URL)
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", pullReq)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", pullReq)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("pull models status = %d body %s", resp.StatusCode, payload)
 	}
@@ -51,14 +51,14 @@ func TestPullProviderModels(t *testing.T) {
 	}
 
 	// 2. Reject missing base_url
-	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", `{"api_key":"sk-xxx"}`)
+	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", `{"api_key":"sk-xxx"}`)
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 for missing base_url, got %d", resp.StatusCode)
 	}
 
 	// 3. Upstream 401 returns bad gateway
 	badKeyReq := fmt.Sprintf(`{"base_url":"%s/v1","api_key":"wrong-key"}`, fakeUpstream.URL)
-	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", badKeyReq)
+	resp, _ = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", badKeyReq)
 	if resp.StatusCode != http.StatusBadGateway {
 		t.Fatalf("expected 502 for upstream unauthorized, got %d", resp.StatusCode)
 	}
@@ -109,7 +109,7 @@ func TestPullProviderModelsReportsInvalidURL(t *testing.T) {
 		t,
 		client,
 		http.MethodPost,
-		baseURL+"/omc/api/v1/management/providers/pull-models",
+		baseURL+"/shell-pamc/api/v1/management/providers/pull-models",
 		`{"base_url":"http://example.com/v1","api_key":"sk-provider-secret-1234"}`,
 	)
 	if resp.StatusCode != http.StatusBadRequest {
@@ -138,7 +138,7 @@ func TestPullProviderModelsReportsRedirectRefusal(t *testing.T) {
 
 	client, baseURL, _ := startProviderTestServer(t)
 	body := fmt.Sprintf(`{"base_url":%q,"api_key":"sk-provider-secret-1234"}`, redirectSource.URL)
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", body)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", body)
 	if resp.StatusCode != http.StatusBadGateway {
 		t.Fatalf("redirect refusal status = %d body %s", resp.StatusCode, payload)
 	}
@@ -252,12 +252,12 @@ func TestPullProviderModelsByProviderID(t *testing.T) {
 	client, baseURL, _ := startProviderTestServer(t)
 
 	updateClaude := fmt.Sprintf(`{"family":"claude","name":"Claude relay","base_url":"%s","keys":[{"api_key":"sk-ant-secret-1234"}]}`, fakeUpstream.URL)
-	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/claude-0", updateClaude)
+	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/claude-0", updateClaude)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update claude provider status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", `{"provider_id":"claude-0","base_url":"`+fakeUpstream.URL+`"}`)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", `{"provider_id":"claude-0","base_url":"`+fakeUpstream.URL+`"}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("claude pull by provider_id status = %d body %s", resp.StatusCode, payload)
 	}
@@ -274,12 +274,12 @@ func TestPullProviderModelsByProviderID(t *testing.T) {
 		t.Fatalf("anthropic auth headers missing: %#v", claudeAuthHeaders)
 	}
 	updateCodex := fmt.Sprintf(`{"family":"codex","name":"Codex relay","base_url":"%s","keys":[{"api_key":"sk-codex-secret-key-9999"}]}`, fakeUpstream.URL)
-	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/codex-0", updateCodex)
+	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/codex-0", updateCodex)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update codex provider status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers/pull-models", `{"provider_id":"codex-0","base_url":"`+fakeUpstream.URL+`"}`)
+	resp, payload = doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers/pull-models", `{"provider_id":"codex-0","base_url":"`+fakeUpstream.URL+`"}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("codex pull by provider_id status = %d body %s", resp.StatusCode, payload)
 	}

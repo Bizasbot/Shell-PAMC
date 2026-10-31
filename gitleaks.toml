@@ -1,4 +1,4 @@
-title = "Oh My CPA secret scanning"
+title = "Shell-PAMC secret scanning"
 
 [extend]
 useDefault = true

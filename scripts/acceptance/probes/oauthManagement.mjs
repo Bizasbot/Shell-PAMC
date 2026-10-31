@@ -507,7 +507,7 @@ async function verifyFullTokenCapacity({ base, page, check }) {
   const quotaHandler = (route) => route.fulfill({ json: { quotas: tokenQuota, total: tokenQuota.length } });
   await page.route(quotaPattern, quotaHandler);
   const setTokenStyle = (style) => page.evaluate(async (value) => {
-    const response = await fetch('/omc/api/v1/preferences/omc_token_style', {
+    const response = await fetch('/shell-pamc/api/v1/preferences/omc_token_style', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(value),

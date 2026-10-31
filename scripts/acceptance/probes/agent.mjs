@@ -298,7 +298,7 @@ export async function agentWorkspace({ base, page, check }) {
     && await targets.getByRole('option', { name: 'vision-alias', exact: true }).getAttribute('aria-selected') === 'true'
     && await page.getByRole('button', { name: 'Reasoning effort: High', exact: true }).count() === 1, `${await selection()} / ${keyName}`);
   await page.keyboard.press('Escape');
-  const preference = await page.evaluate(async () => (await (await fetch('/omc/api/v1/preferences')).json()).preferences);
+  const preference = await page.evaluate(async () => (await (await fetch('/shell-pamc/api/v1/preferences')).json()).preferences);
   check('the chosen target is remembered as the operator\'s own preference', preference?.agent_target?.model === 'vision-alias' && preference?.agent_target?.reasoning_effort === 'high', JSON.stringify(preference?.agent_target));
 }
 
@@ -374,7 +374,7 @@ export async function agentExternal({ base, page, check }) {
   const endpoint = `${new URL(base).origin}${new URL(base).pathname.replace(/\/$/, '')}/api/mcp`;
   check('the guide names this deployment\'s own MCP endpoint', await guide.getByTestId('agent-connect-endpoint').innerText() === endpoint, await guide.getByTestId('agent-connect-endpoint').innerText());
   const snippet = guide.getByTestId('agent-connect-snippet');
-  check('the default snippet connects Claude Code by URL without the key in it', (await snippet.innerText()).includes(`--transport http oh-my-cpa ${endpoint}`) && (await snippet.innerText()).includes('$OMCPA_CPA_MANAGEMENT_KEY'), await snippet.innerText());
+  check('the default snippet connects Claude Code by URL without the key in it', (await snippet.innerText()).includes(`--transport http shell-pamc ${endpoint}`) && (await snippet.innerText()).includes('$SHELLPAMC_CPA_MANAGEMENT_KEY'), await snippet.innerText());
   const clients = guide.getByRole('radio');
   const tiles = await clients.evaluateAll(elements => elements.map(element => ({ border: getComputedStyle(element).borderTopWidth, hasIcon: [...element.firstElementChild.children].some(mark => mark.getClientRects().length > 0), isClipped: element.scrollWidth > element.clientWidth })));
   check('each client is a bounded tile with its own mark and an unclipped name', tiles.length === 4 && tiles.every(tile => tile.border !== '0px' && tile.hasIcon && !tile.isClipped), JSON.stringify(tiles));
@@ -1037,7 +1037,7 @@ export async function agentViews({ base, page, check, expectProblem }) {
     && await panel.getByRole('img', { name: 'In progress' }).count() === 1 && await panel.getByRole('meter', { name: 'Daily budget' }).getAttribute('aria-valuenow') === '80');
   check('an icon is resolved from any Lucide name, and an unknown one is a neutral mark rather than a failure',
     await panel.locator('svg[data-icon="trending-up"] path').count() >= 1 && await panel.locator('svg[data-icon="neutral"]').count() === 1);
-  check('a panel link leads to a console page under the base path', (await panel.getByRole('link', { name: 'Open quota' }).getAttribute('href') ?? '').endsWith('/omc/quota'));
+  check('a panel link leads to a console page under the base path', (await panel.getByRole('link', { name: 'Open quota' }).getAttribute('href') ?? '').endsWith('/shell-pamc/quota'));
   check('a panel fits its column', await panel.evaluate(element => element.scrollWidth <= element.clientWidth));
 
   const sketch = page.getByRole('figure', { name: 'Routing sketch', exact: true });

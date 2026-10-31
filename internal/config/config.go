@@ -34,7 +34,7 @@ type Config struct {
 	Release        ReleaseConfig
 	Updater        UpdaterConfig
 	// GoogleFontsURL is the stylesheet API the font library installs Google Fonts
-	// families from (OMCPA_GOOGLE_FONTS_URL); a compatible mirror serves a deployment
+	// families from (SHELLPAMC_GOOGLE_FONTS_URL); a compatible mirror serves a deployment
 	// that cannot reach Google. Validated when the installer is built.
 	GoogleFontsURL string
 	// TrustedProxyCIDRs are the direct peer networks whose forwarding headers
@@ -43,14 +43,14 @@ type Config struct {
 	// IsDemoMode turns this process into the public demonstration build: the
 	// console is served from fixtures, so it needs no CPA, no management key and
 	// no provider credential, and the server refuses every operator surface that
-	// would touch real secret material. It is off unless OMCPA_DEMO_MODE is set,
+	// would touch real secret material. It is off unless SHELLPAMC_DEMO_MODE is set,
 	// which is what keeps the self-hosted default byte-for-byte unchanged.
 	IsDemoMode bool
 }
 
 // DefaultUpdaterURL is the updater sidecar's address: the name both an installed
 // sidecar and the Compose service answer to on a network shared with the console.
-const DefaultUpdaterURL = "http://oh-my-cpa-updater:8090"
+const DefaultUpdaterURL = "http://shell-pamc-updater:8090"
 
 // UpdaterConfig locates the sidecar that applies updates the console asks for.
 type UpdaterConfig struct {
@@ -61,14 +61,14 @@ type UpdaterConfig struct {
 }
 
 func loadUpdaterConfig() (UpdaterConfig, error) {
-	enabled, err := parseBoolEnv("OMCPA_UPDATER_ENABLED", true)
+	enabled, err := parseBoolEnv("SHELLPAMC_UPDATER_ENABLED", true)
 	if err != nil {
 		return UpdaterConfig{}, err
 	}
-	address := envOr("OMCPA_UPDATER_URL", DefaultUpdaterURL)
+	address := envOr("SHELLPAMC_UPDATER_URL", DefaultUpdaterURL)
 	parsed, err := url.Parse(address)
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return UpdaterConfig{}, fmt.Errorf("OMCPA_UPDATER_URL must be an http(s) URL, got %q", address)
+		return UpdaterConfig{}, fmt.Errorf("SHELLPAMC_UPDATER_URL must be an http(s) URL, got %q", address)
 	}
 	return UpdaterConfig{Enabled: enabled, URL: address}, nil
 }
@@ -101,7 +101,7 @@ type ReleaseConfig struct {
 // against; the console default is this project's own repository. A deployment that
 // runs a fork overrides them rather than editing code.
 const (
-	DefaultOMCRepository = "WizisCool/oh-my-cpa"
+	DefaultOMCRepository = "Bizasbot/Shell-PAMC"
 	DefaultCPARepository = "router-for-me/CLIProxyAPI"
 	// DefaultReleaseInterval is six hours: often enough to notice a release the same
 	// day, rare enough that the unauthenticated GitHub budget of sixty requests per
@@ -111,7 +111,7 @@ const (
 
 // DemoModeEnv is the switch that turns a self-hosted deployment into the public
 // demonstration. The default is deliberately off.
-const DemoModeEnv = "OMCPA_DEMO_MODE"
+const DemoModeEnv = "SHELLPAMC_DEMO_MODE"
 
 // UsageConfig controls the request-record pipeline that backs the dashboard and
 // every later analytics feature.
@@ -145,12 +145,12 @@ type CPAConfig struct {
 }
 
 // NormalizeBasePath returns a clean URL path without a trailing slash. An
-// empty environment value means the documented default (/omc); callers that
+// empty environment value means the documented default (/shell-pamc); callers that
 // explicitly need the site root should pass "/".
 func NormalizeBasePath(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return "/omc", nil
+		return "/shell-pamc", nil
 	}
 	if raw == "/" {
 		return "", nil
@@ -179,31 +179,31 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	basePathEnv := strings.TrimSpace(os.Getenv("OMCPA_BASE_PATH"))
+	basePathEnv := strings.TrimSpace(os.Getenv("SHELLPAMC_BASE_PATH"))
 	if demoMode && basePathEnv == "" {
 		// A pasted demo URL has to be the console itself. Only the demo default
-		// moves; an explicit OMCPA_BASE_PATH still wins, so a self-hosted
+		// moves; an explicit SHELLPAMC_BASE_PATH still wins, so a self-hosted
 		// deployment that turned the demo on keeps its own sub-path.
 		basePathEnv = "/"
 	}
 	basePath, err := NormalizeBasePath(basePathEnv)
 	if err != nil {
-		return Config{}, fmt.Errorf("OMCPA_BASE_PATH: %w", err)
+		return Config{}, fmt.Errorf("SHELLPAMC_BASE_PATH: %w", err)
 	}
 
-	dataDir := strings.TrimSpace(os.Getenv("OMCPA_DATA_DIR"))
+	dataDir := strings.TrimSpace(os.Getenv("SHELLPAMC_DATA_DIR"))
 	if dataDir == "" {
 		dataDir = "./data"
 		if demoMode {
 			// Demo data is disposable by definition, and the platform that runs the
 			// public demo mounts no writable volume: /tmp is the only directory a
 			// container image may write to there.
-			dataDir = filepath.Join(os.TempDir(), "oh-my-cpa-demo")
+			dataDir = filepath.Join(os.TempDir(), "shell-pamc-demo")
 		}
 	}
 	dataDir = filepath.Clean(dataDir)
 
-	listenAddr := strings.TrimSpace(os.Getenv("OMCPA_LISTEN_ADDR"))
+	listenAddr := strings.TrimSpace(os.Getenv("SHELLPAMC_LISTEN_ADDR"))
 	if listenAddr == "" {
 		listenAddr = ":8080"
 		if demoMode {
@@ -211,22 +211,22 @@ func Load() (Config, error) {
 		}
 	}
 
-	baseURL := strings.TrimSpace(os.Getenv("OMCPA_CPA_BASE_URL"))
-	usageAddr := strings.TrimSpace(os.Getenv("OMCPA_CPA_USAGE_ADDR"))
+	baseURL := strings.TrimSpace(os.Getenv("SHELLPAMC_CPA_BASE_URL"))
+	usageAddr := strings.TrimSpace(os.Getenv("SHELLPAMC_CPA_USAGE_ADDR"))
 	if usageAddr == "" && baseURL != "" {
 		usageAddr = deriveUsageAddr(baseURL)
 	}
 
 	timeout := 15 * time.Second
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_REQUEST_TIMEOUT")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_REQUEST_TIMEOUT")); raw != "" {
 		parsed, parseErr := time.ParseDuration(raw)
 		if parseErr != nil || parsed <= 0 {
-			return Config{}, fmt.Errorf("OMCPA_REQUEST_TIMEOUT must be a positive duration: %q", raw)
+			return Config{}, fmt.Errorf("SHELLPAMC_REQUEST_TIMEOUT must be a positive duration: %q", raw)
 		}
 		timeout = parsed
 	}
 
-	tlsSkipVerify, err := parseBoolEnv("OMCPA_CPA_TLS_SKIP_VERIFY", false)
+	tlsSkipVerify, err := parseBoolEnv("SHELLPAMC_CPA_TLS_SKIP_VERIFY", false)
 	if err != nil {
 		return Config{}, err
 	}
@@ -235,8 +235,8 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	masterKey := strings.TrimSpace(os.Getenv("OMCPA_MASTER_KEY"))
-	publicURL := strings.TrimSpace(os.Getenv("OMCPA_PUBLIC_URL"))
+	masterKey := strings.TrimSpace(os.Getenv("SHELLPAMC_MASTER_KEY"))
+	publicURL := strings.TrimSpace(os.Getenv("SHELLPAMC_PUBLIC_URL"))
 	if demoMode {
 		if masterKey == "" {
 			// A demo holds no operator secret to protect, and demanding one would make
@@ -247,7 +247,7 @@ func Load() (Config, error) {
 				return Config{}, err
 			}
 		}
-		// The origin is stated by OMCPA_PUBLIC_URL rather than discovered, because the
+		// The origin is stated by SHELLPAMC_PUBLIC_URL rather than discovered, because the
 		// demonstration no longer runs on a platform that announces one. A demo without
 		// it keeps a session cookie usable over plain HTTP, which is what a local run
 		// wants; a deployment sets it.
@@ -276,7 +276,7 @@ func Load() (Config, error) {
 	cpa := CPAConfig{
 		BaseURL:       baseURL,
 		UsageAddr:     usageAddr,
-		ManagementKey: strings.TrimSpace(os.Getenv("OMCPA_CPA_MANAGEMENT_KEY")),
+		ManagementKey: strings.TrimSpace(os.Getenv("SHELLPAMC_CPA_MANAGEMENT_KEY")),
 	}
 	if demoMode {
 		// The real endpoint is replaced by the in-process fixture once it is
@@ -285,13 +285,13 @@ func Load() (Config, error) {
 		cpa = CPAConfig{}
 	}
 
-	databasePath := filepath.Join(dataDir, "oh-my-cpa.db")
+	databasePath := filepath.Join(dataDir, "shell-pamc.db")
 	if demoMode {
 		// A demo database is per-boot: it is deleted and rebuilt so the history always
 		// ends at the moment the visitor arrives. The file has its own name so that a
 		// deployment which pointed the demo at a directory holding real data cannot
 		// have that data deleted with it.
-		databasePath = filepath.Join(dataDir, "oh-my-cpa-demo.db")
+		databasePath = filepath.Join(dataDir, "shell-pamc-demo.db")
 	}
 
 	return Config{
@@ -302,13 +302,13 @@ func Load() (Config, error) {
 		DatabasePath:      databasePath,
 		MasterKey:         masterKey,
 		PublicURL:         publicURL,
-		Version:           envOr("OMCPA_VERSION", BuildVersion),
+		Version:           envOr("SHELLPAMC_VERSION", BuildVersion),
 		RequestTimeout:    timeout,
 		TLSSkipVerify:     tlsSkipVerify,
 		TrustedProxyCIDRs: trustedProxyCIDRs,
 		Release:           releaseConfig,
 		Updater:           updaterConfig,
-		GoogleFontsURL:    strings.TrimSpace(os.Getenv("OMCPA_GOOGLE_FONTS_URL")),
+		GoogleFontsURL:    strings.TrimSpace(os.Getenv("SHELLPAMC_GOOGLE_FONTS_URL")),
 		CPA:               cpa,
 		IsDemoMode:        demoMode,
 	}, nil
@@ -320,25 +320,25 @@ func Load() (Config, error) {
 // file. Ignoring it would leave a deployment that asked to stop reaching the internet doing
 // exactly that, with nothing to indicate the setting had not been understood.
 func loadReleaseConfig() (ReleaseConfig, error) {
-	enabled, err := parseBoolEnv("OMCPA_UPDATE_CHECK_ENABLED", true)
+	enabled, err := parseBoolEnv("SHELLPAMC_UPDATE_CHECK_ENABLED", true)
 	if err != nil {
 		return ReleaseConfig{}, err
 	}
-	autoCheck, err := parseBoolEnv("OMCPA_UPDATE_CHECK_ON_PAGE_LOAD", true)
+	autoCheck, err := parseBoolEnv("SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD", true)
 	if err != nil {
 		return ReleaseConfig{}, err
 	}
 	return ReleaseConfig{
 		Enabled:       enabled,
 		AutoCheck:     autoCheck,
-		OMCRepository: envOr("OMCPA_OMC_REPO", DefaultOMCRepository),
-		CPARepository: envOr("OMCPA_CPA_REPO", DefaultCPARepository),
+		OMCRepository: envOr("SHELLPAMC_OMC_REPO", DefaultOMCRepository),
+		CPARepository: envOr("SHELLPAMC_CPA_REPO", DefaultCPARepository),
 		Interval:      DefaultReleaseInterval,
 	}, nil
 }
 
 func parseTrustedProxyCIDRs() ([]string, error) {
-	raw := strings.TrimSpace(os.Getenv("OMCPA_TRUSTED_PROXY_CIDRS"))
+	raw := strings.TrimSpace(os.Getenv("SHELLPAMC_TRUSTED_PROXY_CIDRS"))
 	if raw == "" {
 		return nil, nil
 	}
@@ -350,7 +350,7 @@ func parseTrustedProxyCIDRs() ([]string, error) {
 		}
 		_, network, err := net.ParseCIDR(entry)
 		if err != nil {
-			return nil, fmt.Errorf("OMCPA_TRUSTED_PROXY_CIDRS contains %q: %w", entry, err)
+			return nil, fmt.Errorf("SHELLPAMC_TRUSTED_PROXY_CIDRS contains %q: %w", entry, err)
 		}
 		networks = append(networks, network.String())
 	}
@@ -410,43 +410,43 @@ func envOr(name, fallback string) string {
 
 // loadUsageConfig reads the request-record pipeline settings.
 func loadUsageConfig() (UsageConfig, error) {
-	enabled, err := parseBoolEnv("OMCPA_USAGE_INGEST_ENABLED", true)
+	enabled, err := parseBoolEnv("SHELLPAMC_USAGE_INGEST_ENABLED", true)
 	if err != nil {
 		return UsageConfig{}, err
 	}
-	collectErrors, err := parseBoolEnv("OMCPA_USAGE_COLLECT_ERRORS", true)
+	collectErrors, err := parseBoolEnv("SHELLPAMC_USAGE_COLLECT_ERRORS", true)
 	if err != nil {
 		return UsageConfig{}, err
 	}
 	idleInterval := time.Second
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_USAGE_IDLE_INTERVAL")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_IDLE_INTERVAL")); raw != "" {
 		parsed, parseErr := time.ParseDuration(raw)
 		if parseErr != nil || parsed <= 0 {
-			return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_IDLE_INTERVAL must be a positive duration: %q", raw)
+			return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_IDLE_INTERVAL must be a positive duration: %q", raw)
 		}
 		idleInterval = parsed
 	}
 	maxIdleInterval := max(idleInterval, 10*time.Second)
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_USAGE_MAX_IDLE_INTERVAL")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_MAX_IDLE_INTERVAL")); raw != "" {
 		parsed, parseErr := time.ParseDuration(raw)
 		if parseErr != nil || parsed < idleInterval {
-			return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_MAX_IDLE_INTERVAL must be at least OMCPA_USAGE_IDLE_INTERVAL: %q", raw)
+			return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_MAX_IDLE_INTERVAL must be at least SHELLPAMC_USAGE_IDLE_INTERVAL: %q", raw)
 		}
 		maxIdleInterval = parsed
 	}
 	aggregateInterval := 15 * time.Second
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_USAGE_AGGREGATE_INTERVAL")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_AGGREGATE_INTERVAL")); raw != "" {
 		parsed, parseErr := time.ParseDuration(raw)
 		if parseErr != nil || parsed <= 0 {
-			return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_AGGREGATE_INTERVAL must be a positive duration: %q", raw)
+			return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_AGGREGATE_INTERVAL must be a positive duration: %q", raw)
 		}
 		aggregateInterval = parsed
 	}
 	batchSize := 1000
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_USAGE_BATCH_SIZE")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_BATCH_SIZE")); raw != "" {
 		parsed, parseErr := strconv.Atoi(raw)
 		if parseErr != nil || parsed <= 0 || parsed > 10000 {
-			return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_BATCH_SIZE must be between 1 and 10000: %q", raw)
+			return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_BATCH_SIZE must be between 1 and 10000: %q", raw)
 		}
 		batchSize = parsed
 	}
@@ -455,10 +455,10 @@ func loadUsageConfig() (UsageConfig, error) {
 	// the permanent usage facts. Ninety days matches the longest window the request
 	// list offers, so every preset it shows is fully backed by stored records.
 	retentionDays := 90
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_USAGE_RETENTION_DAYS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_RETENTION_DAYS")); raw != "" {
 		parsed, parseErr := strconv.Atoi(raw)
 		if parseErr != nil || parsed < 0 {
-			return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_RETENTION_DAYS must be zero or positive: %q", raw)
+			return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_RETENTION_DAYS must be zero or positive: %q", raw)
 		}
 		retentionDays = parsed
 	}
@@ -467,21 +467,21 @@ func loadUsageConfig() (UsageConfig, error) {
 	// size of the records they produce, which is why they do not share the long
 	// horizon.
 	inboxRetentionDays := 7
-	if raw := strings.TrimSpace(os.Getenv("OMCPA_USAGE_INBOX_RETENTION_DAYS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_INBOX_RETENTION_DAYS")); raw != "" {
 		parsed, parseErr := strconv.Atoi(raw)
 		if parseErr != nil || parsed < 0 {
-			return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_INBOX_RETENTION_DAYS must be zero or positive: %q", raw)
+			return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_INBOX_RETENTION_DAYS must be zero or positive: %q", raw)
 		}
 		inboxRetentionDays = parsed
 	}
-	mode := strings.ToLower(strings.TrimSpace(os.Getenv("OMCPA_USAGE_INGEST_MODE")))
+	mode := strings.ToLower(strings.TrimSpace(os.Getenv("SHELLPAMC_USAGE_INGEST_MODE")))
 	if mode == "" {
 		mode = "auto"
 	}
 	switch mode {
 	case "auto", "subscribe", "resp_pull", "http_pull", "off":
 	default:
-		return UsageConfig{}, fmt.Errorf("OMCPA_USAGE_INGEST_MODE must be auto, subscribe, resp_pull, http_pull or off")
+		return UsageConfig{}, fmt.Errorf("SHELLPAMC_USAGE_INGEST_MODE must be auto, subscribe, resp_pull, http_pull or off")
 	}
 	return UsageConfig{
 		Enabled:            enabled,

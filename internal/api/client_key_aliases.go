@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // clientKeyAliasRequest is the wire body for naming or clearing one key.
@@ -46,7 +46,7 @@ func (h *Handler) listClientKeyAliases(writer http.ResponseWriter, request *http
 // putClientKeyAlias names or clears one key.
 //
 // This is deliberately separate from the configuration write path. Naming a key
-// changes only Oh My CPA's own metadata, so it must not rewrite CPA's
+// changes only Shell-PAMC's own metadata, so it must not rewrite CPA's
 // `api-keys` list: doing so would rotate the revision, invalidate every other
 // editor's baseline, and rewrite a secret the operator did not touch.
 //
@@ -113,7 +113,7 @@ func (h *Handler) putClientKeyAlias(writer http.ResponseWriter, request *http.Re
 
 // clientKeyUsage returns per-key request counts and last-use times.
 //
-// The numbers come from Oh My CPA's own retained usage events, never from CPA, so
+// The numbers come from Shell-PAMC's own retained usage events, never from CPA, so
 // they describe what this console has actually observed. A key with no observed
 // requests reports zero rather than a guessed creation date: CPA publishes no
 // such date, and inventing one would be a fact the system does not have.

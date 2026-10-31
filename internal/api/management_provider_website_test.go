@@ -11,7 +11,7 @@ import (
 // console actually renders.
 func websiteOfProvider(t *testing.T, client *http.Client, baseURL, id string) ProviderItemDTO {
 	t.Helper()
-	resp, payload := getJSON(t, client, baseURL+"/omc/api/v1/management/providers")
+	resp, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("providers status = %d body %s", resp.StatusCode, payload)
 	}
@@ -30,14 +30,14 @@ func websiteOfProvider(t *testing.T, client *http.Client, baseURL, id string) Pr
 	return ProviderItemDTO{}
 }
 
-// The website is Oh My CPA management metadata, not a CPA configuration field.
+// The website is Shell-PAMC management metadata, not a CPA configuration field.
 // It must round trip through the provider document, survive a save that does not
 // mention it, and never reach CPA's own config.
 func TestProviderWebsiteRoundTrip(t *testing.T) {
 	client, baseURL, state := startProviderTestServer(t)
 
 	createBody := `{"family":"openai-compatibility","name":"Relay With Site","base_url":"https://relay.example.test/v1","api_key":"sk-website-1234","website":"https://relay.example.test"}`
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", createBody)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", createBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create status = %d body %s", resp.StatusCode, payload)
 	}
@@ -50,7 +50,7 @@ func TestProviderWebsiteRoundTrip(t *testing.T) {
 	// A rename from a client that does not carry the field must not erase it:
 	// the field is optional, and absent is not the same statement as empty.
 	renameBody := `{"family":"openai-compatibility","name":"Relay Renamed","base_url":"https://relay.example.test/v1"}`
-	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/"+createdID, renameBody)
+	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/"+createdID, renameBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("rename status = %d body %s", resp.StatusCode, payload)
 	}
@@ -60,7 +60,7 @@ func TestProviderWebsiteRoundTrip(t *testing.T) {
 
 	// An explicitly empty value clears it.
 	clearBody := `{"family":"openai-compatibility","name":"Relay Renamed","base_url":"https://relay.example.test/v1","website":""}`
-	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/providers/"+createdID, clearBody)
+	resp, payload = doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/providers/"+createdID, clearBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("clear status = %d body %s", resp.StatusCode, payload)
 	}
@@ -68,7 +68,7 @@ func TestProviderWebsiteRoundTrip(t *testing.T) {
 		t.Fatalf("an explicit empty website must clear the entry, got %q", got)
 	}
 
-	// The website lives in Oh My CPA's own storage, never in CPA's config: a
+	// The website lives in Shell-PAMC's own storage, never in CPA's config: a
 	// `website` key appearing on the CPA entry would mean the field had been
 	// smuggled into the gateway's document, which CPA cannot read back.
 	state.mu.Lock()
@@ -96,7 +96,7 @@ func TestProviderWebsiteRejectsUnsafeURLs(t *testing.T) {
 		"ftp://relay.example.test",
 	} {
 		body := fmt.Sprintf(`{"family":"openai-compatibility","name":"Unsafe %s","base_url":"https://relay.example.test/v1","website":%q}`, unsafe, unsafe)
-		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", body)
+		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", body)
 		if resp.StatusCode != http.StatusBadRequest {
 			t.Fatalf("website %q must be refused, got status %d body %s", unsafe, resp.StatusCode, payload)
 		}
@@ -114,7 +114,7 @@ func TestProviderWebsiteAcceptsHTTPAndHTTPS(t *testing.T) {
 		"  https://relay.example.test  ",
 	} {
 		body := fmt.Sprintf(`{"family":"openai-compatibility","name":"Safe","base_url":"https://relay.example.test/v1","website":%q}`, valid)
-		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", body)
+		resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", body)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("website %q must be accepted, got status %d body %s", valid, resp.StatusCode, payload)
 		}
@@ -128,18 +128,18 @@ func TestProviderWebsiteRemovedWithProvider(t *testing.T) {
 	client, baseURL, state := startProviderTestServer(t)
 
 	createBody := `{"family":"openai-compatibility","name":"Doomed","base_url":"https://doomed.example.test/v1","website":"https://doomed.example.test"}`
-	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/omc/api/v1/management/providers", createBody)
+	resp, payload := doJSON(t, client, http.MethodPost, baseURL+"/shell-pamc/api/v1/management/providers", createBody)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("create status = %d body %s", resp.StatusCode, payload)
 	}
 	id := fmt.Sprintf("openai-compat-%d", len(state.oaiProviders)-1)
 
-	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/omc/api/v1/management/providers/"+id, "")
+	resp, payload = doJSON(t, client, http.MethodDelete, baseURL+"/shell-pamc/api/v1/management/providers/"+id, "")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("delete status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/management/providers")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/providers")
 	var res struct {
 		Providers []ProviderItemDTO `json:"providers"`
 	}
@@ -158,12 +158,12 @@ func TestProviderWebsiteRemovedWithProvider(t *testing.T) {
 func TestProviderWebsitePreferenceKeyIsWritable(t *testing.T) {
 	client, baseURL, _ := startProviderTestServer(t)
 
-	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/preferences/provider_websites", `{"openai-compat-0":"https://relay.example.test"}`)
+	resp, payload := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/preferences/provider_websites", `{"openai-compat-0":"https://relay.example.test"}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("writing provider_websites preference status = %d body %s", resp.StatusCode, payload)
 	}
 
-	resp, payload = getJSON(t, client, baseURL+"/omc/api/v1/preferences")
+	resp, payload = getJSON(t, client, baseURL+"/shell-pamc/api/v1/preferences")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("read preferences status = %d body %s", resp.StatusCode, payload)
 	}

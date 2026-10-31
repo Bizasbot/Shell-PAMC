@@ -9,24 +9,24 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/app"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/mcpbridge"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/updater"
+	"github.com/bizasbot/shell-pamc/internal/app"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/mcpbridge"
+	"github.com/bizasbot/shell-pamc/internal/updater"
 )
 
-const MCP_USAGE = `Usage: oh-my-cpa mcp
+const MCP_USAGE = `Usage: shell-pamc mcp
 
-Serves Oh My CPA's capabilities to an MCP client over standard input and output.
+Serves Shell-PAMC's capabilities to an MCP client over standard input and output.
 A client that speaks Streamable HTTP does not need this process: it connects to
 <console URL>/api/mcp with "Authorization: Bearer <CPA management key>".
 
 Environment:
-  OMCPA_SERVER_URL          console URL including its base path, for example
-                            https://omc.example.com/omc (plain HTTP is accepted
+  SHELLPAMC_SERVER_URL          console URL including its base path, for example
+                            https://shell-pamc.example.com/shell-pamc (plain HTTP is accepted
                             for loopback addresses only)
-  OMCPA_CPA_MANAGEMENT_KEY  the CPA management key that signs in to the console
+  SHELLPAMC_CPA_MANAGEMENT_KEY  the CPA management key that signs in to the console
 `
 
 func envOr(name, fallback string) string {
@@ -48,7 +48,7 @@ func main() {
 		}
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if err := mcpbridge.Run(ctx, os.Getenv("OMCPA_SERVER_URL"), os.Getenv("OMCPA_CPA_MANAGEMENT_KEY"), envOr("OMCPA_VERSION", config.BuildVersion)); err != nil {
+		if err := mcpbridge.Run(ctx, os.Getenv("SHELLPAMC_SERVER_URL"), os.Getenv("SHELLPAMC_CPA_MANAGEMENT_KEY"), envOr("SHELLPAMC_VERSION", config.BuildVersion)); err != nil {
 			slog.Error("MCP bridge stopped", "error", err)
 			os.Exit(1)
 		}
@@ -57,7 +57,7 @@ func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == updater.ROLE_COMMAND {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		code := updater.Run(ctx, os.Args[2:], envOr("OMCPA_VERSION", config.BuildVersion), os.Stdout, os.Stderr)
+		code := updater.Run(ctx, os.Args[2:], envOr("SHELLPAMC_VERSION", config.BuildVersion), os.Stdout, os.Stderr)
 		stop()
 		os.Exit(code)
 	}
@@ -86,7 +86,7 @@ func main() {
 
 	running, err := app.New(ctx, cfg, logger)
 	if err != nil {
-		logger.Error("failed to initialize Oh My CPA", "error", err)
+		logger.Error("failed to initialize Shell-PAMC", "error", err)
 		os.Exit(1)
 	}
 	logger = slog.Default()

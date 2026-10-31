@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <!-- Every URL in the manifest is relative, and start_url, scope and the icon sources resolve
-         against the MANIFEST's URL, so one committed file is correct at the site root, under /omc
+         against the MANIFEST's URL, so one committed file is correct at the site root, under /shell-pamc
          and under a nested base path. The manifest deliberately carries no id: a relative id
          resolves against start_url's ORIGIN, not the manifest URL, so "./" would collapse every
          mount point onto one installed identity. Omitted, the identity IS the resolved start_url,
@@ -35,11 +35,11 @@
     <title>Shell-PAMC</title>
     <!-- Injected at runtime by Shell-PAMC Go server if present -->
     <script>
-      if (!window.__OMCPA_CONFIG__) {
-        window.__OMCPA_CONFIG__ = {
-          basePath: "/omc",
-          apiBaseUrl: "/omc/api/v1",
-          mediaBaseUrl: "/omc/media",
+      if (!window.__SHELLPAMC_CONFIG__) {
+        window.__SHELLPAMC_CONFIG__ = {
+          basePath: "/shell-pamc",
+          apiBaseUrl: "/shell-pamc/api/v1",
+          mediaBaseUrl: "/shell-pamc/media",
           appName: "Shell-PAMC"
         };
       }

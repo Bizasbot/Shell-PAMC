@@ -25,7 +25,7 @@ export interface ServiceLogTail {
 }
 
 /**
- * useServiceLogTail follows Oh My CPA's own log.
+ * useServiceLogTail follows Shell-PAMC's own log.
  *
  * The position is the server's sequence number, which only grows for the life of the
  * process, so resuming is exact: no overlap to de-duplicate. A restart starts the sequence

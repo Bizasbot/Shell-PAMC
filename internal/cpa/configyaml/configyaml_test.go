@@ -199,7 +199,7 @@ func TestRestoreSentinelsRecursesIntoSequencesAndLeavesLiteralSentinels(t *testi
   - name: primary
     tls:
       key: nested-private-key
-plain: "__OMCPA_UNCHANGED__"
+plain: "__SHELLPAMC_UNCHANGED__"
 `
 
 	safe, err := SanitizeSafeYAML(original)
@@ -217,7 +217,7 @@ plain: "__OMCPA_UNCHANGED__"
 	if !strings.Contains(restored, "nested-private-key") {
 		t.Fatalf("restored YAML lost the nested TLS key: %s", restored)
 	}
-	if !strings.Contains(restored, `plain: "__OMCPA_UNCHANGED__"`) {
+	if !strings.Contains(restored, `plain: "__SHELLPAMC_UNCHANGED__"`) {
 		t.Fatalf("restore changed a literal sentinel in a non-sensitive field: %s", restored)
 	}
 }
@@ -496,8 +496,8 @@ func TestSanitizeSafeYAMLRedactsICEServerSecrets(t *testing.T) {
         ice-servers:
           - urls: ["stun:stun.example.com:3478"]
           - urls: ["turn:turn.example.com:3478"]
-            username: "__OMCPA_UNCHANGED__"
-            credential: "__OMCPA_UNCHANGED__"
+            username: "__SHELLPAMC_UNCHANGED__"
+            credential: "__SHELLPAMC_UNCHANGED__"
 `
 	if _, err := RestoreSentinels(reordered, original); err == nil {
 		t.Fatal("RestoreSentinels accepted a reordered server list with kept secrets")

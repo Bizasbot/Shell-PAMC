@@ -15,17 +15,17 @@ import (
 	"time"
 )
 
-const USAGE = `Usage: oh-my-cpa updater <command>
+const USAGE = `Usage: shell-pamc updater <command>
 
 Applies updates the console asks for by replacing this deployment's containers.
 It needs the Docker socket, which the console itself never has.
 
 Commands:
-  serve        run the updater; the console reaches it at http://oh-my-cpa-updater:8090
+  serve        run the updater; the console reaches it at http://shell-pamc-updater:8090
   install      add the updater to a deployment that is already running:
                  docker run --rm --pull always -u 0 \
                    -v /var/run/docker.sock:/var/run/docker.sock \
-                   wiziscool/oh-my-cpa:latest updater install
+                   ghcr.io/bizasbot/shell-pamc:latest updater install
                --container <name>      the console container, when it cannot be told apart
                --cpa-container <name>  the CLIProxyAPI container, when it is not found
   healthcheck  exit 0 when a running updater answers
@@ -66,7 +66,7 @@ func connect(ctx context.Context, stderr io.Writer) (*Engine, bool) {
 	return nil, false
 }
 
-// Run executes an `oh-my-cpa updater` command and returns the process exit code.
+// Run executes a `shell-pamc updater` command and returns the process exit code.
 func Run(ctx context.Context, arguments []string, version string, stdout, stderr io.Writer) int {
 	if len(arguments) == 0 {
 		fmt.Fprint(stderr, USAGE)

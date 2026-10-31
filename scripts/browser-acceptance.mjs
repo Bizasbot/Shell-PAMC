@@ -2,7 +2,7 @@
 import { guardBrowserContext } from './acceptance/browser-guard.mjs';
 import { launchBrowser, closeBrowser, stopProcess, closeServer, withOwnedCleanup } from './acceptance/lifecycle.mjs';
 // Deterministic browser acceptance against an isolated fake CPA by default.
-// Set OMCPA_LIVE_CPA=1 to run the separately maintained live-system smoke.
+// Set SHELLPAMC_LIVE_CPA=1 to run the separately maintained live-system smoke.
 
 import { isolatedAppEnvironment } from './acceptance/environment.mjs';
 import { execFileSync, spawn } from 'node:child_process';
@@ -51,7 +51,7 @@ const smokeOnly = process.argv.includes('--smoke');
 const p0Only = process.argv.includes('--p0');
 
 class SmokeComplete extends Error {}
-if (process.env.OMCPA_LIVE_CPA === '1') {
+if (process.env.SHELLPAMC_LIVE_CPA === '1') {
   await import('./browser-live-smoke.mjs');
   process.exit();
 }
@@ -64,11 +64,11 @@ const MASTER_KEY = ['fixture', 'master', 'key', 'for', 'browser', 'acceptance', 
 // key's own value: the assertions below prove the list shows this name while the
 // filter keeps using the stored fingerprint.
 const CLIENT_KEY_ALIAS = '验收专用密钥';
-const configuredExecutable = process.env.OMCPA_BROWSER_BINARY?.trim();
+const configuredExecutable = process.env.SHELLPAMC_BROWSER_BINARY?.trim();
 const executable = configuredExecutable
   ? path.resolve(root, configuredExecutable)
-  : path.join(temporary, process.platform === 'win32' ? 'oh-my-cpa.exe' : 'oh-my-cpa');
-const configuredSeeder = process.env.OMCPA_SEED_USAGE_BINARY?.trim();
+  : path.join(temporary, process.platform === 'win32' ? 'shell-pamc.exe' : 'shell-pamc');
+const configuredSeeder = process.env.SHELLPAMC_SEED_USAGE_BINARY?.trim();
 const appLog = [];
 const { check, checkEventually, checkHoldsFor, checks, failures } = createChecker();
 let appProcess;
@@ -252,12 +252,12 @@ try {
   });
   const cpaPort = fakeCpa.server.address().port;
   const appPort = await freePort();
-  appURL = `http://127.0.0.1:${appPort}/omc`;
+  appURL = `http://127.0.0.1:${appPort}/shell-pamc`;
 
   if (configuredExecutable) {
-    if (!fs.existsSync(executable)) throw new Error(`OMCPA_BROWSER_BINARY does not exist: ${executable}`);
+    if (!fs.existsSync(executable)) throw new Error(`SHELLPAMC_BROWSER_BINARY does not exist: ${executable}`);
   } else {
-    execFileSync('go', ['build', '-trimpath', '-o', executable, './cmd/oh-my-cpa'], { cwd: root, env: { ...process.env, CGO_ENABLED: '0' }, stdio: 'inherit' });
+    execFileSync('go', ['build', '-trimpath', '-o', executable, './cmd/shell-pamc'], { cwd: root, env: { ...process.env, CGO_ENABLED: '0' }, stdio: 'inherit' });
   }
   // Acceptance runs with ingestion disabled, so the request list would be empty
   // and every list behaviour untestable. Seed a deterministic window through the
@@ -267,7 +267,7 @@ try {
     ? path.resolve(root, configuredSeeder)
     : path.join(temporary, process.platform === 'win32' ? 'seed-usage.exe' : 'seed-usage');
   if (configuredSeeder) {
-    if (!fs.existsSync(seeder)) throw new Error(`OMCPA_SEED_USAGE_BINARY does not exist: ${seeder}`);
+    if (!fs.existsSync(seeder)) throw new Error(`SHELLPAMC_SEED_USAGE_BINARY does not exist: ${seeder}`);
   } else {
     execFileSync('go', ['build', '-trimpath', '-o', seeder, './scripts/fixture/seed-usage'], { cwd: root, env: { ...process.env, CGO_ENABLED: '0' }, stdio: 'inherit' });
   }
@@ -276,7 +276,7 @@ try {
       seeder,
       [
         '-db',
-        path.join(temporary, 'data', 'oh-my-cpa.db'),
+        path.join(temporary, 'data', 'shell-pamc.db'),
         // The seeder must fingerprint with the same master key the app runs with,
         // or a caller-key identity it writes would not be one the app can derive.
         '-master-key',
@@ -290,14 +290,14 @@ try {
   appProcess = spawn(executable, [], {
     cwd: root,
     env: isolatedAppEnvironment({
-      OMCPA_LISTEN_ADDR: `127.0.0.1:${appPort}`,
-      OMCPA_BASE_PATH: '/omc',
-      OMCPA_DATA_DIR: path.join(temporary, 'data'),
-      OMCPA_MASTER_KEY: MASTER_KEY,
-      OMCPA_CPA_BASE_URL: `http://127.0.0.1:${cpaPort}`,
-      OMCPA_CPA_MANAGEMENT_KEY: FAKE_CPA_MANAGEMENT_KEY,
-      OMCPA_CPA_USAGE_ADDR: '',
-      OMCPA_USAGE_INGEST_ENABLED: 'false',
+      SHELLPAMC_LISTEN_ADDR: `127.0.0.1:${appPort}`,
+      SHELLPAMC_BASE_PATH: '/shell-pamc',
+      SHELLPAMC_DATA_DIR: path.join(temporary, 'data'),
+      SHELLPAMC_MASTER_KEY: MASTER_KEY,
+      SHELLPAMC_CPA_BASE_URL: `http://127.0.0.1:${cpaPort}`,
+      SHELLPAMC_CPA_MANAGEMENT_KEY: FAKE_CPA_MANAGEMENT_KEY,
+      SHELLPAMC_CPA_USAGE_ADDR: '',
+      SHELLPAMC_USAGE_INGEST_ENABLED: 'false',
       // Release checking is off, for the reason every other outbound integration is off here:
       // this suite must be hermetic. The app would otherwise fetch published versions from
       // `api.github.com`, which spends an allowance shared per address, makes the run depend on a
@@ -309,10 +309,10 @@ try {
       // never fires inside a two-minute run, while this suite does visit `/system`
       // (`configuration-plugins.mjs`), whose page checks on open. The second switch turns that
       // check off, which is what actually makes the run hermetic.
-      OMCPA_UPDATE_CHECK_ENABLED: 'false',
-      OMCPA_UPDATE_CHECK_ON_PAGE_LOAD: 'false',
-      OMCPA_PUBLIC_URL: '',
-      OMCPA_VERSION: 'v0.1.0-e2e',
+      SHELLPAMC_UPDATE_CHECK_ENABLED: 'false',
+      SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD: 'false',
+      SHELLPAMC_PUBLIC_URL: '',
+      SHELLPAMC_VERSION: 'v0.1.0-e2e',
     }),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -324,7 +324,7 @@ try {
 
   const redirect = await waitFor(appURL);
   check('fixture startup ignores operator dotenv files', !appLog.join('').includes('loaded environment file'));
-  check('/omc redirects to /omc/', redirect.status === 308 && redirect.headers.get('location') === '/omc/', `status=${redirect.status}`);
+  check('/shell-pamc redirects to /shell-pamc/', redirect.status === 308 && redirect.headers.get('location') === '/shell-pamc/', `status=${redirect.status}`);
 
   browser = await launchBrowser(chromium, { headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });

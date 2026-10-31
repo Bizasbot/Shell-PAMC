@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/ingest"
+	"github.com/bizasbot/shell-pamc/internal/usage/ingest"
 )
 
 const (

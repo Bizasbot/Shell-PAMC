@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // usageEventResponse trims a stored row into what the browser needs.
@@ -531,7 +531,7 @@ func (h *Handler) listUsageEvents(writer http.ResponseWriter, request *http.Requ
 // so the distinct fingerprints of the page are resolved together. The lookup is
 // best effort: a failure leaves `api_key_alias` empty and the console falls back
 // to the mask, because losing a cosmetic name must not fail the request list
-// itself. Aliases are Oh My CPA metadata and never carry key material, so nothing
+// itself. Aliases are Shell-PAMC metadata and never carry key material, so nothing
 // sensitive is read or returned here.
 func (h *Handler) attachClientKeyAliases(request *http.Request, items []usageEventResponse) {
 	if h.repo == nil || len(items) == 0 {

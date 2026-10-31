@@ -651,7 +651,7 @@ export const api = {
   /**
    * Names or clears one key's operator-facing alias.
    *
-   * Separate from the configuration write path on purpose: an alias is Oh My CPA
+   * Separate from the configuration write path on purpose: an alias is Shell-PAMC
    * metadata, so renaming must not rewrite CPA's `api-keys` list and rotate the
    * configuration revision for every other editor.
    */
@@ -766,7 +766,7 @@ export const api = {
     return request<LogsStatus>('/management/logs/status', { method: 'GET' });
   },
 
-  /** getServiceLogs reads Oh My CPA's own recent log records, resuming after `after`. */
+  /** getServiceLogs reads Shell-PAMC's own recent log records, resuming after `after`. */
   async getServiceLogs(params: { after?: number; limit?: number }): Promise<ServiceLogPage> {
     const search = new URLSearchParams();
     if (params.after) search.set('after', String(params.after));

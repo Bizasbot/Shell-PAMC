@@ -6,35 +6,35 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // SIDECAR_NAME is both the installed updater's container name and the DNS name the
 // console looks for it under.
-const SIDECAR_NAME = "oh-my-cpa-updater"
+const SIDECAR_NAME = "shell-pamc-updater"
 
 // LINK_NETWORK is the network an installed updater shares with the console.
 //
 // It is the updater's own network rather than the deployment's Compose network: a
 // container Compose does not know about, attached to a Compose network, makes
 // `docker compose down` fail on a network that still has an endpoint.
-const LINK_NETWORK = "oh-my-cpa-updater"
+const LINK_NETWORK = "shell-pamc-updater"
 
 // Environment variables an updater container is configured with.
 const (
-	ENV_LISTEN_ADDR   = "OMCPA_UPDATER_LISTEN_ADDR"
-	ENV_SOCKET        = "OMCPA_UPDATER_SOCKET"
-	ENV_OMC_CONTAINER = "OMCPA_UPDATER_OMC_CONTAINER"
-	ENV_CPA_CONTAINER = "OMCPA_UPDATER_CPA_CONTAINER"
-	ENV_LINK_NETWORK  = "OMCPA_UPDATER_LINK_NETWORK"
+	ENV_LISTEN_ADDR   = "SHELLPAMC_UPDATER_LISTEN_ADDR"
+	ENV_SOCKET        = "SHELLPAMC_UPDATER_SOCKET"
+	ENV_OMC_CONTAINER = "SHELLPAMC_UPDATER_OMC_CONTAINER"
+	ENV_CPA_CONTAINER = "SHELLPAMC_UPDATER_CPA_CONTAINER"
+	ENV_LINK_NETWORK  = "SHELLPAMC_UPDATER_LINK_NETWORK"
 	// ENV_PUBLIC_KEY replaces the built-in release key, for a fork that signs its own
 	// releases. It is read from the updater's environment only: whoever can set it
 	// already controls the Docker daemon.
-	ENV_PUBLIC_KEY = "OMCPA_UPDATER_PUBLIC_KEY"
+	ENV_PUBLIC_KEY = "SHELLPAMC_UPDATER_PUBLIC_KEY"
 	// ENV_LAST_JOB carries the finished job into the updater's successor. The console
 	// asks how its own update went only after it restarts, by which time the updater
 	// that ran the job has replaced itself and its memory is gone.
-	ENV_LAST_JOB = "OMCPA_UPDATER_LAST_JOB"
+	ENV_LAST_JOB = "SHELLPAMC_UPDATER_LAST_JOB"
 )
 
 // InstallOptions configures Install.
@@ -82,9 +82,9 @@ func Install(ctx context.Context, options InstallOptions) error {
 	if errors.As(err, &unavailable) {
 		switch unavailable.Reason {
 		case ReasonAmbiguousContainer:
-			return errors.New("more than one Oh My CPA container is running; name one with --container <name>")
+			return errors.New("more than one Shell-PAMC container is running; name one with --container <name>")
 		default:
-			return errors.New("no running Oh My CPA container was found; start it first, or name it with --container <name>")
+			return errors.New("no running Shell-PAMC container was found; start it first, or name it with --container <name>")
 		}
 	}
 	if err != nil {
@@ -120,7 +120,7 @@ func Install(ctx context.Context, options InstallOptions) error {
 		// is root that can open the socket it owns and nothing else.
 		"User": "0:0",
 		"Healthcheck": map[string]any{
-			"Test":     []string{"CMD", "/usr/local/bin/oh-my-cpa", ROLE_COMMAND, "healthcheck"},
+			"Test":     []string{"CMD", "/usr/local/bin/shell-pamc", ROLE_COMMAND, "healthcheck"},
 			"Interval": 10_000_000_000, "Timeout": 5_000_000_000, "StartPeriod": 5_000_000_000, "Retries": 3,
 		},
 		"HostConfig": map[string]any{

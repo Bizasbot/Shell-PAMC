@@ -48,8 +48,8 @@ func TestCredentialRevealReadsAreAuditedFailClosed(t *testing.T) {
 	}
 
 	for _, path := range []string{
-		"/omc/api/v1/management/api-keys",
-		"/omc/api/v1/management/providers",
+		"/shell-pamc/api/v1/management/api-keys",
+		"/shell-pamc/api/v1/management/providers",
 	} {
 		resp, payload := getJSON(t, fixture.client, fixture.baseURL+path)
 		if resp.StatusCode != http.StatusOK {
@@ -63,11 +63,11 @@ func TestCredentialRevealReadsAreAuditedFailClosed(t *testing.T) {
 		t.Fatalf("masked provider reads recorded %d reveal events, want 0", got)
 	}
 
-	resp, payload := getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/api-keys?include_keys=true")
+	resp, payload := getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/management/api-keys?include_keys=true")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("client key reveal status = %d body %s", resp.StatusCode, payload)
 	}
-	resp, payload = getJSON(t, fixture.client, fixture.baseURL+"/omc/api/v1/management/providers?include_keys=true")
+	resp, payload = getJSON(t, fixture.client, fixture.baseURL+"/shell-pamc/api/v1/management/providers?include_keys=true")
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("provider key reveal status = %d body %s", resp.StatusCode, payload)
 	}
@@ -110,8 +110,8 @@ func TestCredentialRevealReadsAreAuditedFailClosed(t *testing.T) {
 		t.Fatalf("drop audit_events: %v", err)
 	}
 	for _, path := range []string{
-		"/omc/api/v1/management/api-keys?include_keys=true",
-		"/omc/api/v1/management/providers?include_keys=true",
+		"/shell-pamc/api/v1/management/api-keys?include_keys=true",
+		"/shell-pamc/api/v1/management/providers?include_keys=true",
 	} {
 		resp, payload := getJSON(t, fixture.client, fixture.baseURL+path)
 		if resp.StatusCode != http.StatusInternalServerError {

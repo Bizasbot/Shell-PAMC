@@ -149,7 +149,7 @@ func TestSortTagsDescendingUsesVersionOrderNotTextOrder(t *testing.T) {
 }
 
 func TestValidateRepositoryRejectsAnythingButOwnerSlashName(t *testing.T) {
-	for _, valid := range []string{"router-for-me/CLIProxyAPI", "WizisCool/oh-my-cpa", "a/b", "user.name/repo_name", "user/repo-2"} {
+	for _, valid := range []string{"router-for-me/CLIProxyAPI", "Bizasbot/Shell-PAMC", "a/b", "user.name/repo_name", "user/repo-2"} {
 		if err := ValidateRepository(valid); err != nil {
 			t.Errorf("ValidateRepository(%q) = %v, want nil", valid, err)
 		}

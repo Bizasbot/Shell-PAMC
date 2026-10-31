@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
 )
 
 // fixtureInstanceName is the CPA instance the fixture impersonates. The console
@@ -229,7 +229,7 @@ func familyCatalog() []apiKeyFamily {
 }
 
 // gatewayKey is one client key through which callers reach the gateway. The
-// alias is Oh My CPA's own metadata, which is what the request list renders.
+// alias is Shell-PAMC's own metadata, which is what the request list renders.
 type gatewayKey struct {
 	value string
 	alias string
@@ -546,9 +546,9 @@ func pluginStoreCatalog() []storePluginEntry {
 			description: "Routes a caller key to a credential pool by team.",
 			repository:  "cpa-community/team-router", license: "BSD-3-Clause",
 			tags: []string{"routing"}, logo: fixtureLogo("TR", "#BE185D"), sourceID: "community"},
-		// Oh My CPA's own registry: the source the console manages itself, and the one
+		// Shell-PAMC's own registry: the source the console manages itself, and the one
 		// whose entries it pins above every other registry's.
-		{id: "usage-digest", name: "Usage digest", version: "0.3.0", author: "oh-my-cpa",
+		{id: "usage-digest", name: "Usage digest", version: "0.3.0", author: "shell-pamc",
 			description: "Posts a daily spend and request summary for this console to a webhook.",
 			repository:  "WizisCool/omc-plugin-usage-digest", license: "MIT",
 			tags: []string{"observability", "digest"}, logo: fixtureLogo("UD", "#0369A1"),

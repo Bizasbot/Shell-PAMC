@@ -6,14 +6,14 @@
  * as a demonstration, and each is here because leaving it to the host would be wrong:
  *
  * 1. **The runtime configuration is injected.** The console learns it is a
- *    demonstration from `window.__OMCPA_CONFIG__`, which the Go server writes into the
+ *    demonstration from `window.__SHELLPAMC_CONFIG__`, which the Go server writes into the
  *    page. There is no Go server here, so the build writes it - with the root base
  *    path, because the demonstration is served from the site root rather than under
- *    `/omc`.
+ *    `/shell-pamc`.
  *
  * 2. **Asset URLs are made root-relative.** Vite emits `./assets/...` so the bundle
  *    works from any sub-path, which is right for a self-hosted install that may sit
- *    under `/omc` but wrong here: a visitor who reloads `/usage/events` would resolve
+ *    under `/shell-pamc` but wrong here: a visitor who reloads `/usage/events` would resolve
  *    `./assets/...` against that path and get the SPA fallback instead of the chunk.
  *
  * 3. **The build is copied rather than built.** The demonstration serves the same
@@ -43,7 +43,7 @@ const RUNTIME_CONFIG = {
   basePath: '',
   apiBaseUrl: '/api/v1',
   mediaBaseUrl: '/media',
-  appName: 'Oh My CPA',
+  appName: 'Shell-PAMC',
   demo: true,
   // The demonstration's own build version, so a page that names the running build does not
   // fall back to the source default and claim to be a release it is not.
@@ -51,7 +51,7 @@ const RUNTIME_CONFIG = {
 };
 
 /** The marker the Go server writes, which this replaces. */
-const CONFIG_MARKER = '__OMCPA_CONFIG__';
+const CONFIG_MARKER = '__SHELLPAMC_CONFIG__';
 
 /**
  * Rewrites a built HTML file for a static host.
@@ -72,7 +72,7 @@ function rewriteHtml(html) {
   // The whole conditional block the product ships is replaced rather than appended to:
   // two assignments would leave the order of `demo` undefined, and the console reads it
   // in the first frame.
-  output = output.replace(/<script>[\s\S]*?__OMCPA_CONFIG__[\s\S]*?<\/script>/, script);
+  output = output.replace(/<script>[\s\S]*?__SHELLPAMC_CONFIG__[\s\S]*?<\/script>/, script);
 
   if (!output.includes('"demo":true') && !output.includes('"demo": true')) {
     throw new Error('the injected runtime configuration does not mark the page as a demonstration');
@@ -84,7 +84,7 @@ function rewriteHtml(html) {
  * The relative references Vite bakes into the built modules and stylesheets.
  *
  * They are relative for the same reason the HTML's are - a self-hosted install may sit
- * under `/omc`, so `./` resolves correctly there - and they break in exactly the same way
+ * under `/shell-pamc`, so `./` resolves correctly there - and they break in exactly the same way
  * on a deep link served from the site root. The demonstration therefore has to rewrite
  * them too, and this was learned the hard way: rewriting only the HTML left the provider
  * icons broken in the request list, because the icon path is a template literal inside a

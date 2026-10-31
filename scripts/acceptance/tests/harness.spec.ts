@@ -5,8 +5,8 @@ import { fulfillFixture } from '../browser-guard.mjs';
 const FAULTS: [string, (page: Page) => Promise<unknown>][] = [
   ['pageerror', page => page.evaluate(() => { queueMicrotask(() => { throw new Error('injected pageerror'); }); })],
   ['console', page => page.evaluate(() => console.error('injected console error'))],
-  ['fixture', page => page.evaluate(() => fetch('/omc/api/v1/undeclared-fixture'))],
-  ['method', page => page.evaluate(() => fetch('/omc/api/auth/session', { method: 'POST' }))],
+  ['fixture', page => page.evaluate(() => fetch('/shell-pamc/api/v1/undeclared-fixture'))],
+  ['method', page => page.evaluate(() => fetch('/shell-pamc/api/auth/session', { method: 'POST' }))],
   ['outbound', page => page.evaluate(() => fetch('https://undeclared.example.test/probe').catch(() => {}))],
   ['fulfilled-outbound', async page => {
     await page.route('https://undeclared.example.test/mock', route => route.fulfill({ body: 'fixture' }));
@@ -65,9 +65,9 @@ for (const identity of ['alpha', 'beta']) {
     await probe.context.addCookies([{ name: 'identity', value: identity, url: probe.base }]);
     await probe.page.evaluate(value => localStorage.setItem('identity', value), identity);
     const response = await probe.page.evaluate(async value => {
-      const before = (await (await fetch('/omc/api/v1/preferences')).json()).preferences.provider_names;
-      await fetch('/omc/api/v1/preferences/provider_names', { method: 'PUT', body: JSON.stringify({ identity: value }) });
-      const after = (await (await fetch('/omc/api/v1/preferences')).json()).preferences.provider_names;
+      const before = (await (await fetch('/shell-pamc/api/v1/preferences')).json()).preferences.provider_names;
+      await fetch('/shell-pamc/api/v1/preferences/provider_names', { method: 'PUT', body: JSON.stringify({ identity: value }) });
+      const after = (await (await fetch('/shell-pamc/api/v1/preferences')).json()).preferences.provider_names;
       return before === undefined ? after.identity : null;
     }, identity);
     probe.check('preference store belongs to this context', response === identity);

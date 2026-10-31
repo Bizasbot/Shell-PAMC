@@ -5,7 +5,7 @@ export const KEY_USE_FILTERS = ['all', 'active', 'idle'] as const;
 export type KeyUseFilter = (typeof KEY_USE_FILTERS)[number];
 
 /** One rendered row: a key from CPA's client-key list plus the identity and
- *  traffic Oh My CPA knows about it. A key has no state of its own to report —
+ *  traffic Shell-PAMC knows about it. A key has no state of its own to report —
  *  CPA accepts it by presence in that list (see ADR 0010). */
 export interface ApiKeyRecord {
   id: string;

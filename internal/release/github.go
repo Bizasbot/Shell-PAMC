@@ -32,7 +32,7 @@ const (
 	// memory in full.
 	maxFeedBytes = 4 << 20
 	// userAgent identifies this client, as the GitHub API requires.
-	userAgent = "oh-my-cpa-release-check"
+	userAgent = "shell-pamc-release-check"
 	// maxFeedPages bounds pagination. Each page is one request from the operator's
 	// unauthenticated budget of sixty per hour, so an unbounded walk of a long
 	// release history could spend the entire allowance in one check.

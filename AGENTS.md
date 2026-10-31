@@ -1,4 +1,4 @@
-# AGENTS.md — Oh My CPA Agent Contract
+# AGENTS.md — Shell-PAMC Agent Contract
 
 > Coding agents load this file at the start of a session (a local `AGENTS.override.md` supersedes it). The root `CLAUDE.md` is a symlink to this file, so every agent reads one contract; edit `AGENTS.md`, never the link.
 >
@@ -8,7 +8,7 @@
 
 ## 1. The project
 
-CLIProxyAPI (CPA) handles protocol adaptation, credential execution, and proxying requests; Oh My CPA (OMC) provides **user-owned identity, naming, organization, a management facade, and usage observability** above it. Both are co-deployed in the same stack. OMC is a single-replica Go modular monolith + embedded React SPA + SQLite WAL, operating completely offline with zero CDN dependencies.
+CLIProxyAPI (CPA) handles protocol adaptation, credential execution, and proxying requests; Shell-PAMC (OMC) provides **user-owned identity, naming, organization, a management facade, and usage observability** above it. Both are co-deployed in the same stack. OMC is a single-replica Go modular monolith + embedded React SPA + SQLite WAL, operating completely offline with zero CDN dependencies.
 
 Read documentation when a task needs it, not up front. Useful starting points: `CONTEXT.md` (domain vocabulary and rules), `docs/architecture.md` (module map, data flows, invariants), `docs/design.md` (visual system), `docs/testing.md` (test placement and the verification detail). Read or grep the part you need instead of loading whole documents.
 
@@ -25,7 +25,7 @@ Not every rule weighs the same. Know which tier you are working in.
 - **Data integrity.** Migrations are forward-only: never edit an applied migration or `schema_migrations`; a fix is a new migration. Pricing versions and audit events are append-only. One replica per data directory — SQLite access is serialized, not retried.
 - **Zero-destructive CPA adoption.** Never wipe, overwrite, or mutate pre-existing CPA configuration OMC does not own. Ordinary configuration writes are revision-guarded, name only the paths the operator changed, and keep a restorable backup; refuse the write when the backup cannot be made. Reading CPA's usage queue is destructive: availability is probed with AUTH, never by popping.
 - **Update boundary.** Only the updater sidecar holds the Docker socket; the console stays read-only, unprivileged, and socket-free. An update names a product, never an image. Console releases are verified against the compiled-in public key and pulled by digest, with no unverified fallback; the gateway image, which this project cannot sign, pulls the tag its container already uses. A pinned image is never updated, and a replacement that fails its health check restores the previous container and its image tag.
-- **Offline embedding.** No CDN or externally hosted asset; the SPA embeds in the single Go binary and keeps working under the `/omc` sub-path.
+- **Offline embedding.** No CDN or externally hosted asset; the SPA embeds in the single Go binary and keeps working under the `/shell-pamc` sub-path.
 - **Repository hygiene.** No secret, key, token, or auth file in the diff, the history, the PR text, or screenshots.
 
 ### Tier 2 — contracts. Change deliberately, verify before and after, and say what changed.
@@ -146,7 +146,7 @@ The complete script list is in `package.json`; these are the ones agents use mos
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm dev` | Air + Vite dev entrypoint (`http://127.0.0.1:5173/omc/`) |
+| `pnpm dev` | Air + Vite dev entrypoint (`http://127.0.0.1:5173/shell-pamc/`) |
 | `pnpm dev:api` / `pnpm dev:web` | Go/Air only, or Vite only |
 | `pnpm cpa:start` | Start local CLIProxyAPI from `cpa/` |
 | `pnpm build` | Build the frontend and sync it to `internal/web/dist` |
@@ -156,7 +156,7 @@ The complete script list is in `package.json`; these are the ones agents use mos
 | `pnpm verify` | Toolchain check, full static gates, worktree secret scan |
 | `pnpm verify:probes` | The whole dev-server probe catalog (`--shard i/n`, `--port PORT`, `--workers 1`) |
 | `pnpm verify:browser` | Built-SPA browser acceptance against the fake CPA (also `:smoke`, `:p0`, `:harness`) |
-| `pnpm verify:demo` | Browser acceptance for the public demonstration; `OMCPA_DEMO_URL` checks a deployment |
+| `pnpm verify:demo` | Browser acceptance for the public demonstration; `SHELLPAMC_DEMO_URL` checks a deployment |
 | `pnpm verify:full` | Everything CI runs, locally (`:serial` for resource-constrained hosts) |
 | `pnpm verify:e2e` | Build and loading boundaries, then browser acceptance and probes |
 | `pnpm verify:secrets` | Scan the worktree for secrets (`:history` scans history) |

@@ -14,10 +14,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/configyaml"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/cpa/configyaml"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // managedSourceStoredYAML is the file a stand-in gateway has on disk. It is v8, so
@@ -164,7 +164,7 @@ func setManagedSourcePreference(t *testing.T, repo *repository.Repository, enabl
 func TestPluginSettingsKeepTheManagedSourceOutOfTheEditableList(t *testing.T) {
 	gateway := &managedSourceCPA{sources: []string{pluginregistry.OMCSourceURL}}
 	client, baseURL, _ := startDashboardTestServerStoring(t, managedSourceStoredYAML, gateway.serve)
-	response, body := getJSON(t, client, baseURL+"/omc/api/v1/management/plugins/settings")
+	response, body := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/plugins/settings")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("settings: status %d body %s", response.StatusCode, body)
 	}
@@ -190,7 +190,7 @@ func TestPluginSettingsKeepTheManagedSourceOutOfTheEditableList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	putResponse, putBody := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/settings", string(payload))
+	putResponse, putBody := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/settings", string(payload))
 	if putResponse.StatusCode != http.StatusOK {
 		t.Fatalf("save settings: status %d body %s", putResponse.StatusCode, putBody)
 	}
@@ -213,7 +213,7 @@ func TestPluginSettingsDoNotRestoreASwitchedOffManagedSource(t *testing.T) {
 	client, baseURL, repo := startDashboardTestServerStoring(t, managedSourceStoredYAML, gateway.serve)
 	setManagedSourcePreference(t, repo, false)
 
-	response, body := getJSON(t, client, baseURL+"/omc/api/v1/management/plugins/settings")
+	response, body := getJSON(t, client, baseURL+"/shell-pamc/api/v1/management/plugins/settings")
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("settings: status %d body %s", response.StatusCode, body)
 	}
@@ -230,7 +230,7 @@ func TestPluginSettingsDoNotRestoreASwitchedOffManagedSource(t *testing.T) {
 		"store_sources": []string{"https://plugins.example/registry.json"},
 		"store_auth":    []any{},
 	})
-	putResponse, putBody := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/plugins/settings", string(payload))
+	putResponse, putBody := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/plugins/settings", string(payload))
 	if putResponse.StatusCode != http.StatusOK {
 		t.Fatalf("save settings: status %d body %s", putResponse.StatusCode, putBody)
 	}
@@ -249,7 +249,7 @@ func TestConfigurationPatchRestoresTheManagedSource(t *testing.T) {
 		"revision": gateway.revision(),
 		"changes":  []map[string]any{{"path": []string{"plugins", "store-sources"}, "remove": true}},
 	})
-	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/config", string(payload))
+	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/config", string(payload))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("save configuration: status %d body %s", response.StatusCode, body)
 	}
@@ -281,7 +281,7 @@ func TestConfigurationSourceSaveRestoresTheManagedSource(t *testing.T) {
 		"revision": gateway.revision(),
 		"yaml":     managedSourceStoredYAML + "    store-sources:\n        - https://plugins.example/registry.json\n",
 	})
-	response, body := doJSON(t, client, http.MethodPut, baseURL+"/omc/api/v1/management/config/source", string(payload))
+	response, body := doJSON(t, client, http.MethodPut, baseURL+"/shell-pamc/api/v1/management/config/source", string(payload))
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("save configuration source: status %d body %s", response.StatusCode, body)
 	}
@@ -405,7 +405,7 @@ func TestPluginSourceReconcileHidesPreferenceReadFailure(t *testing.T) {
 			"revision": gateway.revision(),
 			"changes":  []map[string]any{{"path": []string{"observability", "logs", "debug"}, "value": true}},
 		})
-		response, body := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/config", string(payload))
+		response, body := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/config", string(payload))
 		if response.StatusCode != http.StatusInternalServerError {
 			t.Fatalf("save configuration: status %d body %s, want an internal failure", response.StatusCode, body)
 		}
@@ -434,7 +434,7 @@ func TestPluginSourceReconcileReportsCPAFailuresWithoutTheirDetail(t *testing.T)
 		"revision": gateway.revision(),
 		"changes":  []map[string]any{{"path": []string{"observability", "logs", "debug"}, "value": true}},
 	})
-	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/config", string(payload))
+	response, body := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/config", string(payload))
 	if response.StatusCode != http.StatusBadGateway {
 		t.Fatalf("save configuration: status %d body %s, want a gateway failure", response.StatusCode, body)
 	}
@@ -468,7 +468,7 @@ func TestPluginSourceReconcileAuditFailureIsFixedAndFailClosed(t *testing.T) {
 			"revision": gateway.revision(),
 			"changes":  []map[string]any{{"path": []string{"observability", "logs", "debug"}, "value": true}},
 		})
-		response, body := doJSON(t, client, http.MethodPatch, baseURL+"/omc/api/v1/management/config", string(payload))
+		response, body := doJSON(t, client, http.MethodPatch, baseURL+"/shell-pamc/api/v1/management/config", string(payload))
 		if response.StatusCode != http.StatusInternalServerError {
 			t.Fatalf("save configuration: status %d body %s, want a refusal", response.StatusCode, body)
 		}

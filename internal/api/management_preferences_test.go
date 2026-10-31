@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // The dashboard range is the operator's working context: it has to come back
@@ -15,7 +15,7 @@ import (
 // database rather than in browser storage.
 func TestPreferencesRoundTripThroughTheDatabase(t *testing.T) {
 	client, baseURL, repo := startDashboardTestServer(t, nil)
-	base := baseURL + "/omc/api/v1/preferences"
+	base := baseURL + "/shell-pamc/api/v1/preferences"
 
 	// A fresh install has no preferences, and that is a valid empty answer.
 	response, payload := getJSON(t, client, base)
@@ -136,7 +136,7 @@ func TestPreferencesRoundTripThroughTheDatabase(t *testing.T) {
 func TestTimezonePreferenceControlsCalendarAndMetadata(t *testing.T) {
 	t.Setenv("TZ", "Asia/Kathmandu")
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	endpoint := baseURL + "/omc/api/v1/preferences"
+	endpoint := baseURL + "/shell-pamc/api/v1/preferences"
 	response, payload := doJSON(t, client, http.MethodPut, endpoint+"/omc_timezone", `"America/New_York"`)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("%d %s", response.StatusCode, payload)
@@ -172,7 +172,7 @@ func TestTimezonePreferenceControlsCalendarAndMetadata(t *testing.T) {
 
 func TestTpsCalculationPreferenceRoundTrip(t *testing.T) {
 	client, baseURL, repo := startDashboardTestServer(t, nil)
-	base := baseURL + "/omc/api/v1/preferences"
+	base := baseURL + "/shell-pamc/api/v1/preferences"
 	for _, mode := range []string{"exclude_ttft", "include_ttft"} {
 		body := `"` + mode + `"`
 		response, payload := doJSON(t, client, http.MethodPut, base+"/omc_tps_calculation_mode", body)

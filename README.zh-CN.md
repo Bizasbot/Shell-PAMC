@@ -1,10 +1,10 @@
 <div align="center">
 
 <a href="#gh-light-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Shell-PAMC" width="340">
 </a>
 <a href="#gh-dark-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Shell-PAMC" width="340">
 </a>
 
 ### 集中管理 API 与 OAuth，可视化观测请求、成本、用量
@@ -13,10 +13,10 @@ MCP · 可视化 · 管理
 
 <br />
 
-[![Release](https://img.shields.io/github/v/release/WizisCool/oh-my-cpa?label=release)](https://github.com/WizisCool/oh-my-cpa/releases)
-[![CI](https://github.com/WizisCool/oh-my-cpa/actions/workflows/ci.yml/badge.svg)](https://github.com/WizisCool/oh-my-cpa/actions/workflows/ci.yml)
-[![Stars](https://img.shields.io/github/stars/WizisCool/oh-my-cpa?style=flat&label=stars)](https://github.com/WizisCool/oh-my-cpa/stargazers)
-[![Docker Pulls](https://img.shields.io/docker/pulls/wiziscool/oh-my-cpa?style=flat&logo=docker&logoColor=white)](https://hub.docker.com/r/wiziscool/oh-my-cpa)
+[![Release](https://img.shields.io/github/v/release/Bizasbot/Shell-PAMC?label=release)](https://github.com/Bizasbot/Shell-PAMC/releases)
+[![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
+[![Container image](https://img.shields.io/badge/ghcr.io-bizasbot%2Fshell--pamc-2496ED?style=flat&logo=docker&logoColor=white)](https://github.com/Bizasbot/Shell-PAMC/pkgs/container/shell-pamc)
 [![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
@@ -32,13 +32,13 @@ MCP · 可视化 · 管理
 <br />
 
 <a href="https://omc-demo.junze.dev">
-  <img src="docs/images/readme/hero-split.zh.webp" alt="Oh My CPA 仪表盘，左半为浅色主题，右半为深色主题" width="100%">
+  <img src="docs/images/readme/hero-split.zh.webp" alt="Shell-PAMC 仪表盘，左半为浅色主题，右半为深色主题" width="100%">
 </a>
 
 </div>
 
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)（CPA）是一个 API 网关，负责协议适配、凭据管理与请求代理。
-**Oh My CPA**（OMC）是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
+**Shell-PAMC**（OMC）是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
 OMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本地 SQLite，可离线运行，登录使用 CPA 的管理密钥。
 
 > [!TIP]
@@ -81,8 +81,8 @@ OMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本�
 将以下内容交给 Claude Code、Codex、Cursor 或其他 Agent。Agent 会检查机器现状，选择合适的安装方式并执行：
 
 ```text
-按照这份指南帮我安装 Oh My CPA：
-https://raw.githubusercontent.com/WizisCool/oh-my-cpa/master/docs/install-for-agents.md
+按照这份指南帮我安装 Shell-PAMC：
+https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/docs/install-for-agents.md
 ```
 
 ### 通过 Docker Compose 安装
@@ -115,23 +115,23 @@ services:
       - ./logs:/CLIProxyAPI/logs
       - ./plugins:/CLIProxyAPI/plugins
 
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     depends_on:
       - cli-proxy-api
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -141,42 +141,42 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 在该目录下载 CPA 的初始配置，生成两个密钥，并启动两个服务：
 
 ```bash
-curl -fsSL https://github.com/WizisCool/oh-my-cpa/releases/latest/download/cpa.config.example.yaml -o config.yaml
-printf 'CPA_MANAGEMENT_KEY=%s\nOMCPA_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
+curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
+printf 'CPA_MANAGEMENT_KEY=%s\nSHELLPAMC_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
 chmod 600 .env
 docker compose up -d
 ```
 
-访问 **`http://127.0.0.1:8080/omc/`**，以 `.env` 中 `CPA_MANAGEMENT_KEY` 的值登录。
+访问 **`http://127.0.0.1:8080/shell-pamc/`**，以 `.env` 中 `CPA_MANAGEMENT_KEY` 的值登录。
 提供商与客户端密钥在控制台中添加；客户端请求发往 CPA：`http://127.0.0.1:8317`。
 
 #### 已经安装了 CLIProxyAPI
 
 在运行 CPA 的编排文件的 `services:` 下添加以下服务；文件已有顶层 `volumes:` 时，
-将 `oh-my-cpa-data:` 并入其中。`cli-proxy-api` 是 CPA 官方编排文件中的服务名，服务名不同时替换为实际名称。
+将 `shell-pamc-data:` 并入其中。`cli-proxy-api` 是 CPA 官方编排文件中的服务名，服务名不同时替换为实际名称。
 
 ```yaml
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -186,44 +186,44 @@ docker compose up -d
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 在同一目录的 `.env` 中添加两行：
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
-OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
+SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 ```
 
-需要在控制台更新时，一并添加片段中的 `oh-my-cpa-updater` 服务。
-执行 `docker compose up -d oh-my-cpa oh-my-cpa-updater`，CPA 容器保持原样运行，不会重启。
-访问 **`http://127.0.0.1:8080/omc/`**，以管理密钥登录。
+需要在控制台更新时，一并添加片段中的 `shell-pamc-updater` 服务。
+执行 `docker compose up -d shell-pamc shell-pamc-updater`，CPA 容器保持原样运行，不会重启。
+访问 **`http://127.0.0.1:8080/shell-pamc/`**，以管理密钥登录。
 
 #### 独立部署
 
-新建一个目录，将以下内容保存为 `compose.yml`。`OMCPA_CPA_BASE_URL` 是从容器内部访问 CPA 的地址：
+新建一个目录，将以下内容保存为 `compose.yml`。`SHELLPAMC_CPA_BASE_URL` 是从容器内部访问 CPA 的地址：
 下面的值适用于 CPA 在同一台机器上并监听所有网卡的情况，其他情况见[连接 CPA](docs/install.md#reaching-cpa)。
 
 ```yaml
 services:
-  oh-my-cpa:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
-      OMCPA_CPA_BASE_URL: http://host.docker.internal:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://host.docker.internal:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
-    image: wiziscool/oh-my-cpa:latest
+  shell-pamc-updater:
+    image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
     user: "0:0"
@@ -233,35 +233,35 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 在同一目录创建 `.env`：
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
-OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
+SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 ```
 
-执行 `docker compose up -d`，然后访问 **`http://127.0.0.1:8080/omc/`**，以管理密钥登录。
+执行 `docker compose up -d`，然后访问 **`http://127.0.0.1:8080/shell-pamc/`**，以管理密钥登录。
 
 ### 更新
 
-编排文件中包含 `oh-my-cpa-updater` 服务时，控制台的**系统信息**页会在 Oh My CPA 或 CLIProxyAPI
+编排文件中包含 `shell-pamc-updater` 服务时，控制台的**系统信息**页会在 Shell-PAMC 或 CLIProxyAPI
 有新版本时显示**立即更新**。更新程序拉取新镜像，按原有的配置、数据卷与网络重建容器；新容器未能正常启动时恢复原容器。
 
 在该服务出现之前安装的部署，在 Docker 主机上执行一条命令即可启用，无需修改编排文件：
 
 ```bash
-docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install
+docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-该命令添加 `oh-my-cpa-updater` 容器，并同时把 Oh My CPA 升级到当前版本。`docker rm -f oh-my-cpa-updater`
+该命令添加 `shell-pamc-updater` 容器，并同时把 Shell-PAMC 升级到当前版本。`docker rm -f shell-pamc-updater`
 可将其移除。镜像固定为版本标签时，控制台不会改动它。各种情况及手动更新方式见[升级](docs/install.md#upgrading)（英文）。
 
 ### 安装原生可执行文件
 
-[标签发布](https://github.com/WizisCool/oh-my-cpa/releases)提供 macOS（Darwin）、Windows、
+[标签发布](https://github.com/Bizasbot/Shell-PAMC/releases)提供 macOS（Darwin）、Windows、
 Linux 和 FreeBSD 的 amd64、arm64 可执行文件。每个压缩包内嵌控制台，并附环境变量模板；
 下载后请按该发布的 `checksums.txt` 校验 SHA-256。无需 Go、Node 或 Docker，CPA 需单独安装。
 配置、权限及升级步骤见[原生安装指南](docs/install.md#native-executable)。
@@ -269,13 +269,13 @@ Linux 和 FreeBSD 的 amd64、arm64 可执行文件。每个压缩包内嵌控�
 ### 注意事项
 
 > [!IMPORTANT]
-> 备份 `.env`。`OMCPA_MASTER_KEY` 是数据库的加密密钥，丢失后数据无法读取。
+> 备份 `.env`。`SHELLPAMC_MASTER_KEY` 是数据库的加密密钥，丢失后数据无法读取。
 
 CPA 的每条用量记录只交给一个读取方。同一个 CPA 上已有其他用量统计工具时，停用该工具，
-或在 `environment:` 下添加 `OMCPA_USAGE_INGEST_MODE: "off"`，仅将 OMC 用于管理。其他管理面板不冲突。
+或在 `environment:` 下添加 `SHELLPAMC_USAGE_INGEST_MODE: "off"`，仅将 OMC 用于管理。其他管理面板不冲突。
 
-`oh-my-cpa-updater` 挂载了 Docker socket，等同于拥有该主机上 Docker 的控制权。关闭控制台更新需从编排文件中删除该服务，
-并用 `docker rm -f oh-my-cpa-updater` 删除正在运行的容器（仅删除服务定义时，Compose 不会停止已运行的容器）。
+`shell-pamc-updater` 挂载了 Docker socket，等同于拥有该主机上 Docker 的控制权。关闭控制台更新需从编排文件中删除该服务，
+并用 `docker rm -f shell-pamc-updater` 删除正在运行的容器（仅删除服务定义时，Compose 不会停止已运行的容器）。
 之后通过 `docker compose pull && docker compose up -d` 更新。
 
 发布版的加固编排文件、远程访问、HTTPS、源码构建、升级与排障见[安装指南](docs/install.md)（英文）。
@@ -286,7 +286,7 @@ CPA 的每条用量记录只交给一个读取方。同一个 CPA 上已有其�
 <summary><b>网关与提供商</b></summary>
 
 - **AI 提供商**：Codex、Claude、Gemini、Meta Muse、xAI、Vertex AI、Gemini Interactions、DeepSeek 及 OpenAI 兼容服务，统一管理凭据、模型高级选项、运行时重试与错误规则、优先级、权重、代理，以及由网关执行的启停开关。
-- **OAuth 管理**：在控制台登录 Codex、Claude、Antigravity、xAI、Kimi（kimi.com 与 kimi.ai）、Devin 与 Meta Muse，或导入 Vertex 服务账号密钥。认证文件、手动令牌刷新、模型列表、Meta 配额、xAI／Antigravity 实时套餐及凭据专属别名按凭据管理；共享模型别名与禁用规则按提供商统一配置。Codex、Claude 与已支持的 Antigravity 模型组提供窗口额度估算，上一周期的数值作为参考并单独标注。额度窗口重置约一分钟后会自动重新读取，并默认每 6 小时定时刷新一次，可在 OMC 设置中调整。 Codex／Claude 窗口预热支持按重置或每日时间调度、凭证独立策略，以及可选的确认后极小请求。已确认的自动策略会在发送前检查订阅额度与付费后备用量，并在请求后观察窗口是否激活。
+- **OAuth 管理**：在控制台登录 Codex、Claude、Antigravity、xAI、Kimi（kimi.com 与 kimi.ai）、Devin 与 Meta Muse，或导入 Vertex 服务账号密钥。认证文件、手动令牌刷新、模型列表、Meta 配额、xAI／Antigravity 实时套餐及凭据专属别名按凭据管理；共享模型别名与禁用规则按提供商统一配置。Codex、Claude 与已支持的 Antigravity 模型组提供窗口额度估算，上一周期的数值作为参考并单独标注。额度窗口重置约一分钟后会自动重新读取，并默认每 6 小时定时刷新一次，可在 Shell-PAMC 设置中调整。 Codex／Claude 窗口预热支持按重置或每日时间调度、凭证独立策略，以及可选的确认后极小请求。已确认的自动策略会在发送前检查订阅额度与付费后备用量，并在请求后观察窗口是否激活。
 - **客户端密钥**：创建、命名与吊销网关 API Key，名称会出现在请求记录与筛选项中。
 - **模型目录**：直接从上游提供商拉取模型列表。
 - **操练场**：用文本与图片调试任意已路由的模型，支持流式多轮对话与请求诊断。
@@ -344,16 +344,16 @@ CPA 的每条用量记录只交给一个读取方。同一个 CPA 上已有其�
 Claude Code：
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://cpa.example.com/omc/api/mcp \
-  --header "Authorization: Bearer $OMCPA_CPA_MANAGEMENT_KEY"
+claude mcp add --transport http shell-pamc https://cpa.example.com/shell-pamc/api/mcp \
+  --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Codex（`~/.codex/config.toml`）：
 
 ```toml
-[mcp_servers.oh-my-cpa]
-url = "https://cpa.example.com/omc/api/mcp"
-bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
+[mcp_servers.shell-pamc]
+url = "https://cpa.example.com/shell-pamc/api/mcp"
+bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 以 JSON 配置的客户端，例如 Cursor：
@@ -361,8 +361,8 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 ```json
 {
   "mcpServers": {
-    "oh-my-cpa": {
-      "url": "https://cpa.example.com/omc/api/mcp",
+    "shell-pamc": {
+      "url": "https://cpa.example.com/shell-pamc/api/mcp",
       "headers": { "Authorization": "Bearer <CPA 管理密钥>" }
     }
   }
@@ -377,12 +377,12 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 ```json
 {
   "mcpServers": {
-    "oh-my-cpa": {
-      "command": "/path/to/oh-my-cpa",
+    "shell-pamc": {
+      "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
-        "OMCPA_SERVER_URL": "https://cpa.example.com/omc",
-        "OMCPA_CPA_MANAGEMENT_KEY": "<CPA 管理密钥>"
+        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/shell-pamc",
+        "SHELLPAMC_CPA_MANAGEMENT_KEY": "<CPA 管理密钥>"
       }
     }
   }
@@ -400,13 +400,13 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 
 | 变量 | 默认值 | 用途 |
 | --- | --- | --- |
-| `OMCPA_CPA_BASE_URL` | 必填 | CPA 的地址 |
-| `OMCPA_CPA_MANAGEMENT_KEY` | 必填 | CPA 管理密钥，同时是控制台登录密码 |
-| `OMCPA_MASTER_KEY` | 必填 | 静态加密密钥（`openssl rand -hex 32`） |
-| `OMCPA_BASE_PATH` | `/omc` | 控制台挂载的子路径 |
-| `OMCPA_DATA_DIR` | `./data` | SQLite 数据库所在目录；编排文件中设为 `/data` |
-| `OMCPA_PUBLIC_URL` | 未设置 | 浏览器访问的地址；为 `https://` 时会话 Cookie 带 `Secure` 标记 |
-| `OMCPA_USAGE_INGEST_MODE` | `auto` | 已有其他服务采集该 CPA 的用量时设为 `off` |
+| `SHELLPAMC_CPA_BASE_URL` | 必填 | CPA 的地址 |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | 必填 | CPA 管理密钥，同时是控制台登录密码 |
+| `SHELLPAMC_MASTER_KEY` | 必填 | 静态加密密钥（`openssl rand -hex 32`） |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | 控制台挂载的子路径 |
+| `SHELLPAMC_DATA_DIR` | `./data` | SQLite 数据库所在目录；编排文件中设为 `/data` |
+| `SHELLPAMC_PUBLIC_URL` | 未设置 | 浏览器访问的地址；为 `https://` 时会话 Cookie 带 `Secure` 标记 |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | 已有其他服务采集该 CPA 的用量时设为 `off` |
 | `TZ` | 系统时区 | 服务器日历，需与 CPA 一致；容器内默认为 UTC |
 
 完整的配置参考、部署约束与运维须知见 [`docs/operations.md`](docs/operations.md)。
@@ -414,15 +414,15 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 ## 架构
 
 ```text
-浏览器 ──▶ 直接访问 / 已有 HTTPS 入口 ──▶ Oh My CPA (:8080)
-                                           ├─ 内嵌 React SPA (/omc/)
+浏览器 ──▶ 直接访问 / 已有 HTTPS 入口 ──▶ Shell-PAMC (:8080)
+                                           ├─ 内嵌 React SPA (/shell-pamc/)
                                            ├─ SQLite WAL (/data)
                                            └─ 用量采集器 ──▶ CLIProxyAPI (:8317)
 ```
 
 - **单二进制**：React 控制台内嵌在 Go 可执行文件中。
 - **单副本**：SQLite WAL 模式，每个数据目录只允许一个进程。
-- **原生支持子路径**：默认挂载在 `/omc`（`OMCPA_BASE_PATH`），可与 CPA 共用同一个主机名。
+- **原生支持子路径**：默认挂载在 `/shell-pamc`（`SHELLPAMC_BASE_PATH`），可与 CPA 共用同一个主机名。
 - **接口白名单**：普通控制台接口只返回经过筛选的安全字段；可信插件页面使用有边界的原生接口。仍禁止代理任意目标 URL。
 
 模块划分、数据流与架构约束见 [`docs/architecture.md`](docs/architecture.md)。
@@ -451,7 +451,7 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 | [`AGENTS.md`](AGENTS.md) | 编码 Agent 在本仓库中遵循的约定 |
 | [`docs/architecture.md`](docs/architecture.md) | 模块边界、数据流与架构约束 |
 | [`CONTEXT.md`](CONTEXT.md) · [`docs/design.md`](docs/design.md) | 领域术语 · 视觉系统 |
-| [`docs/releasing.md`](docs/releasing.md) | Docker Hub 镜像、原生压缩包与 GitHub 标签发布流程 |
+| [`docs/releasing.md`](docs/releasing.md) | GHCR 镜像、原生压缩包与 GitHub 标签发布流程 |
 | [`docs/ops/cloudflare-demo.md`](docs/ops/cloudflare-demo.md) | 在线演示的部署方式 |
 
 ## 参与贡献
@@ -461,7 +461,7 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 ```bash
 pnpm install --frozen-lockfile
 cp .env.example .env
-pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/omc/
+pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/shell-pamc/
 ```
 
 推送前运行 `pnpm verify` 与 `pnpm check:ui`。环境搭建与验证流程见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
@@ -472,7 +472,7 @@ pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/omc/
 
 ## 致谢
 
-Oh My CPA 基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 构建，协议适配、凭据管理与请求代理均由后者完成。
+Shell-PAMC 基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 构建，协议适配、凭据管理与请求代理均由后者完成。
 
 也感谢 [Linux.do 社区](https://linux.do)。
 

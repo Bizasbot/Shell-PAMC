@@ -89,7 +89,7 @@ async function benchmarkNativeBuilds(arguments_) {
     const executeTarget = (target, label, cache) => new Promise(resolve => {
         const binary = path.join(working, `${label}-${target.goos}-${target.goarch}${target.goos === 'windows' ? '.exe' : ''}`);
         const targetStarted = performance.now();
-        const child = spawn('go', [...target.buildArgs, '-o', binary, './cmd/oh-my-cpa'], { cwd: sourceRoot, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'], env: {
+        const child = spawn('go', [...target.buildArgs, '-o', binary, './cmd/shell-pamc'], { cwd: sourceRoot, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'], env: {
           ...process.env, CGO_ENABLED: '0', GOOS: target.goos, GOARCH: target.goarch,
           ...(arguments_.includes('--warm') ? {} : { GOCACHE: cache }),
         } });

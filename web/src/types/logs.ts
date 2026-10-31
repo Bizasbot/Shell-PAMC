@@ -382,7 +382,7 @@ export function shouldExitLogFullscreen(key: string, isDefaultPrevented: boolean
   return key === 'Escape' && !isDefaultPrevented && !hasOpenOverlay;
 }
 
-/** One record of Oh My CPA's own service log, already redacted by the server. */
+/** One record of Shell-PAMC's own service log, already redacted by the server. */
 export interface ServiceLogRecord {
   seq: number;
   logged_at_ms: number;

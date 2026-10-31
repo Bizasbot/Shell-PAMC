@@ -13,7 +13,7 @@ import { launchBrowser, closeBrowser, closeServer } from './acceptance/lifecycle
  *
  * Point it at a deployed demonstration to check that instead:
  *
- *   OMCPA_DEMO_URL=https://<host> pnpm verify:demo
+ *   SHELLPAMC_DEMO_URL=https://<host> pnpm verify:demo
  *
  * Without that variable it stages the built console and starts an in-process Worker server.
  *
@@ -46,8 +46,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * `/api` reaches the Worker, and an unknown path falls back to `index.html` so the
  * console's own router can answer it.
  */
-const CONFIGURED_URL = process.env.OMCPA_DEMO_URL;
-const LOCAL_PORT = Number(process.env.OMCPA_DEMO_PORT ?? 8787);
+const CONFIGURED_URL = process.env.SHELLPAMC_DEMO_URL;
+const LOCAL_PORT = Number(process.env.SHELLPAMC_DEMO_PORT ?? 8787);
 const BASE = (CONFIGURED_URL ?? `http://127.0.0.1:${LOCAL_PORT}`).replace(/\/$/, '');
 
 const ASSETS = join(root, 'tmp', 'cloudflare-demo', 'assets');

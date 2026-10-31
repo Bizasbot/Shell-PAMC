@@ -151,7 +151,7 @@ the data with the change. `pnpm verify:demo` then drives every route in a real b
 pnpm test:demo              # the Worker's routing, re-basing and privacy, in Node
 pnpm check:demo             # the dataset is current and complete
 pnpm verify:demo            # every console route renders, no API errors, no console errors
-OMCPA_DEMO_URL=https://<host> pnpm verify:demo   # the same against a deployment
+SHELLPAMC_DEMO_URL=https://<host> pnpm verify:demo   # the same against a deployment
 pnpm verify:demo:go         # the Go binary's own demonstration mode, still supported
 ```
 
@@ -186,7 +186,7 @@ GitHub Actions deployment holding a long-lived credential.
 One-time setup, in the Cloudflare console:
 
 1. Install the Cloudflare GitHub integration and grant it access to this repository only.
-2. Create the Worker `oh-my-cpa-demo`, connect it to this repository, and set the
+2. Create the Worker `shell-pamc-demo`, connect it to this repository, and set the
    production branch to `master`.
 3. **Turn off preview builds**, so a pull request deploys nothing. Uncheck **Enable
    Preview Builds** under Settings → Build → Branch control.
@@ -205,7 +205,7 @@ One-time setup, in the Cloudflare console:
 
    Preview URLs are separately guarded by `workers_dev: false`, which disables them by
    default. Verified on the deployed Worker: a preview URL of the form
-   `<version-prefix>-oh-my-cpa-demo.<account-subdomain>.workers.dev` answers 404, so even a
+   `<version-prefix>-shell-pamc-demo.<account-subdomain>.workers.dev` answers 404, so even a
    preview command that ran could not publish the demonstration under the account-level
    subdomain. The two settings guard the same thing from different sides, and the checkbox
    is the one that decides whether the command runs at all.
@@ -273,7 +273,7 @@ repository does not mean. ADR 0021 records the decision.
 
 It no longer does, and the retirement is complete rather than pending: the project, its
 deployments, its aliases and its container-registry repository are deleted, and
-`oh-my-cpa-demo.vercel.app` answers 404. Nothing in the repository refers to it except
+`shell-pamc-demo.vercel.app` answers 404. Nothing in the repository refers to it except
 this section and the ADR that records why the move happened.
 
 Two things are worth knowing if you find traces of it.

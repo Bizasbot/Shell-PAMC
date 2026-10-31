@@ -189,7 +189,7 @@ test('no planned check for any representative path reaches the browser or a buil
     'internal/api/handler.go',
     'internal/api/management_provider_writes.go',
     'internal/web/placeholder.html',
-    'cmd/oh-my-cpa/main.go',
+    'cmd/shell-pamc/main.go',
     'migrations/004_something.sql',
     'scripts/test-usage-event-view.ts',
     'tsconfig.tooling.json',

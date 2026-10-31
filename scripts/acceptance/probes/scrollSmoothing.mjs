@@ -218,7 +218,7 @@ export async function scrollSmoothing({ base, page, check }) {
   await row.scrollIntoViewIfNeeded();
   await row.getByText('Follow system', { exact: true }).click();
   await until(
-    () => page.evaluate(() => fetch('/omc/api/v1/preferences').then((response) => response.json()))
+    () => page.evaluate(() => fetch('/shell-pamc/api/v1/preferences').then((response) => response.json()))
       .then((body) => body.preferences?.omc_scroll_smoothing === 'system'),
     { label: 'the scroll smoothing preference to be stored' },
   );
@@ -231,7 +231,7 @@ export async function scrollSmoothing({ base, page, check }) {
 
   await row.getByText('Off', { exact: true }).click();
   await until(
-    () => page.evaluate(() => fetch('/omc/api/v1/preferences').then((response) => response.json()))
+    () => page.evaluate(() => fetch('/shell-pamc/api/v1/preferences').then((response) => response.json()))
       .then((body) => body.preferences?.omc_scroll_smoothing === 'off'),
     { label: 'the scroll smoothing preference to be stored' },
   );
@@ -249,7 +249,7 @@ export async function scrollSmoothing({ base, page, check }) {
   await row.scrollIntoViewIfNeeded();
   await row.getByText('On', { exact: true }).click();
   await until(
-    () => page.evaluate(() => fetch('/omc/api/v1/preferences').then((response) => response.json()))
+    () => page.evaluate(() => fetch('/shell-pamc/api/v1/preferences').then((response) => response.json()))
       .then((body) => body.preferences?.omc_scroll_smoothing === 'on'),
     { label: 'the scroll smoothing preference to be stored' },
   );

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/mcpbridge"
+	"github.com/bizasbot/shell-pamc/internal/mcpbridge"
 )
 
 type bearerTransport struct{ key string }
@@ -24,7 +24,7 @@ func (transport bearerTransport) RoundTrip(request *http.Request) (*http.Respons
 
 func TestRemoteMCPServesTheRegistryToAManagementKeyHolder(t *testing.T) {
 	fixture := newProviderTestFixture(t)
-	endpoint := fixture.baseURL + "/omc/api/mcp"
+	endpoint := fixture.baseURL + "/shell-pamc/api/mcp"
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -89,7 +89,7 @@ func TestRemoteMCPServesTheRegistryToAManagementKeyHolder(t *testing.T) {
 		t.Fatalf("prepare: %+v %v", prepared, err)
 	}
 	link := prepared.Content[1].(*mcp.TextContent).Text
-	if !strings.HasPrefix(link, "Operator approval: "+fixture.baseURL+"/omc/authorize/") {
+	if !strings.HasPrefix(link, "Operator approval: "+fixture.baseURL+"/shell-pamc/authorize/") {
 		t.Fatalf("approval link: %s", link)
 	}
 	operationID := link[strings.LastIndex(link, "/")+1:]

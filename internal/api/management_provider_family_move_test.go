@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func TestProviderProtocolChange(t *testing.T) {
@@ -41,7 +41,7 @@ func TestProviderProtocolChange(t *testing.T) {
 				state.mu.Unlock()
 				id := idPrefixForFamily(source) + "0"
 				body := fmt.Sprintf(`{"family":%q,"name":"Moved provider","base_url":"https://relay.example.test/v1","disabled":true,"prefix":"team","priority":3,"headers":{"x-team":"one"},"runtime_policy":{"cooling":"disabled","request_retry":2},"model_entries":[{"name":"model-one","alias":"alias-one","thinking":{"levels":["high"]}}]}`, target)
-				resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/omc/api/v1/management/providers/"+id, body)
+				resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/shell-pamc/api/v1/management/providers/"+id, body)
 				if resp.StatusCode != http.StatusOK {
 					t.Fatalf("status %d: %s", resp.StatusCode, payload)
 				}
@@ -101,7 +101,7 @@ func TestProviderProtocolChangePreservesEveryKeyAndMovesMetadata(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/omc/api/v1/management/providers/openai-compat-0", `{"family":"codex","name":"Moved","base_url":"https://relay.example.test","website":"https://site.example.test","keys":[{"api_key":"","proxy_url":"http://proxy.example.test","weight":4},{"api_key":"","weight":7}]}`)
+	resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/shell-pamc/api/v1/management/providers/openai-compat-0", `{"family":"codex","name":"Moved","base_url":"https://relay.example.test","website":"https://site.example.test","keys":[{"api_key":"","proxy_url":"http://proxy.example.test","weight":4},{"api_key":"","weight":7}]}`)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status %d: %s", resp.StatusCode, payload)
 	}
@@ -147,7 +147,7 @@ func TestProviderProtocolChangeRefusesInvalidTargetsAndStaleIdentity(t *testing.
 	} {
 		t.Run(test.body, func(t *testing.T) {
 			fixture := newProviderTestFixture(t)
-			resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/omc/api/v1/management/providers/openai-compat-0", test.body)
+			resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/shell-pamc/api/v1/management/providers/openai-compat-0", test.body)
 			if resp.StatusCode != test.status {
 				t.Fatalf("status %d: %s", resp.StatusCode, payload)
 			}
@@ -185,7 +185,7 @@ func TestProviderProtocolChangeRequiresAuditAndReportsPartialMetadataCommit(t *t
 		if err := fixture.handler.repo.PutPreference(context.Background(), repository.PreferenceProviderNames, "invalid JSON"); err != nil {
 			t.Fatal(err)
 		}
-		resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/omc/api/v1/management/providers/claude-0", `{"family":"codex","name":"Moved","base_url":"https://relay.test"}`)
+		resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/shell-pamc/api/v1/management/providers/claude-0", `{"family":"codex","name":"Moved","base_url":"https://relay.test"}`)
 		if resp.StatusCode != http.StatusInternalServerError || !strings.Contains(string(payload), providerPartialCommitCode) {
 			t.Fatalf("partial commit = %d %s", resp.StatusCode, payload)
 		}
@@ -199,7 +199,7 @@ func TestProviderProtocolChangeRequiresAuditAndReportsPartialMetadataCommit(t *t
 
 func TestProviderProtocolChangeRefusesDestinationCollision(t *testing.T) {
 	fixture := newProviderTestFixture(t)
-	resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/omc/api/v1/management/providers/claude-0", `{"family":"codex","base_url":"https://api.openai.com","api_key":"sk-codex-secret-key-9999"}`)
+	resp, payload := doJSON(t, fixture.client, http.MethodPut, fixture.baseURL+"/shell-pamc/api/v1/management/providers/claude-0", `{"family":"codex","base_url":"https://api.openai.com","api_key":"sk-codex-secret-key-9999"}`)
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("collision = %d %s", resp.StatusCode, payload)
 	}

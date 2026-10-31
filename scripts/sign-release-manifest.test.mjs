@@ -7,7 +7,7 @@ import {
   MANIFEST_NAME, SIGNATURE_NAME, createManifest, derivePublicKey, generateSigningKey, signManifest, verifyManifest, writeSignedManifest,
 } from './sign-release-manifest.mjs';
 
-const RELEASE = { tag: 'v1.2.3', image: 'wiziscool/oh-my-cpa', digest: `sha256:${'ab'.repeat(32)}` };
+const RELEASE = { tag: 'v1.2.3', image: 'ghcr.io/bizasbot/shell-pamc', digest: `sha256:${'ab'.repeat(32)}` };
 
 test('a manifest verifies only as signed and only for its own key', () => {
   const { privateKey, publicKey } = generateSigningKey();
@@ -22,7 +22,7 @@ test('a manifest verifies only as signed and only for its own key', () => {
 
 test('a manifest names one stable release and one image digest', () => {
   assert.deepEqual(JSON.parse(createManifest(RELEASE)), {
-    schema: 1, version: 'v1.2.3', image: { repository: 'wiziscool/oh-my-cpa', digest: RELEASE.digest },
+    schema: 1, version: 'v1.2.3', image: { repository: 'ghcr.io/bizasbot/shell-pamc', digest: RELEASE.digest },
   });
   assert.throws(() => createManifest({ ...RELEASE, tag: 'v1.2.3-rc1' }));
   assert.throws(() => createManifest({ ...RELEASE, digest: 'latest' }));

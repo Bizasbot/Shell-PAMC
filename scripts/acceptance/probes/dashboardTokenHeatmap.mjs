@@ -386,10 +386,10 @@ export async function dashboardTokenHeatmap({ base, page, check }) {
   const link = tooltip.locator('a.heatmap-tip-link');
   check('the drill-down is an anchor rather than a handler', (await link.count()) === 1);
   // The href must carry the router's basename. A bare anchor with the router-internal path skips
-  // the `/omc` prefix and lands outside the app, and an assertion that only checked the suffix
+  // the `/shell-pamc` prefix and lands outside the app, and an assertion that only checked the suffix
   // would pass on the broken URL - which is exactly how that shipped once.
   const href = await link.getAttribute('href');
-  const expectedHref = `/omc/usage/events?from=${busiest.from_ms}&to=${busiest.to_ms}`;
+  const expectedHref = `/shell-pamc/usage/events?from=${busiest.from_ms}&to=${busiest.to_ms}`;
   check('the link points at that day\'s request list, under the app basename', href === expectedHref, `href=${href}`);
   check('the link carries both day bounds', href?.includes(`from=${busiest.from_ms}`) && href?.includes(`to=${busiest.to_ms}`), `href=${href}`);
   check('the link is keyboard-reachable', await link.evaluate((node) => node.tabIndex >= 0 || node.nodeName === 'A'));
@@ -907,7 +907,7 @@ export async function dashboardTokenHeatmap({ base, page, check }) {
   // Run last because it writes a console-wide preference: every earlier check reads the default
   // reading, and a setting stored mid-flow would silently re-point them.
   await page.evaluate(async () => {
-    await fetch('/omc/api/v1/preferences/omc_token_style', {
+    await fetch('/shell-pamc/api/v1/preferences/omc_token_style', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify('full'),
@@ -930,7 +930,7 @@ export async function dashboardTokenHeatmap({ base, page, check }) {
   // stale context, cache or render path that a pure unit test cannot see.
   await page.evaluate(async () => {
     localStorage.setItem('omc-lang', 'zh');
-    await fetch('/omc/api/v1/preferences/omc_token_style', {
+    await fetch('/shell-pamc/api/v1/preferences/omc_token_style', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify('zh'),
@@ -1229,7 +1229,7 @@ export async function dashboardTokenHeatmapFailure({ base, page, check, context 
     return { page: fresh };
   })();
   let failNext = false;
-  await context.route('**/omc/api/**/dashboard/token-heatmap**', async (route) => {
+  await context.route('**/shell-pamc/api/**/dashboard/token-heatmap**', async (route) => {
     if (failNext) return fulfillFixture(route, { status: 503, json: { error: 'database is unavailable' } });
     return fulfillFixture(route, { status: 200, json: chartTokenHeatmap });
   });
@@ -1272,7 +1272,7 @@ export async function dashboardTokenHeatmapFailure({ base, page, check, context 
     files: [credentialFile('claude-probe.json', 'probe-claude', 'claude', false), credentialFile('codex-probe.json', 'probe-codex', 'codex', true)],
   };
   let canReadCredentials = false;
-  await quotaPage.route('**/omc/api/**/management/auth-files*', route => fulfillFixture(route, canReadCredentials
+  await quotaPage.route('**/shell-pamc/api/**/management/auth-files*', route => fulfillFixture(route, canReadCredentials
     ? { status: 200, json: credentialFiles }
     : { status: 503, json: { error: 'CPA unavailable' } }));
   await quotaPage.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });

@@ -41,7 +41,7 @@ export async function verifyDockerImage(image, version) {
   assert.equal(metadata.Config.User, '10001:10001');
   assert.equal(metadata.Config.Labels['org.opencontainers.image.version'], version);
   const secret = randomBytes(24).toString('hex');
-  for (const [rawPath, listenPort] of [['omc', '8080'], ['/', '8080'], ['/tools/omc/', '8081']]) {
+  for (const [rawPath, listenPort] of [['shell-pamc', '8080'], ['/', '8080'], ['/tools/shell-pamc/', '8081']]) {
     const volume = `omc-release-${randomBytes(6).toString('hex')}`;
     const since = new Date().toISOString();
     let container;
@@ -49,11 +49,11 @@ export async function verifyDockerImage(image, version) {
       executeDocker('volume', 'create', volume);
       container = executeDocker('create', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
         '--health-interval=1s', '--health-start-period=1s', '-p', `127.0.0.1::${listenPort}`, '-v', `${volume}:/data`,
-        '-e', `OMCPA_LISTEN_ADDR=:${listenPort}`, '-e', `OMCPA_BASE_PATH=${rawPath}`, '-e', 'OMCPA_DATA_DIR=/data',
-        '-e', `OMCPA_MASTER_KEY=${randomBytes(32).toString('hex')}`,
-        '-e', 'OMCPA_CPA_BASE_URL=http://127.0.0.1:1', '-e', `OMCPA_CPA_MANAGEMENT_KEY=${secret}`,
-        '-e', 'OMCPA_USAGE_INGEST_MODE=off', '-e', 'OMCPA_UPDATE_CHECK_ENABLED=false',
-        '-e', 'OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
+        '-e', `SHELLPAMC_LISTEN_ADDR=:${listenPort}`, '-e', `SHELLPAMC_BASE_PATH=${rawPath}`, '-e', 'SHELLPAMC_DATA_DIR=/data',
+        '-e', `SHELLPAMC_MASTER_KEY=${randomBytes(32).toString('hex')}`,
+        '-e', 'SHELLPAMC_CPA_BASE_URL=http://127.0.0.1:1', '-e', `SHELLPAMC_CPA_MANAGEMENT_KEY=${secret}`,
+        '-e', 'SHELLPAMC_USAGE_INGEST_MODE=off', '-e', 'SHELLPAMC_UPDATE_CHECK_ENABLED=false',
+        '-e', 'SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
       executeDocker('start', container);
       await waitForHealthy(container, since);
       const address = executeDocker('port', container, `${listenPort}/tcp`);
@@ -82,7 +82,7 @@ export async function verifyDockerImage(image, version) {
       const state = JSON.parse(executeDocker('inspect', container))[0];
       assert.equal(state.HostConfig.ReadonlyRootfs, true);
       assert.equal(state.State.Health.Status, 'healthy');
-      executeDocker('exec', container, 'sh', '-c', 'test -s /data/oh-my-cpa.db && test -w /data');
+      executeDocker('exec', container, 'sh', '-c', 'test -s /data/shell-pamc.db && test -w /data');
       console.log(`PASS ${image}: ${rawPath} — image health, SQLite, login, embedded SPA and version ${version}`);
     } finally {
       if (container) {
@@ -93,7 +93,7 @@ export async function verifyDockerImage(image, version) {
   }
 }
 
-const UPDATER_NAME = 'oh-my-cpa-updater';
+const UPDATER_NAME = 'shell-pamc-updater';
 const DOCKER_SOCKET = '/var/run/docker.sock';
 
 function containerExists(name) {
@@ -137,11 +137,11 @@ export async function verifyUpdaterInstall(image) {
     executeDocker('volume', 'create', volume);
     executeDocker('run', '-d', '--name', consoleName, '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
       '--health-interval=1s', '--health-start-period=1s', '-p', '127.0.0.1::8080', '-v', `${volume}:/data`,
-      '-e', 'OMCPA_LISTEN_ADDR=:8080', '-e', 'OMCPA_BASE_PATH=/omc', '-e', 'OMCPA_DATA_DIR=/data',
-      '-e', `OMCPA_MASTER_KEY=${randomBytes(32).toString('hex')}`,
-      '-e', 'OMCPA_CPA_BASE_URL=http://127.0.0.1:1', '-e', `OMCPA_CPA_MANAGEMENT_KEY=${secret}`,
-      '-e', 'OMCPA_USAGE_INGEST_MODE=off', '-e', 'OMCPA_UPDATE_CHECK_ENABLED=false',
-      '-e', 'OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
+      '-e', 'SHELLPAMC_LISTEN_ADDR=:8080', '-e', 'SHELLPAMC_BASE_PATH=/shell-pamc', '-e', 'SHELLPAMC_DATA_DIR=/data',
+      '-e', `SHELLPAMC_MASTER_KEY=${randomBytes(32).toString('hex')}`,
+      '-e', 'SHELLPAMC_CPA_BASE_URL=http://127.0.0.1:1', '-e', `SHELLPAMC_CPA_MANAGEMENT_KEY=${secret}`,
+      '-e', 'SHELLPAMC_USAGE_INGEST_MODE=off', '-e', 'SHELLPAMC_UPDATE_CHECK_ENABLED=false',
+      '-e', 'SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
     await waitForHealthy(consoleName, since);
     const consoleBefore = JSON.parse(executeDocker('inspect', consoleName))[0];
 
@@ -166,7 +166,7 @@ export async function verifyUpdaterInstall(image) {
     assert.equal(consoleAfter.HostConfig.ReadonlyRootfs, true);
     assert.ok(!JSON.stringify(consoleAfter.Mounts).includes('docker.sock'), 'The console never holds the socket');
 
-    const origin = `http://${executeDocker('port', consoleName, '8080/tcp')}/omc`;
+    const origin = `http://${executeDocker('port', consoleName, '8080/tcp')}/shell-pamc`;
     const login = await fetch(`${origin}/api/auth/login`, {method: 'POST',
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: secret})});
     assert.equal(login.status, 200);
@@ -187,7 +187,7 @@ export async function verifyUpdaterInstall(image) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const image = process.argv[2] ?? 'oh-my-cpa:release-test';
+  const image = process.argv[2] ?? 'shell-pamc:release-test';
   await verifyUpdaterRoleProbe(image);
   await verifyUpdaterInstall(image);
   await verifyDockerImage(image, process.env.RELEASE_TAG ?? 'v0.1.0');

@@ -30,7 +30,7 @@ func TestIndexHTMLFallsBackToThePlaceholderWithoutABuild(t *testing.T) {
 	}
 	// The server injects its runtime configuration into <head>; a placeholder without
 	// one would be served without the configuration the console expects.
-	if !bytes.Contains(got, []byte("<head>")) || !bytes.Contains(got, []byte("window.__OMCPA_CONFIG__")) {
+	if !bytes.Contains(got, []byte("<head>")) || !bytes.Contains(got, []byte("window.__SHELLPAMC_CONFIG__")) {
 		t.Fatalf("placeholder has no <head> or configuration slot: %q", got)
 	}
 }

@@ -1,6 +1,6 @@
-# Contributing to Oh My CPA
+# Contributing to Shell-PAMC
 
-Thank you for your interest in contributing to Oh My CPA! We welcome bug reports, feature suggestions, documentation improvements, and code contributions.
+Thank you for your interest in contributing to Shell-PAMC! We welcome bug reports, feature suggestions, documentation improvements, and code contributions.
 
 Bug reports and feature requests go through the issue forms under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/); security vulnerabilities are reported privately as described in [`SECURITY.md`](SECURITY.md).
 
@@ -27,8 +27,8 @@ Bug reports and feature requests go through the issue forms under [`.github/ISSU
 
 1. **Fork and clone the repository**:
    ```bash
-   git clone https://github.com/<your-username>/oh-my-cpa.git
-   cd oh-my-cpa
+   git clone https://github.com/<your-username>/Shell-PAMC.git
+   cd Shell-PAMC
    pnpm install --frozen-lockfile
    ```
 
@@ -36,13 +36,13 @@ Bug reports and feature requests go through the issue forms under [`.github/ISSU
    ```bash
    cp .env.example .env
    ```
-   Provide a 32-byte hex string for `OMCPA_MASTER_KEY` (`openssl rand -hex 32`) and your local CLIProxyAPI management key for `OMCPA_CPA_MANAGEMENT_KEY`.
+   Provide a 32-byte hex string for `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`) and your local CLIProxyAPI management key for `SHELLPAMC_CPA_MANAGEMENT_KEY`.
 
 3. **Start the development servers**:
    ```bash
    pnpm dev
    ```
-   This launches Air (watching Go backend on `:8080`) and Vite (frontend dev server on `:5173`) concurrently. Access the console at **`http://127.0.0.1:5173/omc/`** (`/omc` redirects there).
+   This launches Air (watching Go backend on `:8080`) and Vite (frontend dev server on `:5173`) concurrently. Access the console at **`http://127.0.0.1:5173/shell-pamc/`** (`/shell-pamc` redirects there).
 
 ---
 
@@ -73,7 +73,7 @@ User-facing strings must never be hardcoded in backend responses or React compon
 
 ### 2. Styling & Theme Tokens
 - Never hardcode color hex values in components. Read the resolved palette from `web/src/theme/palette.ts` or use the CSS variables from `docs/design.md`; the eighteen derived tokens are computed, so reach for the relationship rather than re-deriving one.
-- Oh My CPA uses a **terminal-flat** design language: zero box shadows (`box-shadow: none`), 4px border radii, and 1px hairline borders. Status colors (green, amber, red) are reserved strictly for semantic system health.
+- Shell-PAMC uses a **terminal-flat** design language: zero box shadows (`box-shadow: none`), 4px border radii, and 1px hairline borders. Status colors (green, amber, red) are reserved strictly for semantic system health.
 
 ### 3. API & DTO Allowlisting
 - The backend enforces strict DTO allowlists in `internal/api/`. Ordinary responses must not pass through raw, unsanitized CPA payloads. The trusted Plugin Host is the bounded native-response exception in ADR 0067, with credential separation, auditing, serialization and backups. Arbitrary target URLs remain forbidden.

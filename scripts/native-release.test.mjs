@@ -20,10 +20,10 @@ test('native matrix is exactly CPA OS/architecture coverage with stable names an
     'linux/amd64', 'linux/arm64', 'freebsd/amd64', 'freebsd/arm64',
   ]);
   for (const target of PLAN) {
-    assert.equal(target.binary, target.goos === 'windows' ? 'oh-my-cpa.exe' : 'oh-my-cpa');
-    assert.equal(target.archive, `oh-my-cpa_0.1.2_${target.goos}_${target.goarch}.${target.goos === 'windows' ? 'zip' : 'tar.gz'}`);
+    assert.equal(target.binary, target.goos === 'windows' ? 'shell-pamc.exe' : 'shell-pamc');
+    assert.equal(target.archive, `shell-pamc_0.1.2_${target.goos}_${target.goarch}.${target.goos === 'windows' ? 'zip' : 'tar.gz'}`);
     assert.ok(target.buildArgs.includes('timetzdata'));
-    assert.ok(target.buildArgs.includes('-s -w -X github.com/oh-my-cpa/oh-my-cpa/internal/config.BuildVersion=v0.1.2'));
+    assert.ok(target.buildArgs.includes('-s -w -X github.com/bizasbot/shell-pamc/internal/config.BuildVersion=v0.1.2'));
   }
   for (const tag of ['v0.1.2-rc.1', 'v01.1.2', '0.1.2', 'v0.1.2\nbad']) {
     assert.throws(() => createNativePlan(tag, '0.1.2', '0.1.2'));
@@ -114,13 +114,13 @@ test('tar and zip archives extract the exact payload with executable permission 
 
 test('native environment template preserves embedded identity and requires operator-owned secrets', () => {
   const source = fs.readFileSync(new URL('../deploy/native.env.example', import.meta.url), 'utf8');
-  assert.ok(!source.includes('OMCPA_VERSION='));
-  assert.ok(source.includes('OMCPA_LISTEN_ADDR=127.0.0.1:8080'));
-  assert.ok(source.includes('OMCPA_DATA_DIR=./data'));
-  assert.ok(source.includes('OMCPA_MASTER_KEY=replace-me'));
-  const placeholder = /^OMCPA_MASTER_KEY=(.+)$/m.exec(source)[1];
+  assert.ok(!source.includes('SHELLPAMC_VERSION='));
+  assert.ok(source.includes('SHELLPAMC_LISTEN_ADDR=127.0.0.1:8080'));
+  assert.ok(source.includes('SHELLPAMC_DATA_DIR=./data'));
+  assert.ok(source.includes('SHELLPAMC_MASTER_KEY=replace-me'));
+  const placeholder = /^SHELLPAMC_MASTER_KEY=(.+)$/m.exec(source)[1];
   assert.ok(placeholder.length < 32, 'Template must fail key validation until the operator supplies a key');
-  assert.ok(source.includes('OMCPA_CPA_MANAGEMENT_KEY=replace-with-'));
+  assert.ok(source.includes('SHELLPAMC_CPA_MANAGEMENT_KEY=replace-with-'));
 });
 
 

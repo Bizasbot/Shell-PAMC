@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/ingest"
+	"github.com/bizasbot/shell-pamc/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage/ingest"
 )
 
 type routingResponse struct {
@@ -81,7 +81,7 @@ func TestUsageRoutingReadsTheRollingMinuteOfAttempts(t *testing.T) {
 		}
 	}
 
-	routing := readRouting(t, client, baseURL+"/omc/api/v1/usage/routing")
+	routing := readRouting(t, client, baseURL+"/shell-pamc/api/v1/usage/routing")
 	if routing.WindowMS != USAGE_ROUTING_WINDOW.Milliseconds() {
 		t.Fatalf("window_ms = %d", routing.WindowMS)
 	}
@@ -104,19 +104,19 @@ func TestUsageRoutingReadsTheRollingMinuteOfAttempts(t *testing.T) {
 	if _, err := repo.InsertUsageEvents(ctx, []usage.Event{routingEvent("req-b", "auth-1", now, 250, false)}); err != nil {
 		t.Fatal(err)
 	}
-	since := readRouting(t, client, fmt.Sprintf("%s/omc/api/v1/usage/routing?after=%d", baseURL, newest))
+	since := readRouting(t, client, fmt.Sprintf("%s/shell-pamc/api/v1/usage/routing?after=%d", baseURL, newest))
 	if len(since.Records) != 1 || since.Records[0].RequestID != "req-b" {
 		t.Fatalf("after=%d answered %+v, want only req-b", newest, since.Records)
 	}
 
-	if response, _ := getJSON(t, client, baseURL+"/omc/api/v1/usage/routing?after=x"); response.StatusCode != http.StatusBadRequest {
+	if response, _ := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/routing?after=x"); response.StatusCode != http.StatusBadRequest {
 		t.Fatalf("a malformed after answered %d", response.StatusCode)
 	}
 }
 
 func TestUsageLiveAnswersNoContentWithoutACollector(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil)
-	response, _ := getJSON(t, client, baseURL+"/omc/api/v1/usage/live")
+	response, _ := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/live")
 	if response.StatusCode != http.StatusNoContent {
 		t.Fatalf("status = %d, want 204 so EventSource stops and the page keeps polling", response.StatusCode)
 	}
@@ -146,7 +146,7 @@ func TestUsageLiveRefusesReadersPastTheLimit(t *testing.T) {
 	client, baseURL, _ := startDashboardTestServer(t, nil, func(handler *Handler) {
 		handler.SetUsagePipeline(liveTestPipeline{changes: changes})
 	})
-	response, payload := getJSON(t, client, baseURL+"/omc/api/v1/usage/live")
+	response, payload := getJSON(t, client, baseURL+"/shell-pamc/api/v1/usage/live")
 	if response.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want 503", response.StatusCode)
 	}
@@ -165,7 +165,7 @@ func TestUsageLiveSignalsAStoredChange(t *testing.T) {
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/omc/api/v1/usage/live", nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/shell-pamc/api/v1/usage/live", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
