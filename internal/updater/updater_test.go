@@ -211,9 +211,9 @@ func TestVerifyManifest(t *testing.T) {
 // The release workflow signs with Node and the updater verifies with Go; this vector
 // was produced by scripts/sign-release-manifest.mjs.
 func TestVerifyManifestAcceptsTheReleaseScriptsSignature(t *testing.T) {
-	publicKey := "tnEjBVLjIWZZqc5M7Au8EHXqH2pRDHM/r6dTl2zArvE="
-	manifest := "{\n  \"schema\": 1,\n  \"version\": \"v1.2.3\",\n  \"image\": {\n    \"repository\": \"wiziscool/oh-my-cpa\",\n    \"digest\": \"sha256:abababababababababababababababababababababababababababababababab\"\n  }\n}\n"
-	signature := "5cSe9MESI6GouSjcbFWf9lrrQa1jn4VKC+mpcA6yqYv1sT0ZAz/oA1GjCNfZv1ntprWwr6vU4cDQEGY10OAuAA=="
+	publicKey := "6EL+3NdWhov3IbKjdNjRRIaD35I+9NrLrtAYGwiEY/k="
+	manifest := "{\n  \"schema\": 1,\n  \"version\": \"v1.2.3\",\n  \"image\": {\n    \"repository\": \"ghcr.io/bizasbot/shell-pamc\",\n    \"digest\": \"sha256:abababababababababababababababababababababababababababababababab\"\n  }\n}\n"
+	signature := "6USmDIHjx+LY2J8kTuddqaBcuej8k9rLeSNaO7LwuzWlrG55k/ZvL7i/Ngr4nHfFB4IP1i4UVY++ztwOCPrrCg=="
 	verified, err := VerifyManifest(publicKey, []byte(manifest), signature)
 	if err != nil || verified.Version != "v1.2.3" {
 		t.Fatalf("verify: %+v %v", verified, err)
