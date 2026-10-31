@@ -1,348 +1,347 @@
-# CPA v8 compatibility
+# Compatibilidad con CPA v8
 
-Shell-PAMC requires CLIProxyAPI (CPA) v8.0.0 or later and speaks its v8 Management
-API (ADR 0034, which supersedes the one-build-for-v7-and-v8 decision of ADR 0028). This
-document records what v8 changed, what was measured against real binaries, how Shell-PAMC
-decides that a gateway is v8, how it edits the configuration (ADR 0037), which routes it
-calls, and what remains unverified. Measurements against v7.3.20 below are kept as the record of how v8
-treats a v7 configuration file, which is what an upgraded deployment starts from.
+Shell-PAMC requiere CLIProxyAPI (CPA) v8.0.0 o posterior y utiliza su API de administración
+v8 (ADR 0034, que reemplaza la decisión de compilación única para v7 y v8 de ADR 0028). Este
+documento registra qué cambió en v8, qué se midió contra binarios reales, cómo determina Shell-PAMC
+que una pasarela es v8, cómo edita la configuración (ADR 0037), a qué rutas llama
+y qué permanece sin verificar. Las mediciones contra v7.3.20 a continuación se conservan como registro de cómo
+trata v8 un archivo de configuración de v7, que es el punto de partida de un despliegue actualizado.
 
-## Vertex per-model OpenAPI policy
+## Política OpenAPI por modelo en Vertex
 
-The CPA source contract at `d44f8682bc1438ac0f06159207435bd997bca4c9`
-adds optional `openapi` booleans to Vertex API-key model entries and OAuth
-aliases/settings, and `openapi` / `openapi-location` to Vertex API-key entries.
-Shell-PAMC edits API-key defaults and model rows in AI Providers, provider-wide OAuth
-aliases in Model Rules, and credential aliases in credential detail. The facade
-keeps unset, explicit false and true distinct; model/alias overrides outrank
-credential defaults, which outrank CPA's automatic model-name detection. Two
-aliases of one upstream model can have different overrides. Clearing an override
-restores inheritance. Renaming one of several same-model aliases preserves its
-policy after unchanged sibling routes are matched; ambiguous simultaneous renames
-are refused before writing. CPA alone selects endpoints and executes requests.
+El contrato fuente de CPA en `d44f8682bc1438ac0f06159207435bd997bca4c9`
+agrega booleanos opcionales `openapi` a las entradas de modelo de claves API de Vertex y a los
+alias/ajustes de OAuth, y `openapi` / `openapi-location` a las entradas de claves API de Vertex.
+Shell-PAMC edita los valores predeterminados de claves API y filas de modelos en Proveedores de IA, los alias
+de OAuth para todo el proveedor en Reglas de Modelos, y los alias de credenciales en el detalle de la credencial. La fachada
+mantiene diferenciados no definido, false explícito y true; las anulaciones de modelo/alias tienen prioridad sobre
+los valores predeterminados de la credencial, que a su vez tienen prioridad sobre la detección automática de nombres de modelos de CPA. Dos
+alias de un mismo modelo upstream pueden tener diferentes anulaciones. Limpiar una anulación
+restaura la herencia. Renombrar uno de varios alias del mismo modelo preserva su
+política después de que las rutas hermanas sin cambios coincidan; los cambios de nombre simultáneos ambiguos
+se rechazan antes de escribir. Solo CPA selecciona endpoints y ejecuta solicitudes.
 
-The provider behavior DTO uses `openapi: inherit|enabled|disabled` and optional
-`openapi_location` (empty clears); model options and alias DTOs use optional
-boolean `openapi` (omitted/null inherits). Provider model options state the whole
-model entry; other fields and groups retain their existing preservation contract.
-Writes reuse revision guards, encrypted backups and bounded stored-policy readback.
-OAuth alias replacements and credential-field patches also compare the override
-on readback. Non-Vertex overrides are refused. Existing service-account controls
-remain independent. Agent/MCP uses the existing confirmed provider/alias/credential
-operations with these bounded settings, never raw metadata or inference calls.
-This contract is verified against source and hermetic fixtures, not a live Vertex account.
+El DTO de comportamiento del proveedor usa `openapi: inherit|enabled|disabled` y un `openapi_location`
+opcional (vacío limpia); las opciones de modelo y los DTOs de alias usan un booleano opcional
+`openapi` (omitido/null hereda). Las opciones de modelo del proveedor declaran la entrada completa del
+modelo; otros campos y grupos conservan su contrato de preservación existente.
+Las escrituras reutilizan barreras de revisión, respaldos cifrados y lectura acotada de la política almacenada.
+Los reemplazos de alias de OAuth y los parches de campos de credenciales también comparan la anulación
+al releer. Se rechazan las anulaciones que no sean de Vertex. Los controles existentes de cuentas de servicio
+siguen siendo independientes. Agente/MCP usa las operaciones confirmadas existentes de proveedor/alias/credencial
+con estos ajustes acotados, nunca metadatos sin procesar ni llamadas de inferencia.
+Este contrato se verifica contra el código fuente y fixtures herméticos, no con una cuenta de Vertex en vivo.
 
-## SIWC local status and use
+## Estado local y uso de SIWC
 
-The CPA source contract at `06fd5b8bc2807af5fceb6f39d2c5808c52e76034`
-adds `siwc_status: off|valid|invalid` to credential summaries. Shell-PAMC reads this
-allowlisted enum from the credential list and existing Agent/MCP credential reads.
-Missing or unknown values remain unknown; neither stored expiry nor bound material
-implies validity. CPA evaluates expiry and remembered rejection locally without
-refresh, inference or upstream verification. This is not provider health.
+El contrato fuente de CPA en `06fd5b8bc2807af5fceb6f39d2c5808c52e76034`
+añade `siwc_status: off|valid|invalid` a los resúmenes de credenciales. Shell-PAMC lee esta
+enumeración permitida desde la lista de credenciales y las lecturas de credenciales existentes de Agente/MCP.
+Los valores faltantes o desconocidos siguen siendo desconocidos; ni la expiración almacenada ni el material vinculado
+implican validez. CPA evalúa la expiración y el rechazo recordado localmente sin
+actualización, inferencia ni verificación en upstream. Esto no representa la salud del proveedor.
 
-The Codex-only `use_siwc` switch uses the existing credential-field patch endpoint,
-with a unique selector, fail-closed attempt audit and disk/runtime readback. False
-changes only that switch and preserves both credential partitions. True uses an
-already-bound SIWC partition; enabling without bound material is refused, while
-disabling remains available. It neither binds nor establishes validity. Agent/MCP
-uses confirmed `oauth_set_credential_fields`, while authorization stays operator-driven.
-Older gateways without status metadata show unknown and no enabled switch control.
-CPA's credential-status query (`GET /v8/management/oauth/siwc/status?name=...`
-or `auth_index`) is distinct from Shell-PAMC's binding-session poll at
-`/management/oauth/siwc/status?state=...`; Shell-PAMC does not call the dedicated query
-because its credential-list read already supplies the local summary.
+El selector `use_siwc` exclusivo de Codex utiliza el endpoint existente de parche de campos de credencial,
+con un selector único, auditoría de intento fail-closed y relectura de disco/tiempo de ejecución. False
+modifica solo ese selector y preserva ambas particiones de credenciales. True utiliza una
+partición SIWC ya vinculada; habilitarlo sin material vinculado se rechaza, mientras que
+deshabilitarlo permanece disponible. No vincula ni establece validez. Agente/MCP
+usa `oauth_set_credential_fields` confirmado, mientras que la autorización sigue dirigida por el operador.
+Las pasarelas más antiguas sin metadatos de estado muestran desconocido y ningún control de selector habilitado.
+La consulta de estado de credenciales de CPA (`GET /v8/management/oauth/siwc/status?name=...`
+o `auth_index`) es distinta del sondeo de sesión de vinculación de Shell-PAMC en
+`/management/oauth/siwc/status?state=...`; Shell-PAMC no llama a la consulta dedicada
+porque su lectura de la lista de credenciales ya suministra el resumen local.
 
-## Antigravity observation fingerprint
+## Huella de observación de Antigravity
 
-The reviewed CPA source baseline `02e9e85204052dfed9bf73b7075c7b414111a4b3`
-uses Hub 2.24.0 and its verified changelist 1000335682. Shell-PAMC's fixed quota and
-subscription User-Agent is
+La línea base del código fuente revisado de CPA `02e9e85204052dfed9bf73b7075c7b414111a4b3`
+utiliza Hub 2.24.0 y su changelist verificado 1000335682. El User-Agent fijo de cuota y
+suscripción de Shell-PAMC es
 `antigravity/hub/2.24.0 (aidev_client; os_type=darwin; arch=arm64; cl=1000335682)`.
-Update the version and verified changelist together. The daily `loadCodeAssist`
-subscription POST omits `Accept`; quota-summary reads retain `Accept: application/json`.
-Supplemental subscription failure keeps independent quota windows and an unknown plan.
-There is no dynamic vendor-version lookup or new outbound authority.
+Actualice la versión y el changelist verificado juntos. El POST diario de suscripción
+`loadCodeAssist` omite `Accept`; las lecturas del resumen de cuota retienen `Accept: application/json`.
+Un fallo en la suscripción complementaria mantiene ventanas de cuota independientes y un plan desconocido.
+No hay búsqueda dinámica de versiones de proveedor ni nueva autoridad de salida.
 
-## Credential-scoped SIWC binding
+## Vinculación de SIWC delimitada por credencial
 
-CPA v8.0.35 adds `POST /v8/management/oauth/siwc/bind` and the Codex
-credential summaries `siwc_bind_supported`, `use_siwc`, `siwc_bound`, and
-optional RFC3339 `siwc_expires_at`. Shell-PAMC projects these summaries through its
-credential list and the existing Agent/MCP credential read. Missing support
-metadata disables binding. Stored material presence and expiry are not live
-validity checks.
+CPA v8.0.35 añade `POST /v8/management/oauth/siwc/bind` y los resúmenes de credenciales
+de Codex `siwc_bind_supported`, `use_siwc`, `siwc_bound` y el RFC3339 opcional
+`siwc_expires_at`. Shell-PAMC proyecta estos resúmenes a través de su lista de
+credenciales y la lectura existente de credenciales de Agente/MCP. La falta de metadatos de soporte
+deshabilita la vinculación. La presencia de material almacenado y la expiración no son verificaciones
+de validez en vivo.
 
-The credential detail offers Bind SIWC and an explicitly confirmed Rebind SIWC.
-The server resolves a unique credential identity and sends only CPA's managed
-ID/name to the fixed binding endpoint. This is standalone/local-file-only;
-Home mode, non-file backends and older gateways are unavailable. There is no
-fallback to ordinary Codex login. CPA alone preserves the existing credential,
-exchanges tokens, saves the SIWC partition, and publishes it to its auth manager.
+El detalle de la credencial ofrece Vincular SIWC y un Revincular SIWC confirmado explícitamente.
+El servidor resuelve una identidad de credencial única y envía solo el ID/nombre administrado
+por CPA al endpoint de vinculación fijo. Esto es exclusivo para archivos locales independientes;
+el modo Home, backends que no sean archivos y pasarelas más antiguas no están disponibles. No hay
+recurso al inicio de sesión ordinario de Codex. Solo CPA preserva la credencial existente,
+intercambia tokens, guarda la partición SIWC y la publica en su administrador de autenticación.
 
-Binding sessions are process-local and target-scoped. The browser pastes the
-complete `http://127.0.0.1:1455/auth/callback` URL, including the issued
-`client_id`, even when that page cannot load: this flow starts no loopback
-listener. Shell-PAMC forwards the URL unchanged after matching its state and redirect
-origin/path. Callback values are never stored in preferences or audit records.
-Attempt audits are fail-closed for start, callback and cancellation. Callback
-acceptance remains pending; only completed status followed by safe credential
-readback is success. Readback failure after completion stays in verification
-without offering a second mutation. Cancellation preserves `cancelled:false`.
-Uncompleted attempts expire after five minutes. Shell-PAMC retains local records for
-ten minutes for terminal reconciliation, without retaining callback values.
+Las sesiones de vinculación son locales al proceso y delimitadas al objetivo. El navegador pega la
+URL completa `http://127.0.0.1:1455/auth/callback`, incluido el `client_id` emitido,
+incluso cuando esa página no puede cargar: este flujo no inicia ningún listener en loopback.
+Shell-PAMC reenvía la URL sin cambios después de verificar su estado y el origen/ruta de redirección.
+Los valores de callback nunca se almacenan en preferencias ni en registros de auditoría.
+Las auditorías de intentos son fail-closed para inicio, callback y cancelación. La aceptación
+del callback permanece pendiente; solo el estado completado seguido de una lectura segura de la credencial
+constituye un éxito. Un fallo de relectura tras la finalización permanece en verificación
+sin ofrecer una segunda mutación. La cancelación preserva `cancelled:false`.
+Los intentos no completados expiran después de cinco minutos. Shell-PAMC retiene registros locales durante
+diez minutos para conciliación terminal, sin retener valores de callback.
 
-Source: CPA v8.0.35 management contract.
+Fuente: contrato de administración de CPA v8.0.35.
 
-## OAuth model-exclusion precedence
+## Precedencia de exclusión de modelos de OAuth
 
-CPA v8.0.33 is the first release containing
-the credential exclusion priority change.
-A non-empty credential `excluded_models` list replaces provider
-`oauth.excluded-models`; missing, empty or null inherits current provider rules.
-The v8.0.33 helper stores only credential rules, and the runtime resolves the
-provider fallback. Older supported v8 builds can merge the lists instead; upgrade
-them before relying on credential overrides. This is a feature-specific behavior
-boundary, not a change to Shell-PAMC's v8.0.0 Management API baseline. The console and
-Agent/MCP guidance state the requirement, and CPA's per-credential model list
-remains authoritative. See [OAuth model rules](operations.md#oauth-model-rules).
+CPA v8.0.33 es la primera versión que contiene
+el cambio de prioridad en la exclusión de credenciales.
+Una lista no vacía de `excluded_models` en la credencial reemplaza
+`oauth.excluded-models` del proveedor; si falta, está vacía o es null, hereda las reglas actuales del proveedor.
+El ayudante de v8.0.33 almacena solo reglas de credenciales, y el tiempo de ejecución resuelve el
+respaldo del proveedor. Compilaciones anteriores compatibles con v8 pueden combinar las listas;
+actualícelas antes de depender de anulaciones de credenciales. Este es un límite de comportamiento
+específico de la característica, no un cambio en la línea base de la API de administración v8.0.0 de Shell-PAMC.
+La guía de la consola y de Agente/MCP establece el requisito, y la lista de modelos por credencial de CPA
+sigue siendo autoritativa. Consulte [Reglas de modelos de OAuth](operations.md#oauth-model-rules).
 
-## Codex behavior path compatibility
+## Compatibilidad de rutas de comportamiento de Codex
 
-CPA moved the shared Codex, Claude and xAI provider behavior out of
-`oauth.providers.*` to `upstream.*` (the `v8SharedPaths` table in CPA's
-internal/config/config_v8.go), and multi-agent optimization to
-`client.codex.optimize-multi-agent-v2`. The canonical set the editor follows is:
-`upstream.codex` response-steering, disable-codex-cloaking, model-level-cooling,
-stream-bootstrap-buffering/timeout and orphan-delegation-compatibility;
-`upstream.claude` model-level-cooling, disable-claude-cloak-mode,
-disable-cloaking-model-list and the whole header-defaults subtree;
-`upstream.xai` inject-x-search; plus `client.codex.optimize-multi-agent-v2`.
-Codex live-media-relay and header-defaults, Antigravity, aistudio and Devin
-settings stay under `oauth.providers.*`: they are OAuth-only and were not
-relocated. Root configuration writes accept the historical `oauth.providers.*`
-spellings and normalize the submitted values before merging them into the
-canonical document. Canonical values win by presence when both spellings are
-submitted, including explicit `false` and `null`.
+CPA trasladó el comportamiento compartido de proveedores de Codex, Claude y xAI fuera de
+`oauth.providers.*` hacia `upstream.*` (la tabla `v8SharedPaths` en internal/config/config_v8.go de CPA), y la optimización multi-agente a `client.codex.optimize-multi-agent-v2`. El conjunto canónico que sigue el editor es:
+`upstream.codex` redirección de respuestas, desactivación de camuflaje de Codex, enfriamiento a nivel de modelo,
+buffering/timeout de arranque de flujo y compatibilidad de delegación huérfana;
+`upstream.claude` enfriamiento a nivel de modelo, desactivación del modo de camuflaje de Claude,
+desactivación de lista de modelos de camuflaje y todo el subárbol de encabezados predeterminados;
+`upstream.xai` inyección de búsqueda x; más `client.codex.optimize-multi-agent-v2`.
 
-The visual editor reads and edits a canonical field when that field is present.
-Otherwise it uses its historical v8 path, also when both spellings are absent:
-early CPA v8 releases reject the newer root sections, whereas the historical
-alias is accepted by both layouts. Readback, not the submitted path, determines
-the next baseline. If source editing relocates a field between the supported
-paths before saving, visual edits use its draft location, and reverting a visual
-value preserves the independent source relocation. Edits made during a save follow the field if CPA relocates it
-in that readback. No gateway version-string guess or whole-document migration is
-required. `ConfigFieldDefinition.legacyYamlPath` declares this compatibility for
-each relocated control: the canonical `upstream.*` / `client.codex.*` path with
-the historical `oauth.providers.*` spelling as the fallback.
+Los ajustes de live-media-relay y header-defaults de Codex, Antigravity, aistudio y Devin
+permanecen bajo `oauth.providers.*`: son exclusivos de OAuth y no fueron
+reubicados. Las escrituras de configuración raíz aceptan las escrituras históricas
+de `oauth.providers.*` y normalizan los valores enviados antes de fusionarlos en el
+documento canónico. Los valores canónicos prevalecen por presencia cuando se envían
+ambas variantes, incluyendo `false` y `null` explícitos.
 
-This was verified with the official CPA v8.0.16 Linux ARM64 no-plugin binary:
-a historical root PATCH returned `200`, both canonical values remained enabled
-after restarting CPA, and subsequent canonical writes disabled both settings.
-The historical paths were absent from the root readback. The fixed frontend
-reader and change-set writer were also exercised against checksum-verified
-official Linux ARM64 no-plugin binaries for both v8.0.2 and v8.0.16: enabled
-settings were read, disabled and enabled through root PATCH, read back, and
-verified again after each restart. The isolated configurations used
-`oauth.auth-dir`, temporary credential directories and independent loopback ports.
-Source references:
+El editor visual lee y edita un campo canónico cuando ese campo está presente.
+De lo contrario, utiliza su ruta v8 histórica, también cuando ambas variantes están ausentes:
+las versiones tempranas de CPA v8 rechazan las secciones raíz más nuevas, mientras que el alias
+histórico es aceptado por ambos diseños. La relectura, no la ruta enviada, determina la
+siguiente línea base. Si la edición en fuente reubica un campo entre las rutas admitidas
+antes de guardar, las ediciones visuales usan su ubicación de borrador, y revertir un valor
+visual preserva la reubicación independiente de la fuente. Las ediciones realizadas durante un guardado siguen al campo si CPA lo reubica
+en esa relectura. No se requiere adivinación de cadena de versión de pasarela ni migración de todo el documento.
+`ConfigFieldDefinition.legacyYamlPath` declara esta compatibilidad para
+cada control reubicado: la ruta canónica `upstream.*` / `client.codex.*` con
+la variante histórica `oauth.providers.*` como respaldo.
 
-- v8.0.16 configuration paths
-- v8.0.16 management alias normalization
+Esto fue verificado con el binario oficial sin plugins Linux ARM64 de CPA v8.0.16:
+un PATCH raíz histórico devolvió `200`, ambos valores canónicos permanecieron habilitados
+tras reiniciar CPA, y las escrituras canónicas posteriores deshabilitaron ambos ajustes.
+Las rutas históricas estuvieron ausentes de la relectura raíz. El lector de interfaz fijado
+y el escritor de conjuntos de cambios también se probaron contra binarios oficiales sin plugins
+Linux ARM64 verificados por suma de comprobación tanto para v8.0.2 como para v8.0.16: los ajustes
+habilitados se leyeron, deshabilitaron y habilitaron mediante PATCH raíz, se releyeron y se
+verificaron nuevamente tras cada reinicio. Las configuraciones aisladas usaron
+`oauth.auth-dir`, directorios temporales de credenciales y puertos de loopback independientes.
+Referencias de código fuente:
 
-The following measurements and mapping tables retain their CPA v8.0.2 baseline;
-the canonical `upstream.*` / `client.codex.*` paths above supersede the
-corresponding editor locations in that table.
+- Rutas de configuración de v8.0.16
+- Normalización de alias de administración de v8.0.16
 
-## Configuration option semantics
+Las siguientes mediciones y tablas de mapeo conservan su línea base de CPA v8.0.2;
+las rutas canónicas `upstream.*` / `client.codex.*` anteriores reemplazan las
+ubicaciones correspondientes del editor en esa tabla.
 
-The visual editor uses CPA's runtime defaults for omitted YAML fields, not the
-values shown in its example configuration. In CPA v8.0.16, omitted
-`routing.retry.request-retry` and `routing.retry.max-retry-interval` both mean
-`0`; the example explicitly sets `3` and `30`. Retry rounds count additional
-rounds after the first credential attempt round. The interval limits the cooldown
-wait between rounds, and `max-retry-credentials` caps distinct credentials per
-round, including the first attempt (`0` leaves that cap unlimited). Reverting a
-visual edit to an omitted baseline removes the added path and preserves the
-original document.
+## Semántica de las opciones de configuración
 
-`requests.passthrough-headers` forwards filtered **upstream response** headers to
-the client. It does not forward client request headers. `force-model-prefix`
-restricts unprefixed requests to unprefixed credentials, except when a credential
-prefix equals the requested model name. Claude's header-default timeout supplies
-`X-Stainless-Timeout`, not a local HTTP client timeout. With signature caching
-disabled, enabling `signature-bypass-strict` selects stricter Claude signature
-validation. Disabling automatic panel updates stops periodic checks; a missing
-panel is still downloaded on first access.
+El editor visual usa los valores predeterminados en tiempo de ejecución de CPA para campos YAML omitidos, no los
+valores mostrados en su configuración de ejemplo. En CPA v8.0.16, omitir
+`routing.retry.request-retry` y `routing.retry.max-retry-interval` significa
+`0` en ambos; el ejemplo establece explícitamente `3` y `30`. Las rondas de reintento cuentan rondas adicionales
+tras la primera ronda de intento de credencial. El intervalo limita la espera de enfriamiento
+entre rondas, y `max-retry-credentials` limita las credenciales distintas por
+ronda, incluido el primer intento (`0` deja ese límite sin restricción). Revertir una
+edición visual a una línea base omitida elimina la ruta agregada y preserva el
+documento original.
 
-Sources at tag `v8.0.16`:
+`requests.passthrough-headers` reenvía los encabezados filtrados de **respuesta de upstream** al
+cliente. No reenvía encabezados de solicitud del cliente. `force-model-prefix`
+restringe solicitudes sin prefijo a credenciales sin prefijo, excepto cuando el prefijo
+de una credencial coincide con el nombre del modelo solicitado. El timeout predeterminado de encabezados de Claude suministra
+`X-Stainless-Timeout`, no un timeout local de cliente HTTP. Con el almacenamiento en caché de firmas
+deshabilitado, habilitar `signature-bypass-strict` selecciona una validación de firmas de Claude más estricta.
+Deshabilitar las actualizaciones automáticas del panel detiene las comprobaciones periódicas; un panel ausente
+se descarga de todos modos en el primer acceso.
 
-- Runtime configuration defaults
-- Retry rounds and credential selection
-- Model-prefix registration
-- Response header filtering
-- Claude executor headers
-- Claude signature validation
-- Management panel updates
+Fuentes en el tag `v8.0.16`:
 
-Upstream sources, all at tag `v8.0.2` (commit `4a2c818`):
+- Valores predeterminados de configuración en tiempo de ejecución
+- Rondas de reintento y selección de credenciales
+- Registro de prefijos de modelo
+- Filtrado de encabezados de respuesta
+- Encabezados de ejecutor de Claude
+- Validación de firmas de Claude
+- Actualizaciones del panel de administración
 
-- management-api-v8.md — the v8 Management API.
-- config.example.yaml — the v8 template; its closing
-  "Legacy compatibility reference" lists only the most common relocations.
-- config_v8.go — the complete relocation table
-  (`buildV8Paths`, `v8KeyFamilies`) and the precedence and migration code. **This file,
-  not the template, is authoritative**: the template reference omits most entries.
-- server_management_v8.go — the v8 routes
-  and the handler each is registered on.
+Fuentes de upstream, todas en el tag `v8.0.2` (commit `4a2c818`):
 
-`v7.3.20 → v8.0.2` is seven commits, all in configuration structure and the Management
-API. Client-facing proxy protocols (`/v1`, `/v1/responses`, websocket) are unchanged.
+- management-api-v8.md — la API de administración v8.
+- config.example.yaml — la plantilla v8; su sección de cierre
+  "Legacy compatibility reference" enumera únicamente las reubicaciones más comunes.
+- config_v8.go — la tabla completa de reubicaciones
+  (`buildV8Paths`, `v8KeyFamilies`) y el código de precedencia y migración. **Este archivo,
+  no la plantilla, es autoritativo**: la referencia de la plantilla omite la mayoría de las entradas.
+- server_management_v8.go — las rutas v8
+  y el controlador en el que está registrada cada una.
 
-## 1. What v8 changed
+`v7.3.20 → v8.0.2` son siete commits, todos en estructura de configuración y en la API
+de administración. Los protocolos de proxy de cara al cliente (`/v1`, `/v1/responses`, websocket) permanecen sin cambios.
 
-**Configuration layout.** Most settings moved under nine v8 sections (`server`,
+## 1. Qué cambió en v8
+
+**Diseño de configuración.** La mayoría de los ajustes se trasladaron bajo nueve secciones v8 (`server`,
 `management`, `access`, `credentials`, `routing`, `requests`, `oauth`, `multimedia`,
-`observability`); `config-version: 8` marks a migrated file. The root `api-keys` key
-changed meaning: in v7 it is the client-key list, in v8 it is a mapping of upstream
-provider groups (`api-keys.codex`, …), and client keys moved to `access.api-keys`. CPA
-tells the two apart by shape (list vs mapping).
+`observability`); `config-version: 8` marca un archivo migrado. La clave raíz `api-keys`
+cambió de significado: en v7 es la lista de claves de cliente, en v8 es un mapa de grupos
+de proveedores upstream (`api-keys.codex`, …), y las claves de cliente se movieron a `access.api-keys`. CPA
+las distingue por su forma (lista frente a mapa).
 
-**Management API.** A new `/v8/management` tree: path-addressed configuration reads and
-writes (`/config/<section>/<field>`), grouped operational routes, and a unified OAuth
-entry. `/v0/management` is kept in full, including the flat setters (`/debug`,
-`/request-retry`, …) and the per-family credential lists (`/codex-api-key`, …), which
-exist only under v0.
+**API de administración.** Un nuevo árbol `/v8/management`: lecturas y escrituras
+de configuración direccionadas por ruta (`/config/<sección>/<campo>`), rutas operativas agrupadas
+y una entrada unificada de OAuth. `/v0/management` se conserva por completo, incluidos los configuradores planos (`/debug`,
+`/request-retry`, …) y las listas de credenciales por familia (`/codex-api-key`, …), que
+existen únicamente bajo v0.
 
-### Migration and precedence semantics (measured)
+### Semántica de migración y precedencia (medida)
 
-Measured on `eceasy/cli-proxy-api:v8.0.2` with a legacy file derived from the v7.3.20
-`config.example.yaml` (client keys, one `codex-api-key` entry, one unknown section added).
+Medido en `eceasy/cli-proxy-api:v8.0.2` con un archivo heredado derivado del `config.example.yaml`
+de v7.3.20 (claves de cliente, una entrada `codex-api-key`, una sección desconocida añadida).
 
-| Rule | Result |
+| Regla | Resultado |
 | --- | --- |
-| Starting v8 on a legacy file leaves the file unchanged | Pass: byte-identical after start-up |
-| v8 GET requests leave the file unchanged | Pass: byte-identical after `GET /v8/management/config`, `/config/config-version`, `/config/access/api-keys` and operational GETs |
-| One successful v8 write (`PUT /v8/management/config/observability/logs/debug`) migrates and rewrites the whole file | Pass: 1025 → 377 lines, `config-version: 8` added, every relocated setting moved, indentation changed to four spaces, comments of moved keys kept |
-| Legacy keys are deleted on migration | Pass: no relocated legacy key left at the root |
-| Unknown sections are kept as comments | Pass: `omc-operator-notes` became a commented block at the end of the file |
-| When both spellings exist, the v8 one wins and the legacy one is dropped | Pass: see §4 — the legacy values were discarded and absent from the file after the save |
-| `PUT /v0/management/config.yaml` accepts any layout | Pass, **and it answers `200` while discarding every shadowed legacy key** |
-| v0 flat setters on a migrated file write the v8 location | Pass for `debug`, `proxy-url`, `request-retry`, `max-retry-interval`, `max-retry-credentials`, `routing/strategy`, `force-model-prefix`, `ws-auth`, `logging-to-file`, `usage-statistics-enabled`, `logs-max-total-size-mb`, `error-logs-max-files` |
-| …when the v8 location is absent from the file | The setter writes the **legacy** key at the root and it takes effect (`request-log` after migration, which the migrated file did not carry) |
-| `PUT /v0/management/api-keys` on a migrated file | Pass: written to `access.api-keys`; the provider groups are untouched |
-| `PUT /v0/management/codex-api-key` on a migrated file | Pass: written as `api-keys.codex` groups (`codex-1`, `codex-2`); no root `codex-api-key` |
-| A v7 gateway answers `/v8/*` | 404 for every path, including `/v8/management/config/config-version` |
+| Iniciar v8 sobre un archivo heredado no modifica el archivo | Aprobado: idéntico byte a byte tras el inicio |
+| Solicitudes GET de v8 no modifican el archivo | Aprobado: idéntico byte a byte tras `GET /v8/management/config`, `/config/config-version`, `/config/access/api-keys` y GETs operativos |
+| Una escritura v8 exitosa (`PUT /v8/management/config/observability/logs/debug`) migra y reescribe todo el archivo | Aprobado: 1025 → 377 líneas, `config-version: 8` agregado, cada ajuste reubicado trasladado, sangría cambiada a cuatro espacios, comentarios de claves trasladadas conservados |
+| Las claves heredadas se eliminan en la migración | Aprobado: ninguna clave heredada reubicada permanece en la raíz |
+| Las secciones desconocidas se conservan como comentarios | Aprobado: `omc-operator-notes` se convirtió en un bloque comentado al final del archivo |
+| Cuando existen ambas escrituras, prevalece la v8 y se descarta la heredada | Aprobado: ver §4 — los valores heredados se descartaron y estuvieron ausentes del archivo tras guardar |
+| `PUT /v0/management/config.yaml` acepta cualquier formato | Aprobado, **y responde `200` descartando cada clave heredada superpuesta** |
+| Los configuradores planos v0 en un archivo migrado escriben en la ubicación v8 | Aprobado para `debug`, `proxy-url`, `request-retry`, `max-retry-interval`, `max-retry-credentials`, `routing/strategy`, `force-model-prefix`, `ws-auth`, `logging-to-file`, `usage-statistics-enabled`, `logs-max-total-size-mb`, `error-logs-max-files` |
+| …cuando la ubicación v8 no está presente en el archivo | El configurador escribe la clave **heredada** en la raíz y surte efecto (`request-log` tras la migración, que el archivo migrado no contenía) |
+| `PUT /v0/management/api-keys` en un archivo migrado | Aprobado: escrito en `access.api-keys`; los grupos de proveedores no se tocan |
+| `PUT /v0/management/codex-api-key` en un archivo migrado | Aprobado: escrito como grupos `api-keys.codex` (`codex-1`, `codex-2`); sin `codex-api-key` en raíz |
+| Una pasarela v7 responde a `/v8/*` | 404 para cada ruta, incluyendo `/v8/management/config/config-version` |
 
-Two more precise statements than the usual summary:
+Dos afirmaciones más precisas que el resumen habitual:
 
-- Legacy spellings are removed on load or save **only when their v8 twin is present**.
-  A legacy-only setting keeps working in its old place until a v8 configuration write
-  migrates the file. Precedence is per leaf: a legacy `tls.cert` beside a v8
-  `server.tls.enable` is honoured, while a legacy `oauth-model-alias` map loses entirely
-  to any v8 `oauth.model-alias` map, whatever providers each names.
-- `GET /v8/management/config.yaml` returns the *migrated view* of the file, not the file;
-  `GET /v0/management/config.yaml` returns the file as stored. Shell-PAMC edits the former and
-  reads the latter only to keep a legacy file before its first v8 write (§4).
+- Las escrituras heredadas se eliminan al cargar o guardar **solo cuando su gemela v8 está presente**.
+  Un ajuste solo heredado sigue funcionando en su lugar antiguo hasta que una escritura de configuración v8
+  migre el archivo. La precedencia es por hoja: un `tls.cert` heredado junto a un `server.tls.enable`
+  v8 se respeta, mientras que un mapa `oauth-model-alias` heredado pierde por completo
+  frente a cualquier mapa `oauth.model-alias` v8, sin importar qué proveedores nombre cada uno.
+- `GET /v8/management/config.yaml` devuelve la *vista migrada* del archivo, no el archivo real;
+  `GET /v0/management/config.yaml` devuelve el archivo tal como está almacenado. Shell-PAMC edita la primera y
+  lee el segundo solo para conservar un archivo heredado antes de su primera escritura v8 (§4).
 
-### v8 configuration writes (measured)
+### Escrituras de configuración v8 (medidas)
 
-Measured on the v8.0.2 binary with a management password set.
+Medido en el binario v8.0.2 con contraseña de administración configurada.
 
-| Request | Result |
+| Solicitud | Resultado |
 | --- | --- |
-| `PATCH /v8/management/config` with a JSON merge document | Merged; keys it does not name are kept |
-| `PUT /v8/management/config/<path>` | Replaces that path; the body is the raw JSON value (a `{"value": …}` envelope is refused) |
-| `DELETE /v8/management/config/<path>` | Removes that path; a path that is not set answers `404 not_found` |
-| A `null` in a merge | Writes the type's zero value, not a removal |
-| A legacy field name (`debug`, in a merge or in `PUT /config.yaml`) | `400 invalid_config`, "legacy field debug is not accepted by v8; use observability.logs.debug"; nothing written |
-| An unknown section | `400 invalid_config`, "unknown v8 configuration section …"; nothing written |
-| A value of the wrong type | `422 invalid_config` naming the line and type; nothing written |
-| A burst of sequential writes | Every value kept |
-| `PATCH` with `{"api-keys": {"claude": [...]}}` | Replaces that family's groups; the other families are kept |
-| A key that overrides a group setting (`models: []`, `priority: 0`, `excluded-models`, `disable-cooling: false`) | Accepted; the v0 runtime list shows the key's own value |
-| `base-url` on a key | Refused: only a group may carry it |
-| `GET /config/api-keys/<family>/0/keys` | `404 not_found`: list items are not addressable paths, so a family is written whole |
-| `PUT /config/plugins/configs/<id>`, `PUT /config/plugins/configs/<id>/enabled` | Replace that plugin's settings, or only its switch |
-| `PATCH` of `oauth.model-alias.<provider>`, `DELETE /config/oauth/model-alias/<provider>` | Replace or remove one provider's aliases |
+| `PATCH /v8/management/config` con documento de combinación JSON | Combinado; las claves que no nombra se conservan |
+| `PUT /v8/management/config/<ruta>` | Reemplaza esa ruta; el cuerpo es el valor JSON sin procesar (un envoltorio `{"value": …}` es rechazado) |
+| `DELETE /v8/management/config/<ruta>` | Elimina esa ruta; una ruta no definida responde `404 not_found` |
+| Un `null` en una combinación | Escribe el valor cero del tipo, no una eliminación |
+| Un nombre de campo heredado (`debug`, en combinación o en `PUT /config.yaml`) | `400 invalid_config`, "legacy field debug is not accepted by v8; use observability.logs.debug"; nada escrito |
+| Una sección desconocida | `400 invalid_config`, "unknown v8 configuration section …"; nada escrito |
+| Un valor de tipo incorrecto | `422 invalid_config` indicando la línea y el tipo; nada escrito |
+| Una ráfaga de escrituras secuenciales | Todos los valores conservados |
+| `PATCH` con `{"api-keys": {"claude": [...]}}` | Reemplaza los grupos de esa familia; se conservan las demás familias |
+| Una clave que anula un ajuste de grupo (`models: []`, `priority: 0`, `excluded-models`, `disable-cooling: false`) | Aceptada; la lista de ejecución v0 muestra el valor propio de la clave |
+| `base-url` en una clave | Rechazado: solo un grupo puede portarlo |
+| `GET /config/api-keys/<familia>/0/keys` | `404 not_found`: los elementos de lista no son rutas direccionables, por lo que una familia se escribe completa |
+| `PUT /config/plugins/configs/<id>`, `PUT /config/plugins/configs/<id>/enabled` | Reemplaza los ajustes de ese plugin, o solo su interruptor |
+| `PATCH` de `oauth.model-alias.<proveedor>`, `DELETE /config/oauth/model-alias/<proveedor>` | Reemplaza o elimina los alias de un proveedor |
 
-Observed but not part of the v8 change: several v0 writes sent back to back without a
-pause can lose all but the last (each write reloads the configuration asynchronously).
-It was seen on v8.0.2 during a scripted burst; it was not tested on v7. Shell-PAMC's own writes
-are serialised by its provider write gate and are one operator action at a time.
+Observado pero no parte del cambio de v8: varias escrituras v0 enviadas consecutivamente sin una
+pausa pueden perder todas excepto la última (cada escritura recarga la configuración asincrónicamente).
+Se observó en v8.0.2 durante una ráfaga con script; no se probó en v7. Las escrituras propias de Shell-PAMC
+son serializadas por su barrera de escritura de proveedores y se ejecutan una acción de operador a la vez.
 
-## 2. Review of the relocation list in the task brief
+## 2. Revisión de la lista de reubicaciones
 
-The brief's mapping was checked against `config_v8.go` rather than the template. Every
-entry the brief marked as known is correct except one; every low-confidence entry is
-resolved below.
+El mapeo se comprobó contra `config_v8.go` en lugar de la plantilla. Cada
+entrada que se marcaba como conocida es correcta excepto una; cada entrada de baja confianza
+queda resuelta a continuación.
 
-| Brief | Actual | Note |
+| Entrada | Real | Nota |
 | --- | --- | --- |
-| `host`/`port` → `server.*` | Correct | |
-| `remote-management.*` → `management.*` | Correct | |
-| `api-keys` → `access.api-keys` | Correct | Only while the root value is a list; a root mapping is v8 provider groups |
-| `codex-api-key` → `api-keys.codex` | Correct, with a shape change | One group per legacy entry (`name: codex-N`, group-level `base-url` and shared fields, key material in `keys:`); the same holds for `gemini`, `interactions`, `vertex`, `claude`, `xai`, `meta` and `openai-compatibility` (whose `api-key-entries` become `keys`) |
-| `request-retry` → `routing.retry.request-retry` | Correct | `max-retry-credentials`, `max-retry-interval` move beside it |
-| `debug` → `observability.logs.debug` | Correct | |
-| `proxy-url` → `requests.proxy-url` | Correct | |
-| `auth-dir` → `oauth.auth-dir` | Correct | |
-| `codex.*` → `oauth.providers.codex.*` | Correct | |
-| `antigravity-credits` → `oauth.providers.antigravity.antigravity-credits` | **Source path wrong** | The legacy key is `quota-exceeded.antigravity-credits`, not a root key |
-| `auth-auto-refresh-workers` (low confidence) | `oauth.auth-auto-refresh-workers` | Confirmed |
-| `payload.*` (low confidence) | `requests.payload.*` | Under `requests`, not a root `payload` |
-| `passthrough-headers` (low confidence) | `requests.passthrough-headers` | Confirmed |
-| `streaming.*` (low confidence) | `requests.streaming.*` | Confirmed |
-| `commercial-mode` (low confidence) | `server.commercial-mode` | Confirmed |
-| `disable-cooling` (low confidence) | `routing.cooldown.disable-cooling` | Confirmed |
-| `quota-exceeded.switch-project`, `switch-preview-model` | Not relocated | They stay under `quota-exceeded` in both layouts. CPA leaves them out of its v8 template as compatibility-only: a v8 `PATCH` still writes them, but as of v8.0.31 nothing in CPA's request path reads them, so the settings page no longer offers them (the source editor keeps them) |
+| `host`/`port` → `server.*` | Correcto | |
+| `remote-management.*` → `management.*` | Correcto | |
+| `api-keys` → `access.api-keys` | Correcto | Solo mientras el valor raíz sea una lista; un mapeo raíz son grupos de proveedores v8 |
+| `codex-api-key` → `api-keys.codex` | Correcto, con cambio de estructura | Un grupo por entrada heredada (`name: codex-N`, `base-url` a nivel de grupo y campos compartidos, material de clave en `keys:`); lo mismo ocurre con `gemini`, `interactions`, `vertex`, `claude`, `xai`, `meta` y `openai-compatibility` (cuyos `api-key-entries` se convierten en `keys`) |
+| `request-retry` → `routing.retry.request-retry` | Correcto | `max-retry-credentials`, `max-retry-interval` se mueven a su lado |
+| `debug` → `observability.logs.debug` | Correcto | |
+| `proxy-url` → `requests.proxy-url` | Correcto | |
+| `auth-dir` → `oauth.auth-dir` | Correcto | |
+| `codex.*` → `oauth.providers.codex.*` | Correcto | |
+| `antigravity-credits` → `oauth.providers.antigravity.antigravity-credits` | **Ruta de origen incorrecta** | La clave heredada es `quota-exceeded.antigravity-credits`, no una clave raíz |
+| `auth-auto-refresh-workers` (baja confianza) | `oauth.auth-auto-refresh-workers` | Confirmado |
+| `payload.*` (baja confianza) | `requests.payload.*` | Bajo `requests`, no un `payload` raíz |
+| `passthrough-headers` (baja confianza) | `requests.passthrough-headers` | Confirmado |
+| `streaming.*` (baja confianza) | `requests.streaming.*` | Confirmado |
+| `commercial-mode` (baja confianza) | `server.commercial-mode` | Confirmado |
+| `disable-cooling` (baja confianza) | `routing.cooldown.disable-cooling` | Confirmado |
+| `quota-exceeded.switch-project`, `switch-preview-model` | No reubicados | Permanecen bajo `quota-exceeded` en ambos formatos. CPA los omite de su plantilla v8 solo por compatibilidad: un `PATCH` v8 todavía los escribe, pero a partir de v8.0.31 nada en la ruta de solicitud de CPA los lee, por lo que la página de ajustes ya no los ofrece (el editor de código fuente los conserva) |
 
-Relocations the brief did not list include `nonstream-keepalive-interval` →
+Las reubicaciones que no se listaban incluyen `nonstream-keepalive-interval` →
 `requests.nonstream-keepalive-interval`, `ws-auth` → `oauth.providers.aistudio.ws-auth`,
-`force-model-prefix` → `routing.force-model-prefix`, the other `observability.logs.*` and
-`observability.usage.*` settings, `tls` → `server.tls`, both header-default sections, the
-flat `antigravity-signature-*` keys, `multimedia.*`, and `oauth.model-alias` /
+`force-model-prefix` → `routing.force-model-prefix`, los demás ajustes de `observability.logs.*` y
+`observability.usage.*`, `tls` → `server.tls`, ambas secciones de valores predeterminados de encabezados,
+las claves planas `antigravity-signature-*`, `multimedia.*`, y `oauth.model-alias` /
 `oauth.excluded-models` / `oauth.request-scoped-errors`. `routing.strategy`,
-`routing.session-affinity*` and `plugins.*` keep their paths. The complete list is §3.
+`routing.session-affinity*` y `plugins.*` conservan sus rutas. La lista completa está en §3.
 
-Checking Shell-PAMC's editor against the real table also exposed two editor paths that were
-wrong for v7 as well, now fixed: the Antigravity signature switches wrote
-`antigravity.signature-cache-enabled` / `antigravity.signature-bypass-strict`, which CPA
-never reads (the real keys are the flat `antigravity-signature-cache-enabled` /
-`antigravity-signature-bypass-strict`), and the non-streaming keepalive wrote a duration
-string under `streaming`, while CPA reads an integer number of seconds at the root.
+Comprobar el editor de Shell-PAMC contra la tabla real también expuso dos rutas de editor que eran
+incorrectas también para v7, ahora corregidas: los interruptores de firma de Antigravity escribían
+`antigravity.signature-cache-enabled` / `antigravity.signature-bypass-strict`, que CPA
+nunca lee (las claves reales son las planas `antigravity-signature-cache-enabled` /
+`antigravity-signature-bypass-strict`), y el keepalive sin streaming escribía una cadena
+de duración bajo `streaming`, mientras que CPA lee un número entero de segundos en la raíz.
 
-## 3. Complete legacy ↔ v8 mapping
+## 3. Mapeo completo heredado ↔ v8
 
-This is CPA's own table (`config_v8.go` at v8.0.2), which it applies when it converts a
-legacy file. Shell-PAMC does not carry a copy: its editor schema (`web/src/types/configSchema.ts`)
-names the v8 column. The last column names the editor field; a `—` means no editor field
-edits that setting.
+Esta es la tabla propia de CPA (`config_v8.go` en v8.0.2), que aplica cuando convierte un
+archivo heredado. Shell-PAMC no conserva una copia: su esquema de editor (`web/src/types/configSchema.ts`)
+indica la columna v8. La última columna indica el campo del editor; un `—` significa que ningún campo
+del editor modifica ese ajuste.
 
-Every schema path was measured against the v8.0.2 binary (Go build of tag `v8.0.2`,
-commit `4a2c818`, on 2026-09-29): each one was written with a `PATCH
-/v8/management/config` carrying the field's own default, and then read back out of the
-persisted `config.yaml`. All 36 paths the OAuth-provider, discovery and pprof fields
-added were accepted with `200` and survived into the file. Survival is the load-bearing
-half of that check, because CPA re-serialises the document from its parsed configuration:
-a key it does not know is dropped on the way to disk. Measured on the same binary, a
-mistyped sibling loses the whole request - `oauth.providers.codex.live-media-relay.enabledd`
-is refused with `400 invalid_config` ("field oauth not found in type config.legacyConfig"),
-as is a mistyped leaf under a section CPA does know - so the check can fail.
+Cada ruta del esquema se midió contra el binario v8.0.2 (compilación en Go del tag `v8.0.2`,
+commit `4a2c818`, el 2026-09-29): cada una se escribió con un `PATCH
+/v8/management/config` portando el valor predeterminado del propio campo, y luego se leyó de nuevo del
+`config.yaml` persistido. Las 36 rutas agregadas por los campos de proveedor OAuth, descubrimiento y pprof
+fueron aceptadas con `200` y sobrevivieron en el archivo. La supervivencia es la parte fundamental
+de esa verificación, ya que CPA vuelve a serializar el documento desde su configuración analizada:
+una clave que no reconoce se descarta en el camino al disco. Medido en el mismo binario, un
+hermano mal escrito descarta toda la solicitud — `oauth.providers.codex.live-media-relay.enabledd`
+se rechaza con `400 invalid_config` ("field oauth not found in type config.legacyConfig"),
+al igual que una hoja mal escrita bajo una sección que CPA sí reconoce — por lo que la comprobación puede fallar.
 
-Three value ranges in the schema were measured the same way rather than assumed:
-`redis-usage-queue-retention-seconds` is clamped to 3600 server-side (9999 is stored as
-3600, so the editor caps it), `transient-error-cooldown-seconds` accepts `-1` (so the
-floor is `-1`, not `0`), and `request-retry` has no upper bound in CPA (50 is stored
-unchanged, so the editor sets no maximum).
+Tres rangos de valores en el esquema se midieron de la misma forma en lugar de asumirse:
+`redis-usage-queue-retention-seconds` se limita a 3600 del lado del servidor (9999 se almacena como
+3600, por lo que el editor lo limita), `transient-error-cooldown-seconds` acepta `-1` (por lo que el
+mínimo es `-1`, no `0`), y `request-retry` no tiene límite superior en CPA (50 se almacena
+sin cambios, por lo que el editor no establece un máximo).
 
-### Settings (leaves)
+### Ajustes (hojas)
 
-A leaf is the unit of CPA's precedence rule. "Shell-PAMC editor field" names the configuration
-page field that edits it.
+Una hoja es la unidad de la regla de precedencia de CPA. "Campo de editor de Shell-PAMC" indica el campo
+de la página de configuración que lo edita.
 
-| v8 section | Legacy path | v8 path | Shell-PAMC editor field |
+| Sección v8 | Ruta heredada | Ruta v8 | Campo de editor de Shell-PAMC |
 | --- | --- | --- | --- |
 | `server` | `commercial-mode` | `server.commercial-mode` | `commercialMode` |
 | `server` | `discovery.advertise-management` | `server.discovery.advertise-management` | `discoveryAdvertiseManagement` |
@@ -464,12 +463,12 @@ page field that edits it.
 | `observability` | `redis-usage-queue-retention-seconds` | `observability.usage.redis-usage-queue-retention-seconds` | `redisUsageQueueRetentionSeconds` |
 | `observability` | `usage-statistics-enabled` | `observability.usage.usage-statistics-enabled` | `usageStatisticsEnabled` |
 
-### Sections
+### Secciones
 
-Whole legacy sections that move, with everything below them (the payload rule builder
-edits `requests.payload`).
+Secciones completas heredadas que se trasladan, con todo su contenido (el constructor
+de reglas de payload edita `requests.payload`).
 
-| Legacy section | v8 section |
+| Sección heredada | Sección v8 |
 | --- | --- |
 | `antigravity` | `oauth.providers.antigravity` |
 | `antigravity.connection-pool` | `oauth.providers.antigravity.connection-pool` |
@@ -491,15 +490,15 @@ edits `requests.payload`).
 | `tls` | `server.tls` |
 | `xai` | `oauth.providers.xai` |
 
-### Upstream credential lists
+### Listas de credenciales de upstream
 
-These move under the root `api-keys` mapping **and change shape**: each family is a list
-of groups (`name`, `base-url`, shared settings, `keys`), and CPA's runtime view, the v0
-per-family list, is those groups flattened one entry per key. Shell-PAMC edits the flattened
-list and writes the family back as groups, keeping the operator's grouping (ADR 0038,
-§4). The masked configuration view hides every `api-key` value in them.
+Estas se trasladan bajo el mapeo raíz `api-keys` **y cambian de estructura**: cada familia es una lista
+de grupos (`name`, `base-url`, ajustes compartidos, `keys`), y la vista en tiempo de ejecución de CPA, la lista
+v0 por familia, son esos grupos aplanados a una entrada por clave. Shell-PAMC edita la lista
+aplanada y escribe la familia de vuelta como grupos, conservando la agrupación del operador (ADR 0038,
+§4). La vista de configuración enmascarada oculta cada valor `api-key` en ellos.
 
-| Legacy list | v8 location |
+| Lista heredada | Ubicación v8 |
 | --- | --- |
 | `gemini-api-key` | `api-keys.gemini` |
 | `interactions-api-key` | `api-keys.interactions` |
@@ -510,214 +509,213 @@ list and writes the family back as groups, keeping the operator's grouping (ADR 
 | `meta-api-key` | `api-keys.meta` |
 | `openai-compatibility` | `api-keys.openai-compatibility` |
 
-### Unchanged in v8
+### Sin cambios en v8
 
 `routing.strategy`, `routing.session-affinity`, `routing.session-affinity-ttl`,
-`routing.session-affinity-subagents`, `plugins.*`, `quota-exceeded.switch-project` and
-`quota-exceeded.switch-preview-model` (the last two are absent from CPA's v8 template and
-have no runtime reader, see above). All four `routing.*` entries here are edited by
-the settings page (`routingStrategy`, `routingSessionAffinity`,
+`routing.session-affinity-subagents`, `plugins.*`, `quota-exceeded.switch-project` y
+`quota-exceeded.switch-preview-model` (los dos últimos están ausentes de la plantilla v8 de CPA y
+no tienen lector en tiempo de ejecución, ver arriba). Las cuatro entradas `routing.*` aquí son editadas por
+la página de ajustes (`routingStrategy`, `routingSessionAffinity`,
 `routingSessionAffinityTTL`, `routingSessionAffinitySubagents`).
 
-### Added after v8.0.16
+### Añadido después de v8.0.16
 
-Settings CPA introduced between v8.0.16 and v8.0.32, all at their v8 path only and all
-edited by the settings page. A gateway older than the release that introduced a setting
-refuses a write to it (`config_rejected`); an untouched setting is never written.
+Ajustes que CPA introdujo entre v8.0.16 y v8.0.32, todos únicamente en su ruta v8 y todos
+editados por la página de ajustes. Una pasarela anterior a la versión que introdujo un ajuste
+rechaza una escritura en él (`config_rejected`); un ajuste no tocado nunca se escribe.
 
-| v8 path | Since | Setting |
+| Ruta v8 | Desde | Ajuste |
 | --- | --- | --- |
-| `server.max-request-body-bytes` | v8.0.26 | `maxRequestBodyBytes`; caps management routes too, which the console reports as `cpa_request_too_large` |
-| `routing.session-affinity-rebind-on` | v8.0.25 | `routingSessionAffinityRebindOn` (`any` or `quota`) |
+| `server.max-request-body-bytes` | v8.0.26 | `maxRequestBodyBytes`; limita también las rutas de administración, que la consola informa como `cpa_request_too_large` |
+| `routing.session-affinity-rebind-on` | v8.0.25 | `routingSessionAffinityRebindOn` (`any` o `quota`) |
 | `requests.streaming.send-keepalive-before-ft` | v8.0.27 | `streamingSendKeepaliveBeforeFt` |
 | `requests.tls-handshake-timeout-seconds` | v8.0.29 | `tlsHandshakeTimeoutSeconds` |
 | `upstream.claude.tool-search` | v8.0.24 | `claudeToolSearch` |
-| `upstream.claude.session-date-pin-days` | v8.0.32 | `claudeSessionDatePinDays`; CPA holds it as a pointer, so omitted is its 7 days and an explicit `0` keeps the continuity-scoped pin. The editor defaults to `7` and writes a `0` as a real setting |
+| `upstream.claude.session-date-pin-days` | v8.0.32 | `claudeSessionDatePinDays`; CPA lo almacena como puntero, por lo que omitido son sus 7 días y un `0` explícito mantiene la fijación de continuidad. El editor usa por defecto `7` y escribe un `0` como ajuste real |
 | `upstream.claude.header-defaults.anthropic-beta-strip`, `anthropic-beta-append`, `inject-diagnostics`, `client-request-id` | v8.0.30 | `claudeHeaderAnthropicBetaStrip`, `claudeHeaderAnthropicBetaAppend`, `claudeHeaderInjectDiagnostics`, `claudeHeaderClientRequestId` |
 | `oauth.providers.codex.signin-with-chatgpt-identifier` | v8.0.25 | `codexSigninWithChatgptIdentifier` |
-| `api-keys.claude[].keys[].native-tool-search` | v8.0.24 | The provider editor's per-key "Native tool search" switch |
+| `api-keys.claude[].keys[].native-tool-search` | v8.0.24 | El interruptor "Búsqueda nativa de herramientas" por clave del editor de proveedores |
 
-## 4. Shell-PAMC's configuration write path
+## 4. Ruta de escritura de configuración de Shell-PAMC
 
-ADR 0037. Measured end to end on 2026-09-29: Shell-PAMC built from this change, CPA v8.0.2,
-and a legacy file with a top comment, client keys, one `codex-api-key` entry, payload
-rules and an unknown `omc-operator-notes` section.
+ADR 0037. Medido de extremo a extremo el 2026-09-29: Shell-PAMC compilado a partir de este cambio, CPA v8.0.2,
+y un archivo heredado con un comentario superior, claves de cliente, una entrada `codex-api-key`, reglas de payload
+y una sección desconocida `omc-operator-notes`.
 
-| Step | Result |
+| Paso | Resultado |
 | --- | --- |
-| `GET /management/config` on the legacy file | `stored_layout: legacy`; `safe_yaml` is CPA's v8 rendering (client keys at `access.api-keys`, the codex entry as an `api-keys.codex` group with its `api-key` masked, the unknown section as a comment); the file is byte-identical afterwards |
-| `PATCH /management/config` with three changes (`observability.logs.debug`, `routing.retry.request-retry`, `access.api-keys`) | `200` with the new revision and rendering. One backup was kept first and is byte-identical to the original file; CPA converted the file (`config-version: 8`, four-space indentation, defaults added, the unknown section commented out) and all three values took effect; the upstream codex key was kept |
-| The same save with a stale revision | `409 config_conflict`, nothing written |
-| A change set whose merge carries a mistyped value | `422 config_rejected` with CPA's reason; nothing written, including the set's removal |
-| A removal on the converted file | `200`; the key is gone and CPA reads its default |
-| A later save on the converted file | No second copy of the legacy file (measured under ADR 0037; since ADR 0051 each later write also keeps the v8 file it replaces) |
-| `PUT /management/config/source` with a legacy name | `422 config_rejected`: "legacy field debug is not accepted by v8; use observability.logs.debug"; file unchanged |
+| `GET /management/config` sobre el archivo heredado | `stored_layout: legacy`; `safe_yaml` es la representación v8 de CPA (claves de cliente en `access.api-keys`, la entrada codex como un grupo `api-keys.codex` con su `api-key` enmascarada, la sección desconocida como comentario); el archivo es idéntico byte a byte después |
+| `PATCH /management/config` con tres cambios (`observability.logs.debug`, `routing.retry.request-retry`, `access.api-keys`) | `200` con la nueva revisión y representación. Se conservó un respaldo primero, idéntico byte a byte al archivo original; CPA convirtió el archivo (`config-version: 8`, sangría de cuatro espacios, valores predeterminados añadidos, la sección desconocida comentada) y los tres valores surtieron efecto; la clave codex de upstream se conservó |
+| El mismo guardado con una revisión obsoleta | `409 config_conflict`, nada escrito |
+| Un conjunto de cambios cuya combinación contiene un valor con error tipográfico | `422 config_rejected` con la razón de CPA; nada escrito, incluida la eliminación del conjunto |
+| Una eliminación en el archivo convertido | `200`; la clave desaparece y CPA lee su valor predeterminado |
+| Un guardado posterior en el archivo convertido | Ninguna segunda copia del archivo heredado (medido bajo ADR 0037; desde ADR 0051 cada escritura posterior también conserva el archivo v8 que reemplaza) |
+| `PUT /management/config/source` con un nombre heredado | `422 config_rejected`: "legacy field debug is not accepted by v8; use observability.logs.debug"; archivo sin cambios |
 
-A change set is sent as one merge for scalars and lists, one `PUT` per map value and one
-`DELETE` per removal, in that order (`Client.ApplyConfigChanges`). It is not atomic
-across those requests (§9).
+Un conjunto de cambios se envía como una combinación para escalares y listas, un `PUT` por valor de mapa y un
+`DELETE` por eliminación, en ese orden (`Client.ApplyConfigChanges`). No es atómico
+a través de esas solicitudes (§9).
 
-Provider, OAuth alias and plugin writes use the same change sets (ADR 0038). Measured end
-to end on 2026-09-29 with a legacy file holding two `claude-api-key` entries (one with
-`request-retry: 0`), an OpenAI-compatible provider with `support-prompt-cache-key` and a
-model's `input-modalities`, an OAuth alias and a plugin's settings:
+Las escrituras de proveedores, alias de OAuth y plugins usan los mismos conjuntos de cambios (ADR 0038). Medido
+de extremo a extremo el 2026-09-29 con un archivo heredado que contenía dos entradas `claude-api-key` (una con
+`request-retry: 0`), un proveedor compatible con OpenAI con `support-prompt-cache-key` y los
+`input-modalities` de un modelo, un alias de OAuth y los ajustes de un plugin:
 
-| Step | Result |
+| Paso | Resultado |
 | --- | --- |
-| Disable the second Claude key | One backup, then the file converted; the key is `api-keys.claude[1]` with `excluded-models: ["*"]` on the key and its group's `request-retry: 0` kept |
-| With the family regrouped by hand (`team`: two keys sharing base URL, priority and models; `solo`), disable `team`'s second key | `team` kept; the exclusion is on that key only |
-| Change the first key's base URL | That key becomes `team-2`, ahead of `team`; list order and every other `auth-index` unchanged |
-| Create a provider | Appended as its own group |
-| Delete a provider | Its key is removed from its group; the other groups unchanged |
-| Disable the OpenAI-compatible provider | `disabled: true`; `support-prompt-cache-key`, `input-modalities` and its key kept, no `auth-index` in the file |
-| Replace, add and empty OAuth aliases | `oauth.model-alias.codex` replaced; `claude` added then removed |
-| Enable a plugin, then replace its settings | `plugins.configs.foo.enabled`, then the whole object; an unknown plugin reads as `plugin_not_found` |
-| Every write after the first | No second copy of the legacy file (measured under ADR 0037; since ADR 0051 each write also keeps the v8 file it replaces) |
+| Deshabilitar la segunda clave de Claude | Un respaldo, luego el archivo convertido; la clave es `api-keys.claude[1]` con `excluded-models: ["*"]` en la clave y el `request-retry: 0` de su grupo conservado |
+| Con la familia reagrupada a mano (`team`: dos claves que comparten URL base, prioridad y modelos; `solo`), deshabilitar la segunda clave de `team` | `team` conservado; la exclusión está únicamente en esa clave |
+| Cambiar la URL base de la primera clave | Esa clave se convierte en `team-2`, antes de `team`; orden de lista y cada otro `auth-index` sin cambios |
+| Crear un proveedor | Agregado como su propio grupo |
+| Eliminar un proveedor | Su clave se elimina de su grupo; los otros grupos sin cambios |
+| Deshabilitar el proveedor compatible con OpenAI | `disabled: true`; `support-prompt-cache-key`, `input-modalities` y su clave conservados, sin `auth-index` en el archivo |
+| Reemplazar, agregar y vaciar alias de OAuth | `oauth.model-alias.codex` reemplazado; `claude` agregado y luego eliminado |
+| Habilitar un plugin, luego reemplazar sus ajustes | `plugins.configs.foo.enabled`, luego el objeto completo; un plugin desconocido se lee como `plugin_not_found` |
+| Cada escritura después de la primera | Ninguna segunda copia del archivo heredado (medido bajo ADR 0037; desde ADR 0051 cada escritura también conserva el archivo v8 que reemplaza) |
 
-## 5. Detection
+## 5. Detección
 
-Two independent facts, both observed rather than inferred from a version string:
+Dos hechos independientes, ambos observados en lugar de inferidos a partir de una cadena de versión:
 
-- **Management API generation** (the gate): `GET /v8/management/config/config-version`
-  must answer the value `8`. A 2xx with any other body means the gateway is older than
-  v8; the body is checked so a catch-all proxy cannot pass. A 404/405/501 means the same
-  unless `GET /v0/management/debug` is missing too: CPA answers 404 on every management
-  path while it has no management secret, so that gateway is reported as `disabled`
-  rather than old. Any other status is not an answer and is not remembered; the gate then
-  lets requests through without probing again for fifteen seconds (`API_UNDECIDED_TTL`),
-  while `/api/healthz` keeps re-asking. A v8 answer is cached per gateway
-  base URL for five minutes (`API_SUPPORT_TTL`), a "not v8" answer for fifteen seconds
-  (`API_UNSUPPORTED_TTL`, so an upgrade lifts the block quickly), and the cache is dropped
-  whenever a v8 route answers "missing" (`internal/cpa/management/v8_gate.go`). Against a
-  gateway that answered "not v8", every client operation returns
-  `ErrManagementV8Required` without sending a request; the API layer reports it as
-  `cpa_v8_required`, `/api/healthz` reports `cpa_management_api: unsupported`, and the
-  console shows upgrade guidance in place of every page. Against a `disabled` gateway it
-  returns `ErrManagementDisabled` (`cpa_management_disabled`), and the console shows the
-  management-secret setting instead. An undecided probe blocks nothing.
-- **Stored file layout** (`configyaml.IsV8Document` over `GET /v0/management/config.yaml`):
-  `v8` when the file carries `config-version: 8` or later, `legacy` otherwise. It decides
-  whether the next configuration write converts the file, and is recorded on the backup
-  that write keeps first: a legacy copy has its own retention and can only be downloaded
-  (ADR 0051). It is exposed as `stored_layout` and read again before every configuration
-  write.
+- **Generación de la API de administración** (la puerta): `GET /v8/management/config/config-version`
+  debe responder el valor `8`. Un 2xx con cualquier otro cuerpo significa que la pasarela es anterior a
+  v8; el cuerpo se verifica para que un proxy comodín no pueda pasar. Un 404/405/501 significa lo mismo
+  a menos que `GET /v0/management/debug` también falte: CPA responde 404 en cada ruta de administración
+  mientras no tenga secreto de administración, por lo que esa pasarela se reporta como `disabled`
+  en lugar de antigua. Cualquier otro estado no es una respuesta y no se recuerda; la puerta entonces
+  permite el paso de solicitudes sin sondear de nuevo durante quince segundos (`API_UNDECIDED_TTL`),
+  mientras `/api/healthz` sigue preguntando. Una respuesta v8 se almacena en caché por URL base de la pasarela
+  durante cinco minutos (`API_SUPPORT_TTL`), una respuesta de "no v8" durante quince segundos
+  (`API_UNSUPPORTED_TTL`, para que una actualización levante el bloqueo rápidamente), y la caché se descarta
+  siempre que una ruta v8 responda "missing" (`internal/cpa/management/v8_gate.go`). Frente a una
+  pasarela que respondió "no v8", cada operación de cliente devuelve
+  `ErrManagementV8Required` sin enviar una solicitud; la capa de API lo informa como
+  `cpa_v8_required`, `/api/healthz` informa `cpa_management_api: unsupported`, y la
+  consola muestra una guía de actualización en lugar de cada página. Frente a una pasarela `disabled`
+  devuelve `ErrManagementDisabled` (`cpa_management_disabled`), y la consola muestra el
+  ajuste del secreto de administración en su lugar. Un sondeo indeciso no bloquea nada.
+- **Diseño del archivo almacenado** (`configyaml.IsV8Document` sobre `GET /v0/management/config.yaml`):
+  `v8` cuando el archivo contiene `config-version: 8` o posterior, `legacy` en caso contrario. Decide
+  si la siguiente escritura de configuración convierte el archivo, y queda registrado en el respaldo
+  que esa escritura conserva primero: una copia heredada tiene su propia retención y solo se puede descargar
+  (ADR 0051). Se expone como `stored_layout` y se lee de nuevo antes de cada escritura de configuración.
 
-## 6. Where a setting is written
+## 6. Dónde se escribe un ajuste
 
-Every editor names the v8 path, whatever the stored layout: CPA renders any file in the
-v8 layout, and a v8 write to a legacy file converts it. Client keys are
-`access.api-keys`; the root `api-keys` mapping is the upstream provider groups, written a
-family at a time by the provider editor (`api-keys.<family>`). Payload rules are `requests.payload`, one category per
-change.
+Cada editor indica la ruta v8, cualquiera sea el diseño almacenado: CPA representa cualquier archivo en el
+diseño v8, y una escritura v8 en un archivo heredado lo convierte. Las claves de cliente son
+`access.api-keys`; el mapa raíz `api-keys` corresponde a los grupos de proveedores upstream, escritos una
+familia a la vez por el editor de proveedores (`api-keys.<familia>`). Las reglas de payload son `requests.payload`, una categoría por
+cambio.
 
-There is no save guard of Shell-PAMC's own. CPA refuses a legacy name, an unknown section or a
-mistyped value without writing that request (§1). The console reports
-`config_rejected` with CPA's reason if no earlier request in the change set landed, or
-`config_partially_applied` if earlier requests were already written. Shadowed legacy
-keys cannot arise from an editor that only writes v8 paths.
+No hay barrera de guardado propia de Shell-PAMC. CPA rechaza un nombre heredado, una sección desconocida o un
+valor mal escrito sin escribir esa solicitud (§1). La consola informa
+`config_rejected` con el motivo de CPA si ninguna solicitud anterior en el conjunto de cambios se aplicó, o
+`config_partially_applied` si las solicitudes anteriores ya se habían escrito. Las claves heredadas
+superpuestas no pueden surgir de un editor que solo escribe rutas v8.
 
-**Scalar writes** (`PUT /management/config/{key}`, also used by the Agent's `config_set`)
-are one-change sets on the key's v8 path. OAuth model aliases are
-`oauth.model-alias.<provider>`, per-plugin settings `plugins.configs.<id>` and their
-switch `plugins.configs.<id>.enabled`.
+**Las escrituras escalares** (`PUT /management/config/{key}`, utilizadas también por `config_set` del Agente)
+son conjuntos de un solo cambio en la ruta v8 de la clave. Los alias de modelo de OAuth son
+`oauth.model-alias.<proveedor>`, los ajustes por plugin `plugins.configs.<id>` y su
+interruptor `plugins.configs.<id>.enabled`.
 
-## 7. Routes
+## 7. Rutas
 
-Every operation is addressed at its `/v8/management` route, with no fallback:
+Cada operación se dirige a su ruta `/v8/management`, sin respaldo alternativo:
 
-| Operation | Route |
+| Operación | Ruta |
 | --- | --- |
-| Credential files: list, upload, delete, download, models, status, fields | `/credentials`, `/credentials/download`, `/credentials/models`, `/credentials/status`, `/credentials/fields` |
-| OAuth login, status, cancellation, callback | `/oauth/auth-url?provider=`, `/oauth/status`, `/oauth/session`, `/oauth/callback` |
-| SIWC credential binding (shared OAuth status, cancellation and callback) | `/oauth/siwc/bind` |
-| Plugins: list, delete, store, install | `/plugins`, `/plugins/<id>`, `/plugins/store`, `/plugins/store/<id>/install` |
-| Usage queue (HTTP pull) | `/observability/usage/queue` |
-| API-key usage | `/observability/usage/api-keys` |
-| Application logs (read, clear) | `/observability/logs` |
-| Error-log list and download | `/observability/logs/errors[/<name>]` |
-| Request log by id | `/observability/logs/requests/<id>` |
-| Authenticated upstream call (quota probes) | `/requests/api-call` |
-| Credential cooldown reset | `/routing/cooldown/reset` |
-| Latest release | `/server/latest-version` |
+| Archivos de credenciales: listar, subir, eliminar, descargar, modelos, estado, campos | `/credentials`, `/credentials/download`, `/credentials/models`, `/credentials/status`, `/credentials/fields` |
+| Inicio de sesión OAuth, estado, cancelación, callback | `/oauth/auth-url?provider=`, `/oauth/status`, `/oauth/session`, `/oauth/callback` |
+| Vinculación de credenciales SIWC (estado OAuth compartido, cancelación y callback) | `/oauth/siwc/bind` |
+| Plugins: listar, eliminar, tienda, instalar | `/plugins`, `/plugins/<id>`, `/plugins/store`, `/plugins/store/<id>/install` |
+| Cola de uso (extracción HTTP) | `/observability/usage/queue` |
+| Uso de claves API | `/observability/usage/api-keys` |
+| Registros de aplicación (leer, limpiar) | `/observability/logs` |
+| Lista de registros de errores y descarga | `/observability/logs/errors[/<nombre>]` |
+| Registro de solicitud por ID | `/observability/logs/requests/<id>` |
+| Llamada autenticada a upstream (sondeos de cuota) | `/requests/api-call` |
+| Restablecimiento de enfriamiento de credenciales | `/routing/cooldown/reset` |
+| Versión más reciente | `/server/latest-version` |
 
-The shared login endpoint names Claude `claude`, while the console and CPA's credential
-files call it `anthropic`; `OAuthProvider.LoginProvider` carries the difference. Plugin
-login providers are served by the same endpoint.
+El endpoint de inicio de sesión compartido llama a Claude `claude`, mientras que la consola y los archivos
+de credenciales de CPA lo llaman `anthropic`; `OAuthProvider.LoginProvider` maneja la diferencia. Los proveedores
+de inicio de sesión de plugins son atendidos por el mismo endpoint.
 
-Outside the trusted Plugin Host exception (ADR 0067), `/v0/management`, which v8 serves
-unchanged, is addressed through `internal/cpa/management/client_v0.go` only to read:
+Fuera de la excepción del Plugin Host confiable (ADR 0067), `/v0/management`, que v8 atiende
+sin cambios, se consulta a través de `internal/cpa/management/client_v0.go` solo para leer:
 
-- the per-family credential lists (`/<family>-api-key`, `/openai-compatibility`), which
-  are the only source of each upstream key's `auth-index`: the v8 configuration view is
-  the stored document and carries no runtime fields;
-- `/config.yaml`, the file as stored, read before every v8 configuration write to keep a
-  backup of it.
+- las listas de credenciales por familia (`/<familia>-api-key`, `/openai-compatibility`), que
+  son la única fuente del `auth-index` de cada clave de upstream: la vista de configuración v8 es
+  el documento almacenado y no porta campos de tiempo de ejecución;
+- `/config.yaml`, el archivo tal como está almacenado, leído antes de cada escritura de configuración v8 para conservar
+  un respaldo de este.
 
-The RESP usage channel is not part of the Management API and is unchanged.
+El canal de uso RESP no forma parte de la API de administración y no se modifica.
 
-## 8. Compatibility matrix
+## 8. Matriz de compatibilidad
 
-"Measured" means exercised against the real binary; "unverified" means not exercised end
-to end. The v7.3.20 column is the record from ADR 0028's change and no longer describes a
-supported gateway: Shell-PAMC now refuses v7 before any request.
+"Medido" significa probado contra el binario real; "no verificado" significa no probado de extremo
+a extremo. La columna v7.3.20 es el registro del cambio de ADR 0028 y ya no describe una
+pasarela compatible: Shell-PAMC ahora rechaza v7 antes de cualquier solicitud.
 
-| Shell-PAMC surface | CPA v8.0.2, legacy file | CPA v8.0.2, v8 file |
+| Superficie de Shell-PAMC | CPA v8.0.2, archivo heredado | CPA v8.0.2, archivo v8 |
 | --- | --- | --- |
-| Configuration page save (change set) | Measured: backup, then CPA converts the file | Measured, per-path writes |
-| Source editor save | Refused by CPA on a legacy name (measured) | Measured |
-| Keys page | Measured, `access.api-keys` (converts the file, as any save) | Measured, `access.api-keys` |
-| Editor schema paths | — | Measured: all 36 newly added paths, each written with its field's default and read back from the persisted file |
-| Scalar writes (`config_set`) | Unit-tested, one-change set | Unit-tested, one-change set |
-| Provider credentials, OAuth aliases, plugin settings | Measured: backup, then converted by the first write | Measured, group-preserving writes |
-| Usage: RESP subscription | Measured | Layout-independent |
-| Usage: HTTP queue, logs, error logs, API-key usage | Measured, v8 routes | Layout-independent |
-| Request log, cooldown reset, api-call, latest version | Measured, v8 routes | Layout-independent |
-| Credential files, OAuth login, plugins (v8 routes) | Unit- and browser-tested against fixtures | Layout-independent |
-| Gate against a v7 gateway | Unit-tested (every route of a v7 gateway answers 404) | — |
+| Guardado de página de configuración (conjunto de cambios) | Medido: respaldo, luego CPA convierte el archivo | Medido, escrituras por ruta |
+| Guardado en editor de código fuente | Rechazado por CPA ante un nombre heredado (medido) | Medido |
+| Página de claves | Medido, `access.api-keys` (convierte el archivo, como cualquier guardado) | Medido, `access.api-keys` |
+| Rutas del esquema del editor | — | Medido: las 36 rutas recién añadidas, cada una escrita con el valor predeterminado de su campo y reída del archivo persistido |
+| Escrituras escalares (`config_set`) | Probado por unidad, conjunto de un solo cambio | Probado por unidad, conjunto de un solo cambio |
+| Credenciales de proveedores, alias de OAuth, ajustes de plugins | Medido: respaldo, luego convertido en la primera escritura | Medido, escrituras que preservan grupos |
+| Uso: suscripción RESP | Medido | Independiente del diseño |
+| Uso: cola HTTP, logs, logs de errores, uso de claves API | Medido, rutas v8 | Independiente del diseño |
+| Registro de solicitudes, restablecimiento de enfriamiento, api-call, versión más reciente | Medido, rutas v8 | Independiente del diseño |
+| Archivos de credenciales, inicio de sesión OAuth, plugins (rutas v8) | Probado por unidad y navegador contra fixtures | Independiente del diseño |
+| Puerta contra una pasarela v7 | Probado por unidad (cada ruta de una pasarela v7 responde 404) | — |
 
-"Layout-independent" rows do not depend on the file.
+Las filas "Independiente del diseño" no dependen del archivo.
 
-The credential, OAuth and plugin routes are registered on the same CPA handlers as their
-v0 counterparts (`server_management_v8.go`), which is why fixtures stand in for them. No
-real provider sign-in or upstream traffic was possible in the test environment, so those
-flows and the contents of usage records were not exercised against a real binary.
+Las rutas de credenciales, OAuth y plugins están registradas en los mismos controladores de CPA que sus
+contrapartes v0 (`server_management_v8.go`), por lo que los fixtures las reemplazan. No fue
+posible realizar inicios de sesión reales de proveedores ni tráfico de upstream en el entorno de pruebas, por lo que esos
+flujos y el contenido de los registros de uso no se probaron contra un binario real.
 
-## 9. Risks
+## 9. Riesgos
 
-- **The editor schema names one release's paths.** A CPA release that moves or renames a
-  setting makes CPA refuse the invalid request (`config_rejected` if no earlier
-  request landed). Earlier valid requests in the same change set may already have been
-  written; those saves return `config_partially_applied` without rolling them back.
-  Re-check the schema (§10) when moving the pinned version.
-- **The first save converts the file.** Formatting, comments of unmoved keys and unknown
-  sections do not come back from CPA's conversion; the original is kept as a pre-v8 backup
-  until ten later pre-v8 copies have pushed it out (everyday v8 writes do not count
-  against that). Any other v8 configuration writer (CPAMC, a script) converts the file
-  the same way, without Shell-PAMC's backup.
-- **A change set is not atomic.** The merge goes first and is where CPA refuses a
-  mistyped value; a map value or removal that fails after it leaves the merge applied.
-  The save's answer re-reads CPA, so the editor shows what CPA holds.
-- **A family is written whole.** CPA has no path for one key of a group, so a provider
-  write sends the family's groups back. The provider write gate serialises Shell-PAMC's own
-  writes. Against CPA v8.0.31 or later, every write also carries `If-Match` with CPA's
-  entity tag for the file Shell-PAMC read and backed up just before (the SHA-256 of its exact
-  bytes), and each later request of a change set names the tag CPA reported for its
-  previous save. When a save's answer carries no tag (CPA could not read the file
-  back), the requests after it in that change set are unconditional. A writer outside
-  Shell-PAMC that saves in between makes CPA answer `412`,
-  which the console reports as `config_conflict` (nothing written) or
-  `config_partially_applied` (an earlier request of the set had landed). Older
-  gateways ignore the header, so there a concurrent writer editing the same family
-  between the read and the write is still overwritten.
-- **Probe cache.** An upgrade from v7 is noticed within `API_UNSUPPORTED_TTL` (fifteen
-  seconds); a rollback to v7 is noticed on the first v8 route that answers "missing".
+- **El esquema del editor nombra las rutas de una versión específica.** Una versión de CPA que mueva o renombre un
+  ajuste hace que CPA rechace la solicitud inválida (`config_rejected` si ninguna solicitud
+  anterior se aplicó). Las solicitudes válidas anteriores en el mismo conjunto de cambios ya pueden haberse
+  escrito; esos guardados devuelven `config_partially_applied` sin revertirlos.
+  Vuelva a comprobar el esquema (§10) al mover la versión fijada.
+- **El primer guardado convierte el archivo.** El formato, los comentarios de claves no trasladadas y las secciones
+  desconocidas no se recuperan de la conversión de CPA; el original se conserva como un respaldo previo a v8
+  hasta que diez copias previas a v8 posteriores lo hayan desplazado (las escrituras cotidianas de v8 no cuentan
+  para eso). Cualquier otro escritor de configuración v8 (CPAMC, un script) convierte el archivo
+  de la misma forma, sin el respaldo de Shell-PAMC.
+- **Un conjunto de cambios no es atómico.** La combinación se envía primero y es donde CPA rechaza un
+  valor con error tipográfico; un valor de mapa o una eliminación que falle después de ella deja la combinación aplicada.
+  La respuesta del guardado vuelve a leer CPA, por lo que el editor muestra lo que CPA contiene.
+- **Una familia se escribe completa.** CPA no tiene ruta para una sola clave de un grupo, por lo que una escritura
+  de proveedor devuelve los grupos de la familia. La barrera de escritura de proveedores serializa las escrituras
+  propias de Shell-PAMC. Contra CPA v8.0.31 o posterior, cada escritura también porta `If-Match` con la etiqueta
+  de entidad de CPA para el archivo que Shell-PAMC leyó y respaldó justo antes (el SHA-256 de sus bytes exactos),
+  y cada solicitud posterior de un conjunto de cambios indica la etiqueta que CPA informó para su
+  guardado anterior. Cuando la respuesta de un guardado no porta etiqueta (CPA no pudo releer el archivo),
+  las solicitudes posteriores en ese conjunto de cambios son incondicionales. Un escritor externo a
+  Shell-PAMC que guarde en el intervalo hace que CPA responda `412`,
+  lo que la consola informa como `config_conflict` (nada escrito) o
+  `config_partially_applied` (una solicitud anterior del conjunto se había aplicado). Las pasarelas
+  más antiguas ignoran el encabezado, por lo que allí un escritor concurrente que edite la misma familia
+  entre la lectura y la escritura todavía es sobrescrito.
+- **Caché de sondeo.** Una actualización desde v7 se detecta dentro de `API_UNSUPPORTED_TTL` (quince
+  segundos); una reversión a v7 se detecta en la primera ruta v8 que responde "missing".
 
-## 10. Checking a new CPA release
+## 10. Comprobación de una nueva versión de CPA
 
-1. Run the release with a management password and a copy of a real configuration file.
-2. For every field in `web/src/types/configSchema.ts`, send its current value (or a
-   value of its type) to `PATCH /v8/management/config` at its `yamlPath`. A `400` names a
-   path the release no longer accepts; move the field to the path the release's
-   `config_v8.go` gives it, and add the row to §3.
-3. Compare `server_management_v8.go` of the release with the routes in §7, and update
-   this document.
+1. Ejecute la versión con una contraseña de administración y una copia de un archivo de configuración real.
+2. Para cada campo en `web/src/types/configSchema.ts`, envíe su valor actual (o un
+   valor de su tipo) a `PATCH /v8/management/config` en su `yamlPath`. Un `400` indica una
+   ruta que la versión ya no acepta; mueva el campo a la ruta que le asigna el `config_v8.go`
+   de la versión, y agregue la fila a §3.
+3. Compare `server_management_v8.go` de la versión con las rutas en §7 y actualice
+   este documento.
