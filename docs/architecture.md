@@ -3142,7 +3142,7 @@ the alternatives).
 | --- | --- | --- |
 | Upstream | The configured CPA instance | `internal/demo`'s fixture, over a loopback socket, with a key minted per process |
 | Management key | `OMCPA_CPA_MANAGEMENT_KEY` | The fixture's own key; an inherited one is discarded, never encrypted into the instance row |
-| Database | `oh-my-cpa.db` under `OMCPA_DATA_DIR` | `oh-my-cpa-demo.db`, deleted and rebuilt on every boot |
+| Database | `shell-pamc.db` under `OMCPA_DATA_DIR` | `shell-pamc-demo.db`, deleted and rebuilt on every boot |
 | Capture and sync | Collector and pricing loop run | Neither starts; the fixture is the history and the price list |
 | Sign-in | The CPA management key | A session on first sight, so a link can be opened by anyone |
 | Dangerous routes | Served | Refused by `internal/api/demo_policy.go` |

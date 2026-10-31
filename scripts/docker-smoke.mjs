@@ -82,7 +82,7 @@ export async function verifyDockerImage(image, version) {
       const state = JSON.parse(executeDocker('inspect', container))[0];
       assert.equal(state.HostConfig.ReadonlyRootfs, true);
       assert.equal(state.State.Health.Status, 'healthy');
-      executeDocker('exec', container, 'sh', '-c', 'test -s /data/oh-my-cpa.db && test -w /data');
+      executeDocker('exec', container, 'sh', '-c', 'test -s /data/shell-pamc.db && test -w /data');
       console.log(`PASS ${image}: ${rawPath} — image health, SQLite, login, embedded SPA and version ${version}`);
     } finally {
       if (container) {

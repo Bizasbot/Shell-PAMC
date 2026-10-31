@@ -198,7 +198,7 @@ func Load() (Config, error) {
 			// Demo data is disposable by definition, and the platform that runs the
 			// public demo mounts no writable volume: /tmp is the only directory a
 			// container image may write to there.
-			dataDir = filepath.Join(os.TempDir(), "oh-my-cpa-demo")
+			dataDir = filepath.Join(os.TempDir(), "shell-pamc-demo")
 		}
 	}
 	dataDir = filepath.Clean(dataDir)
@@ -285,13 +285,13 @@ func Load() (Config, error) {
 		cpa = CPAConfig{}
 	}
 
-	databasePath := filepath.Join(dataDir, "oh-my-cpa.db")
+	databasePath := filepath.Join(dataDir, "shell-pamc.db")
 	if demoMode {
 		// A demo database is per-boot: it is deleted and rebuilt so the history always
 		// ends at the moment the visitor arrives. The file has its own name so that a
 		// deployment which pointed the demo at a directory holding real data cannot
 		// have that data deleted with it.
-		databasePath = filepath.Join(dataDir, "oh-my-cpa-demo.db")
+		databasePath = filepath.Join(dataDir, "shell-pamc-demo.db")
 	}
 
 	return Config{

@@ -115,6 +115,16 @@ func newApp(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, 
 			return nil, err
 		}
 	}
+	if !cfg.IsDemoMode {
+		// An installation upgraded in place still holds its data under the old file name.
+		moved, err := repository.MigrateLegacyDatabaseName(cfg.DataDir)
+		if err != nil {
+			return nil, err
+		}
+		if moved {
+			logger.Info("renamed the database to its new name", "data_dir", cfg.DataDir)
+		}
+	}
 	db, err := repository.Open(ctx, cfg.DatabasePath,
 		repository.WithMigrationBackup(cipher, filepath.Join(cfg.DataDir, "backups"), 5),
 	)

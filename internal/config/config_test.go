@@ -86,7 +86,7 @@ func TestLoadLeavesSelfHostDefaultsAlone(t *testing.T) {
 	if cfg.DataDir != "data" {
 		t.Fatalf("data dir = %q, want ./data", cfg.DataDir)
 	}
-	if cfg.DatabasePath != filepath.Join("data", "oh-my-cpa.db") {
+	if cfg.DatabasePath != filepath.Join("data", "shell-pamc.db") {
 		t.Fatalf("database = %q, want the self-hosted file", cfg.DatabasePath)
 	}
 	if cfg.ListenAddr != ":8080" {
@@ -152,10 +152,10 @@ func TestLoadIsDemoModeIsSelfContained(t *testing.T) {
 	if cfg.BasePath != "" {
 		t.Fatalf("base path = %q, want the site root", cfg.BasePath)
 	}
-	if cfg.DataDir != filepath.Join(os.TempDir(), "oh-my-cpa-demo") {
+	if cfg.DataDir != filepath.Join(os.TempDir(), "shell-pamc-demo") {
 		t.Fatalf("data dir = %q, want a temporary directory", cfg.DataDir)
 	}
-	if cfg.DatabasePath != filepath.Join(cfg.DataDir, "oh-my-cpa-demo.db") {
+	if cfg.DatabasePath != filepath.Join(cfg.DataDir, "shell-pamc-demo.db") {
 		t.Fatalf("demo database = %q, want the demo's own file", cfg.DatabasePath)
 	}
 	if len(cfg.MasterKey) != 64 {

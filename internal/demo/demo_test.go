@@ -59,7 +59,7 @@ func seededDatabase(t *testing.T) (*repository.Repository, time.Time, SeedStats)
 			return
 		}
 		db, err := repository.Open(context.Background(),
-			filepath.Join(seedDir, "oh-my-cpa-demo.db"),
+			filepath.Join(seedDir, "shell-pamc-demo.db"),
 			repository.WithCipher(cipher),
 		)
 		if err != nil {
@@ -453,8 +453,8 @@ func TestSeedAttributesRequestsToConfiguredCredentials(t *testing.T) {
 // and the application deletes it rather than appending to it.
 func TestResetDatabaseLeavesTheSelfHostedDatabaseAlone(t *testing.T) {
 	dir := t.TempDir()
-	demoPath := filepath.Join(dir, "oh-my-cpa-demo.db")
-	realPath := filepath.Join(dir, "oh-my-cpa.db")
+	demoPath := filepath.Join(dir, "shell-pamc-demo.db")
+	realPath := filepath.Join(dir, "shell-pamc.db")
 	for _, path := range []string{demoPath, demoPath + "-wal", demoPath + "-shm", realPath} {
 		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 			t.Fatal(err)

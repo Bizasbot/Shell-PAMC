@@ -11,16 +11,18 @@ This runbook is intended for system administrators and operators running Oh My C
    - Sharing the `/data` directory across multiple Oh My CPA replicas via network filesystems (NFS, SMB/CIFS, GlusterFS) is strictly prohibited;
    - In container orchestrators (such as Kubernetes or Docker Swarm/Compose), ensure that at most one replica is scheduled at any time (e.g. using `strategy: { type: Recreate }` in Kubernetes deployments).
 
+2. **Upgrading from the old name**: an installation that still has `oh-my-cpa.db` is renamed to `shell-pamc.db`, together with `-wal` and `-shm`, on the first start. If both files exist the process refuses to start rather than choose; remove the one that does not hold your data. Backups written as `oh-my-cpa/sqlite-backup-v1` still restore; new backups are written as `shell-pamc/sqlite-backup-v1`.
+
 2. **WAL Triad Integrity**:
-   - The data directory contains three tightly-coupled files: `oh-my-cpa.db` (primary database), `oh-my-cpa.db-wal` (write-ahead log), and `oh-my-cpa.db-shm` (shared-memory index);
-   - Copying `oh-my-cpa.db` alone while the service is actively running can omit transactions that exist only in the `-wal` file, producing an incomplete or inconsistent snapshot.
+   - The data directory contains three tightly-coupled files: `shell-pamc.db` (primary database), `shell-pamc.db-wal` (write-ahead log), and `shell-pamc.db-shm` (shared-memory index);
+   - Copying `shell-pamc.db` alone while the service is actively running can omit transactions that exist only in the `-wal` file, producing an incomplete or inconsistent snapshot.
 
 3. **Single-Connection Design**:
    - The Go connection pool is fixed to `MaxOpenConns(1)` and `MaxIdleConns(1)`, with `busy_timeout=5000`, `foreign_keys=1`, `journal_mode=WAL`, and `synchronous=NORMAL`;
    - Concurrent writes are serialized inside the application process rather than relying on SQLite lock retries.
 
 4. **Demo mode is outside every rule above, and the runbook is not about it**:
-   - A deployment with `OMCPA_DEMO_MODE=true` uses its own file, `oh-my-cpa-demo.db`, in the same data directory, and deletes it plus its WAL siblings on every boot. Nothing in it is worth backing up, restoring or migrating, and the file has its own name so that a demo pointed at a directory holding real data cannot have that data deleted with it (`internal/demo.ResetDatabase`);
+   - A deployment with `OMCPA_DEMO_MODE=true` uses its own file, `shell-pamc-demo.db`, in the same data directory, and deletes it plus its WAL siblings on every boot. Nothing in it is worth backing up, restoring or migrating, and the file has its own name so that a demo pointed at a directory holding real data cannot have that data deleted with it (`internal/demo.ResetDatabase`);
    - The rest of this runbook describes the self-hosted database. Keep `docs/ops/cloudflare-demo.md` for the demo's own operations.
 
 ---
@@ -37,7 +39,7 @@ BACKUP_DIR="/path/to/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p "${BACKUP_DIR}" && chmod 700 "${BACKUP_DIR}"
 
-sqlite3 /path/to/data/oh-my-cpa.db "VACUUM INTO '${BACKUP_DIR}/oh-my-cpa-backup-${TIMESTAMP}.db';"
+sqlite3 /path/to/data/shell-pamc.db "VACUUM INTO '${BACKUP_DIR}/oh-my-cpa-backup-${TIMESTAMP}.db';"
 chmod 600 "${BACKUP_DIR}/oh-my-cpa-backup-${TIMESTAMP}.db"
 ```
 
@@ -88,15 +90,15 @@ When recovering from host failures or database corruption, choose the procedure 
      mv /path/to/data "/path/to/data_damaged_$(date +%Y%m%d_%H%M%S)"
      mkdir -p /path/to/data
      ```
-   - Copy the verified snapshot as `oh-my-cpa.db`:
+   - Copy the verified snapshot as `shell-pamc.db`:
      ```bash
-     cp /path/to/backups/oh-my-cpa-backup-YYYYMMDD_HHMMSS.db /path/to/data/oh-my-cpa.db
+     cp /path/to/backups/oh-my-cpa-backup-YYYYMMDD_HHMMSS.db /path/to/data/shell-pamc.db
      ```
    - Set ownership to the container user (`10001:10001` per Dockerfile) and restrict permissions:
      ```bash
      chown -R 10001:10001 /path/to/data
      chmod 700 /path/to/data
-     chmod 600 /path/to/data/oh-my-cpa.db
+     chmod 600 /path/to/data/shell-pamc.db
      ```
 
 ### 3.2 Restoring from a Cold Tarball (`.tar.gz`)
@@ -241,8 +243,8 @@ When upgrading Oh My CPA, the application automatically inspects and applies une
      reachable. Stop the application first, or accept the same waiting behaviour the gate
      provides:
      ```bash
-     sqlite3 /path/to/data/oh-my-cpa.db "PRAGMA wal_checkpoint(TRUNCATE);"
-     sqlite3 /path/to/data/oh-my-cpa.db "VACUUM;"
+     sqlite3 /path/to/data/shell-pamc.db "PRAGMA wal_checkpoint(TRUNCATE);"
+     sqlite3 /path/to/data/shell-pamc.db "VACUUM;"
      ```
    - A maintenance job does not survive a restart: the process running it is gone with it.
      The console's job status is held in memory for this reason, and the page says so.

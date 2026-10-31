@@ -276,7 +276,7 @@ try {
       seeder,
       [
         '-db',
-        path.join(temporary, 'data', 'oh-my-cpa.db'),
+        path.join(temporary, 'data', 'shell-pamc.db'),
         // The seeder must fingerprint with the same master key the app runs with,
         // or a caller-key identity it writes would not be one the app can derive.
         '-master-key',

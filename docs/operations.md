@@ -40,7 +40,7 @@ a message naming the variable.
 | `OMCPA_VERSION` | embedded stable tag; `v0.1.0-dev` for untagged source builds | Optional display/User-Agent version override; does not change the installed build |
 | `OMCPA_LISTEN_ADDR` | `:8080` | Listen address |
 | `OMCPA_BASE_PATH` | `/omc` | Sub-path the console is served under. `omc`, `/omc/` and `/omc` are equivalent; `/` serves it at the root |
-| `OMCPA_DATA_DIR` | `./data` | Directory holding `oh-my-cpa.db`. Local disk only |
+| `OMCPA_DATA_DIR` | `./data` | Directory holding `shell-pamc.db`. Local disk only. A database left under the old name `oh-my-cpa.db` (with its `-wal` and `-shm` files) is renamed on the first start; if both names exist the start fails and you keep the one that holds your data |
 | `OMCPA_PUBLIC_URL` | unset | The address browsers use. An `https://` value marks the session cookie `Secure` |
 | `OMCPA_TRUSTED_PROXY_CIDRS` | unset | Comma-separated CIDRs of reverse proxies whose forwarding headers may be trusted for login throttling |
 | `TZ` | system zone | Server calendar; see [Time zone](#time-zone) |

@@ -89,7 +89,7 @@ try {
       const system = await response.json();
       assert.equal(system.omc_version.running_version, tag);
       assert.equal(system.omc_version.state, 'indeterminate');
-      assert.ok(fs.statSync(path.join(dataDirectory, 'oh-my-cpa.db')).size > 0);
+      assert.ok(fs.statSync(path.join(dataDirectory, 'shell-pamc.db')).size > 0);
       console.log(`PASS native ${target.goarch}: ${basePath} — SQLite, sign-in, embedded SPA assets and version ${tag}`);
     } finally {
       if (processHandle.exitCode === null) processHandle.kill('SIGTERM');
