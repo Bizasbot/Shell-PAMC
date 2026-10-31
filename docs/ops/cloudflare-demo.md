@@ -170,7 +170,7 @@ failure as well as success.
 
 ## Deploying
 
-The demonstration is served at **`omc-demo.junze.dev`**, as a Cloudflare custom domain.
+The demonstration is served at **`shellpamc-demo.brevlux.site`**, as a Cloudflare custom domain.
 The `workers.dev` route is off in `wrangler.jsonc`, on purpose: that subdomain is
 account-level and derived from the account's identity, so leaving it on would publish the
 demonstration at an address carrying personal information. Both settings are stated in the

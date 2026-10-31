@@ -9,7 +9,7 @@
   // console is what makes a deploy from a fresh clone reproduce the deployed state
   // instead of quietly re-enabling the address that was turned off on purpose.
   "workers_dev": false,
-  "routes": [{ "pattern": "omc-demo.junze.dev", "custom_domain": true }],
+  "routes": [{ "pattern": "shellpamc-demo.brevlux.site", "custom_domain": true }],
   "compatibility_date": "2026-09-01",
   "assets": {
     "directory": "../../tmp/cloudflare-demo/assets",
