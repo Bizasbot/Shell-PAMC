@@ -7,7 +7,10 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - lucide-react@1.54.0
 overrides:
-  dompurify: ^3.4.16
+  dompurify: ^3.4.17
+  undici@7: ^7.30.1
+  undici@8: ^8.12.2
+  zod: ^4.6.6
   katex: 0.18.2
   sharp: 0.35.5
   source-map-js: 1.2.2
