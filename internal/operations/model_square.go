@@ -8,10 +8,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/modelcatalog"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/modelcatalog"
 )
 
 type ModelSquareRoute struct {

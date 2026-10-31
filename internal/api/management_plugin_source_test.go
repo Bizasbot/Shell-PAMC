@@ -14,10 +14,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/configyaml"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/cpa/configyaml"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // managedSourceStoredYAML is the file a stand-in gateway has on disk. It is v8, so

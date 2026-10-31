@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/quota"
 )
 
 func TestSeedQuotaObservationsIncludeScopedAndPreviousCycles(t *testing.T) {

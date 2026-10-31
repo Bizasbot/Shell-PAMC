@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 // management_logs.go is the session-protected facade over CPA's log endpoints.

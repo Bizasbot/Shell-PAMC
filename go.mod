@@ -1,4 +1,4 @@
-module github.com/oh-my-cpa/oh-my-cpa
+module github.com/bizasbot/shell-pamc
 
 go 1.26.0
 

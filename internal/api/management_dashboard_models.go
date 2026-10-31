@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // dashboardModelTopN is how many named models the panels carry before the remainder is

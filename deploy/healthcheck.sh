@@ -4,7 +4,7 @@ set -eu
 # process this container runs keeps a hand-written `command: ["updater", "serve"]` service
 # from needing a health check of its own to avoid being reported unhealthy forever.
 if tr '\0' ' ' < /proc/1/cmdline | grep -q ' updater serve'; then
-  exec /usr/local/bin/oh-my-cpa updater healthcheck
+  exec /usr/local/bin/shell-pamc updater healthcheck
 fi
 base_path=$(sh /usr/local/bin/omc-base-path)
 listen_addr=${OMCPA_LISTEN_ADDR:-:8080}

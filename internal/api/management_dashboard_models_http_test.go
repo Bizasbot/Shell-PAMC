@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // modelEventFor is `eventFor` with the model chosen, since the whole point of this endpoint is the

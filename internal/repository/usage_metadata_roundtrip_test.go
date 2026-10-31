@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // rawCommandCodePayload is one CPA usage record as the queue published it, kept

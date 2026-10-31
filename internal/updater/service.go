@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // Products the updater can replace. They are the whole vocabulary of the control

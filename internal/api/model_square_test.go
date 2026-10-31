@@ -12,9 +12,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/modelcatalog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/operations"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/modelcatalog"
+	"github.com/bizasbot/shell-pamc/internal/operations"
 )
 
 func TestModelSquareHTTPUsesDefaultKeyAndSafeProvenance(t *testing.T) {

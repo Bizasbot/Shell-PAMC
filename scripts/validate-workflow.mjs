@@ -42,13 +42,13 @@ if (document.errors.length > 0) {
   if (!browserPreparation?.run?.includes('install-chromium.mjs') || !browserPreparation.run.includes('pnpm build')) {
     throw new Error('CI workflow does not prepare Chromium and build the SPA in one step');
   }
-  if (!browserPreparation.run.includes('tmp/oh-my-cpa-browser')) {
+  if (!browserPreparation.run.includes('tmp/shell-pamc-browser')) {
     throw new Error('CI workflow does not prepare a reusable browser binary');
   }
   // The application binary embeds `internal/web/dist`, so it must be compiled after
   // `pnpm build` finishes. A concurrent build could embed a half-written bundle, and
   // the ordering is what the preparation step's own sequencing comment claims.
-  const applicationBuildIndex = browserPreparation.run.indexOf('go build -trimpath -o tmp/oh-my-cpa-browser');
+  const applicationBuildIndex = browserPreparation.run.indexOf('go build -trimpath -o tmp/shell-pamc-browser');
   const spaBuildIndex = browserPreparation.run.indexOf('pnpm build');
   if (applicationBuildIndex < 0 || spaBuildIndex < 0 || applicationBuildIndex < spaBuildIndex) {
     throw new Error('CI workflow must build the embedded SPA before the application binary that embeds it');

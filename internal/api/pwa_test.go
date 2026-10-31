@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/config"
 )
 
 // publicConsoleDir is the committed console source the build copies into the embedded

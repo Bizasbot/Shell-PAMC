@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // demoAuditSource is the source a visitor's own actions would carry: a masked

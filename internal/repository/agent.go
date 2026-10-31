@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
 	"time"
 )
 

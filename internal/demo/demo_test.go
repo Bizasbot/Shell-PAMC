@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
 )
 
 const testMasterKey = "01234567890123456789012345678901"

@@ -204,7 +204,7 @@ ownership decision. A host CPA listening on loopback needs no remote-management 
 Restrict the environment/data files to the service account (Unix permissions or Windows
 ACLs). Use the OS's certificate roots; the binary already embeds IANA zone data.
 
-Run `./oh-my-cpa` or `.\oh-my-cpa.exe` from the extracted directory, then verify as in
+Run `./shell-pamc` or `.\shell-pamc.exe` from the extracted directory, then verify as in
 step 4. Do not bypass macOS/Windows trust controls: unsigned binaries may require an
 explicit user decision after checksum verification. Offer a service manager only if
 requested, retaining the working directory and data path.
@@ -225,8 +225,8 @@ and usage-collection points from B2. Then:
 
 ```bash
 pnpm build
-go build -trimpath -o bin/oh-my-cpa ./cmd/oh-my-cpa
-./bin/oh-my-cpa
+go build -trimpath -o bin/shell-pamc ./cmd/shell-pamc
+./bin/shell-pamc
 ```
 
 It runs in the foreground. Offer a systemd unit or similar only if the user wants one.

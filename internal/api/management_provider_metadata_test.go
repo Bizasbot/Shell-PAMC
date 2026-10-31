@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // The overlay maps must not record an intent the gateway refused.

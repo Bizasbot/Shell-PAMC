@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/operations"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/operations"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // PricingManager is the handler-facing view of the pricing service. The concrete

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 func TestMCPStdioHelper(t *testing.T) {

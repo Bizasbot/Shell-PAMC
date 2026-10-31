@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 const SIWC_TEST_FILE = `{"id":"managed-id","name":"codex.json","auth_index":"idx","provider":"codex","siwc_bind_supported":true,"use_siwc":true,"siwc_bound":true,"siwc_expires_at":"2026-10-21T00:00:00Z","metadata":{"siwc":{"access_token":"SYNTHETIC-TOKEN"}},"refresh_token":"SYNTHETIC-TOKEN"}`

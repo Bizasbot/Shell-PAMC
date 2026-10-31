@@ -10,9 +10,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/timezone"
+	"github.com/bizasbot/shell-pamc/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/timezone"
 )
 
 // knownPreferences is the whole public surface of the preferences API. The

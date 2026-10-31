@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/timezone"
+	"github.com/bizasbot/shell-pamc/internal/timezone"
 )
 
 // ModelPrice is one price row. Source records who last wrote the rates; Mode is

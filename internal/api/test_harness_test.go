@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 var dashboardDSNCounter atomic.Uint64

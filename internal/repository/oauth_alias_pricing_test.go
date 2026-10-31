@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 const OAUTH_CALL_MODEL = "gemini-3.8-flash"

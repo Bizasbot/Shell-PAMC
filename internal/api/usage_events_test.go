@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 func TestUsageEventsSurfaceCostUSD(t *testing.T) {

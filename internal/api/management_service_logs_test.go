@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 type serviceLogResponse struct {

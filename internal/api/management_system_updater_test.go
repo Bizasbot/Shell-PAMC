@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/updater"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/updater"
 )
 
 // fakeUpdater is the sidecar as the handler sees it. beforeUpdate runs when an update

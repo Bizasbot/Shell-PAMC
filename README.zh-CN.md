@@ -378,7 +378,7 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 {
   "mcpServers": {
     "oh-my-cpa": {
-      "command": "/path/to/oh-my-cpa",
+      "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
         "OMCPA_SERVER_URL": "https://cpa.example.com/omc",

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/ingest"
+	"github.com/bizasbot/shell-pamc/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage/ingest"
 )
 
 type routingResponse struct {

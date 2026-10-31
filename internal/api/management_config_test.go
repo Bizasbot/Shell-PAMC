@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/configyaml"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/cpa/configyaml"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
 )
 
 // configFixtureCPA is a v8 gateway's configuration endpoints: a JSON and a YAML

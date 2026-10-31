@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // Result filters for event queries. Kept as a small closed set so every page

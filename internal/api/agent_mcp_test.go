@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/mcpbridge"
+	"github.com/bizasbot/shell-pamc/internal/mcpbridge"
 )
 
 type bearerTransport struct{ key string }

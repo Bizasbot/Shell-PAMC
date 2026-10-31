@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
 )
 
 func TestInferenceRetriesArePerRequestAndDoNotExecuteFailedCalls(t *testing.T) {

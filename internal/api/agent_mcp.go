@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/mcpbridge"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/mcpbridge"
 )
 
 // MCP_CONSOLE_URL_HEADER carries the console address of the request being served to the tool

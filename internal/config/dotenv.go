@@ -26,7 +26,7 @@ func DotEnvPath() string {
 // LoadDotEnv applies KEY=VALUE pairs from path to the process environment.
 //
 // Real environment variables always win: the file only fills gaps. That keeps
-// container/CI injection working while still allowing `go run ./cmd/oh-my-cpa`
+// container/CI injection working while still allowing `go run ./cmd/shell-pamc`
 // to pick up a local debug file. A missing file is not an error; the number of
 // applied variables is returned so callers can log that the file was read.
 // Values are never logged by this package because they hold credentials.

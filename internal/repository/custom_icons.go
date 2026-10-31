@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/iconasset"
+	"github.com/bizasbot/shell-pamc/internal/iconasset"
 )
 
 const MaxCustomIcons = 100

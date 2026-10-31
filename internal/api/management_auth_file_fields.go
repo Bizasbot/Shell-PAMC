@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 // errAuthFileFieldsNotVerified reports a field write whose persisted state could not be confirmed.

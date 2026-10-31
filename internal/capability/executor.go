@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 type Result struct {

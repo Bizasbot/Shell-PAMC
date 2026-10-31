@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // SIDECAR_NAME is both the installed updater's container name and the DNS name the
@@ -120,7 +120,7 @@ func Install(ctx context.Context, options InstallOptions) error {
 		// is root that can open the socket it owns and nothing else.
 		"User": "0:0",
 		"Healthcheck": map[string]any{
-			"Test":     []string{"CMD", "/usr/local/bin/oh-my-cpa", ROLE_COMMAND, "healthcheck"},
+			"Test":     []string{"CMD", "/usr/local/bin/shell-pamc", ROLE_COMMAND, "healthcheck"},
 			"Interval": 10_000_000_000, "Timeout": 5_000_000_000, "StartPeriod": 5_000_000_000, "Retries": 3,
 		},
 		"HostConfig": map[string]any{

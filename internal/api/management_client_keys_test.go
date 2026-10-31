@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/security"
 )
 
 // The caller keys leave the process masked unless the caller asks for the values,

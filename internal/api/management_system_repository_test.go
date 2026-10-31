@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/config"
 )
 
 // stargazerRelease answers only the star count; any other call is a nil dereference,

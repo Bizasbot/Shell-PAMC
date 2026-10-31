@@ -1,7 +1,7 @@
 // Package mcpbridge maps the capability registry to MCP tools for external agents.
 //
 // One server definition serves two transports: OMC's own Streamable HTTP endpoint, which
-// reaches the executor in-process, and the `oh-my-cpa mcp` stdio process, which reaches it
+// reaches the executor in-process, and the `shell-pamc mcp` stdio process, which reaches it
 // through the capability HTTP endpoints. Neither carries business logic or approval policy.
 package mcpbridge
 
@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 // OPERATION_STATUS_TOOL is the one tool the bridge adds to the registry's own; the registry

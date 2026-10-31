@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/resp"
+	"github.com/bizasbot/shell-pamc/internal/usage/resp"
 )
 
 // UsageChannel is CPA's built-in Redis-compatible pub/sub channel names.

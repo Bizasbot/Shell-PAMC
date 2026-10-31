@@ -69,5 +69,5 @@ jobs:
           mkdir -p tmp
           binary=tmp/native-smoke
           if [ "$RUNNER_OS" = Windows ]; then binary=tmp/native-smoke.exe; fi
-          go build -trimpath -tags timetzdata -o "$binary" ./cmd/oh-my-cpa
+          go build -trimpath -tags timetzdata -o "$binary" ./cmd/shell-pamc
           node scripts/native-runtime-smoke.mjs "$binary"

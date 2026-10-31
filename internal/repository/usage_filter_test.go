@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // fingerprintTestRepository opens a private in-memory database with the

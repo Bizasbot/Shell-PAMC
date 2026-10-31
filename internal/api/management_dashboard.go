@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/demo"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/ingest"
+	"github.com/bizasbot/shell-pamc/internal/demo"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/usage/ingest"
 )
 
 // maxDashboardWindow bounds a custom range.

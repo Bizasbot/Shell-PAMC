@@ -996,7 +996,7 @@ than by following a tail. An older `/logs?source=audit` link redirects there.
   read as `request_log.download` and is refused in demo mode. This route, not the
   request list, is how a request with no usage record is read (see Failure Detail in
   `CONTEXT.md`).
-- **Service log** — Oh My CPA's own process log. `cmd/oh-my-cpa` builds the logger as
+- **Service log** — Oh My CPA's own process log. `cmd/shell-pamc` builds the logger as
   `applog.NewHandler(jsonStderrHandler, buffer)`, so stderr remains the durable log a
   deployment collects, and `NewHandler` in `internal/api` finds the buffer through
   `applog.BufferOf`. The buffer keeps the latest `applog.DefaultCapacity` records,

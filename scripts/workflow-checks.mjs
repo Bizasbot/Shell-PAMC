@@ -2,7 +2,7 @@ export function validateArtifactGates(browserSteps) {
   const preparationIndex = browserSteps.findIndex((step) => step.id === 'prepare');
   const preparation = browserSteps[preparationIndex]?.run ?? '';
   const buildIndex = preparation.indexOf('pnpm build');
-  const binaryIndex = preparation.indexOf('go build -trimpath -o tmp/oh-my-cpa-browser');
+  const binaryIndex = preparation.indexOf('go build -trimpath -o tmp/shell-pamc-browser');
   if (buildIndex < 0 || binaryIndex <= buildIndex || preparation.includes('pnpm check:bundle')) {
     throw new Error('CI must build the SPA and binary independently of bundle verification');
   }
@@ -40,7 +40,7 @@ export function validateArtifactGates(browserSteps) {
 export function validateBrowserPhases(browserSteps) {
   const full = browserSteps.filter(step => step.run === 'pnpm verify:browser');
   if (full.length !== 1 || full[0].if || full[0]['continue-on-error']) throw new Error('Every event must run full built acceptance once');
-  if (full[0].env?.OMCPA_BROWSER_BINARY !== 'tmp/oh-my-cpa-browser'
+  if (full[0].env?.OMCPA_BROWSER_BINARY !== 'tmp/shell-pamc-browser'
       || full[0].env?.OMCPA_SEED_USAGE_BINARY !== 'tmp/seed-usage-browser') {
     throw new Error('Full acceptance must reuse both prepared binaries');
   }

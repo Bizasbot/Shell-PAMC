@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // storedRelease answers only the stored status; a check is a nil dereference, which is

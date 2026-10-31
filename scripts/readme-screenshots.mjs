@@ -62,7 +62,7 @@ async function startDemoServer() {
   if (!fs.existsSync(path.join(root, 'internal', 'web', 'dist', 'index.html'))) {
     throw new Error('internal/web/dist is missing: run `pnpm build` first');
   }
-  const server = spawn('go', ['run', './cmd/oh-my-cpa'], {
+  const server = spawn('go', ['run', './cmd/shell-pamc'], {
     cwd: root,
     stdio: ['ignore', 'ignore', 'inherit'],
     // Its own process group, so stopping it also stops the binary `go run` started.

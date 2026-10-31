@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 var CLAUDE_FAMILY_PATTERN = regexp.MustCompile(`^claude-(?:(sonnet|opus|haiku)(?:-|$)|[0-9]+(?:[.-][0-9]+)*-(sonnet|opus|haiku)(?:-|$))`)

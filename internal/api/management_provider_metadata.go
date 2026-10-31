@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func (h *Handler) loadProviderNames(ctx context.Context) map[string]string {

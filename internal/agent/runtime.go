@@ -12,9 +12,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/gateway"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/cpa/gateway"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // Trace is one capability or display call of a turn: what the model asked for, when it ran, and

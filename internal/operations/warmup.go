@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/warmup"
+	"github.com/bizasbot/shell-pamc/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/warmup"
 )
 
 func (service *Service) registerWarmup(registry *capability.Registry) error {

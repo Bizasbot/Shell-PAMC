@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 // ASK_QUESTION is the one capability that belongs to the conversation rather than to OMC: the

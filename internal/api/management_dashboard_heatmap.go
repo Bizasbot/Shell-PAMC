@@ -8,8 +8,8 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/timezone"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/timezone"
 )
 
 // The grid is a rolling year: fifty-three whole Monday-first weeks ending on the week containing

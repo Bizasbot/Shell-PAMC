@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // The dashboard range is the operator's working context: it has to come back

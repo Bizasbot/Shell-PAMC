@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/web"
+	"github.com/bizasbot/shell-pamc/internal/web"
 )
 
 // The installable-app surface: the web app manifest and the icons it names.

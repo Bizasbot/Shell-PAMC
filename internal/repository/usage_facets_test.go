@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/security"
 	"reflect"
 	"strings"
 	"testing"

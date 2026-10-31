@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pluginregistry"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/pluginregistry"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
 )
 
 // fixtureInstanceName is the CPA instance the fixture impersonates. The console

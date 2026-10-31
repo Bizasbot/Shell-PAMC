@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/warmup"
+	"github.com/bizasbot/shell-pamc/internal/warmup"
 )
 
 func (repository *Repository) ReadWarmupPolicy(ctx context.Context, instance, scope, target string) (warmup.Policy, bool, error) {

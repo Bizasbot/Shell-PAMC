@@ -16,8 +16,8 @@ Every release publishes eight executables matching CPA's OS/architecture coverag
 | Linux | amd64, arm64 | tar.gz |
 | FreeBSD | amd64, arm64 | tar.gz |
 
-Names follow `oh-my-cpa_VERSION_OS_ARCH.tar.gz` (Windows uses `.zip`), with the
-numeric version without `v`. Each archive contains the executable (`oh-my-cpa.exe`
+Names follow `shell-pamc_VERSION_OS_ARCH.tar.gz` (Windows uses `.zip`), with the
+numeric version without `v`. Each archive contains the executable (`shell-pamc.exe`
 on Windows), MIT license, both READMEs, installation/operations/SQLite guides and `.env.example` from
 `deploy/native.env.example`. No secrets or runtime data are included. `checksums.txt`
 contains SHA-256 hashes for all eight archives and the three Compose/CPA installation

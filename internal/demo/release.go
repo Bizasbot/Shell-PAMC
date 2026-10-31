@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // releaseFixture is the demonstration's release feed.

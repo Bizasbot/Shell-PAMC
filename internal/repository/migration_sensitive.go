@@ -7,8 +7,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/security"
 )
 
 // sanitizeHistoricalDataTx is the governance hook for migration 004. It runs

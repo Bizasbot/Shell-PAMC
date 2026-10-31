@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/applog"
 )
 
 // serviceLogPageDefault is one read when the console does not name a size: enough

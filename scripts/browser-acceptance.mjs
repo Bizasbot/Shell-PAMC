@@ -67,7 +67,7 @@ const CLIENT_KEY_ALIAS = '验收专用密钥';
 const configuredExecutable = process.env.OMCPA_BROWSER_BINARY?.trim();
 const executable = configuredExecutable
   ? path.resolve(root, configuredExecutable)
-  : path.join(temporary, process.platform === 'win32' ? 'oh-my-cpa.exe' : 'oh-my-cpa');
+  : path.join(temporary, process.platform === 'win32' ? 'shell-pamc.exe' : 'shell-pamc');
 const configuredSeeder = process.env.OMCPA_SEED_USAGE_BINARY?.trim();
 const appLog = [];
 const { check, checkEventually, checkHoldsFor, checks, failures } = createChecker();
@@ -257,7 +257,7 @@ try {
   if (configuredExecutable) {
     if (!fs.existsSync(executable)) throw new Error(`OMCPA_BROWSER_BINARY does not exist: ${executable}`);
   } else {
-    execFileSync('go', ['build', '-trimpath', '-o', executable, './cmd/oh-my-cpa'], { cwd: root, env: { ...process.env, CGO_ENABLED: '0' }, stdio: 'inherit' });
+    execFileSync('go', ['build', '-trimpath', '-o', executable, './cmd/shell-pamc'], { cwd: root, env: { ...process.env, CGO_ENABLED: '0' }, stdio: 'inherit' });
   }
   // Acceptance runs with ingestion disabled, so the request list would be empty
   // and every list behaviour untestable. Seed a deterministic window through the

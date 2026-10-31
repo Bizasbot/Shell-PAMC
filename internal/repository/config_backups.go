@@ -9,7 +9,7 @@ import (
 	"errors"
 	"time"
 
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
 )
 
 // The layout a kept file was stored in. Only a v8 copy can be written back

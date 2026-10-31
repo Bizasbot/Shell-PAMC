@@ -146,9 +146,9 @@ function waitForExit(child) {
 /** Starts the binary under test, or reports that an existing deployment is used. */
 async function startLocalDemo() {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-demo-smoke-'));
-  const binary = path.join(temporary, process.platform === 'win32' ? 'oh-my-cpa.exe' : 'oh-my-cpa');
+  const binary = path.join(temporary, process.platform === 'win32' ? 'shell-pamc.exe' : 'shell-pamc');
   console.log('building the binary under test...');
-  execFileSync('go', ['build', '-trimpath', '-o', binary, './cmd/oh-my-cpa'], {
+  execFileSync('go', ['build', '-trimpath', '-o', binary, './cmd/shell-pamc'], {
     cwd: root,
     env: { ...process.env, CGO_ENABLED: '0' },
     stdio: 'inherit',

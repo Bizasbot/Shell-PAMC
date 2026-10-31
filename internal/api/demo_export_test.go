@@ -21,15 +21,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/demo"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/demo"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // The public demo is served from a static host, so its API responses have to exist

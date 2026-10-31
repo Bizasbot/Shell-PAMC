@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agent"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/agui"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/agent"
+	"github.com/bizasbot/shell-pamc/internal/agui"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 func TestAgentHTTPManagementKeyAndCapabilityBoundary(t *testing.T) {

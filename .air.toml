@@ -8,7 +8,7 @@ tmp_dir = "tmp/air"
 [build]
   args_bin = []
   bin = "./tmp/air/main.exe"
-  cmd = "go build -o ./tmp/air/main.exe ./cmd/oh-my-cpa"
+  cmd = "go build -o ./tmp/air/main.exe ./cmd/shell-pamc"
   delay = 500
   exclude_dir = ["assets", "tmp", "cpa", "web", "docs", "deploy", "scripts", "internal/web/dist"]
   exclude_file = []

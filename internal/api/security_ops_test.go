@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func TestSecurityHeadersApplied(t *testing.T) {

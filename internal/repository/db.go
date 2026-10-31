@@ -17,8 +17,8 @@ import (
 	"sync"
 	"time"
 
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/migrations"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/migrations"
 	_ "modernc.org/sqlite"
 )
 

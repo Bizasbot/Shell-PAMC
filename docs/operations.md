@@ -388,7 +388,7 @@ a demonstration is shared, so it is neither sent to the server nor read from it.
 
 ```bash
 pnpm build
-OMCPA_DEMO_MODE=true go run ./cmd/oh-my-cpa
+OMCPA_DEMO_MODE=true go run ./cmd/shell-pamc
 ```
 
 This mode is what generates the public demonstration's dataset, so it stays in use even

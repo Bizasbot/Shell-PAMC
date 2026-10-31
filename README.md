@@ -408,7 +408,7 @@ The binary carries a stdio bridge that forwards to the console:
 {
   "mcpServers": {
     "oh-my-cpa": {
-      "command": "/path/to/oh-my-cpa",
+      "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
         "OMCPA_SERVER_URL": "https://cpa.example.com/omc",

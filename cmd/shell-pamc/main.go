@@ -9,14 +9,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/app"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/mcpbridge"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/updater"
+	"github.com/bizasbot/shell-pamc/internal/app"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/mcpbridge"
+	"github.com/bizasbot/shell-pamc/internal/updater"
 )
 
-const MCP_USAGE = `Usage: oh-my-cpa mcp
+const MCP_USAGE = `Usage: shell-pamc mcp
 
 Serves Oh My CPA's capabilities to an MCP client over standard input and output.
 A client that speaks Streamable HTTP does not need this process: it connects to

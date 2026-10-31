@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/pricing"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/pricing"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // lockedPrice is what the insert transaction stores beside a usage event.

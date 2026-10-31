@@ -20,10 +20,10 @@ test('native matrix is exactly CPA OS/architecture coverage with stable names an
     'linux/amd64', 'linux/arm64', 'freebsd/amd64', 'freebsd/arm64',
   ]);
   for (const target of PLAN) {
-    assert.equal(target.binary, target.goos === 'windows' ? 'oh-my-cpa.exe' : 'oh-my-cpa');
-    assert.equal(target.archive, `oh-my-cpa_0.1.2_${target.goos}_${target.goarch}.${target.goos === 'windows' ? 'zip' : 'tar.gz'}`);
+    assert.equal(target.binary, target.goos === 'windows' ? 'shell-pamc.exe' : 'shell-pamc');
+    assert.equal(target.archive, `shell-pamc_0.1.2_${target.goos}_${target.goarch}.${target.goos === 'windows' ? 'zip' : 'tar.gz'}`);
     assert.ok(target.buildArgs.includes('timetzdata'));
-    assert.ok(target.buildArgs.includes('-s -w -X github.com/oh-my-cpa/oh-my-cpa/internal/config.BuildVersion=v0.1.2'));
+    assert.ok(target.buildArgs.includes('-s -w -X github.com/bizasbot/shell-pamc/internal/config.BuildVersion=v0.1.2'));
   }
   for (const tag of ['v0.1.2-rc.1', 'v01.1.2', '0.1.2', 'v0.1.2\nbad']) {
     assert.throws(() => createNativePlan(tag, '0.1.2', '0.1.2'));

@@ -19,10 +19,10 @@ export function createNativePlan(tag, packageVersion, webVersion) {
   const { version } = createReleasePlan({ tag, packageVersion, webVersion, image: 'ghcr.io/bizasbot/shell-pamc' });
   return RELEASE_TARGETS.map(({ goos, goarch }) => ({
     goos, goarch,
-    binary: `oh-my-cpa${goos === 'windows' ? '.exe' : ''}`,
-    archive: `oh-my-cpa_${version}_${goos}_${goarch}.${goos === 'windows' ? 'zip' : 'tar.gz'}`,
+    binary: `shell-pamc${goos === 'windows' ? '.exe' : ''}`,
+    archive: `shell-pamc_${version}_${goos}_${goarch}.${goos === 'windows' ? 'zip' : 'tar.gz'}`,
     buildArgs: ['build', '-p', '2', '-trimpath', '-buildvcs=false', '-tags', 'timetzdata',
-      '-ldflags', `-s -w -X github.com/oh-my-cpa/oh-my-cpa/internal/config.BuildVersion=${tag}`],
+      '-ldflags', `-s -w -X github.com/bizasbot/shell-pamc/internal/config.BuildVersion=${tag}`],
   }));
 }
 
@@ -102,7 +102,7 @@ export function buildNativeRelease(tag, { root = ROOT, execute = execFileSync } 
       const staging = path.join(stagingRoot, `${target.goos}-${target.goarch}`);
       fs.mkdirSync(staging);
       const executable = path.join(staging, target.binary);
-      execute('go', [...target.buildArgs, '-o', executable, './cmd/oh-my-cpa'], {
+      execute('go', [...target.buildArgs, '-o', executable, './cmd/shell-pamc'], {
         cwd: root, stdio: 'inherit', env: { ...process.env, CGO_ENABLED: '0', GOOS: target.goos, GOARCH: target.goarch },
       });
       const metadata = execute('go', ['version', '-m', executable], { encoding: 'utf8' });

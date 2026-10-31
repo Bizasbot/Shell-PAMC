@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/quota"
 )
 
 const capacityHistoryDepth = 50

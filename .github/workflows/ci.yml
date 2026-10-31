@@ -174,7 +174,7 @@ jobs:
             mkdir -p tmp
             CGO_ENABLED=0 go build -trimpath -o tmp/seed-usage-browser ./scripts/fixture/seed-usage &
             seed_build_pid=$!
-            CGO_ENABLED=0 go build -trimpath -o tmp/oh-my-cpa-browser ./cmd/oh-my-cpa
+            CGO_ENABLED=0 go build -trimpath -o tmp/shell-pamc-browser ./cmd/shell-pamc
             go_status=$?
             wait "${seed_build_pid}" || go_status=$?
           fi
@@ -210,7 +210,7 @@ jobs:
         run: pnpm verify:browser:harness
       - name: Run full built-artifact acceptance on every event
         env:
-          OMCPA_BROWSER_BINARY: tmp/oh-my-cpa-browser
+          OMCPA_BROWSER_BINARY: tmp/shell-pamc-browser
           OMCPA_SEED_USAGE_BINARY: tmp/seed-usage-browser
         run: pnpm verify:browser
 

@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/operations"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/warmup"
+	"github.com/bizasbot/shell-pamc/internal/operations"
+	"github.com/bizasbot/shell-pamc/internal/warmup"
 )
 
 func (handler *Handler) bindWarmupOperations(service *operations.Service) {

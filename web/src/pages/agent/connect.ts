@@ -75,7 +75,7 @@ export function connectSnippet(client: ConnectClient, origin: string, basePath: 
         code: JSON.stringify({
           mcpServers: {
             'oh-my-cpa': {
-              command: '/path/to/oh-my-cpa',
+              command: '/path/to/shell-pamc',
               args: ['mcp'],
               env: { OMCPA_SERVER_URL: consoleUrl(origin, basePath), [MANAGEMENT_KEY_VARIABLE]: `<${keyPlaceholder}>` },
             },

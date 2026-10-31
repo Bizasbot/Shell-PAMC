@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/quota"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/quota"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // TestQuotaRefreshFailureStaysOnThePage covers the defect an operator hit as "the toast said the

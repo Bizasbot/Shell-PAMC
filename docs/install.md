@@ -499,7 +499,7 @@ these values to that release and host; the example uses Linux amd64:
 VERSION=MAJOR.MINOR.PATCH
 OS=linux
 ARCH=amd64
-ASSET="oh-my-cpa_${VERSION}_${OS}_${ARCH}.tar.gz"
+ASSET="shell-pamc_${VERSION}_${OS}_${ARCH}.tar.gz"
 mkdir -p oh-my-cpa && cd oh-my-cpa
 curl -fLO "https://github.com/Bizasbot/Shell-PAMC/releases/download/v${VERSION}/${ASSET}"
 curl -fLO "https://github.com/Bizasbot/Shell-PAMC/releases/download/v${VERSION}/checksums.txt"
@@ -531,7 +531,7 @@ When CPA is on the same host, its loopback URL works without changing CPA's remo
 management policy. Review [usage-reader ownership](#other-panels-and-usage-trackers)
 before keeping `OMCPA_USAGE_INGEST_MODE=auto`; use `off` if another reader continues.
 
-Run `./oh-my-cpa` on Unix or `.\oh-my-cpa.exe` on Windows from that directory. Verify
+Run `./shell-pamc` on Unix or `.\shell-pamc.exe` on Windows from that directory. Verify
 [health and connectivity](#verifying-the-install), then open `http://127.0.0.1:8080/omc/`
 and sign in with CPA's management key. For an operator-owned service manager, keep the
 same working directory, environment file, service account and data path. Do not open
@@ -559,8 +559,8 @@ and `OMCPA_CPA_BASE_URL`. Then:
 
 ```bash
 pnpm build
-go build -trimpath -o bin/oh-my-cpa ./cmd/oh-my-cpa
-./bin/oh-my-cpa
+go build -trimpath -o bin/shell-pamc ./cmd/shell-pamc
+./bin/shell-pamc
 ```
 
 Open `http://127.0.0.1:8080/omc/`. The process runs in the foreground; a service manager

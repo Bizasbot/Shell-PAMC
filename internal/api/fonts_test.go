@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/image/font/gofont/goregular"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/fontasset"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/fontasset"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 func uploadFontFiles(t *testing.T, client *http.Client, url string, family string, files map[string][]byte) (*http.Response, []byte) {

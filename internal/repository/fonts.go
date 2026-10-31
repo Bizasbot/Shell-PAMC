@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/fontasset"
+	"github.com/bizasbot/shell-pamc/internal/fontasset"
 )
 
 // MaxFonts bounds the font library. Each family can hold tens of megabytes of slices,

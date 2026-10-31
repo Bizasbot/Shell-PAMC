@@ -21,17 +21,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/applog"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/auth"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/config"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/discovery"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
-	appcrypto "github.com/oh-my-cpa/oh-my-cpa/internal/crypto"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/domain"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/fontasset"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/web"
+	"github.com/bizasbot/shell-pamc/internal/applog"
+	"github.com/bizasbot/shell-pamc/internal/auth"
+	"github.com/bizasbot/shell-pamc/internal/config"
+	"github.com/bizasbot/shell-pamc/internal/cpa/discovery"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
+	appcrypto "github.com/bizasbot/shell-pamc/internal/crypto"
+	"github.com/bizasbot/shell-pamc/internal/domain"
+	"github.com/bizasbot/shell-pamc/internal/fontasset"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/web"
 )
 
 type Handler struct {

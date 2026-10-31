@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 // A plan without a weekly limit reports only its ratio pools, and those pools are the whole reading:

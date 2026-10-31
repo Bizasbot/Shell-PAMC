@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/usage"
 )
 
 // aliasFor reads one key's alias out of the sanitized key list the console

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/capability"
+	"github.com/bizasbot/shell-pamc/internal/capability"
 )
 
 // WEB_SEARCH lets the model look something up on the open internet. It reads the DuckDuckGo HTML

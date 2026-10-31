@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
-	"github.com/oh-my-cpa/oh-my-cpa/internal/usage/ingest"
+	"github.com/bizasbot/shell-pamc/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/usage/ingest"
 )
 
 func TestUsageIngestStatusReportsDisabledPipeline(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/cpa/management"
+	"github.com/bizasbot/shell-pamc/internal/cpa/management"
 )
 
 func (h *Handler) moveProviderFamily(ctx context.Context, client *management.Client, id, sourceFamily, targetFamily string, index int, req SaveProviderRequest, audit providerAudit) (map[string]any, error) {

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/security"
+	"github.com/bizasbot/shell-pamc/internal/security"
 )
 
 // ResponseHeader is one upstream response header kept for diagnosis.

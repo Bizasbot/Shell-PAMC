@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/repository"
+	"github.com/bizasbot/shell-pamc/internal/repository"
 )
 
 // USAGE_ROUTING_WINDOW is the live routing panel's rolling window. The panel is

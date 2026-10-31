@@ -3,7 +3,7 @@ package updater
 import (
 	"strings"
 
-	"github.com/oh-my-cpa/oh-my-cpa/internal/release"
+	"github.com/bizasbot/shell-pamc/internal/release"
 )
 
 // Reference is a parsed image reference.
