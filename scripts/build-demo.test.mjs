@@ -11,7 +11,7 @@ async function createFixture(context) {
   const sourceDirectory = join(directory, 'source');
   const stageDirectory = join(directory, 'stage');
   await mkdir(join(sourceDirectory, 'assets'), { recursive: true });
-  await writeFile(join(sourceDirectory, 'index.html'), '<script>window.__OMCPA_CONFIG__={};</script><script src="./assets/app.js"></script><link href="./assets/app.css">');
+  await writeFile(join(sourceDirectory, 'index.html'), '<script>window.__SHELLPAMC_CONFIG__={};</script><script src="./assets/app.js"></script><link href="./assets/app.css">');
   await writeFile(join(sourceDirectory, 'assets/app.js'), 'const icon = `./lobe-icons/${name}-color.svg`;');
   await writeFile(join(sourceDirectory, 'assets/app.css'), '@font-face{src:url("./body.woff2")}');
   await writeFile(join(sourceDirectory, '.gitkeep'), '');

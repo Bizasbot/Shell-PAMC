@@ -90,7 +90,7 @@ func newApp(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, 
 		return nil, fmt.Errorf("create data directory: %w", err)
 	}
 	if cfg.MasterKey == "" {
-		return nil, errors.New("OMCPA_MASTER_KEY is required")
+		return nil, errors.New("SHELLPAMC_MASTER_KEY is required")
 	}
 	cipher, err := crypto.New(cfg.MasterKey)
 	if err != nil {
@@ -423,7 +423,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	// The release sweep is best-effort in the same way and for the same reason: a
 	// version that was not checked is stale information, not a broken deployment.
-	// OMCPA_UPDATE_CHECK_ENABLED=false switches it off while leaving the page's own
+	// SHELLPAMC_UPDATE_CHECK_ENABLED=false switches it off while leaving the page's own
 	// check and the manual button working, because those are an operator asking a
 	// question rather than the process deciding to reach the internet.
 	// Never in a demo, and that is not implied by the service being nil-safe: the demo

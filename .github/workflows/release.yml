@@ -177,8 +177,8 @@ jobs:
         run: pnpm verify:browser:harness
       - name: Run full built-artifact acceptance on every event
         env:
-          OMCPA_BROWSER_BINARY: tmp/shell-pamc-browser
-          OMCPA_SEED_USAGE_BINARY: tmp/seed-usage-browser
+          SHELLPAMC_BROWSER_BINARY: tmp/shell-pamc-browser
+          SHELLPAMC_SEED_USAGE_BINARY: tmp/seed-usage-browser
         run: pnpm verify:browser
       - name: Run the demonstration's browser acceptance
         run: pnpm verify:demo

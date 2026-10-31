@@ -22,19 +22,19 @@ const LINK_NETWORK = "oh-my-cpa-updater"
 
 // Environment variables an updater container is configured with.
 const (
-	ENV_LISTEN_ADDR   = "OMCPA_UPDATER_LISTEN_ADDR"
-	ENV_SOCKET        = "OMCPA_UPDATER_SOCKET"
-	ENV_OMC_CONTAINER = "OMCPA_UPDATER_OMC_CONTAINER"
-	ENV_CPA_CONTAINER = "OMCPA_UPDATER_CPA_CONTAINER"
-	ENV_LINK_NETWORK  = "OMCPA_UPDATER_LINK_NETWORK"
+	ENV_LISTEN_ADDR   = "SHELLPAMC_UPDATER_LISTEN_ADDR"
+	ENV_SOCKET        = "SHELLPAMC_UPDATER_SOCKET"
+	ENV_OMC_CONTAINER = "SHELLPAMC_UPDATER_OMC_CONTAINER"
+	ENV_CPA_CONTAINER = "SHELLPAMC_UPDATER_CPA_CONTAINER"
+	ENV_LINK_NETWORK  = "SHELLPAMC_UPDATER_LINK_NETWORK"
 	// ENV_PUBLIC_KEY replaces the built-in release key, for a fork that signs its own
 	// releases. It is read from the updater's environment only: whoever can set it
 	// already controls the Docker daemon.
-	ENV_PUBLIC_KEY = "OMCPA_UPDATER_PUBLIC_KEY"
+	ENV_PUBLIC_KEY = "SHELLPAMC_UPDATER_PUBLIC_KEY"
 	// ENV_LAST_JOB carries the finished job into the updater's successor. The console
 	// asks how its own update went only after it restarts, by which time the updater
 	// that ran the job has replaced itself and its memory is gone.
-	ENV_LAST_JOB = "OMCPA_UPDATER_LAST_JOB"
+	ENV_LAST_JOB = "SHELLPAMC_UPDATER_LAST_JOB"
 )
 
 // InstallOptions configures Install.

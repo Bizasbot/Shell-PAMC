@@ -36,7 +36,7 @@ Bug reports and feature requests go through the issue forms under [`.github/ISSU
    ```bash
    cp .env.example .env
    ```
-   Provide a 32-byte hex string for `OMCPA_MASTER_KEY` (`openssl rand -hex 32`) and your local CLIProxyAPI management key for `OMCPA_CPA_MANAGEMENT_KEY`.
+   Provide a 32-byte hex string for `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`) and your local CLIProxyAPI management key for `SHELLPAMC_CPA_MANAGEMENT_KEY`.
 
 3. **Start the development servers**:
    ```bash

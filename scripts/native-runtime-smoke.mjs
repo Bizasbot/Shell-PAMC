@@ -18,10 +18,10 @@ try {
   const port=listener.address().port;await closeServer(listener);
   const base=`http://127.0.0.1:${port}/tools/omc`;
   child=spawn(binary,[],{cwd:working,stdio:['ignore','ignore','pipe'],env:isolatedAppEnvironment({
-    OMCPA_LISTEN_ADDR:`127.0.0.1:${port}`,OMCPA_BASE_PATH:'/tools/omc',OMCPA_DATA_DIR:working,
-    OMCPA_MASTER_KEY:randomBytes(32).toString('hex'),OMCPA_CPA_BASE_URL:'http://127.0.0.1:1',
-    OMCPA_CPA_MANAGEMENT_KEY:'synthetic-native-runtime-key',OMCPA_USAGE_INGEST_MODE:'off',
-    OMCPA_UPDATE_CHECK_ENABLED:'false',OMCPA_UPDATE_CHECK_ON_PAGE_LOAD:'false',
+    SHELLPAMC_LISTEN_ADDR:`127.0.0.1:${port}`,SHELLPAMC_BASE_PATH:'/tools/omc',SHELLPAMC_DATA_DIR:working,
+    SHELLPAMC_MASTER_KEY:randomBytes(32).toString('hex'),SHELLPAMC_CPA_BASE_URL:'http://127.0.0.1:1',
+    SHELLPAMC_CPA_MANAGEMENT_KEY:'synthetic-native-runtime-key',SHELLPAMC_USAGE_INGEST_MODE:'off',
+    SHELLPAMC_UPDATE_CHECK_ENABLED:'false',SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD:'false',
   })});
   let output='',spawnError;child.stderr.on('data',chunk=>{output+=chunk;});child.on('error',error=>{spawnError=error;});
   let health;

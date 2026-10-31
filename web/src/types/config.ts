@@ -10,7 +10,7 @@ export interface AppConfig {
    */
   demo: boolean;
   /**
-   * The running build's version, as the server reports it (`OMCPA_VERSION`).
+   * The running build's version, as the server reports it (`SHELLPAMC_VERSION`).
    * Consumers name the build with it, so the panel and the wire cannot disagree about which build is being identified.
    */
   version?: string;
@@ -18,7 +18,7 @@ export interface AppConfig {
 
 declare global {
   interface Window {
-    __OMCPA_CONFIG__?: Partial<AppConfig>;
+    __SHELLPAMC_CONFIG__?: Partial<AppConfig>;
   }
 }
 
@@ -27,7 +27,7 @@ declare global {
  * with safe fallbacks when running standalone or in development.
  */
 export function getAppConfig(): AppConfig {
-  const injected = typeof window !== 'undefined' ? window.__OMCPA_CONFIG__ : undefined;
+  const injected = typeof window !== 'undefined' ? window.__SHELLPAMC_CONFIG__ : undefined;
 
   let basePath = (injected?.basePath ?? '/omc').trim();
   if (basePath && !basePath.startsWith('/')) {

@@ -40,8 +40,8 @@ export function validateArtifactGates(browserSteps) {
 export function validateBrowserPhases(browserSteps) {
   const full = browserSteps.filter(step => step.run === 'pnpm verify:browser');
   if (full.length !== 1 || full[0].if || full[0]['continue-on-error']) throw new Error('Every event must run full built acceptance once');
-  if (full[0].env?.OMCPA_BROWSER_BINARY !== 'tmp/shell-pamc-browser'
-      || full[0].env?.OMCPA_SEED_USAGE_BINARY !== 'tmp/seed-usage-browser') {
+  if (full[0].env?.SHELLPAMC_BROWSER_BINARY !== 'tmp/shell-pamc-browser'
+      || full[0].env?.SHELLPAMC_SEED_USAGE_BINARY !== 'tmp/seed-usage-browser') {
     throw new Error('Full acceptance must reuse both prepared binaries');
   }
   const harness = browserSteps.filter(step => step.run === 'pnpm verify:browser:harness');

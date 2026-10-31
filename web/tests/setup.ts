@@ -13,7 +13,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   if (typeof window !== 'undefined') {
     window.localStorage.clear();
-    delete window.__OMCPA_CONFIG__;
+    delete window.__SHELLPAMC_CONFIG__;
   }
 });
 

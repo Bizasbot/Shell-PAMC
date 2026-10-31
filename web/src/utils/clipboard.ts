@@ -4,7 +4,7 @@
  * `navigator.clipboard` is defined only in a secure context, and a plain-HTTP
  * origin is a first-class deployment of this console: `deploy/nginx.conf` listens
  * on :80 without TLS, the Vite dev server binds 0.0.0.0 so a LAN or Tailscale
- * device can reach it, and `OMCPA_BIND` may publish the container on a LAN
+ * device can reach it, and `SHELLPAMC_BIND` may publish the container on a LAN
  * address. On every one of those the Clipboard API is simply `undefined`, so a
  * copy that knew only that API failed on all of them - which is what made every
  * copy control in the console fail at once.

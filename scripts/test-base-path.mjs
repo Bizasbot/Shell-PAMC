@@ -16,7 +16,7 @@ const hasShell = probe.error === undefined && probe.status === 0;
 function basePath(rawValue) {
   return spawnSync('sh', [script], {
     encoding: 'utf8',
-    env: { ...process.env, OMCPA_BASE_PATH: rawValue },
+    env: { ...process.env, SHELLPAMC_BASE_PATH: rawValue },
   });
 }
 
@@ -47,7 +47,7 @@ test('deploy/base-path.sh refuses values the server refuses', { skip: hasShell ?
   for (const input of ['/omc?x=1', '/omc#fragment', '/../omc']) {
     const result = basePath(input);
     assert.notEqual(result.status, 0, `${input} was accepted`);
-    assert.match(result.stderr, /OMCPA_BASE_PATH/, `${input} failed without naming the variable`);
+    assert.match(result.stderr, /SHELLPAMC_BASE_PATH/, `${input} failed without naming the variable`);
   }
 });
 
@@ -66,7 +66,7 @@ test('deploy/base-path.sh does not glob a path segment', { skip: hasShell ? fals
     const result = spawnSync('sh', [script], {
       encoding: 'utf8',
       cwd: workdir,
-      env: { ...process.env, OMCPA_BASE_PATH: '/console/*' },
+      env: { ...process.env, SHELLPAMC_BASE_PATH: '/console/*' },
     });
     assert.equal(result.status, 0, `exited ${result.status}: ${result.stderr}`);
     assert.equal(result.stdout.trim(), '/console/*', 'the glob metacharacter must survive');

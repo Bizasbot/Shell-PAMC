@@ -91,13 +91,13 @@ updated by hand once.
   claim stable currency for those versions (ADR 0019).
 - A release embeds its exact tag into `internal/config.BuildVersion` with the Go
   linker. The config, health endpoint, SPA runtime config, System Information and
-  outbound default User-Agent all use that value. `OMCPA_VERSION` remains an operator
+  outbound default User-Agent all use that value. `SHELLPAMC_VERSION` remains an operator
   override; the Compose files do not override the embedded version.
 - Docker version aliases are `v0.3.9` and `0.3.9`; `latest` advances only for the
   numerically newest stable release. A backport never moves either Docker `latest`
   or GitHub's latest pointer backwards. Compose defaults to `latest` for both
   OMC and CPA. Operators can override
-  `OMCPA_IMAGE` and `CPA_IMAGE` with a tested version or digest for controlled upgrades.
+  `SHELLPAMC_IMAGE` and `CPA_IMAGE` with a tested version or digest for controlled upgrades.
 - Publish a new version for changed application content. Do not move a published tag
   or intentionally rebuild its identity with different source.
 

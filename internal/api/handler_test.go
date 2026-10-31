@@ -309,13 +309,13 @@ func TestProtectedMutationRequiresSameOrigin(t *testing.T) {
 }
 
 func TestInjectRuntimeConfigReplacesTemplateScript(t *testing.T) {
-	input := `<html><head><script>if (!window.__OMCPA_CONFIG__) { window.__OMCPA_CONFIG__ = {basePath: "/omc"}; }</script></head></html>`
+	input := `<html><head><script>if (!window.__SHELLPAMC_CONFIG__) { window.__SHELLPAMC_CONFIG__ = {basePath: "/omc"}; }</script></head></html>`
 	output, err := injectRuntimeConfig(input, config.Config{BasePath: "/nested/omc"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(output, "window.__OMCPA_CONFIG__") != 1 {
-		t.Fatalf("config declaration count in output = %d: %s", strings.Count(output, "window.__OMCPA_CONFIG__"), output)
+	if strings.Count(output, "window.__SHELLPAMC_CONFIG__") != 1 {
+		t.Fatalf("config declaration count in output = %d: %s", strings.Count(output, "window.__SHELLPAMC_CONFIG__"), output)
 	}
 	if !strings.Contains(output, `<base href="/nested/omc/">`) {
 		t.Fatalf("missing base tag: %s", output)
@@ -329,7 +329,7 @@ func TestInjectRuntimeConfigReplacesTemplateScript(t *testing.T) {
 // rather than from an API call, so the marker is right in the first frame and a
 // visitor never sees a non-demo layout flash before it.
 func TestInjectRuntimeConfigMarksTheDemo(t *testing.T) {
-	input := `<html><head><script>if (!window.__OMCPA_CONFIG__) { window.__OMCPA_CONFIG__ = {basePath: "/omc"}; }</script></head></html>`
+	input := `<html><head><script>if (!window.__SHELLPAMC_CONFIG__) { window.__SHELLPAMC_CONFIG__ = {basePath: "/omc"}; }</script></head></html>`
 	output, err := injectRuntimeConfig(input, config.Config{BasePath: "/", IsDemoMode: true})
 	if err != nil {
 		t.Fatal(err)

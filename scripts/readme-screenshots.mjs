@@ -11,7 +11,7 @@
  * Usage:
  *   pnpm build && pnpm readme:screenshots
  * Env overrides:
- *   OMCPA_BROWSER (explicit Chromium/Chrome/Edge executable), OMCPA_README_PORT
+ *   SHELLPAMC_BROWSER (explicit Chromium/Chrome/Edge executable), SHELLPAMC_README_PORT
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -23,7 +23,7 @@ import { hasDeferredFontShards, hasReadmeScreenshotContent } from './readme-scre
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'docs', 'images', 'readme');
-const port = Number(process.env.OMCPA_README_PORT ?? 8791);
+const port = Number(process.env.SHELLPAMC_README_PORT ?? 8791);
 const base = `http://127.0.0.1:${port}`;
 
 /** One set per README: the English page and the Simplified Chinese one. */
@@ -69,12 +69,12 @@ async function startDemoServer() {
     detached: true,
     env: {
       ...process.env,
-      OMCPA_DEMO_MODE: 'true',
-      OMCPA_LISTEN_ADDR: `127.0.0.1:${port}`,
-      OMCPA_BASE_PATH: '/',
+      SHELLPAMC_DEMO_MODE: 'true',
+      SHELLPAMC_LISTEN_ADDR: `127.0.0.1:${port}`,
+      SHELLPAMC_BASE_PATH: '/',
       // A picture must not depend on what GitHub's release feed answers that day.
-      OMCPA_UPDATE_CHECK_ENABLED: 'false',
-      OMCPA_UPDATE_CHECK_ON_PAGE_LOAD: 'false',
+      SHELLPAMC_UPDATE_CHECK_ENABLED: 'false',
+      SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD: 'false',
     },
   });
   const exited = new Promise((_, reject) => {
@@ -242,7 +242,7 @@ async function writeComposition(page, html, file) {
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
   const stopServer = await startDemoServer();
-  const executablePath = (process.env.OMCPA_BROWSER || '').trim();
+  const executablePath = (process.env.SHELLPAMC_BROWSER || '').trim();
   const browser = await chromium.launch(executablePath ? { executablePath, headless: true } : { headless: true });
   try {
     const composer = await (await browser.newContext({ deviceScaleFactor: 2 })).newPage();

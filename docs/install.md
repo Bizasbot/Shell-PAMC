@@ -49,10 +49,10 @@ Deploys CPA and OMC together.
        ports:
          - "127.0.0.1:8080:8080"
        environment:
-         OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-         OMCPA_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
-         OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-         OMCPA_DATA_DIR: /data
+         SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+         SHELLPAMC_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
+         SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+         SHELLPAMC_DATA_DIR: /data
        volumes:
          - oh-my-cpa-data:/data
 
@@ -81,12 +81,12 @@ Deploys CPA and OMC together.
    OMC needs, and holds no client keys.
 
 3. Generate the two keys. `CPA_MANAGEMENT_KEY` is CPA's management key and the console's
-   sign-in password; `OMCPA_MASTER_KEY` encrypts OMC's database.
+   sign-in password; `SHELLPAMC_MASTER_KEY` encrypts OMC's database.
 
    ```bash
    cat > .env <<EOF
    CPA_MANAGEMENT_KEY=$(openssl rand -hex 24)
-   OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+   SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
    EOF
    chmod 600 .env
    ```
@@ -129,10 +129,10 @@ Runs OMC as one more service in the Compose file that already runs CPA.
        ports:
          - "127.0.0.1:8080:8080"
        environment:
-         OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-         OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-         OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-         OMCPA_DATA_DIR: /data
+         SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+         SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+         SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+         SHELLPAMC_DATA_DIR: /data
        volumes:
          - oh-my-cpa-data:/data
 
@@ -151,14 +151,14 @@ Runs OMC as one more service in the Compose file that already runs CPA.
    ```
 
    `cli-proxy-api` is the service name in CPA's own Compose file. If the service has
-   another name, use it in `OMCPA_CPA_BASE_URL`. Two services in one file share a
+   another name, use it in `SHELLPAMC_CPA_BASE_URL`. Two services in one file share a
    network, so the name is all OMC needs.
 
 2. In the directory that holds the Compose file, generate the master key. `>>` appends
    to `.env` and creates it if it is missing, so existing lines stay.
 
    ```bash
-   echo "OMCPA_MASTER_KEY=$(openssl rand -hex 32)" >> .env
+   echo "SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)" >> .env
    chmod 600 .env
    ```
 
@@ -166,7 +166,7 @@ Runs OMC as one more service in the Compose file that already runs CPA.
    bcrypt hash CPA stores in `config.yaml`.
 
    ```dotenv
-   OMCPA_CPA_MANAGEMENT_KEY=<management key>
+   SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>
    ```
 
 4. Start OMC and its updater:
@@ -208,10 +208,10 @@ changed.
        extra_hosts:
          - host.docker.internal:host-gateway
        environment:
-         OMCPA_CPA_BASE_URL: http://host.docker.internal:8317
-         OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-         OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-         OMCPA_DATA_DIR: /data
+         SHELLPAMC_CPA_BASE_URL: http://host.docker.internal:8317
+         SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+         SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+         SHELLPAMC_DATA_DIR: /data
        volumes:
          - oh-my-cpa-data:/data
 
@@ -229,14 +229,14 @@ changed.
      oh-my-cpa-data:
    ```
 
-   Set `OMCPA_CPA_BASE_URL` according to [reaching CPA](#reaching-cpa). If CPA's clock is
+   Set `SHELLPAMC_CPA_BASE_URL` according to [reaching CPA](#reaching-cpa). If CPA's clock is
    not UTC, add `TZ: <CPA's time zone>` under `environment:` so both agree on where a
    day starts.
 
 2. Generate the master key:
 
    ```bash
-   echo "OMCPA_MASTER_KEY=$(openssl rand -hex 32)" >> .env
+   echo "SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)" >> .env
    chmod 600 .env
    ```
 
@@ -244,7 +244,7 @@ changed.
    bcrypt hash CPA stores in `config.yaml`.
 
    ```dotenv
-   OMCPA_CPA_MANAGEMENT_KEY=<management key>
+   SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>
    ```
 
 4. Start OMC:
@@ -257,7 +257,7 @@ changed.
 
 ### Reaching CPA
 
-OMC runs in a container, so `OMCPA_CPA_BASE_URL` has to work from inside that container.
+OMC runs in a container, so `SHELLPAMC_CPA_BASE_URL` has to work from inside that container.
 
 | CPA | Setting |
 | --- | --- |
@@ -291,9 +291,9 @@ history or settings.
 deletes it, so two trackers would each get part of the traffic. The options:
 
 - Stop the other tracker. OMC records every request from then on.
-- Keep the other tracker and set `OMCPA_USAGE_INGEST_MODE` to `off`: as
-  `OMCPA_USAGE_INGEST_MODE: "off"` under `environment:` in the Compose files above, or
-  as `OMCPA_USAGE_INGEST_MODE=off` in `deploy/.env` with the release Compose files. OMC
+- Keep the other tracker and set `SHELLPAMC_USAGE_INGEST_MODE` to `off`: as
+  `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` in the Compose files above, or
+  as `SHELLPAMC_USAGE_INGEST_MODE=off` in `deploy/.env` with the release Compose files. OMC
   still manages CPA, but its dashboard and request records stay empty.
 
 ## Release Compose files
@@ -318,7 +318,7 @@ sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
 CPA_MANAGEMENT_KEY=$(openssl rand -hex 24)
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 deploy/.env
 
@@ -333,15 +333,15 @@ curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compo
 sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
-OMCPA_CPA_BASE_URL=http://host.docker.internal:8317
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_CPA_BASE_URL=http://host.docker.internal:8317
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 deploy/.env
 ```
 
-Add `OMCPA_CPA_MANAGEMENT_KEY=<management key>` to `deploy/.env`, in plaintext, and
+Add `SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>` to `deploy/.env`, in plaintext, and
 change the URL where [reaching CPA](#reaching-cpa) says so. To join CPA's Docker
-network, set `OMCPA_NETWORK_NAME=<CPA's network>` and `OMCPA_NETWORK_EXTERNAL=true`
+network, set `SHELLPAMC_NETWORK_NAME=<CPA's network>` and `SHELLPAMC_NETWORK_EXTERNAL=true`
 instead of editing the file. Then:
 
 ```bash
@@ -359,26 +359,26 @@ These are the variables the two release Compose files accept. Compose reads
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_MASTER_KEY` | required | Encrypts the database. Back it up; never change it once data exists |
+| `SHELLPAMC_MASTER_KEY` | required | Encrypts the database. Back it up; never change it once data exists |
 | `CPA_MANAGEMENT_KEY` | required, full stack | The new CPA's management key and OMC's sign-in password |
-| `OMCPA_CPA_BASE_URL` | required, OMC only | The existing CPA's address |
-| `OMCPA_CPA_MANAGEMENT_KEY` | required, OMC only | The existing CPA's plaintext management key |
-| `OMCPA_IMAGE` | `ghcr.io/bizasbot/shell-pamc:latest` | Set a release tag or digest to pin a version |
+| `SHELLPAMC_CPA_BASE_URL` | required, OMC only | The existing CPA's address |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | required, OMC only | The existing CPA's plaintext management key |
+| `SHELLPAMC_IMAGE` | `ghcr.io/bizasbot/shell-pamc:latest` | Set a release tag or digest to pin a version |
 | `CPA_IMAGE` | `eceasy/cli-proxy-api:latest` | Full stack only |
-| `OMCPA_BIND` | `127.0.0.1:8080` | Host address of the console; change it if the port is taken |
+| `SHELLPAMC_BIND` | `127.0.0.1:8080` | Host address of the console; change it if the port is taken |
 | `CPA_BIND` | `127.0.0.1:8317` | Host address of CPA, full stack only |
-| `OMCPA_PUBLIC_URL` | `http://127.0.0.1:8080` | The address browsers use. `https://` only when they really use TLS |
-| `OMCPA_BASE_PATH` | `/omc` | URL prefix; `/` serves the console at the root |
+| `SHELLPAMC_PUBLIC_URL` | `http://127.0.0.1:8080` | The address browsers use. `https://` only when they really use TLS |
+| `SHELLPAMC_BASE_PATH` | `/omc` | URL prefix; `/` serves the console at the root |
 | `TZ` | `UTC` | Calendar for daily totals; match CPA's |
-| `OMCPA_USAGE_INGEST_MODE` | `auto` | `off` when another tool collects this CPA's usage |
-| `OMCPA_CPA_USAGE_ADDR` | derived from the CPA URL | Override for CPA's usage queue address, OMC only |
-| `OMCPA_TRUSTED_PROXY_CIDRS` | empty | Addresses of the reverse proxy |
-| `OMCPA_DATA_PATH` | `../oh-my-cpa-data` | OMC's data directory |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another tool collects this CPA's usage |
+| `SHELLPAMC_CPA_USAGE_ADDR` | derived from the CPA URL | Override for CPA's usage queue address, OMC only |
+| `SHELLPAMC_TRUSTED_PROXY_CIDRS` | empty | Addresses of the reverse proxy |
+| `SHELLPAMC_DATA_PATH` | `../oh-my-cpa-data` | OMC's data directory |
 | `CPA_CONFIG_PATH`, `CPA_AUTH_PATH`, `CPA_LOG_PATH`, `CPA_PLUGIN_PATH` | under `../cpa/` | CPA's files, full stack only |
-| `OMCPA_NETWORK_NAME` | `oh-my-cpa` / `oh-my-cpa-standalone` | Docker network name (full stack / OMC only) |
-| `OMCPA_NETWORK_EXTERNAL` | `false` | OMC only: `true` joins a network that already exists |
-| `OMCPA_UPDATE_CHECK_ENABLED`, `OMCPA_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | Set both to `false` on a machine with no internet |
-| `OMCPA_UPDATER_CONTAINER_NAME` | `oh-my-cpa-updater` | Container name of the updater |
+| `SHELLPAMC_NETWORK_NAME` | `oh-my-cpa` / `oh-my-cpa-standalone` | Docker network name (full stack / OMC only) |
+| `SHELLPAMC_NETWORK_EXTERNAL` | `false` | OMC only: `true` joins a network that already exists |
+| `SHELLPAMC_UPDATE_CHECK_ENABLED`, `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | Set both to `false` on a machine with no internet |
+| `SHELLPAMC_UPDATER_CONTAINER_NAME` | `oh-my-cpa-updater` | Container name of the updater |
 | `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | The Docker socket the updater mounts; differs with rootless Docker |
 
 Everything else OMC reads is in `docs/operations.md`.
@@ -393,8 +393,8 @@ ssh -L 18080:127.0.0.1:8080 user@server
 ```
 
 To serve OMC over HTTPS, point the existing reverse proxy at `127.0.0.1:8080`, keep the
-`/omc` prefix, and set `OMCPA_PUBLIC_URL` to the address browsers use. Set
-`OMCPA_TRUSTED_PROXY_CIDRS` to the proxy's address so OMC reads the client IP it
+`/omc` prefix, and set `SHELLPAMC_PUBLIC_URL` to the address browsers use. Set
+`SHELLPAMC_TRUSTED_PROXY_CIDRS` to the proxy's address so OMC reads the client IP it
 forwards. Do not publish port 8080 on a public interface without TLS: the sign-in
 password is CPA's administrator key.
 
@@ -439,7 +439,7 @@ curl -sI https://example.com/omc | head -n 1                           # 308
 curl -fsS https://example.com/omc/api/healthz
 ```
 
-With a different `OMCPA_BASE_PATH`, the same holds for that prefix. With `/` there is
+With a different `SHELLPAMC_BASE_PATH`, the same holds for that prefix. With `/` there is
 no bare path to handle.
 
 ## Install as an app
@@ -476,7 +476,7 @@ Two conditions come from the browser rather than from OMC:
   deployment.
 
 The mount point is part of the installed identity. `/`, `/omc` and a nested
-`OMCPA_BASE_PATH` are three different apps to the browser, so installing one does not
+`SHELLPAMC_BASE_PATH` are three different apps to the browser, so installing one does not
 replace another, and an app installed at a path that later changes has to be installed
 again. The manifest's URLs are relative and resolve against the manifest's own address,
 which is what keeps this working behind a proxy that preserves the prefix.
@@ -522,14 +522,14 @@ entry, then `Expand-Archive` into a new directory and copy `.env.example` to `.e
 Restrict access to `.env` and the data directory to the service account with Windows
 file ACLs. Do not overwrite an existing configuration or data directory.
 
-Set `OMCPA_MASTER_KEY` once to a random 64-character hex string (`openssl rand -hex 32`
+Set `SHELLPAMC_MASTER_KEY` once to a random 64-character hex string (`openssl rand -hex 32`
 on Unix; use a cryptographic random generator on Windows), set CPA's plaintext
-management key and its reachable URL, and match CPA's `TZ`. Keep `OMCPA_VERSION`
+management key and its reachable URL, and match CPA's `TZ`. Keep `SHELLPAMC_VERSION`
 unset so the tagged build reports its embedded version. The included template binds
 `127.0.0.1:8080`, serves `/omc` and writes SQLite to `./data` under the working directory.
 When CPA is on the same host, its loopback URL works without changing CPA's remote
 management policy. Review [usage-reader ownership](#other-panels-and-usage-trackers)
-before keeping `OMCPA_USAGE_INGEST_MODE=auto`; use `off` if another reader continues.
+before keeping `SHELLPAMC_USAGE_INGEST_MODE=auto`; use `off` if another reader continues.
 
 Run `./shell-pamc` on Unix or `.\shell-pamc.exe` on Windows from that directory. Verify
 [health and connectivity](#verifying-the-install), then open `http://127.0.0.1:8080/omc/`
@@ -554,8 +554,8 @@ pnpm install --frozen-lockfile
 cp .env.example .env
 ```
 
-In `.env`, set `OMCPA_MASTER_KEY` (`openssl rand -hex 32`), `OMCPA_CPA_MANAGEMENT_KEY`
-and `OMCPA_CPA_BASE_URL`. Then:
+In `.env`, set `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`), `SHELLPAMC_CPA_MANAGEMENT_KEY`
+and `SHELLPAMC_CPA_BASE_URL`. Then:
 
 ```bash
 pnpm build
@@ -565,7 +565,7 @@ go build -trimpath -o bin/shell-pamc ./cmd/shell-pamc
 
 Open `http://127.0.0.1:8080/omc/`. The process runs in the foreground; a service manager
 such as systemd keeps it running. Variables in the environment win over `.env`, and
-`OMCPA_ENV_FILE` points at a different file. A build from an untagged checkout reports
+`SHELLPAMC_ENV_FILE` points at a different file. A build from an untagged checkout reports
 itself as `v0.1.0-dev`. For hot reload while developing, see
 [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
@@ -584,10 +584,10 @@ it cannot reach CPA.
 | `permission denied`, or the database will not open | With the release Compose files: `oh-my-cpa-data` is not owned by `10001:10001`, or is on a network filesystem |
 | CPA fails to start and `config.yaml` is a directory | `config.yaml` did not exist at first start. Remove the directory, download the file and start again |
 | `status` is `degraded` | Wrong CPA URL or management key, or CPA refuses remote management. See [reaching CPA](#reaching-cpa) |
-| Sign-in succeeds, then asks again | `OMCPA_PUBLIC_URL` says `https://` but the browser uses plain HTTP |
+| Sign-in succeeds, then asks again | `SHELLPAMC_PUBLIC_URL` says `https://` but the browser uses plain HTTP |
 | The console asks for a CPA upgrade | CPA is older than v8.0.0 |
-| Request records stay empty | Another tool is collecting usage, `OMCPA_USAGE_INGEST_MODE=off` is set, or usage statistics are disabled in CPA |
-| Port already in use | Change the host side of the `ports:` entry, or set `OMCPA_BIND` / `CPA_BIND` with the release Compose files |
+| Request records stay empty | Another tool is collecting usage, `SHELLPAMC_USAGE_INGEST_MODE=off` is set, or usage statistics are disabled in CPA |
+| Port already in use | Change the host side of the `ports:` entry, or set `SHELLPAMC_BIND` / `CPA_BIND` with the release Compose files |
 
 ## Upgrading
 
@@ -617,7 +617,7 @@ The action is not offered in three cases, and the page says which:
 
 | Case | What to do |
 | --- | --- |
-| The image is pinned to a version tag or digest, for example `OMCPA_IMAGE=ghcr.io/bizasbot/shell-pamc:vX.Y.Z` | Change the pin and redeploy. The console leaves a pinned image alone, because the next `docker compose up` would put the pinned version back over a database that has already been migrated |
+| The image is pinned to a version tag or digest, for example `SHELLPAMC_IMAGE=ghcr.io/bizasbot/shell-pamc:vX.Y.Z` | Change the pin and redeploy. The console leaves a pinned image alone, because the next `docker compose up` would put the pinned version back over a database that has already been migrated |
 | CPA does not run as a container on the same Docker host | Update CPA where it runs |
 | The build carries no release signing key, as a build from source does | Update by hand, below |
 
@@ -670,13 +670,13 @@ release Compose file, add `-f deploy/compose.full.yml` or `-f deploy/compose.omc
 both commands.
 
 This upgrades OMC and leaves CPA as it is. To move to a specific version, change the
-`image:` tag to `ghcr.io/bizasbot/shell-pamc:vX.Y.Z`, or set `OMCPA_IMAGE` in `deploy/.env` with
+`image:` tag to `ghcr.io/bizasbot/shell-pamc:vX.Y.Z`, or set `SHELLPAMC_IMAGE` in `deploy/.env` with
 a release Compose file. With the files in this guide the data is in the Docker volume
 `<project>_oh-my-cpa-data`, and `docker volume inspect` prints its path. How releases
 are published is in `docs/releasing.md`.
 
 ## Constraints
 
-- Keep `OMCPA_MASTER_KEY` safe and unchanged. Without it the stored data is unreadable.
+- Keep `SHELLPAMC_MASTER_KEY` safe and unchanged. Without it the stored data is unreadable.
 - One OMC per data directory, on a local disk.
 - One usage collector per CPA.

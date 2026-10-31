@@ -215,7 +215,7 @@ func (s *Service) MasterKey(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return container.Env("OMCPA_MASTER_KEY"), nil
+	return container.Env("SHELLPAMC_MASTER_KEY"), nil
 }
 
 func (s *Service) resolve(ctx context.Context, product string) (Container, error) {
@@ -336,7 +336,7 @@ func (s *Service) resolveCPA(ctx context.Context) (Container, error) {
 		return Container{}, err
 	}
 	host := ""
-	if parsed, err := url.Parse(console.Env("OMCPA_CPA_BASE_URL")); err == nil {
+	if parsed, err := url.Parse(console.Env("SHELLPAMC_CPA_BASE_URL")); err == nil {
 		host = parsed.Hostname()
 	}
 	if host != "" && net.ParseIP(host) == nil {

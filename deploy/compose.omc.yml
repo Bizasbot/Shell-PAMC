@@ -1,7 +1,7 @@
 services:
   oh-my-cpa:
-    image: ${OMCPA_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}
-    container_name: ${OMCPA_CONTAINER_NAME:-oh-my-cpa}
+    image: ${SHELLPAMC_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}
+    container_name: ${SHELLPAMC_CONTAINER_NAME:-oh-my-cpa}
     user: "10001:10001"
     read_only: true
     security_opt:
@@ -9,23 +9,23 @@ services:
     cap_drop:
       - ALL
     ports:
-      - ${OMCPA_BIND:-127.0.0.1:8080}:8080
+      - ${SHELLPAMC_BIND:-127.0.0.1:8080}:8080
     environment:
       TZ: ${TZ:-UTC}
-      OMCPA_LISTEN_ADDR: ":8080"
-      OMCPA_BASE_PATH: ${OMCPA_BASE_PATH:-/omc}
-      OMCPA_DATA_DIR: /data
-      OMCPA_CPA_BASE_URL: ${OMCPA_CPA_BASE_URL:?set OMCPA_CPA_BASE_URL}
-      OMCPA_CPA_USAGE_ADDR: ${OMCPA_CPA_USAGE_ADDR:-}
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?set OMCPA_CPA_MANAGEMENT_KEY}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?set OMCPA_MASTER_KEY}
-      OMCPA_PUBLIC_URL: ${OMCPA_PUBLIC_URL:-http://127.0.0.1:8080}
-      OMCPA_TRUSTED_PROXY_CIDRS: ${OMCPA_TRUSTED_PROXY_CIDRS:-}
-      OMCPA_USAGE_INGEST_MODE: ${OMCPA_USAGE_INGEST_MODE:-auto}
-      OMCPA_UPDATE_CHECK_ENABLED: ${OMCPA_UPDATE_CHECK_ENABLED:-true}
-      OMCPA_UPDATE_CHECK_ON_PAGE_LOAD: ${OMCPA_UPDATE_CHECK_ON_PAGE_LOAD:-true}
+      SHELLPAMC_LISTEN_ADDR: ":8080"
+      SHELLPAMC_BASE_PATH: ${SHELLPAMC_BASE_PATH:-/omc}
+      SHELLPAMC_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: ${SHELLPAMC_CPA_BASE_URL:?set SHELLPAMC_CPA_BASE_URL}
+      SHELLPAMC_CPA_USAGE_ADDR: ${SHELLPAMC_CPA_USAGE_ADDR:-}
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?set SHELLPAMC_CPA_MANAGEMENT_KEY}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?set SHELLPAMC_MASTER_KEY}
+      SHELLPAMC_PUBLIC_URL: ${SHELLPAMC_PUBLIC_URL:-http://127.0.0.1:8080}
+      SHELLPAMC_TRUSTED_PROXY_CIDRS: ${SHELLPAMC_TRUSTED_PROXY_CIDRS:-}
+      SHELLPAMC_USAGE_INGEST_MODE: ${SHELLPAMC_USAGE_INGEST_MODE:-auto}
+      SHELLPAMC_UPDATE_CHECK_ENABLED: ${SHELLPAMC_UPDATE_CHECK_ENABLED:-true}
+      SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD: ${SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD:-true}
     volumes:
-      - ${OMCPA_DATA_PATH:-../oh-my-cpa-data}:/data
+      - ${SHELLPAMC_DATA_PATH:-../oh-my-cpa-data}:/data
     restart: unless-stopped
     extra_hosts:
       - host.docker.internal:host-gateway
@@ -35,8 +35,8 @@ services:
   # this service and run `docker rm -f oh-my-cpa-updater`: Compose leaves the container
   # of a deleted service running (docs/install.md, "Upgrading").
   oh-my-cpa-updater:
-    image: ${OMCPA_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}
-    container_name: ${OMCPA_UPDATER_CONTAINER_NAME:-oh-my-cpa-updater}
+    image: ${SHELLPAMC_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}
+    container_name: ${SHELLPAMC_UPDATER_CONTAINER_NAME:-oh-my-cpa-updater}
     command: ["updater", "serve"]
     # The socket belongs to root on the host; with every capability dropped this is root
     # that can open the socket and nothing else.
@@ -51,5 +51,5 @@ services:
     restart: unless-stopped
 networks:
   default:
-    name: ${OMCPA_NETWORK_NAME:-oh-my-cpa-standalone}
-    external: ${OMCPA_NETWORK_EXTERNAL:-false}
+    name: ${SHELLPAMC_NETWORK_NAME:-oh-my-cpa-standalone}
+    external: ${SHELLPAMC_NETWORK_EXTERNAL:-false}

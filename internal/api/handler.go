@@ -418,7 +418,7 @@ func (h *Handler) login(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	if h.auth == nil {
-		writeError(writer, http.StatusServiceUnavailable, "CPA management key is not configured yet; set OMCPA_CPA_MANAGEMENT_KEY first")
+		writeError(writer, http.StatusServiceUnavailable, "CPA management key is not configured yet; set SHELLPAMC_CPA_MANAGEMENT_KEY first")
 		return
 	}
 	var payload loginRequest
@@ -973,7 +973,7 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 	// script. Paths are validated by NormalizeBasePath before reaching here.
 	// `demo` is injected rather than probed so the console can mark itself in the
 	// first frame, without a request that would flash a non-demo layout first.
-	payload := fmt.Sprintf(`window.__OMCPA_CONFIG__ = %s;`, mustJSON(map[string]any{
+	payload := fmt.Sprintf(`window.__SHELLPAMC_CONFIG__ = %s;`, mustJSON(map[string]any{
 		"basePath":     basePath,
 		"apiBaseUrl":   apiBase,
 		"mediaBaseUrl": mediaBase,
@@ -986,7 +986,7 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 	}))
 	script := "<script>" + payload + "</script>"
 	replacedConfig := false
-	if strings.Contains(indexHTML, "window.__OMCPA_CONFIG__") {
+	if strings.Contains(indexHTML, "window.__SHELLPAMC_CONFIG__") {
 		start := strings.Index(indexHTML, "<script>")
 		for start >= 0 {
 			endRelative := strings.Index(indexHTML[start:], "</script>")
@@ -995,7 +995,7 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 			}
 			end := start + endRelative + len("</script>")
 			block := indexHTML[start:end]
-			if strings.Contains(block, "window.__OMCPA_CONFIG__") {
+			if strings.Contains(block, "window.__SHELLPAMC_CONFIG__") {
 				indexHTML = indexHTML[:start] + script + indexHTML[end:]
 				replacedConfig = true
 				break

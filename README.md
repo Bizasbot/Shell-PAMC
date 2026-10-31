@@ -128,10 +128,10 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -154,7 +154,7 @@ both services:
 
 ```bash
 curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
-printf 'CPA_MANAGEMENT_KEY=%s\nOMCPA_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
+printf 'CPA_MANAGEMENT_KEY=%s\nSHELLPAMC_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
 chmod 600 .env
 docker compose up -d
 ```
@@ -177,10 +177,10 @@ differently.
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -201,8 +201,8 @@ volumes:
 Add two lines to `.env` in the same directory:
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
-OMCPA_MASTER_KEY=<output of: openssl rand -hex 32>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
+SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 ```
 
 Add the `oh-my-cpa-updater` service from the snippet as well to update from the console.
@@ -212,7 +212,7 @@ Open **`http://127.0.0.1:8080/omc/`** and sign in with the management key.
 
 #### Standalone
 
-Save the following as `compose.yml` in a new directory. `OMCPA_CPA_BASE_URL` is CPA's
+Save the following as `compose.yml` in a new directory. `SHELLPAMC_CPA_BASE_URL` is CPA's
 address as seen from inside the container: the value below reaches a CPA on the same
 machine that listens on all interfaces, and [reaching CPA](docs/install.md#reaching-cpa)
 lists the other cases.
@@ -227,10 +227,10 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
-      OMCPA_CPA_BASE_URL: http://host.docker.internal:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://host.docker.internal:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -251,8 +251,8 @@ volumes:
 Create `.env` in the same directory:
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
-OMCPA_MASTER_KEY=<output of: openssl rand -hex 32>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in config.yaml>
+SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 ```
 
 Run `docker compose up -d`, then open **`http://127.0.0.1:8080/omc/`** and sign in with
@@ -289,11 +289,11 @@ for configuration, permissions and upgrades.
 ### Notes
 
 > [!IMPORTANT]
-> Back up `.env`. `OMCPA_MASTER_KEY` encrypts the database, and the data cannot be read
+> Back up `.env`. `SHELLPAMC_MASTER_KEY` encrypts the database, and the data cannot be read
 > without it.
 
 CPA hands each usage record to a single reader. If another usage tracker reads the same
-CPA, stop it, or add `OMCPA_USAGE_INGEST_MODE: "off"` under `environment:` to use OMC
+CPA, stop it, or add `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` to use OMC
 for management only. Other management panels do not conflict.
 
 `oh-my-cpa-updater` mounts the Docker socket, which amounts to control of Docker on that
@@ -375,7 +375,7 @@ Claude Code:
 
 ```bash
 claude mcp add --transport http oh-my-cpa https://cpa.example.com/omc/api/mcp \
-  --header "Authorization: Bearer $OMCPA_CPA_MANAGEMENT_KEY"
+  --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Codex (`~/.codex/config.toml`):
@@ -383,7 +383,7 @@ Codex (`~/.codex/config.toml`):
 ```toml
 [mcp_servers.oh-my-cpa]
 url = "https://cpa.example.com/omc/api/mcp"
-bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
+bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Clients configured in JSON, such as Cursor:
@@ -411,8 +411,8 @@ The binary carries a stdio bridge that forwards to the console:
       "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
-        "OMCPA_SERVER_URL": "https://cpa.example.com/omc",
-        "OMCPA_CPA_MANAGEMENT_KEY": "<CPA management key>"
+        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/omc",
+        "SHELLPAMC_CPA_MANAGEMENT_KEY": "<CPA management key>"
       }
     }
   }
@@ -432,13 +432,13 @@ trusted agents and serve the console over HTTPS before connecting one remotely.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_CPA_BASE_URL` | required | CPA's address |
-| `OMCPA_CPA_MANAGEMENT_KEY` | required | CPA's management key, and the console's sign-in password |
-| `OMCPA_MASTER_KEY` | required | At-rest encryption key (`openssl rand -hex 32`) |
-| `OMCPA_BASE_PATH` | `/omc` | Sub-path the console is served under |
-| `OMCPA_DATA_DIR` | `./data` | Directory of the SQLite database; the Compose files set `/data` |
-| `OMCPA_PUBLIC_URL` | unset | The address browsers use; `https://` marks the session cookie `Secure` |
-| `OMCPA_USAGE_INGEST_MODE` | `auto` | `off` when another service collects this CPA's usage |
+| `SHELLPAMC_CPA_BASE_URL` | required | CPA's address |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | required | CPA's management key, and the console's sign-in password |
+| `SHELLPAMC_MASTER_KEY` | required | At-rest encryption key (`openssl rand -hex 32`) |
+| `SHELLPAMC_BASE_PATH` | `/omc` | Sub-path the console is served under |
+| `SHELLPAMC_DATA_DIR` | `./data` | Directory of the SQLite database; the Compose files set `/data` |
+| `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use; `https://` marks the session cookie `Secure` |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another service collects this CPA's usage |
 | `TZ` | system zone | Server calendar; keep it equal to CPA's. Containers default to UTC |
 
 The full reference, with deployment constraints and operational notes, is
@@ -455,7 +455,7 @@ Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Oh My CPA (
 
 - **Single binary**: the React console is embedded in the Go executable.
 - **Single replica**: SQLite in WAL mode, one process per data directory.
-- **Sub-path native**: served under `/omc` by default (`OMCPA_BASE_PATH`), so it shares a host with CPA.
+- **Sub-path native**: served under `/omc` by default (`SHELLPAMC_BASE_PATH`), so it shares a host with CPA.
 - **Allowlisted facade**: ordinary console APIs project safe DTOs; trusted plugin pages use the bounded native contract. Arbitrary target URLs remain refused.
 
 [`docs/architecture.md`](docs/architecture.md) has the module map, data flows and invariants.

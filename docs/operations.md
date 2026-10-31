@@ -13,15 +13,17 @@ certificate roots. The packaged environment template binds loopback and stores
 SQLite in `./data`; run under a dedicated user/service account, preserve its working
 directory and restrict environment/data access with Unix permissions or Windows ACLs.
 Container uid/gid `10001:10001` is not a requirement for native installs. Leave
-`OMCPA_VERSION` unset to retain the injected release tag. Stop OMC before replacing
+`SHELLPAMC_VERSION` unset to retain the injected release tag. Stop OMC before replacing
 the executable, keep the master key and data directory, and back up both before an
 upgrade. Only a matching data backup can undo forward migrations. The download,
 checksum and host configuration steps are in `docs/install.md`.
 
 ## Settings
 
+> **Breaking change: environment variables were renamed.** Every `OMCPA_*` variable is now `SHELLPAMC_*` (for example `OMCPA_MASTER_KEY` is `SHELLPAMC_MASTER_KEY`). The old names are not read, so an installation upgraded in place must rename them in its `.env`, Compose file or service unit before the first start; without `SHELLPAMC_MASTER_KEY` the process refuses to start.
+
 Everything is an environment variable. The binary also reads `.env` from its working
-directory (`OMCPA_ENV_FILE` names another file); real environment variables win.
+directory (`SHELLPAMC_ENV_FILE` names another file); real environment variables win.
 `internal/config/config.go` is authoritative, and a malformed value stops start-up with
 a message naming the variable.
 
@@ -29,72 +31,72 @@ a message naming the variable.
 
 | Variable | Purpose |
 | --- | --- |
-| `OMCPA_CPA_BASE_URL` | CPA's address, for example `http://127.0.0.1:8317` |
-| `OMCPA_CPA_MANAGEMENT_KEY` | CPA's plaintext management key. Also the console's sign-in password |
-| `OMCPA_MASTER_KEY` | At-rest encryption key: a 64-character hex key (`openssl rand -hex 32`) or at least 32 bytes |
+| `SHELLPAMC_CPA_BASE_URL` | CPA's address, for example `http://127.0.0.1:8317` |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | CPA's plaintext management key. Also the console's sign-in password |
+| `SHELLPAMC_MASTER_KEY` | At-rest encryption key: a 64-character hex key (`openssl rand -hex 32`) or at least 32 bytes |
 
 ### Serving
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_VERSION` | embedded stable tag; `v0.1.0-dev` for untagged source builds | Optional display/User-Agent version override; does not change the installed build |
-| `OMCPA_LISTEN_ADDR` | `:8080` | Listen address |
-| `OMCPA_BASE_PATH` | `/omc` | Sub-path the console is served under. `omc`, `/omc/` and `/omc` are equivalent; `/` serves it at the root |
-| `OMCPA_DATA_DIR` | `./data` | Directory holding `shell-pamc.db`. Local disk only. A database left under the old name `oh-my-cpa.db` (with its `-wal` and `-shm` files) is renamed on the first start; if both names exist the start fails and you keep the one that holds your data |
-| `OMCPA_PUBLIC_URL` | unset | The address browsers use. An `https://` value marks the session cookie `Secure` |
-| `OMCPA_TRUSTED_PROXY_CIDRS` | unset | Comma-separated CIDRs of reverse proxies whose forwarding headers may be trusted for login throttling |
+| `SHELLPAMC_VERSION` | embedded stable tag; `v0.1.0-dev` for untagged source builds | Optional display/User-Agent version override; does not change the installed build |
+| `SHELLPAMC_LISTEN_ADDR` | `:8080` | Listen address |
+| `SHELLPAMC_BASE_PATH` | `/omc` | Sub-path the console is served under. `omc`, `/omc/` and `/omc` are equivalent; `/` serves it at the root |
+| `SHELLPAMC_DATA_DIR` | `./data` | Directory holding `shell-pamc.db`. Local disk only. A database left under the old name `oh-my-cpa.db` (with its `-wal` and `-shm` files) is renamed on the first start; if both names exist the start fails and you keep the one that holds your data |
+| `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use. An `https://` value marks the session cookie `Secure` |
+| `SHELLPAMC_TRUSTED_PROXY_CIDRS` | unset | Comma-separated CIDRs of reverse proxies whose forwarding headers may be trusted for login throttling |
 | `TZ` | system zone | Server calendar; see [Time zone](#time-zone) |
 
 ### Gateway connection
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_CPA_USAGE_ADDR` | host and port of `OMCPA_CPA_BASE_URL` | `host:port` of CPA's usage stream |
-| `OMCPA_REQUEST_TIMEOUT` | `15s` | Timeout for ordinary CPA management calls |
-| `OMCPA_CPA_TLS_SKIP_VERIFY` | `false` | Skip certificate verification when CPA uses a private certificate |
+| `SHELLPAMC_CPA_USAGE_ADDR` | host and port of `SHELLPAMC_CPA_BASE_URL` | `host:port` of CPA's usage stream |
+| `SHELLPAMC_REQUEST_TIMEOUT` | `15s` | Timeout for ordinary CPA management calls |
+| `SHELLPAMC_CPA_TLS_SKIP_VERIFY` | `false` | Skip certificate verification when CPA uses a private certificate |
 
 ### Usage collection
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_USAGE_INGEST_MODE` | `auto` | `auto`, `subscribe`, `resp_pull`, `http_pull` or `off` |
-| `OMCPA_USAGE_IDLE_INTERVAL` | `1s` | First wait after an empty poll |
-| `OMCPA_USAGE_MAX_IDLE_INTERVAL` | `10s` | Ceiling the idle backoff grows to. Keep it well below CPA's `redis-usage-queue-retention-seconds` |
-| `OMCPA_USAGE_BATCH_SIZE` | `1000` | Records read per poll (1–10000) |
-| `OMCPA_USAGE_RETENTION_DAYS` | `90` | Days of request records (the request list and its detail) kept, `0` to keep them all. Ninety matches the request list's longest preset. Dashboard statistics do not depend on it: they are kept permanently as usage facts |
-| `OMCPA_USAGE_INBOX_RETENTION_DAYS` | `7` | Days a captured payload is kept after it was decoded into a request record, `0` to keep it as long as the record. Payloads are the largest part of the database and nothing reads them once decoded except a re-decode after a decoder fix |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `auto`, `subscribe`, `resp_pull`, `http_pull` or `off` |
+| `SHELLPAMC_USAGE_IDLE_INTERVAL` | `1s` | First wait after an empty poll |
+| `SHELLPAMC_USAGE_MAX_IDLE_INTERVAL` | `10s` | Ceiling the idle backoff grows to. Keep it well below CPA's `redis-usage-queue-retention-seconds` |
+| `SHELLPAMC_USAGE_BATCH_SIZE` | `1000` | Records read per poll (1–10000) |
+| `SHELLPAMC_USAGE_RETENTION_DAYS` | `90` | Days of request records (the request list and its detail) kept, `0` to keep them all. Ninety matches the request list's longest preset. Dashboard statistics do not depend on it: they are kept permanently as usage facts |
+| `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS` | `7` | Days a captured payload is kept after it was decoded into a request record, `0` to keep it as long as the record. Payloads are the largest part of the database and nothing reads them once decoded except a re-decode after a decoder fix |
 
 ### Update checks and demo
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_UPDATE_CHECK_ENABLED` | `true` | The six-hourly release sweep |
-| `OMCPA_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | The check the System Information page makes when opened |
-| `OMCPA_OMC_REPO` / `OMCPA_CPA_REPO` | `Bizasbot/Shell-PAMC` / `router-for-me/CLIProxyAPI` | `owner/name` the checks read, for a fork |
-| `OMCPA_DEMO_MODE` | `false` | Serve the console from the built-in fixture; see [Demo mode](#demo-mode) |
-| `OMCPA_UPDATER_ENABLED` | `true` | `false` makes the console ignore an updater and offer no update action; see [Console updates](#console-updates) |
-| `OMCPA_UPDATER_URL` | `http://oh-my-cpa-updater:8090` | Where the console looks for the updater. The default is the service and container name every install method uses |
-| `OMCPA_GOOGLE_FONTS_URL` | `https://fonts.googleapis.com` | The Google Fonts stylesheet API the font library installs from, or a compatible mirror for a deployment that cannot reach Google. Requests honour `HTTPS_PROXY`; font files are downloaded only from Google's font hosts or the mirror's own site. Used only when an operator installs a family; uploading needs no network |
+| `SHELLPAMC_UPDATE_CHECK_ENABLED` | `true` | The six-hourly release sweep |
+| `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | The check the System Information page makes when opened |
+| `SHELLPAMC_OMC_REPO` / `SHELLPAMC_CPA_REPO` | `Bizasbot/Shell-PAMC` / `router-for-me/CLIProxyAPI` | `owner/name` the checks read, for a fork |
+| `SHELLPAMC_DEMO_MODE` | `false` | Serve the console from the built-in fixture; see [Demo mode](#demo-mode) |
+| `SHELLPAMC_UPDATER_ENABLED` | `true` | `false` makes the console ignore an updater and offer no update action; see [Console updates](#console-updates) |
+| `SHELLPAMC_UPDATER_URL` | `http://oh-my-cpa-updater:8090` | Where the console looks for the updater. The default is the service and container name every install method uses |
+| `SHELLPAMC_GOOGLE_FONTS_URL` | `https://fonts.googleapis.com` | The Google Fonts stylesheet API the font library installs from, or a compatible mirror for a deployment that cannot reach Google. Requests honour `HTTPS_PROXY`; font files are downloaded only from Google's font hosts or the mirror's own site. Used only when an operator installs a family; uploading needs no network |
 
-The MCP stdio bridge (`oh-my-cpa mcp`) reads `OMCPA_SERVER_URL`,
-`OMCPA_CPA_MANAGEMENT_KEY` and the optional `OMCPA_VERSION` only; the remote MCP
+The MCP stdio bridge (`oh-my-cpa mcp`) reads `SHELLPAMC_SERVER_URL`,
+`SHELLPAMC_CPA_MANAGEMENT_KEY` and the optional `SHELLPAMC_VERSION` only; the remote MCP
 endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
 
 ## Deployment constraints
 
 - **Single collector**: The CPA usage queue is destructive. Only one collector may read
   from a CPA instance. If another service collects usage, set
-  `OMCPA_USAGE_INGEST_MODE=off`.
+  `SHELLPAMC_USAGE_INGEST_MODE=off`.
 - **Single replica**: SQLite WAL requires exclusive single-process access. Run one
   replica mounting the data directory; do not mount over network filesystems
   (NFS/CIFS).
-- **Master key**: `OMCPA_MASTER_KEY` is required to decrypt stored credentials and
+- **Master key**: `SHELLPAMC_MASTER_KEY` is required to decrypt stored credentials and
   payloads. Back it up securely.
 - **Framed content**: The console's document declares `frame-src 'self' blob:`. It frames plugin pages from its own origin and the Agent's sandboxed canvases (ADR 0072); a reverse proxy must not replace that policy with one that allows other frame sources.
 - **Network security**: Keep CPA on a private network or loopback interface. The supplied
   Compose files publish CPA and OMC only on loopback; use direct local access or an SSH
   tunnel. Public access requires HTTPS through operator-owned infrastructure.
-- **Reverse proxy headers**: Set `OMCPA_TRUSTED_PROXY_CIDRS` to the CIDRs of reverse
+- **Reverse proxy headers**: Set `SHELLPAMC_TRUSTED_PROXY_CIDRS` to the CIDRs of reverse
   proxies whose forwarding headers may be trusted. Both Compose files default to an
   empty trust list. Name only actual proxy peers; leave it unset for direct clients;
   never trust a public range.
@@ -115,7 +117,7 @@ endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
   `docs/install.md` has the Caddy equivalent); CPA keeps its separate port regardless
   of OMC's base path.
 - **Container image**: Compose pulls `ghcr.io/bizasbot/shell-pamc:latest` from GitHub Container Registry by
-  default; the full-stack CPA image also defaults to `:latest`. Pin `OMCPA_IMAGE` to the desired version or digest; updates recreate only
+  default; the full-stack CPA image also defaults to `:latest`. Pin `SHELLPAMC_IMAGE` to the desired version or digest; updates recreate only
   OMC with its existing data and master key. The image runs as uid/gid `10001:10001`,
   includes its own health probe and needs no mounted deployment scripts. A health
   result of `degraded` keeps the container healthy but does not establish CPA access.
@@ -163,10 +165,10 @@ succeeded the count stays for the life of the process: a refresh that fails keep
 previous count.
 
 Two switches, because they answer different questions.
-`OMCPA_UPDATE_CHECK_ENABLED=false` stops the sweep on an offline deployment; the page
+`SHELLPAMC_UPDATE_CHECK_ENABLED=false` stops the sweep on an offline deployment; the page
 then keeps working from the last answer it stored, and a check that fails is reported
 with its reason and the time it was attempted.
-`OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false` additionally stops the check the page performs
+`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` additionally stops the check the page performs
 when it is opened, which is what an air-gapped or test deployment wants, since a page
 visit is not an operator asking a question. The **Check for updates** button works
 either way. GitHub's unauthenticated budget is 60 requests per hour for the address
@@ -188,12 +190,12 @@ own environment, and an installation needs none of them:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMCPA_UPDATER_LISTEN_ADDR` | `:8090` | Listen address inside the container |
-| `OMCPA_UPDATER_SOCKET` | `/var/run/docker.sock` | The Docker socket as mounted in the container |
-| `OMCPA_UPDATER_OMC_CONTAINER` | found by image | The console container, when more than one Oh My CPA runs on the host |
-| `OMCPA_UPDATER_CPA_CONTAINER` | found from `OMCPA_CPA_BASE_URL` | The gateway container, when it cannot be found that way |
-| `OMCPA_UPDATER_LINK_NETWORK` | empty | Set by `updater install`: the network the updater keeps the console attached to. Empty when both are services of one Compose file |
-| `OMCPA_UPDATER_PUBLIC_KEY` | built in | Base64 Ed25519 public key that replaces the built-in release key, for a fork that signs its own releases |
+| `SHELLPAMC_UPDATER_LISTEN_ADDR` | `:8090` | Listen address inside the container |
+| `SHELLPAMC_UPDATER_SOCKET` | `/var/run/docker.sock` | The Docker socket as mounted in the container |
+| `SHELLPAMC_UPDATER_OMC_CONTAINER` | found by image | The console container, when more than one Oh My CPA runs on the host |
+| `SHELLPAMC_UPDATER_CPA_CONTAINER` | found from `SHELLPAMC_CPA_BASE_URL` | The gateway container, when it cannot be found that way |
+| `SHELLPAMC_UPDATER_LINK_NETWORK` | empty | Set by `updater install`: the network the updater keeps the console attached to. Empty when both are services of one Compose file |
+| `SHELLPAMC_UPDATER_PUBLIC_KEY` | built in | Base64 Ed25519 public key that replaces the built-in release key, for a fork that signs its own releases |
 
 Security boundary:
 
@@ -201,7 +203,7 @@ Security boundary:
   console does not, and stays read-only and unprivileged. Anyone who can already run
   `docker` on the host gains nothing; anyone who can reach the updater's port without
   its token gets `401`.
-- The token is an HMAC of `OMCPA_MASTER_KEY`. Neither container stores it, and it is
+- The token is an HMAC of `SHELLPAMC_MASTER_KEY`. Neither container stores it, and it is
   not logged. Changing the master key needs no step here: the updater reads the
   console's current value from Docker.
 - The updater accepts a product name only. It never takes an image, a container name or
@@ -259,7 +261,7 @@ External agents connect over MCP to the same capability registry, in one of two 
 | Transport | Address | Credential |
 | --- | --- | --- |
 | Streamable HTTP, served by the console | `<console URL>/api/mcp`, for example `https://omc.example.com/omc/api/mcp` | `Authorization: Bearer <CPA management key>` |
-| stdio, the `oh-my-cpa mcp` bridge process | `OMCPA_SERVER_URL` (the console URL, including any base path) | `OMCPA_CPA_MANAGEMENT_KEY` |
+| stdio, the `oh-my-cpa mcp` bridge process | `SHELLPAMC_SERVER_URL` (the console URL, including any base path) | `SHELLPAMC_CPA_MANAGEMENT_KEY` |
 
 The HTTP endpoint needs nothing installed where the agent runs; the **Connect** action at
 the top of `/agent` shows the deployment's address and copyable client
@@ -378,21 +380,21 @@ capabilities (ADR 0067).
 
 ## Demo mode
 
-`OMCPA_DEMO_MODE` (default `false`) serves the console from a built-in fixture instead
+`SHELLPAMC_DEMO_MODE` (default `false`) serves the console from a built-in fixture instead
 of a CPA, so it needs no management key and no provider credential. Its storage is not
 durable — the database is deleted and rebuilt on every boot — and the server refuses
 sign-in flows, credential movement, plugin execution and plugin pages, gateway configuration writes and
 anything that would leave the process. It opens at the site root rather than `/omc`
-unless `OMCPA_BASE_PATH` says otherwise. A visitor's theme stays in their own browser:
+unless `SHELLPAMC_BASE_PATH` says otherwise. A visitor's theme stays in their own browser:
 a demonstration is shared, so it is neither sent to the server nor read from it.
 
 ```bash
 pnpm build
-OMCPA_DEMO_MODE=true go run ./cmd/shell-pamc
+SHELLPAMC_DEMO_MODE=true go run ./cmd/shell-pamc
 ```
 
 This mode is what generates the public demonstration's dataset, so it stays in use even
-though the public deployment does not run it; `OMCPA_PUBLIC_URL` states that
+though the public deployment does not run it; `SHELLPAMC_PUBLIC_URL` states that
 deployment's origin. The public demo is the same console as static assets with its API
 answered by a Cloudflare Worker from that generated dataset: `docs/ops/cloudflare-demo.md`
 is its runbook, `docs/architecture.md` §13 and

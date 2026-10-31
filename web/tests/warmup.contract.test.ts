@@ -8,7 +8,7 @@ afterEach(() => vi.unstubAllGlobals());
 it('uses the handler-certified wire projection and strict refusals through the typed client', async () => {
   const fixture = createWarmupFixture();
   const calls: { path: string; options: RequestInit }[] = [];
-  vi.stubGlobal('window', { __OMCPA_CONFIG__: { basePath: '/omc' } });
+  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/omc' } });
   vi.stubGlobal('fetch', async (path: string, options: RequestInit) => {
     calls.push({ path, options });
     const result = fixture(new URL(path, 'http://127.0.0.1'), options.method ?? 'GET', options.body as string);
@@ -31,7 +31,7 @@ it('uses the handler-certified wire projection and strict refusals through the t
 
 it('reads independently persisted model refusal evidence through the typed client', async () => {
   const fixture = createWarmupFixture({ isProtocolPaused: true });
-  vi.stubGlobal('window', { __OMCPA_CONFIG__: { basePath: '/omc' } });
+  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/omc' } });
   vi.stubGlobal('fetch', async (path: string, options: RequestInit) => {
     const result = fixture(new URL(path, 'http://127.0.0.1'), options.method ?? 'GET', options.body as string);
     return new Response(JSON.stringify(result.json), { status: result.status, headers: { 'Content-Type': 'application/json' } });

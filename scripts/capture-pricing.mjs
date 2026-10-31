@@ -7,8 +7,8 @@
 // Usage:
 //   node scripts/capture-pricing.mjs
 // Env overrides:
-//   OMCPA_URL, OMCPA_CAPTURE_DIR, OMCPA_CPA_MANAGEMENT_KEY,
-//   OMCPA_BROWSER (explicit Chromium/Chrome/Edge executable)
+//   SHELLPAMC_URL, SHELLPAMC_CAPTURE_DIR, SHELLPAMC_CPA_MANAGEMENT_KEY,
+//   SHELLPAMC_BROWSER (explicit Chromium/Chrome/Edge executable)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,12 +16,12 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const baseUrl = (process.env.OMCPA_URL || 'http://127.0.0.1:5173/omc').replace(/\/$/, '');
+const baseUrl = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:5173/omc').replace(/\/$/, '');
 // Resolved against the repository root so a relative override still lands in the
 // worktree, and defaulted into gitignored tmp/ so captures cannot be committed.
-const outDir = path.resolve(root, process.env.OMCPA_CAPTURE_DIR || 'tmp/captures');
+const outDir = path.resolve(root, process.env.SHELLPAMC_CAPTURE_DIR || 'tmp/captures');
 // Oh My CPA has no separate admin password: login uses the CPA management key.
-const password = process.env.OMCPA_CPA_MANAGEMENT_KEY || readEnvFile('OMCPA_CPA_MANAGEMENT_KEY') || '';
+const password = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
 
 function readEnvFile(name) {
   const file = path.join(root, '.env');
@@ -38,7 +38,7 @@ function readEnvFile(name) {
 // given, which is the only portable option: a hand-written search for Windows
 // Chrome/Edge install locations finds nothing on Linux or macOS.
 function launchOptions() {
-  const executablePath = (process.env.OMCPA_BROWSER || '').trim();
+  const executablePath = (process.env.SHELLPAMC_BROWSER || '').trim();
   return executablePath ? { executablePath, headless: true } : { headless: true };
 }
 
@@ -56,7 +56,7 @@ async function switchLanguage(page, label) {
 }
 
 async function main() {
-  if (!password) throw new Error('OMCPA_CPA_MANAGEMENT_KEY is required (set it or fill .env)');
+  if (!password) throw new Error('SHELLPAMC_CPA_MANAGEMENT_KEY is required (set it or fill .env)');
   fs.mkdirSync(outDir, { recursive: true });
 
   const browser = await chromium.launch(launchOptions());

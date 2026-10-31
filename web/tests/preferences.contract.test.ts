@@ -52,7 +52,7 @@ it('consumes the Go-certified corpus through the actual typed API client and sta
 });
 
 it('retains runtime base paths, UTF-8 keepalive admission and error classification', async () => {
-  vi.stubGlobal('window', { __OMCPA_CONFIG__: { basePath: '/console/nested' } });
+  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/console/nested' } });
   const requests: { path: string; options: RequestInit }[] = [];
   vi.stubGlobal('fetch', vi.fn(async (path: string, options: RequestInit) => {
     requests.push({ path, options });

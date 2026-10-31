@@ -6,7 +6,7 @@
  * as a demonstration, and each is here because leaving it to the host would be wrong:
  *
  * 1. **The runtime configuration is injected.** The console learns it is a
- *    demonstration from `window.__OMCPA_CONFIG__`, which the Go server writes into the
+ *    demonstration from `window.__SHELLPAMC_CONFIG__`, which the Go server writes into the
  *    page. There is no Go server here, so the build writes it - with the root base
  *    path, because the demonstration is served from the site root rather than under
  *    `/omc`.
@@ -51,7 +51,7 @@ const RUNTIME_CONFIG = {
 };
 
 /** The marker the Go server writes, which this replaces. */
-const CONFIG_MARKER = '__OMCPA_CONFIG__';
+const CONFIG_MARKER = '__SHELLPAMC_CONFIG__';
 
 /**
  * Rewrites a built HTML file for a static host.
@@ -72,7 +72,7 @@ function rewriteHtml(html) {
   // The whole conditional block the product ships is replaced rather than appended to:
   // two assignments would leave the order of `demo` undefined, and the console reads it
   // in the first frame.
-  output = output.replace(/<script>[\s\S]*?__OMCPA_CONFIG__[\s\S]*?<\/script>/, script);
+  output = output.replace(/<script>[\s\S]*?__SHELLPAMC_CONFIG__[\s\S]*?<\/script>/, script);
 
   if (!output.includes('"demo":true') && !output.includes('"demo": true')) {
     throw new Error('the injected runtime configuration does not mark the page as a demonstration');

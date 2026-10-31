@@ -7,7 +7,7 @@ if tr '\0' ' ' < /proc/1/cmdline | grep -q ' updater serve'; then
   exec /usr/local/bin/shell-pamc updater healthcheck
 fi
 base_path=$(sh /usr/local/bin/omc-base-path)
-listen_addr=${OMCPA_LISTEN_ADDR:-:8080}
+listen_addr=${SHELLPAMC_LISTEN_ADDR:-:8080}
 case "$listen_addr" in
   :* | 0.0.0.0:*) probe_addr="127.0.0.1:${listen_addr##*:}" ;;
   '[::]:'*) probe_addr="[::1]:${listen_addr##*:}" ;;

@@ -14,10 +14,10 @@ import (
 // keep local CPA endpoints, keys and passwords out of the shell.
 const DefaultDotEnvFile = ".env"
 
-// DotEnvPath returns the dotenv file this process should load. OMCPA_ENV_FILE
+// DotEnvPath returns the dotenv file this process should load. SHELLPAMC_ENV_FILE
 // overrides the default so CI or a second instance can point elsewhere.
 func DotEnvPath() string {
-	if value := strings.TrimSpace(os.Getenv("OMCPA_ENV_FILE")); value != "" {
+	if value := strings.TrimSpace(os.Getenv("SHELLPAMC_ENV_FILE")); value != "" {
 		return value
 	}
 	return DefaultDotEnvFile

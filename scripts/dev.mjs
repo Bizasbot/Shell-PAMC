@@ -4,7 +4,7 @@
 //   pnpm dev:web   -> Vite only (declared in package.json)
 //
 // The browser entry is Vite at http://127.0.0.1:5173/omc/ (or http://<tailscale-ip>:5173/omc/).
-// Vite sends /omc/api to the Go API address from OMCPA_LISTEN_ADDR. CPA remains an external
+// Vite sends /omc/api to the Go API address from SHELLPAMC_LISTEN_ADDR. CPA remains an external
 // dependency and can be started separately with `pnpm cpa:start` when real integration is needed.
 
 import { execFileSync, spawn } from 'node:child_process';

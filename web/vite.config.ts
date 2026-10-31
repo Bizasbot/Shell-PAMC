@@ -69,8 +69,8 @@ export default defineConfig(({ command }) => ({
       // surface is always '/api/<something>' (the Go router hangs every route off
       // '/api/'), so requiring the trailing slash keeps the two apart.
       '^/omc/api/': {
-        // Follow OMCPA_LISTEN_ADDR so a taken default port only needs a .env
-        // change; OMCPA_API_TARGET overrides the resolved address.
+        // Follow SHELLPAMC_LISTEN_ADDR so a taken default port only needs a .env
+        // change; SHELLPAMC_API_TARGET overrides the resolved address.
         target: resolveApiTarget(repoRoot),
         // Keep the browser's Host so the backend's same-origin check still
         // matches the Origin header on login and other mutating requests.

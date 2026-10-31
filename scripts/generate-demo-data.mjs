@@ -18,7 +18,7 @@
  *
  * The isolation matters more than it looks. The run must not inherit the repository's
  * `.env`: an earlier un-isolated run of the demo binary read it, contacted a real
- * gateway and had the address banned. `OMCPA_ENV_FILE=/dev/null` and a throwaway data
+ * gateway and had the address banned. `SHELLPAMC_ENV_FILE=/dev/null` and a throwaway data
  * directory are set below, and the export itself seeds into memory, so nothing it does
  * can reach the network or the worktree.
  */
@@ -74,9 +74,9 @@ async function generateInto(directory) {
       // a temporary directory is what keeps a run from picking up a real deployment's
       // configuration.
       TZ: 'UTC',
-      OMCPA_ENV_FILE: '/dev/null',
-      OMCPA_DATA_DIR: directory,
-      OMCPA_DEMO_EXPORT_DIR: directory,
+      SHELLPAMC_ENV_FILE: '/dev/null',
+      SHELLPAMC_DATA_DIR: directory,
+      SHELLPAMC_DEMO_EXPORT_DIR: directory,
     },
   });
   return join(directory, 'responses.json');

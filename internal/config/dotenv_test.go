@@ -9,13 +9,13 @@ import (
 func TestLoadDotEnvFillsMissingVariablesOnly(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".env")
-	content := "# comment\n\nexport OMCPA_DOTENV_SAMPLE=\"quoted value\"  # inline comment\n" +
-		"OMCPA_DOTENV_OTHER='single quoted#not a comment'\nOMCPA_DOTENV_RAW=plain\n" +
-		"OMCPA_DOTENV_PRESET=from-file\nOMCPA_DOTENV_EMPTY=\n"
+	content := "# comment\n\nexport SHELLPAMC_DOTENV_SAMPLE=\"quoted value\"  # inline comment\n" +
+		"SHELLPAMC_DOTENV_OTHER='single quoted#not a comment'\nSHELLPAMC_DOTENV_RAW=plain\n" +
+		"SHELLPAMC_DOTENV_PRESET=from-file\nSHELLPAMC_DOTENV_EMPTY=\n"
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("OMCPA_DOTENV_PRESET", "from-environment")
+	t.Setenv("SHELLPAMC_DOTENV_PRESET", "from-environment")
 
 	applied, err := LoadDotEnv(path)
 	if err != nil {
@@ -25,16 +25,16 @@ func TestLoadDotEnvFillsMissingVariablesOnly(t *testing.T) {
 		t.Fatalf("applied = %d, want 4", applied)
 	}
 	for name, want := range map[string]string{
-		"OMCPA_DOTENV_SAMPLE": "quoted value",
-		"OMCPA_DOTENV_OTHER":  "single quoted#not a comment",
-		"OMCPA_DOTENV_RAW":    "plain",
-		"OMCPA_DOTENV_EMPTY":  "",
+		"SHELLPAMC_DOTENV_SAMPLE": "quoted value",
+		"SHELLPAMC_DOTENV_OTHER":  "single quoted#not a comment",
+		"SHELLPAMC_DOTENV_RAW":    "plain",
+		"SHELLPAMC_DOTENV_EMPTY":  "",
 	} {
 		if got := os.Getenv(name); got != want {
 			t.Fatalf("%s = %q, want %q", name, got, want)
 		}
 	}
-	if got := os.Getenv("OMCPA_DOTENV_PRESET"); got != "from-environment" {
+	if got := os.Getenv("SHELLPAMC_DOTENV_PRESET"); got != "from-environment" {
 		t.Fatalf("dotenv overrode a real environment variable: %q", got)
 	}
 }
@@ -52,7 +52,7 @@ func TestLoadDotEnvMissingFileIsNotAnError(t *testing.T) {
 func TestLoadDotEnvRejectsMalformedLines(t *testing.T) {
 	for _, content := range []string{
 		"NOT_A_PAIR\n",
-		"OMCPA_DOTENV_BAD=\"unterminated quote\n",
+		"SHELLPAMC_DOTENV_BAD=\"unterminated quote\n",
 		"BAD NAME=value\n",
 	} {
 		path := filepath.Join(t.TempDir(), ".env")
@@ -66,11 +66,11 @@ func TestLoadDotEnvRejectsMalformedLines(t *testing.T) {
 }
 
 func TestDotEnvPathHonoursOverride(t *testing.T) {
-	t.Setenv("OMCPA_ENV_FILE", "/tmp/custom-omc.env")
+	t.Setenv("SHELLPAMC_ENV_FILE", "/tmp/custom-omc.env")
 	if got := DotEnvPath(); got != "/tmp/custom-omc.env" {
 		t.Fatalf("DotEnvPath = %q", got)
 	}
-	if got := os.Getenv("OMCPA_DOTENV_UNUSED"); got != "" {
+	if got := os.Getenv("SHELLPAMC_DOTENV_UNUSED"); got != "" {
 		t.Fatalf("unexpected variable: %q", got)
 	}
 }

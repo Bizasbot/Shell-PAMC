@@ -8,7 +8,7 @@ import type { ConfigFieldDefinition } from '../../types/configSchema';
 // The placeholder the safe YAML carries for a stored secret, mirrored from
 // UnchangedSentinel in internal/cpa/configyaml/configyaml.go. It round-trips
 // untouched for a kept secret; the server restores the stored value.
-export const ICE_UNCHANGED_SENTINEL = '__OMCPA_UNCHANGED__';
+export const ICE_UNCHANGED_SENTINEL = '__SHELLPAMC_UNCHANGED__';
 
 const ICE_URL_SCHEMES = ['stun', 'stuns', 'turn', 'turns'];
 

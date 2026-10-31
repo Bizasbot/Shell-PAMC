@@ -25,7 +25,7 @@ import (
 // origin from then on. The operator's browser never contacts Google.
 
 // DefaultGoogleFontsURL is the stylesheet API the installer reads. A deployment that
-// cannot reach it can name a compatible mirror with OMCPA_GOOGLE_FONTS_URL.
+// cannot reach it can name a compatible mirror with SHELLPAMC_GOOGLE_FONTS_URL.
 const DefaultGoogleFontsURL = "https://fonts.googleapis.com"
 
 // GoogleWeights are the two weights the console draws: its type scale uses regular

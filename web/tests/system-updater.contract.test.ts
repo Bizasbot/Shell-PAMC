@@ -8,7 +8,7 @@ afterEach(() => vi.unstubAllGlobals());
 it('reads and applies updates over the handler-certified wire through the typed client', async () => {
   const fixture = createSystemUpdaterFixture();
   const calls: { path: string; options: RequestInit }[] = [];
-  vi.stubGlobal('window', { __OMCPA_CONFIG__: { basePath: '/omc' } });
+  vi.stubGlobal('window', { __SHELLPAMC_CONFIG__: { basePath: '/omc' } });
   vi.stubGlobal('fetch', async (path: string, options: RequestInit) => {
     calls.push({ path, options });
     const result = fixture(new URL(path, 'http://127.0.0.1'), options.method ?? 'GET', options.body as string);

@@ -49,11 +49,11 @@ export async function verifyDockerImage(image, version) {
       executeDocker('volume', 'create', volume);
       container = executeDocker('create', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
         '--health-interval=1s', '--health-start-period=1s', '-p', `127.0.0.1::${listenPort}`, '-v', `${volume}:/data`,
-        '-e', `OMCPA_LISTEN_ADDR=:${listenPort}`, '-e', `OMCPA_BASE_PATH=${rawPath}`, '-e', 'OMCPA_DATA_DIR=/data',
-        '-e', `OMCPA_MASTER_KEY=${randomBytes(32).toString('hex')}`,
-        '-e', 'OMCPA_CPA_BASE_URL=http://127.0.0.1:1', '-e', `OMCPA_CPA_MANAGEMENT_KEY=${secret}`,
-        '-e', 'OMCPA_USAGE_INGEST_MODE=off', '-e', 'OMCPA_UPDATE_CHECK_ENABLED=false',
-        '-e', 'OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
+        '-e', `SHELLPAMC_LISTEN_ADDR=:${listenPort}`, '-e', `SHELLPAMC_BASE_PATH=${rawPath}`, '-e', 'SHELLPAMC_DATA_DIR=/data',
+        '-e', `SHELLPAMC_MASTER_KEY=${randomBytes(32).toString('hex')}`,
+        '-e', 'SHELLPAMC_CPA_BASE_URL=http://127.0.0.1:1', '-e', `SHELLPAMC_CPA_MANAGEMENT_KEY=${secret}`,
+        '-e', 'SHELLPAMC_USAGE_INGEST_MODE=off', '-e', 'SHELLPAMC_UPDATE_CHECK_ENABLED=false',
+        '-e', 'SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
       executeDocker('start', container);
       await waitForHealthy(container, since);
       const address = executeDocker('port', container, `${listenPort}/tcp`);
@@ -137,11 +137,11 @@ export async function verifyUpdaterInstall(image) {
     executeDocker('volume', 'create', volume);
     executeDocker('run', '-d', '--name', consoleName, '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
       '--health-interval=1s', '--health-start-period=1s', '-p', '127.0.0.1::8080', '-v', `${volume}:/data`,
-      '-e', 'OMCPA_LISTEN_ADDR=:8080', '-e', 'OMCPA_BASE_PATH=/omc', '-e', 'OMCPA_DATA_DIR=/data',
-      '-e', `OMCPA_MASTER_KEY=${randomBytes(32).toString('hex')}`,
-      '-e', 'OMCPA_CPA_BASE_URL=http://127.0.0.1:1', '-e', `OMCPA_CPA_MANAGEMENT_KEY=${secret}`,
-      '-e', 'OMCPA_USAGE_INGEST_MODE=off', '-e', 'OMCPA_UPDATE_CHECK_ENABLED=false',
-      '-e', 'OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
+      '-e', 'SHELLPAMC_LISTEN_ADDR=:8080', '-e', 'SHELLPAMC_BASE_PATH=/omc', '-e', 'SHELLPAMC_DATA_DIR=/data',
+      '-e', `SHELLPAMC_MASTER_KEY=${randomBytes(32).toString('hex')}`,
+      '-e', 'SHELLPAMC_CPA_BASE_URL=http://127.0.0.1:1', '-e', `SHELLPAMC_CPA_MANAGEMENT_KEY=${secret}`,
+      '-e', 'SHELLPAMC_USAGE_INGEST_MODE=off', '-e', 'SHELLPAMC_UPDATE_CHECK_ENABLED=false',
+      '-e', 'SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false', image);
     await waitForHealthy(consoleName, since);
     const consoleBefore = JSON.parse(executeDocker('inspect', consoleName))[0];
 

@@ -151,7 +151,7 @@ the data with the change. `pnpm verify:demo` then drives every route in a real b
 pnpm test:demo              # the Worker's routing, re-basing and privacy, in Node
 pnpm check:demo             # the dataset is current and complete
 pnpm verify:demo            # every console route renders, no API errors, no console errors
-OMCPA_DEMO_URL=https://<host> pnpm verify:demo   # the same against a deployment
+SHELLPAMC_DEMO_URL=https://<host> pnpm verify:demo   # the same against a deployment
 pnpm verify:demo:go         # the Go binary's own demonstration mode, still supported
 ```
 

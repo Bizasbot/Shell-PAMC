@@ -14,7 +14,7 @@ const READINGS = [
 
 async function checkRouteRecovery({ base, page, context, check, errors, expectProblem }, failureMode) {
   await context.addInitScript(() => {
-    window.__OMCPA_CONFIG__ = { basePath: '/omc', apiBaseUrl: '/omc/api/v1', mediaBaseUrl: '/omc/media', version: 'route-error-test-build' };
+    window.__SHELLPAMC_CONFIG__ = { basePath: '/omc', apiBaseUrl: '/omc/api/v1', mediaBaseUrl: '/omc/media', version: 'route-error-test-build' };
   });
   const modulePattern = '**/src/pages/ConfigPage.tsx*';
   await page.goto(`${base}/dashboard`);

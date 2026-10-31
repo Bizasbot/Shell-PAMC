@@ -123,10 +123,10 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -148,7 +148,7 @@ volumes:
 
 ```bash
 curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
-printf 'CPA_MANAGEMENT_KEY=%s\nOMCPA_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
+printf 'CPA_MANAGEMENT_KEY=%s\nSHELLPAMC_MASTER_KEY=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 32)" > .env
 chmod 600 .env
 docker compose up -d
 ```
@@ -168,10 +168,10 @@ docker compose up -d
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -192,8 +192,8 @@ volumes:
 在同一目录的 `.env` 中添加两行：
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
-OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
+SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 ```
 
 需要在控制台更新时，一并添加片段中的 `oh-my-cpa-updater` 服务。
@@ -202,7 +202,7 @@ OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
 
 #### 独立部署
 
-新建一个目录，将以下内容保存为 `compose.yml`。`OMCPA_CPA_BASE_URL` 是从容器内部访问 CPA 的地址：
+新建一个目录，将以下内容保存为 `compose.yml`。`SHELLPAMC_CPA_BASE_URL` 是从容器内部访问 CPA 的地址：
 下面的值适用于 CPA 在同一台机器上并监听所有网卡的情况，其他情况见[连接 CPA](docs/install.md#reaching-cpa)。
 
 ```yaml
@@ -215,10 +215,10 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
-      OMCPA_CPA_BASE_URL: http://host.docker.internal:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://host.docker.internal:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -239,8 +239,8 @@ volumes:
 在同一目录创建 `.env`：
 
 ```dotenv
-OMCPA_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
-OMCPA_MASTER_KEY=<openssl rand -hex 32 的输出>
+SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA 管理密钥的明文，而非 config.yaml 中的哈希>
+SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 ```
 
 执行 `docker compose up -d`，然后访问 **`http://127.0.0.1:8080/omc/`**，以管理密钥登录。
@@ -269,10 +269,10 @@ Linux 和 FreeBSD 的 amd64、arm64 可执行文件。每个压缩包内嵌控�
 ### 注意事项
 
 > [!IMPORTANT]
-> 备份 `.env`。`OMCPA_MASTER_KEY` 是数据库的加密密钥，丢失后数据无法读取。
+> 备份 `.env`。`SHELLPAMC_MASTER_KEY` 是数据库的加密密钥，丢失后数据无法读取。
 
 CPA 的每条用量记录只交给一个读取方。同一个 CPA 上已有其他用量统计工具时，停用该工具，
-或在 `environment:` 下添加 `OMCPA_USAGE_INGEST_MODE: "off"`，仅将 OMC 用于管理。其他管理面板不冲突。
+或在 `environment:` 下添加 `SHELLPAMC_USAGE_INGEST_MODE: "off"`，仅将 OMC 用于管理。其他管理面板不冲突。
 
 `oh-my-cpa-updater` 挂载了 Docker socket，等同于拥有该主机上 Docker 的控制权。关闭控制台更新需从编排文件中删除该服务，
 并用 `docker rm -f oh-my-cpa-updater` 删除正在运行的容器（仅删除服务定义时，Compose 不会停止已运行的容器）。
@@ -345,7 +345,7 @@ Claude Code：
 
 ```bash
 claude mcp add --transport http oh-my-cpa https://cpa.example.com/omc/api/mcp \
-  --header "Authorization: Bearer $OMCPA_CPA_MANAGEMENT_KEY"
+  --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Codex（`~/.codex/config.toml`）：
@@ -353,7 +353,7 @@ Codex（`~/.codex/config.toml`）：
 ```toml
 [mcp_servers.oh-my-cpa]
 url = "https://cpa.example.com/omc/api/mcp"
-bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
+bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 以 JSON 配置的客户端，例如 Cursor：
@@ -381,8 +381,8 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
       "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {
-        "OMCPA_SERVER_URL": "https://cpa.example.com/omc",
-        "OMCPA_CPA_MANAGEMENT_KEY": "<CPA 管理密钥>"
+        "SHELLPAMC_SERVER_URL": "https://cpa.example.com/omc",
+        "SHELLPAMC_CPA_MANAGEMENT_KEY": "<CPA 管理密钥>"
       }
     }
   }
@@ -400,13 +400,13 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 
 | 变量 | 默认值 | 用途 |
 | --- | --- | --- |
-| `OMCPA_CPA_BASE_URL` | 必填 | CPA 的地址 |
-| `OMCPA_CPA_MANAGEMENT_KEY` | 必填 | CPA 管理密钥，同时是控制台登录密码 |
-| `OMCPA_MASTER_KEY` | 必填 | 静态加密密钥（`openssl rand -hex 32`） |
-| `OMCPA_BASE_PATH` | `/omc` | 控制台挂载的子路径 |
-| `OMCPA_DATA_DIR` | `./data` | SQLite 数据库所在目录；编排文件中设为 `/data` |
-| `OMCPA_PUBLIC_URL` | 未设置 | 浏览器访问的地址；为 `https://` 时会话 Cookie 带 `Secure` 标记 |
-| `OMCPA_USAGE_INGEST_MODE` | `auto` | 已有其他服务采集该 CPA 的用量时设为 `off` |
+| `SHELLPAMC_CPA_BASE_URL` | 必填 | CPA 的地址 |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | 必填 | CPA 管理密钥，同时是控制台登录密码 |
+| `SHELLPAMC_MASTER_KEY` | 必填 | 静态加密密钥（`openssl rand -hex 32`） |
+| `SHELLPAMC_BASE_PATH` | `/omc` | 控制台挂载的子路径 |
+| `SHELLPAMC_DATA_DIR` | `./data` | SQLite 数据库所在目录；编排文件中设为 `/data` |
+| `SHELLPAMC_PUBLIC_URL` | 未设置 | 浏览器访问的地址；为 `https://` 时会话 Cookie 带 `Secure` 标记 |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | 已有其他服务采集该 CPA 的用量时设为 `off` |
 | `TZ` | 系统时区 | 服务器日历，需与 CPA 一致；容器内默认为 UTC |
 
 完整的配置参考、部署约束与运维须知见 [`docs/operations.md`](docs/operations.md)。
@@ -422,7 +422,7 @@ bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"
 
 - **单二进制**：React 控制台内嵌在 Go 可执行文件中。
 - **单副本**：SQLite WAL 模式，每个数据目录只允许一个进程。
-- **原生支持子路径**：默认挂载在 `/omc`（`OMCPA_BASE_PATH`），可与 CPA 共用同一个主机名。
+- **原生支持子路径**：默认挂载在 `/omc`（`SHELLPAMC_BASE_PATH`），可与 CPA 共用同一个主机名。
 - **接口白名单**：普通控制台接口只返回经过筛选的安全字段；可信插件页面使用有边界的原生接口。仍禁止代理任意目标 URL。
 
 模块划分、数据流与架构约束见 [`docs/architecture.md`](docs/architecture.md)。

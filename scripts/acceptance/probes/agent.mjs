@@ -374,7 +374,7 @@ export async function agentExternal({ base, page, check }) {
   const endpoint = `${new URL(base).origin}${new URL(base).pathname.replace(/\/$/, '')}/api/mcp`;
   check('the guide names this deployment\'s own MCP endpoint', await guide.getByTestId('agent-connect-endpoint').innerText() === endpoint, await guide.getByTestId('agent-connect-endpoint').innerText());
   const snippet = guide.getByTestId('agent-connect-snippet');
-  check('the default snippet connects Claude Code by URL without the key in it', (await snippet.innerText()).includes(`--transport http oh-my-cpa ${endpoint}`) && (await snippet.innerText()).includes('$OMCPA_CPA_MANAGEMENT_KEY'), await snippet.innerText());
+  check('the default snippet connects Claude Code by URL without the key in it', (await snippet.innerText()).includes(`--transport http oh-my-cpa ${endpoint}`) && (await snippet.innerText()).includes('$SHELLPAMC_CPA_MANAGEMENT_KEY'), await snippet.innerText());
   const clients = guide.getByRole('radio');
   const tiles = await clients.evaluateAll(elements => elements.map(element => ({ border: getComputedStyle(element).borderTopWidth, hasIcon: [...element.firstElementChild.children].some(mark => mark.getClientRects().length > 0), isClipped: element.scrollWidth > element.clientWidth })));
   check('each client is a bounded tile with its own mark and an unclipped name', tiles.length === 4 && tiles.every(tile => tile.border !== '0px' && tile.hasIcon && !tile.isClipped), JSON.stringify(tiles));

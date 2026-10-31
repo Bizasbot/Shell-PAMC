@@ -25,7 +25,7 @@
  * them": `App.tsx` and the layout render on every route, the theme and global
  * stylesheet paint every page, and the API client is the only way any of them talks
  * to a server. `web/index.html` is the document every route is loaded into: it names
- * the module entry and seeds `window.__OMCPA_CONFIG__` with the base path, so it sits
+ * the module entry and seeds `window.__SHELLPAMC_CONFIG__` with the base path, so it sits
  * here rather than with the page it happens to look like.
  */
 const SHELL_PATHS = [

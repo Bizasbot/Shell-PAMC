@@ -114,13 +114,13 @@ test('tar and zip archives extract the exact payload with executable permission 
 
 test('native environment template preserves embedded identity and requires operator-owned secrets', () => {
   const source = fs.readFileSync(new URL('../deploy/native.env.example', import.meta.url), 'utf8');
-  assert.ok(!source.includes('OMCPA_VERSION='));
-  assert.ok(source.includes('OMCPA_LISTEN_ADDR=127.0.0.1:8080'));
-  assert.ok(source.includes('OMCPA_DATA_DIR=./data'));
-  assert.ok(source.includes('OMCPA_MASTER_KEY=replace-me'));
-  const placeholder = /^OMCPA_MASTER_KEY=(.+)$/m.exec(source)[1];
+  assert.ok(!source.includes('SHELLPAMC_VERSION='));
+  assert.ok(source.includes('SHELLPAMC_LISTEN_ADDR=127.0.0.1:8080'));
+  assert.ok(source.includes('SHELLPAMC_DATA_DIR=./data'));
+  assert.ok(source.includes('SHELLPAMC_MASTER_KEY=replace-me'));
+  const placeholder = /^SHELLPAMC_MASTER_KEY=(.+)$/m.exec(source)[1];
   assert.ok(placeholder.length < 32, 'Template must fail key validation until the operator supplies a key');
-  assert.ok(source.includes('OMCPA_CPA_MANAGEMENT_KEY=replace-with-'));
+  assert.ok(source.includes('SHELLPAMC_CPA_MANAGEMENT_KEY=replace-with-'));
 });
 
 

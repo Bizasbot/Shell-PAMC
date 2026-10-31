@@ -457,11 +457,11 @@ check('the connection guide names this deployment\'s endpoint under any base pat
   for (const client of CONNECT_CLIENTS) {
     const { code, lang } = connectSnippet(client, 'https://omc.example.com', '/omc', 'KEY');
     // The stdio bridge is given the console address; every other client is given the endpoint.
-    assert.ok(code.includes(client === 'stdio' ? '"OMCPA_SERVER_URL": "https://omc.example.com/omc"' : 'https://omc.example.com/omc/api/mcp'), client);
+    assert.ok(code.includes(client === 'stdio' ? '"SHELLPAMC_SERVER_URL": "https://omc.example.com/omc"' : 'https://omc.example.com/omc/api/mcp'), client);
     if (lang === 'json') assert.doesNotThrow(() => JSON.parse(code), client);
   }
-  assert.match(connectSnippet('claude', 'https://omc.example.com', '/omc', 'KEY').code, /--transport http oh-my-cpa \S+ \\\n {2}--header "Authorization: Bearer \$OMCPA_CPA_MANAGEMENT_KEY"$/);
-  assert.match(connectSnippet('codex', 'https://omc.example.com', '/omc', 'KEY').code, /^bearer_token_env_var = "OMCPA_CPA_MANAGEMENT_KEY"$/m);
+  assert.match(connectSnippet('claude', 'https://omc.example.com', '/omc', 'KEY').code, /--transport http oh-my-cpa \S+ \\\n {2}--header "Authorization: Bearer \$SHELLPAMC_CPA_MANAGEMENT_KEY"$/);
+  assert.match(connectSnippet('codex', 'https://omc.example.com', '/omc', 'KEY').code, /^bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"$/m);
   assert.equal(JSON.parse(connectSnippet('other', 'https://omc.example.com', '/omc', 'KEY').code).mcpServers['oh-my-cpa'].headers.Authorization, 'Bearer <KEY>');
 });
 

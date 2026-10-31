@@ -17,10 +17,10 @@ import (
 )
 
 func TestMCPStdioHelper(t *testing.T) {
-	if os.Getenv("OMCPA_MCP_TEST_CHILD") != "1" {
+	if os.Getenv("SHELLPAMC_MCP_TEST_CHILD") != "1" {
 		return
 	}
-	if err := Run(context.Background(), os.Getenv("OMCPA_SERVER_URL"), os.Getenv("OMCPA_CPA_MANAGEMENT_KEY"), "v-test"); err != nil {
+	if err := Run(context.Background(), os.Getenv("SHELLPAMC_SERVER_URL"), os.Getenv("SHELLPAMC_CPA_MANAGEMENT_KEY"), "v-test"); err != nil {
 		os.Exit(2)
 	}
 	os.Exit(0)
@@ -56,7 +56,7 @@ func TestMCPStdioDiscoveryAndCall(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestMCPStdioHelper$")
-	command.Env = append(os.Environ(), "OMCPA_MCP_TEST_CHILD=1", "OMCPA_SERVER_URL="+upstream.URL+"/omc", "OMCPA_CPA_MANAGEMENT_KEY=fixture-token")
+	command.Env = append(os.Environ(), "SHELLPAMC_MCP_TEST_CHILD=1", "SHELLPAMC_SERVER_URL="+upstream.URL+"/omc", "SHELLPAMC_CPA_MANAGEMENT_KEY=fixture-token")
 	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
 	session, err := client.Connect(ctx, &mcp.CommandTransport{Command: command}, nil)
 	if err != nil {

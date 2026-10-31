@@ -370,7 +370,7 @@ The registry is served to MCP clients in two ways, from one tool definition
 
 ```bash
 claude mcp add --transport http oh-my-cpa https://omc.example.com/omc/api/mcp \
-  --header "Authorization: Bearer $OMCPA_CPA_MANAGEMENT_KEY"
+  --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 The endpoint accepts the management key as a bearer token only - a console session
@@ -384,8 +384,8 @@ clients.
 capability HTTP endpoints:
 
 ```bash
-OMCPA_SERVER_URL=https://omc.example.com/omc \
-OMCPA_CPA_MANAGEMENT_KEY=<your CPA management key> \
+SHELLPAMC_SERVER_URL=https://omc.example.com/omc \
+SHELLPAMC_CPA_MANAGEMENT_KEY=<your CPA management key> \
 oh-my-cpa mcp
 ```
 

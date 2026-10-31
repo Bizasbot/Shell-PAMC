@@ -91,7 +91,7 @@ and ADR 0056 the publication ordering and immutable version identity.
 
 ### Demo mode is the same process with the gateway replaced
 
-`OMCPA_DEMO_MODE=true` runs this binary against its own fixture; see §13. The shape
+`SHELLPAMC_DEMO_MODE=true` runs this binary against its own fixture; see §13. The shape
 above still describes it, with two edges replaced and one added:
 
 ```text
@@ -478,7 +478,7 @@ Three properties hold across the loop:
   was one, the parameter it named, and whether the attempt bound was exhausted.
 
 The latest Agent session, images and pending or terminal operations live in `agent_documents`
-(migrations 026 and 036), encrypted with `OMCPA_MASTER_KEY`. Sessions are exempt from the
+(migrations 026 and 036), encrypted with `SHELLPAMC_MASTER_KEY`. Sessions are exempt from the
 repository's 8 MiB document bound and remain until reset or explicit turn replacement; terminal
 operations are retained for 7 days. Image admission owns only its newly saved rows: validation,
 image-storage or initial session-save failure attempts to delete those rows with a detached,
@@ -1314,14 +1314,14 @@ geometry; the virtualizer continues measuring real item and group-header heights
 ## 4. Request and session flow
 
 1. `POST <base>/api/auth/login` with the CPA management key. The handler
-   compares it against `OMCPA_CPA_MANAGEMENT_KEY`; there is no second password.
+   compares it against `SHELLPAMC_CPA_MANAGEMENT_KEY`; there is no second password.
    Failed attempts are throttled by the direct peer address. Forwarding headers
-   are consulted only when that peer belongs to `OMCPA_TRUSTED_PROXY_CIDRS`, and
+   are consulted only when that peer belongs to `SHELLPAMC_TRUSTED_PROXY_CIDRS`, and
    the rightmost untrusted address in the chain is used, so a client-supplied
    leftmost value cannot mint a fresh limiter bucket.
 2. On success the session manager derives an HMAC key from the management key
    and issues an HttpOnly, SameSite=Strict cookie (`Secure` when
-   `OMCPA_PUBLIC_URL` is HTTPS) with a 12-hour expiry.
+   `SHELLPAMC_PUBLIC_URL` is HTTPS) with a 12-hour expiry.
 3. `requireAuthentication` wraps every `/api/v1` route and rejects an absent or
    stale cookie with 401.
 4. Rotating the CPA management key changes the derived signing key, so every
@@ -1347,7 +1347,7 @@ geometry; the virtualizer continues measuring real item and group-header heights
    failure answers `500` and no credential is returned; masked reads are not
    audited because no credential leaves the server (ADR 0018).
 
-The key itself is encrypted with `OMCPA_MASTER_KEY` and stored on the
+The key itself is encrypted with `SHELLPAMC_MASTER_KEY` and stored on the
 `cpa_instances` row, where `bootstrapDefaultInstance` refreshes it at every
 startup so a rotation needs no SQLite surgery.
 
@@ -2490,11 +2490,11 @@ is no collector to lose and no sync loop to let prices go stale. §13 and
 The release sweep is the only loop that talks to a host outside the deployment's own
 gateway, and it is the one loop whose absence is invisible rather than harmful:
 without it the page shows the last known index. It can be switched off with
-`OMCPA_UPDATE_CHECK_ENABLED=false`, which stops the sweep while leaving the page's own
+`SHELLPAMC_UPDATE_CHECK_ENABLED=false`, which stops the sweep while leaving the page's own
 check and the manual button working — those are an operator asking a question rather
 than the process deciding to reach the internet.
 
-`OMCPA_UPDATE_CHECK_ON_PAGE_LOAD=false` is separate because it answers a separate question: may
+`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` is separate because it answers a separate question: may
 opening a page spend a request from a budget shared per address? A self-hosted deployment wants
 that enabled — the page exists to answer "is there a newer version" — while an air-gapped install
 or a test suite wants it off, since a page visit there is not a reader asking anything. The manual
@@ -2541,7 +2541,7 @@ learn it again.
 
 The read has its own floor, `StargazerFloor`, of one hour measured from the last attempt,
 because the header is mounted on every page and the read spends the same shared budget. A
-page load may trigger it only when `OMCPA_UPDATE_CHECK_ON_PAGE_LOAD` allows page visits to
+page load may trigger it only when `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` allows page visits to
 check; the six-hour sweep refreshes it regardless, so a deployment that forbids page-visit
 requests still learns the count. A failed read keeps the previous count. The read is an
 optional interface on the feed source (`release.StargazerSource`), which the demonstration's
@@ -2604,7 +2604,7 @@ System Information page
 `GET /management/system/updater` reduces every way of not having an updater to a state
 the page can explain: `ready`, `not_installed` (a containerised console with no answer,
 which the install command fixes), `not_containerised` (a native install), `disabled`
-(`OMCPA_UPDATER_ENABLED=false`) and `rejected` (an updater that does not accept this
+(`SHELLPAMC_UPDATER_ENABLED=false`) and `rejected` (an updater that does not accept this
 console's token). The read is `200` in all of them. Products carry `action` and
 `reason`: `pinned`, `not_a_local_container`, `signature_unavailable`,
 `container_not_found`, `ambiguous_container`. Demo mode wires no updater: the read
@@ -3120,8 +3120,8 @@ screenshot, DOM, URL and page-error evidence as a thrown error, and each run cle
 earlier evidence first.
 
 The application processes spawned by cross-stack acceptance and Go demo smoke use
-`scripts/acceptance/environment.mjs`: inherited `OMCPA_*`, `PORT` and transport proxy
-variables are removed, fixture overrides are explicit, and `OMCPA_ENV_FILE` points
+`scripts/acceptance/environment.mjs`: inherited `SHELLPAMC_*`, `PORT` and transport proxy
+variables are removed, fixture overrides are explicit, and `SHELLPAMC_ENV_FILE` points
 to the platform's empty device. Startup must not log a loaded dotenv file. This
 prevents a developer's working-directory `.env` or operator settings from silently
 changing the fixture. Explicit live-system smoke remains separate.
@@ -3130,7 +3130,7 @@ changing the fixture. Explicit live-system smoke remains separate.
 
 A public demonstration has to show the product without a gateway behind it, without
 any credential, and without becoming a second frontend to maintain. Demo mode is
-that, expressed as a thin layer over the ordinary process: `OMCPA_DEMO_MODE=true`
+that, expressed as a thin layer over the ordinary process: `SHELLPAMC_DEMO_MODE=true`
 changes where the data comes from and refuses what must not happen, and nothing
 declares itself a demo at compile time.
 
@@ -3141,8 +3141,8 @@ the alternatives).
 | Concern | Self-hosted | Demo |
 | --- | --- | --- |
 | Upstream | The configured CPA instance | `internal/demo`'s fixture, over a loopback socket, with a key minted per process |
-| Management key | `OMCPA_CPA_MANAGEMENT_KEY` | The fixture's own key; an inherited one is discarded, never encrypted into the instance row |
-| Database | `shell-pamc.db` under `OMCPA_DATA_DIR` | `shell-pamc-demo.db`, deleted and rebuilt on every boot |
+| Management key | `SHELLPAMC_CPA_MANAGEMENT_KEY` | The fixture's own key; an inherited one is discarded, never encrypted into the instance row |
+| Database | `shell-pamc.db` under `SHELLPAMC_DATA_DIR` | `shell-pamc-demo.db`, deleted and rebuilt on every boot |
 | Capture and sync | Collector and pricing loop run | Neither starts; the fixture is the history and the price list |
 | Sign-in | The CPA management key | A session on first sight, so a link can be opened by anyone |
 | Dangerous routes | Served | Refused by `internal/api/demo_policy.go` |

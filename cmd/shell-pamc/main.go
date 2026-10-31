@@ -23,10 +23,10 @@ A client that speaks Streamable HTTP does not need this process: it connects to
 <console URL>/api/mcp with "Authorization: Bearer <CPA management key>".
 
 Environment:
-  OMCPA_SERVER_URL          console URL including its base path, for example
+  SHELLPAMC_SERVER_URL          console URL including its base path, for example
                             https://omc.example.com/omc (plain HTTP is accepted
                             for loopback addresses only)
-  OMCPA_CPA_MANAGEMENT_KEY  the CPA management key that signs in to the console
+  SHELLPAMC_CPA_MANAGEMENT_KEY  the CPA management key that signs in to the console
 `
 
 func envOr(name, fallback string) string {
@@ -48,7 +48,7 @@ func main() {
 		}
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if err := mcpbridge.Run(ctx, os.Getenv("OMCPA_SERVER_URL"), os.Getenv("OMCPA_CPA_MANAGEMENT_KEY"), envOr("OMCPA_VERSION", config.BuildVersion)); err != nil {
+		if err := mcpbridge.Run(ctx, os.Getenv("SHELLPAMC_SERVER_URL"), os.Getenv("SHELLPAMC_CPA_MANAGEMENT_KEY"), envOr("SHELLPAMC_VERSION", config.BuildVersion)); err != nil {
 			slog.Error("MCP bridge stopped", "error", err)
 			os.Exit(1)
 		}
@@ -57,7 +57,7 @@ func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == updater.ROLE_COMMAND {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		code := updater.Run(ctx, os.Args[2:], envOr("OMCPA_VERSION", config.BuildVersion), os.Stdout, os.Stderr)
+		code := updater.Run(ctx, os.Args[2:], envOr("SHELLPAMC_VERSION", config.BuildVersion), os.Stdout, os.Stderr)
 		stop()
 		os.Exit(code)
 	}

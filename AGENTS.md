@@ -156,7 +156,7 @@ The complete script list is in `package.json`; these are the ones agents use mos
 | `pnpm verify` | Toolchain check, full static gates, worktree secret scan |
 | `pnpm verify:probes` | The whole dev-server probe catalog (`--shard i/n`, `--port PORT`, `--workers 1`) |
 | `pnpm verify:browser` | Built-SPA browser acceptance against the fake CPA (also `:smoke`, `:p0`, `:harness`) |
-| `pnpm verify:demo` | Browser acceptance for the public demonstration; `OMCPA_DEMO_URL` checks a deployment |
+| `pnpm verify:demo` | Browser acceptance for the public demonstration; `SHELLPAMC_DEMO_URL` checks a deployment |
 | `pnpm verify:full` | Everything CI runs, locally (`:serial` for resource-constrained hosts) |
 | `pnpm verify:e2e` | Build and loading boundaries, then browser acceptance and probes |
 | `pnpm verify:secrets` | Scan the worktree for secrets (`:history` scans history) |

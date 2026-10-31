@@ -184,7 +184,7 @@ Oh My CPA adds a user-owned identity and organization layer above CLIProxyAPI (C
 
 ## Demo mode
 
-- **Demo mode**: A deployment of the same binary that serves the console from a fixture and refuses the operations a public deployment must not perform, switched on by `OMCPA_DEMO_MODE` and off unless it is. It is not a second product and not a second frontend: every page, DTO and read path is the operator's own. What it changes is where the gateway's answers come from, which credential the session is derived from, where the database lives, and which routes answer at all - see `docs/architecture.md` §13 and ADR 0016. It is also the generator for the public demonstration's dataset, so it stays in use now that the public deployment no longer runs this binary.
+- **Demo mode**: A deployment of the same binary that serves the console from a fixture and refuses the operations a public deployment must not perform, switched on by `SHELLPAMC_DEMO_MODE` and off unless it is. It is not a second product and not a second frontend: every page, DTO and read path is the operator's own. What it changes is where the gateway's answers come from, which credential the session is derived from, where the database lives, and which routes answer at all - see `docs/architecture.md` §13 and ADR 0016. It is also the generator for the public demonstration's dataset, so it stays in use now that the public deployment no longer runs this binary.
 - **Public demonstration**: The page linked from the README. It serves the same console build as static assets, with its API answered by a Cloudflare Worker from a dataset generated out of the real handlers, on a fixed reference instant that is re-based onto the viewer's clock as each response is served. It shows the console rather than running the product: no gateway, database, capture pipeline or authentication is behind it, and server writes are refused. The Agent offers a browser-local recorded example conversation, never provider inference (ADR 0092). It is read-only in a way demo mode is not - demo mode lets a visitor's write land in the in-memory fixture, and the demonstration has nowhere to put one. The one choice a visitor does keep is the theme: under demo mode and the public demonstration alike it lives in that browser only, neither pushed to the server nor adopted from it, because visitors share one server and a refused push would be retried, and reported, on every later page load. See ADR 0021 and `docs/ops/cloudflare-demo.md`.
 - **Generated dataset**: The captured responses the public demonstration is served from, produced by `internal/api/demo_export_test.go` through the real handlers and committed under `deploy/cloudflare/data/`. Generated rather than hand-written so every response carries a shape the product actually emits, and gated by `pnpm check:demo`, which fails when a console route loses coverage, when a source it derives from changes, or when it carries a value that must not be public.
 - **Re-basing**: Moving a captured response's timestamps onto the viewer's clock by one delta before serving it. One delta per response rather than per field, so a window's bounds, its buckets and the rows inside it keep describing a single span. It is what stops a generated dataset from being visibly stale: the console asks for a window by name, and a frozen capture would describe one that ended when it was generated. An instant is recognised by field name (`*_at_ms`) and text instants only when the whole string is an RFC 3339 instant - `Date.parse` reads `claude-haiku-4-5` as a date.
@@ -268,7 +268,7 @@ about who can still serve.
 
 There is exactly one administrator login credential in the whole system: the
 CPA management key (`management.secret-key`), passed as
-`OMCPA_CPA_MANAGEMENT_KEY`. This is distinct from `OMCPA_MASTER_KEY` (which is a
+`SHELLPAMC_CPA_MANAGEMENT_KEY`. This is distinct from `SHELLPAMC_MASTER_KEY` (which is a
 system encryption secret used for AES-GCM at rest). Oh My CPA has no separate
 admin password: the login form takes the management key, submits it to the
 server, and derives the session signature from it (HMAC-SHA256 over a fixed
@@ -280,7 +280,7 @@ a provider key as the console login. The key is never persisted in browser stora
 API responses; sessions are HttpOnly SameSite=Strict cookies. Rotating the CPA
 key invalidates existing sessions once Oh My CPA reloads the new key (e.g. upon
 restart or configuration reload). No key configured means the app boots but
-sign-in answers 503 until `OMCPA_CPA_MANAGEMENT_KEY` is set. The same key
+sign-in answers 503 until `SHELLPAMC_CPA_MANAGEMENT_KEY` is set. The same key
 authorises the external capability endpoints (`/api/v1/capabilities...`) when
 presented as `Authorization: Bearer`; there is no second external credential
 store. Holding it is therefore administrator-equivalent, and approval, private

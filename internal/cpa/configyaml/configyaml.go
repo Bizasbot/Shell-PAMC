@@ -17,7 +17,7 @@ import (
 // management.secret-key) and TLS private keys in visual configuration
 // mode so those secrets are not exposed to the browser. Upstream/downstream
 // API keys are intentionally returned in plaintext.
-const UnchangedSentinel = "__OMCPA_UNCHANGED__"
+const UnchangedSentinel = "__SHELLPAMC_UNCHANGED__"
 
 // ComputeRevision returns the lowercase SHA-256 hex digest of a YAML document.
 func ComputeRevision(yamlContent string) string {

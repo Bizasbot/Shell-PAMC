@@ -6,10 +6,10 @@
 # Normalise before composing their URL, including the supported root path.
 #
 # An empty result means the site root, which is what the application serves when
-# OMCPA_BASE_PATH is "/".
+# SHELLPAMC_BASE_PATH is "/".
 set -eu
 
-raw=$(printf '%s' "${OMCPA_BASE_PATH:-}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+raw=$(printf '%s' "${SHELLPAMC_BASE_PATH:-}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 
 if [ -z "$raw" ]; then
 	printf '/omc\n'
@@ -18,7 +18,7 @@ fi
 
 case $raw in
 *'?'* | *'#'*)
-	printf 'OMCPA_BASE_PATH must not contain a query or fragment: %s\n' "$raw" >&2
+	printf 'SHELLPAMC_BASE_PATH must not contain a query or fragment: %s\n' "$raw" >&2
 	exit 1
 	;;
 esac
@@ -49,7 +49,7 @@ for segment in $path; do
 	..)
 		IFS=$old_ifs
 		set -f
-		printf 'OMCPA_BASE_PATH must not contain parent traversal: %s\n' "$raw" >&2
+		printf 'SHELLPAMC_BASE_PATH must not contain parent traversal: %s\n' "$raw" >&2
 		exit 1
 		;;
 	esac

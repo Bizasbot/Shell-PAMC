@@ -64,7 +64,7 @@ func newDeployment(t *testing.T, consoleImage string) deployment {
 	daemon.addContainer(containerSpec{
 		name:        "oh-my-cpa",
 		image:       consoleImage,
-		environment: []string{"OMCPA_MASTER_KEY=" + MASTER_KEY, "OMCPA_CPA_BASE_URL=http://cli-proxy-api:8317"},
+		environment: []string{"SHELLPAMC_MASTER_KEY=" + MASTER_KEY, "SHELLPAMC_CPA_BASE_URL=http://cli-proxy-api:8317"},
 		networks:    map[string][]string{"stack": {"oh-my-cpa"}},
 	})
 	updater := daemon.addContainer(containerSpec{name: SIDECAR_NAME, image: OMC_REPOSITORY + ":latest", command: []string{ROLE_COMMAND, "serve"}})
@@ -250,7 +250,7 @@ func TestSignedUpdateReplacesTheConsoleAndRetagsItsImage(t *testing.T) {
 	if stack.daemon.named("oh-my-cpa"+PREVIOUS_SUFFIX) != nil {
 		t.Errorf("the previous container must be removed once the replacement is up")
 	}
-	if !slices.Contains(stringList(after.Config["Env"]), "OMCPA_MASTER_KEY="+MASTER_KEY) {
+	if !slices.Contains(stringList(after.Config["Env"]), "SHELLPAMC_MASTER_KEY="+MASTER_KEY) {
 		t.Errorf("the operator's environment must survive: %v", after.Config["Env"])
 	}
 	if slices.Contains(stringList(after.Config["Env"]), "PATH=/bin") {
@@ -535,7 +535,7 @@ func TestInstallAddsTheUpdaterAndUpgradesAnOlderConsole(t *testing.T) {
 	console := daemon.addContainer(containerSpec{
 		name:        "stack-oh-my-cpa-1",
 		image:       OMC_REPOSITORY + ":latest",
-		environment: []string{"OMCPA_MASTER_KEY=" + MASTER_KEY},
+		environment: []string{"SHELLPAMC_MASTER_KEY=" + MASTER_KEY},
 		labels:      map[string]string{COMPOSE_PROJECT_LABEL: "stack"},
 		networks:    map[string][]string{"stack_default": {"oh-my-cpa"}},
 	})

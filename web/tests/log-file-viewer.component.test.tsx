@@ -35,7 +35,7 @@ const copyButton = () => screen.getByRole('button', { name: /Copy/ }) as HTMLBut
 describe('LogFileViewer', () => {
   beforeEach(() => {
     window.localStorage.setItem('omc-lang', 'en');
-    window.__OMCPA_CONFIG__ = { apiBaseUrl: '/omc/api/v1' } as typeof window.__OMCPA_CONFIG__;
+    window.__SHELLPAMC_CONFIG__ = { apiBaseUrl: '/omc/api/v1' } as typeof window.__SHELLPAMC_CONFIG__;
   });
 
   it('reads a request log by the id on its gateway line and titles it as that file', async () => {

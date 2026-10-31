@@ -16,7 +16,7 @@ The work is: look at what is already there, pick a path, install, verify.
    to fill it in.
 2. **Do not change the existing CPA.** No upgrade, no config edit, no restart, no
    stopping another panel or tracker, unless the user agrees to that specific change.
-3. **Never replace an existing `OMCPA_MASTER_KEY`.** If an OMC data directory already
+3. **Never replace an existing `SHELLPAMC_MASTER_KEY`.** If an OMC data directory already
    exists, reuse its key. If the key is lost, stop and say so.
 4. **Ask before** using `sudo`, installing Docker or a toolchain, opening a port beyond
    `127.0.0.1`, giving a container the Docker socket, or sending a model request that
@@ -80,14 +80,14 @@ sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
 CPA_MANAGEMENT_KEY=$(openssl rand -hex 24)
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 deploy/.env
 
 docker compose -f deploy/compose.full.yml up -d
 ```
 
-If port 8080 or 8317 is taken, add `OMCPA_BIND=127.0.0.1:<port>` or
+If port 8080 or 8317 is taken, add `SHELLPAMC_BIND=127.0.0.1:<port>` or
 `CPA_BIND=127.0.0.1:<port>` to `deploy/.env`. Do not stop whatever holds the port.
 
 ### B1. OMC in CPA's Compose file
@@ -103,10 +103,10 @@ these under `services:` and leave every existing line as it is:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OMCPA_CPA_BASE_URL: http://cli-proxy-api:8317
-      OMCPA_CPA_MANAGEMENT_KEY: ${OMCPA_CPA_MANAGEMENT_KEY:?}
-      OMCPA_MASTER_KEY: ${OMCPA_MASTER_KEY:?}
-      OMCPA_DATA_DIR: /data
+      SHELLPAMC_CPA_BASE_URL: http://cli-proxy-api:8317
+      SHELLPAMC_CPA_MANAGEMENT_KEY: ${SHELLPAMC_CPA_MANAGEMENT_KEY:?}
+      SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
+      SHELLPAMC_DATA_DIR: /data
     volumes:
       - oh-my-cpa-data:/data
 
@@ -124,14 +124,14 @@ volumes:
   oh-my-cpa-data:
 ```
 
-Set the host in `OMCPA_CPA_BASE_URL` to CPA's service name in that file. If a
+Set the host in `SHELLPAMC_CPA_BASE_URL` to CPA's service name in that file. If a
 top-level `volumes:` key exists, add `oh-my-cpa-data:` under it. Then, in the Compose
 file's directory:
 
 ```bash
 cat >> .env <<EOF
-OMCPA_CPA_MANAGEMENT_KEY=replace-me
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_CPA_MANAGEMENT_KEY=replace-me
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 .env
 ```
@@ -155,9 +155,9 @@ curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compo
 sudo chown 10001:10001 oh-my-cpa-data
 
 cat > deploy/.env <<EOF
-OMCPA_CPA_BASE_URL=http://host.docker.internal:8317
-OMCPA_CPA_MANAGEMENT_KEY=replace-me
-OMCPA_MASTER_KEY=$(openssl rand -hex 32)
+SHELLPAMC_CPA_BASE_URL=http://host.docker.internal:8317
+SHELLPAMC_CPA_MANAGEMENT_KEY=replace-me
+SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)
 EOF
 chmod 600 deploy/.env
 ```
@@ -165,8 +165,8 @@ chmod 600 deploy/.env
 Then adjust `deploy/.env`:
 
 - **CPA URL.** It must be reachable from inside OMC's container.
-  - CPA in Docker: add `OMCPA_NETWORK_NAME=<CPA's network>` and
-    `OMCPA_NETWORK_EXTERNAL=true`, and use `http://<CPA container name>:8317`.
+  - CPA in Docker: add `SHELLPAMC_NETWORK_NAME=<CPA's network>` and
+    `SHELLPAMC_NETWORK_EXTERNAL=true`, and use `http://<CPA container name>:8317`.
   - CPA on this host, all interfaces: keep `http://host.docker.internal:8317`.
   - CPA elsewhere: its private or HTTPS address. Leave TLS verification on.
 - **Management key.** Ask the user to replace `replace-me` with the plaintext key.
@@ -174,7 +174,7 @@ Then adjust `deploy/.env`:
 - **Time zone.** Add `TZ=` matching CPA's if it is not UTC.
 - **Usage collection.** If something else already collects CPA's usage, ask the user:
   stop that tool so OMC records requests, or keep it and add
-  `OMCPA_USAGE_INGEST_MODE=off` (OMC then manages CPA but shows no usage). If that
+  `SHELLPAMC_USAGE_INGEST_MODE=off` (OMC then manages CPA but shows no usage). If that
   cannot be determined, use `off` and say so. Another management panel that does not collect
   usage needs nothing; leave it running.
 
@@ -199,7 +199,7 @@ Extract into a new user-owned directory. Copy the packaged `.env.example` to `.e
 only if no existing file is present. Generate a master key without printing it and
 ask the user to fill in the plaintext CPA management key. The template binds loopback,
 uses `/omc` and writes `./data`; preserve those defaults unless the user approves a
-change. Leave `OMCPA_VERSION` unset, match CPA's `TZ`, and apply B2's usage-reader
+change. Leave `SHELLPAMC_VERSION` unset, match CPA's `TZ`, and apply B2's usage-reader
 ownership decision. A host CPA listening on loopback needs no remote-management edit.
 Restrict the environment/data files to the service account (Unix permissions or Windows
 ACLs). Use the OS's certificate roots; the binary already embeds IANA zone data.
@@ -219,8 +219,8 @@ pnpm install --frozen-lockfile
 cp -n .env.example .env
 ```
 
-In `.env`, set `OMCPA_MASTER_KEY` (`openssl rand -hex 32`), `OMCPA_CPA_BASE_URL`, and a
-placeholder `OMCPA_CPA_MANAGEMENT_KEY` for the user to fill in. Apply the time zone
+In `.env`, set `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`), `SHELLPAMC_CPA_BASE_URL`, and a
+placeholder `SHELLPAMC_CPA_MANAGEMENT_KEY` for the user to fill in. Apply the time zone
 and usage-collection points from B2. Then:
 
 ```bash
@@ -314,7 +314,7 @@ the backup. Verify as in step 4.
   `http://127.0.0.1:18080/omc/`.
 - That the sign-in password is the CPA management key, and which file holds it. Not
   the key itself.
-- To back up the `.env` file and OMC's data (the `oh-my-cpa-data` directory or volume). Without `OMCPA_MASTER_KEY` the data
+- To back up the `.env` file and OMC's data (the `oh-my-cpa-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
   cannot be read.
 - Whether OMC is collecting usage, and why not if it is off.
 - Whether the updater is installed. If it is: later releases of OMC and CPA can be

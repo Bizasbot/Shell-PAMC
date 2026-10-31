@@ -43,7 +43,7 @@ import (
 // It is a test rather than a command so it can use the existing test seams, and it
 // writes nothing unless explicitly asked. Run it with:
 //
-//	OMCPA_DEMO_EXPORT_DIR=<dir> go test ./internal/api -run TestExportDemoDataset -count=1
+//	SHELLPAMC_DEMO_EXPORT_DIR=<dir> go test ./internal/api -run TestExportDemoDataset -count=1
 //
 // The reference instant is fixed so a repeated export is byte-identical; see
 // demoExportReference for why a wall-clock seed would defeat that.
@@ -320,9 +320,9 @@ func demoExportWindow(preset string) string {
 // It is skipped unless an output directory is given, because writing files from a
 // test that runs by default would make the ordinary suite mutate the worktree.
 func TestExportDemoDataset(t *testing.T) {
-	outDir := strings.TrimSpace(os.Getenv("OMCPA_DEMO_EXPORT_DIR"))
+	outDir := strings.TrimSpace(os.Getenv("SHELLPAMC_DEMO_EXPORT_DIR"))
 	if outDir == "" {
-		t.Skip("set OMCPA_DEMO_EXPORT_DIR to export the demo dataset")
+		t.Skip("set SHELLPAMC_DEMO_EXPORT_DIR to export the demo dataset")
 	}
 
 	router, seededAt := demoExportRouter(t)
@@ -1063,9 +1063,9 @@ func demoExportPatternMatches(route, pattern string) bool {
 // is invisible from the console, which simply keeps the full response, which is why it is asserted
 // on the dataset rather than left to the demo smoke.
 func TestDemoExportTailsAgreeWithTheirWindow(t *testing.T) {
-	outDir := strings.TrimSpace(os.Getenv("OMCPA_DEMO_EXPORT_DIR"))
+	outDir := strings.TrimSpace(os.Getenv("SHELLPAMC_DEMO_EXPORT_DIR"))
 	if outDir == "" {
-		t.Skip("set OMCPA_DEMO_EXPORT_DIR to check the exported dataset")
+		t.Skip("set SHELLPAMC_DEMO_EXPORT_DIR to check the exported dataset")
 	}
 	raw, err := os.ReadFile(filepath.Join(outDir, "responses.json"))
 	if err != nil {
@@ -1130,9 +1130,9 @@ func TestDemoExportTailsAgreeWithTheirWindow(t *testing.T) {
 }
 
 func TestDemoExportKeepsSeriesAndDayGridsIntact(t *testing.T) {
-	outDir := strings.TrimSpace(os.Getenv("OMCPA_DEMO_EXPORT_DIR"))
+	outDir := strings.TrimSpace(os.Getenv("SHELLPAMC_DEMO_EXPORT_DIR"))
 	if outDir == "" {
-		t.Skip("set OMCPA_DEMO_EXPORT_DIR to check the exported dataset")
+		t.Skip("set SHELLPAMC_DEMO_EXPORT_DIR to check the exported dataset")
 	}
 	raw, err := os.ReadFile(filepath.Join(outDir, "responses.json"))
 	if err != nil {
@@ -1231,9 +1231,9 @@ func TestDemoExportKeepsSeriesAndDayGridsIntact(t *testing.T) {
 // The exported response must never carry an error, because an error captured at
 // export time would be served to every visitor as if it were data.
 func TestDemoExportCasesAllSucceed(t *testing.T) {
-	outDir := strings.TrimSpace(os.Getenv("OMCPA_DEMO_EXPORT_DIR"))
+	outDir := strings.TrimSpace(os.Getenv("SHELLPAMC_DEMO_EXPORT_DIR"))
 	if outDir == "" {
-		t.Skip("set OMCPA_DEMO_EXPORT_DIR to check the exported dataset")
+		t.Skip("set SHELLPAMC_DEMO_EXPORT_DIR to check the exported dataset")
 	}
 	raw, err := os.ReadFile(filepath.Join(outDir, "responses.json"))
 	if err != nil {
