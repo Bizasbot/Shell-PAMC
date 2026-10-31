@@ -1,75 +1,75 @@
-# ADR 0072: Canvases run in a sandboxed frame
+# ADR 0072: Los lienzos se ejecutan en un marco aislado (sandboxed)
 
-- Status: Accepted
-- Amended by
+- Estado: Aceptado
+- Enmendado por
   [ADR 0073](0073-charts-and-tables-are-canvases-and-a-command-can-hold-an-answer-to-one.md),
-  which names this tool `render_ui` and retires `render_canvas` to stored traces, and by
-  [ADR 0083](0083-agent-runs-retain-the-work-the-task-needs.md), which removes the
-  display-count ceiling below.
-- Date: 2026-10-08
-- Extends [ADR 0042](0042-display-tools-draw-referenced-frozen-data.md) and
+  que nombra a esta herramienta `render_ui` y retira `render_canvas` hacia los rastros almacenados, y por
+  [ADR 0083](0083-agent-runs-retain-the-work-the-task-needs.md), que elimina el
+  límite en el recuento de visualizaciones que se indica más abajo.
+- Fecha: 2026-10-08
+- Extiende [ADR 0042](0042-display-tools-draw-referenced-frozen-data.md) y
   [ADR 0079](0079-panels-are-a-block-vocabulary-with-open-icons.md): `render_canvas`
-  is the fourth display tool, for what the other three cannot express.
+  es la cuarta herramienta de visualización, para aquello que las otras tres no pueden expresar.
 
-## Context
+## Contexto
 
-A closed vocabulary cannot draw everything worth drawing: a routing diagram, a
-timeline with its own geometry, an interactive explanation. For those the model has
-to write markup. Markup written by a model is untrusted in the strongest sense - the
-model reads capability results, and provider notes, key aliases and model names are
-strings other parties control - so it cannot become part of the console's document,
-where it would hold the operator's session.
+Un vocabulario cerrado no puede dibujar todo lo que vale la pena dibujar: un diagrama de enrutamiento, una
+línea de tiempo con su propia geometría, una explicación interactiva. Para eso, el modelo tiene
+que escribir marcado. El marcado escrito por un modelo no es de confianza en el sentido más estricto: el
+modelo lee los resultados de las capacidades y las notas de los proveedores; los alias de claves y los nombres de modelos
+son cadenas que otras partes controlan, por lo que no puede formar parte del documento de la consola,
+donde comprometería la sesión del operador.
 
-## Decision
+## Decisión
 
-`render_canvas` takes a title, a body of HTML with inline style and script (at most
-48 KiB), and optionally `source {call_id, path}` with `fields`, resolved and frozen
-exactly as a chart's rows are. A turn draws at most two.
+`render_canvas` toma un título, un cuerpo de HTML con estilos y scripts en línea (de como
+máximo 48 KiB) y opcionalmente `source {call_id, path}` con `fields`, resueltos y congelados
+exactamente igual que las filas de un gráfico. Un turno dibuja como máximo dos.
 
-The console never interprets the markup. It builds a separate document around it and
-shows that document in a frame, with three independent boundaries:
+La consola nunca interpreta el marcado. Construye un documento separado a su alrededor y
+muestra ese documento en un marco (frame), con tres límites independientes:
 
-1. **No origin.** The frame is `sandbox="allow-scripts"` and nothing else. Its
-   document has an opaque origin: no cookies, no storage, no access to the console's
-   DOM, no forms, popups, downloads or top-level navigation.
-2. **No network.** The document's first element is a content security policy of
-   `default-src 'none'` with only inline script and style and `data:` images and
-   fonts allowed. It is stated before any of the model's markup is parsed, and a
-   later policy can only narrow it.
-3. **No way out by navigation.** A sandboxed frame may still navigate itself, and
-   neither of the above stops that: a canvas could carry its data away in a URL. The
-   console's own document therefore declares `frame-src 'self' blob:`, which the
-   browser applies to every navigation of a nested frame. This was measured rather
-   than assumed: without it a sandboxed `srcdoc` frame reached another host by
-   assigning `location.href`; with it the navigation is refused.
+1. **Sin origen.** El marco es `sandbox="allow-scripts"` y nada más. Su
+   documento tiene un origen opaco: sin cookies, sin almacenamiento, sin acceso al DOM
+   de la consola, sin formularios, ventanas emergentes (popups), descargas o navegación de nivel superior.
+2. **Sin red.** El primer elemento del documento es una política de seguridad de contenido (CSP)
+   de `default-src 'none'`, permitiendo únicamente scripts y estilos en línea, e imágenes y
+   fuentes de tipo `data:`. Se declara antes de que se analice cualquier parte del marcado del modelo, y una
+   política posterior solo puede restringirla.
+3. **Sin vía de escape mediante navegación.** Un marco aislado (sandboxed) aún puede navegar por sí mismo, y
+   ninguna de las medidas anteriores detiene eso: un lienzo podría llevarse sus datos en una URL. Por lo tanto,
+   el propio documento de la consola declara `frame-src 'self' blob:`, lo cual el
+   navegador aplica a cada navegación de un marco anidado. Esto se midió en lugar
+   de asumirlo: sin ello, un marco `srcdoc` aislado alcanzaba otro host al
+   asignar `location.href`; con ello, se rechaza la navegación.
 
-The canvas is given two things. The theme, as the console's CSS variables with their
-resolved values, so markup coloured with `var(--accent)` looks like the console and
-is rebuilt when the theme changes. And its rows, as `window.OMC_DATA`, serialised so
-that no row can end the script element they sit in.
+Al lienzo se le proporcionan dos cosas. El tema, en forma de variables CSS de la consola con sus
+valores resueltos, de modo que el marcado coloreado con `var(--accent)` se vea como la consola
+y se reconstruya cuando cambia el tema. Y sus filas, como `window.OMC_DATA`, serializadas de
+tal forma que ninguna fila pueda cerrar el elemento de script en el que se encuentran.
 
-The frame reports its content height with `postMessage`. The console accepts a report
-only from the frame's own window, only when it is a finite number, and clamps it.
+El marco informa su altura de contenido mediante `postMessage`. La consola acepta un reporte
+únicamente de la propia ventana del marco, solo cuando es un número finito, y lo acota (clamp).
 
-The frame is a `srcdoc` document, not a route. A dedicated endpoint with a `sandbox`
-response header (the custom icon precedent) was considered: it would need a stored
-conversation to serve from, so it could not draw a canvas that is still streaming,
-and it would add a route to the facade, the demonstration and the saved HTML page,
-all of which the `srcdoc` form serves with one builder
+El marco es un documento `srcdoc`, no una ruta. Se consideró un punto final dedicado con una
+cabecera de respuesta `sandbox` (el precedente del icono personalizado): habría necesitado una
+conversación almacenada desde la cual servir, por lo que no habría podido dibujar un lienzo que todavía está transmitiendo (streaming),
+y habría añadido una ruta a la fachada, a la demostración y a la página HTML guardada,
+las cuales el formato `srcdoc` sirve con un único constructor
 (`web/src/agent/canvasDocument.ts`).
 
-## Consequences
+## Consecuencias
 
-- The markup is stored as written and not sanitised. Safety does not depend on
-  recognising what is dangerous in it, which nothing could do reliably.
-- `frame-src 'self' blob:` now applies to the whole console. Plugin pages are framed
-  from this origin and are unaffected; a future feature that frames another origin
-  has to revisit this policy, deliberately.
-- The console's own font is not available inside a canvas (it cannot load one), so a
-  canvas is set in the system monospace face.
-- A saved HTML page embeds each canvas in the same sandbox, and its own policy has no
-  `frame-src` allowance at all. A PNG, and print, show a note in its place: a script
-  cannot run in a picture.
-- The model pays for a canvas in tokens on every later round of the turn, since the
-  markup is part of the stored tool call. The size and count limits bound that, and
-  the request budget elides it like any other old tool exchange.
+- El marcado se almacena tal como fue escrito y no se sanitiza. La seguridad no depende de
+  reconocer qué hay de peligroso en él, algo que nada podría hacer de forma fiable.
+- `frame-src 'self' blob:` se aplica ahora a toda la consola. Las páginas de plugins se enmarcan
+  desde este origen y no se ven afectadas; una característica futura que enmarque otro origen
+  debe revisar esta política de manera deliberada.
+- La fuente propia de la consola no está disponible dentro de un lienzo (no puede cargar una), por lo que un
+  lienzo se renderiza con la tipografía monoespaciada del sistema.
+- Una página HTML guardada incrusta cada lienzo en el mismo sandbox, y su propia política no tiene
+  ninguna concesión `frame-src`. Una imagen PNG, así como la impresión, muestran una nota en su lugar: un
+  script no puede ejecutarse dentro de una imagen.
+- El modelo paga por un lienzo en tokens en cada ronda posterior del turno, ya que el
+  marcado forma parte de la llamada a herramienta almacenada. Los límites de tamaño y cantidad acotan eso,
+  y el presupuesto de solicitudes lo omite al igual que cualquier otro intercambio de herramientas antiguo.

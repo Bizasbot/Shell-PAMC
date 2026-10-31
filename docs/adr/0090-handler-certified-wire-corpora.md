@@ -1,29 +1,12 @@
-# ADR 0090: Handler-certified wire corpora
+# ADR 0090: Korpora de red certificados por el manejador (Handler-certified wire corpora)
 
-- Status: Accepted
-- Date: 2026-10-09
+- Estado: Aceptado
+- Fecha: 2026-10-09
 
-Use a small reviewed wire corpus for critical API parity, independently asserted
-against real Go handlers/authentication/SQLite, the actual typed frontend client,
-and the default Browser Mock dispatcher. Preferences is the first pilot: raw JSON
-and client-owned enums make a broad generated schema a poor replacement for actual
-status, null, readback, allowlist and non-UTC metadata behavior. Shared examples
-reduce repeated expected-response maintenance without treating a mock or generated
-response as the server oracle.
+Utilizar un pequeño corpus de red revisado para la paridad crítica de la API, verificado de manera independiente contra manejadores reales de Go/autenticación/SQLite, el cliente frontend tipado real y el despachador predeterminado de Browser Mock. Preferences es el primer piloto: el JSON sin procesar y los enums propiedad del cliente hacen que un esquema generado amplio sea un reemplazo pobre para el comportamiento real de estado, valores nulos, lectura (*readback*), listas blancas (*allowlist*) y metadatos que no estén en UTC. Los ejemplos compartidos reducen el mantenimiento repetido de respuestas esperadas sin tratar una respuesta simulada (*mock*) o generada como el oráculo del servidor.
 
-Move frontend integration suites/setup to `web/tests`, outside the production import
-graph but inside type checking and automatic discovery. This supersedes only the
-`web/src` test-location choice in ADR 0089: test-only fixture edges must not silently
-widen product impact, and a production import of a test remains unresolved and
-fail-closed in the product graph.
+Mover los conjuntos de pruebas/configuración de integración del frontend a `web/tests`, fuera del grafo de importación de producción pero dentro de la verificación de tipos y el descubrimiento automático. Esto reemplaza únicamente la elección de la ubicación de las pruebas en `web/src` descrita en el ADR 0089: los bordes de fixtures exclusivos para pruebas no deben ampliar silenciosamente el impacto en el producto, y una importación en producción de una prueba sigue sin resolverse y falla de forma estricta (*fail-closed*) en el grafo del producto.
 
-Reuse the existing frontend integration runner for `*.contract.test.ts` under
-Vitest's Node environment; pure decisions stay in node:test, rendered claims stay
-in jsdom, and engine/cross-stack claims stay in Chromium. The fixture is per-context
-and intentionally bounded: it is not another repository, authorization layer or
-complete IANA validator. Unsupported fixture methods remain harness faults.
-Corpus/fixture edits must select all independent consumers; full CI retains complete
-discovery. This decision does not change any public API or production runtime.
+Reutilizar el ejecutor de integración del frontend existente para `*.contract.test.ts` bajo el entorno Node de Vitest; las decisiones puras se quedan en `node:test`, las afirmaciones renderizadas se quedan en `jsdom`, y las afirmaciones de motor/pila cruzada se quedan en Chromium. El fixture es por contexto y está intencionalmente acotado: no es otro repositorio, capa de autorización o validador IANA completo. Los métodos de fixture no soportados siguen siendo fallos del arnés. Las modificaciones al corpus/fixture deben seleccionar a todos los consumidores independientes; la CI completa conserva el descubrimiento completo. Esta decisión no altera ninguna API pública ni el tiempo de ejecución en producción.
 
-Case ownership, negative mutations, measurements and remaining coverage are recorded
-in `docs/plans/architecture-governance.md`; commands live in `docs/testing.md`.
+La propiedad de los casos, las mutaciones negativas, las mediciones y la cobertura restante se registran en `docs/plans/architecture-governance.md`; los comandos se encuentran en `docs/testing.md`.

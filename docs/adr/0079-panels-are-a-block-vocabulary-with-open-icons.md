@@ -1,88 +1,89 @@
-# ADR 0079: Panels are a block vocabulary with open icons
+# ADR 0079: Los paneles son un vocabulario de bloques con iconos abiertos
 
-- Status: Accepted
-- Superseded for new calls by
+- Estado: Aceptado
+- Reemplazado para nuevas llamadas por
   [ADR 0073](0073-charts-and-tables-are-canvases-and-a-command-can-hold-an-answer-to-one.md),
-  [ADR 0085](0085-a-generated-ui-is-composed-from-components-and-drawn-as-it-is-written.md) and
-  [ADR 0087](0087-new-generated-interfaces-default-to-inline-components.md): `render_view` is
-  retired to the stored traces that already name it, and the block vocabulary below is what those
-  stored panels are drawn from. A new display is one `render_ui` call.
-- Date: 2026-10-08
-- Extends [ADR 0042](0042-display-tools-draw-referenced-frozen-data.md): `render_view` was a third
-  display tool. Charts and tables keep referencing their rows exactly as ADR 0042
-  decided; nothing there changes.
+  [ADR 0085](0085-a-generated-ui-is-composed-from-components-and-drawn-as-it-is-written.md) y
+  [ADR 0087](0087-new-generated-interfaces-default-to-inline-components.md): `render_view` se
+  retira hacia los seguimientos almacenados que ya lo nombran, y el vocabulario de bloques a
+  continuación es de donde se extraen esos paneles almacenados. Una nueva visualización es una
+  única llamada a `render_ui`.
+- Fecha: 2026-10-08
+- Extiende [ADR 0042](0042-display-tools-draw-referenced-frozen-data.md): `render_view` era una tercera
+  herramienta de visualización. Los gráficos y las tablas siguen haciendo referencia a sus filas exactamente
+  como decidió el ADR 0042; nada cambia en ese aspecto.
 
-## Context
+## Contexto
 
-The Agent could show data in two ways: a chart of one of five types, or a table.
-Anything else it had to say in Markdown, where HTML is escaped and images are links.
-An answer such as "three figures that matter, one credential that needs attention,
-and the page to open next" has a natural shape, and the model had no way to give it
-one. The icons on the page were the console's own decoration; the model had no icon
-channel at all.
+El Agente podía mostrar datos de dos maneras: un gráfico de uno de cinco tipos, o una tabla.
+Cualquier otra cosa tenía que decirla en Markdown, donde el HTML se escapa y las imágenes son enlaces.
+Una respuesta como "tres cifras que importan, una credencial que requiere atención
+y la página que se debe abrir a continuación" tiene una forma natural, y el modelo no tenía forma de
+otorgársela. Los iconos en la página eran la decoración propia de la consola; el modelo no tenía
+ningún canal para iconos en absoluto.
 
-Two ways of opening this up were considered and rejected as the first answer:
+Se consideraron dos formas de abordar esto y se rechazaron como la primera respuesta:
 
-- **Let the model write markup.** Flexible, but every answer then looks like its
-  author rather than like the console, follows no theme, and has to be isolated from
-  the page. That is a real need for a small class of visuals and is ADR 0072; it is
-  the wrong default for a summary.
-- **Adopt a generative-UI component library.** The vocabulary and its validation
-  would belong to the library, its props would arrive unchecked from the model, and
-  none of the candidates draws from OMC's tokens without a second styling system.
+- **Permitir que el modelo escriba marcado (markup).** Flexible, pero cada respuesta parece entonces la
+  de su autor en lugar de la de la consola, no sigue ningún tema y debe aislarse de
+  la página. Esa es una necesidad real para una clase pequeña de elementos visuales y constituye el ADR 0072; es
+  la opción predeterminada incorrecta para un resumen.
+- **Adoptar una biblioteca de componentes de interfaz generativa.** El vocabulario y su validación
+  pertenecerían a la biblioteca, sus propiedades llegarían sin verificar desde el modelo, y
+  ninguno de los candidatos utiliza los tokens de OMC sin un segundo sistema de estilos.
 
-## Decision
+## Decisión
 
-`render_view` takes a title and one to eight **blocks**, drawn top to bottom as a
-**panel**. The vocabulary is closed and small:
+`render_view` toma un título y de uno a ocho **bloques**, dibujados de arriba a abajo como un
+**panel**. El vocabulario es cerrado y pequeño:
 
-| Block | What it says |
+| Bloque | Qué expresa |
 | --- | --- |
-| `stats` | Headline figures: label, value, optional change, tone and icon |
-| `fields` | The facts of one thing, as labels and values |
-| `callout` | One highlighted message, toned info, success, warning or danger |
-| `steps` | Ordered stages, each done, active, pending or failed |
-| `meters` | Shares of a limit, as a filled fraction with an optional tone |
-| `links` | Console pages to open next |
+| `stats` | Cifras principales: etiqueta, valor, cambio opcional, tono e icono |
+| `fields` | Los hechos de un elemento, como etiquetas y valores |
+| `callout` | Un mensaje destacado, con tono de información, éxito, advertencia o peligro |
+| `steps` | Etapas ordenadas, cada una completada, activa, pendiente o fallida |
+| `meters` | Porciones de un límite, como una fracción rellenada con un tono opcional |
+| `links` | Páginas de la consola para abrir a continuación |
 
-The model chooses blocks and writes their text. The console decides every pixel: a
-block is drawn from the same tokens as the rest of the workspace, so a panel follows
-a theme switch, reads at any width, and exports like the rest of the conversation.
+El modelo elige los bloques y escribe su texto. La consola decide cada píxel: un
+bloque se dibuja a partir de los mismos tokens que el resto del espacio de trabajo, por lo que un panel sigue
+un cambio de tema, se lee a cualquier ancho y se exporta como el resto de la conversación.
 
-**One shape for every block.** All block types share one JSON shape (`type`, `title`,
-`tone`, `text`, `items`), and all items share another. The schema the model is sent
-on every round is therefore a few hundred bytes however many block types exist. Which
-fields a type reads is enforced in `resolveView`; a field a type does not read is
-dropped, not stored, and an unknown field is refused.
+**Una sola forma para cada bloque.** Todos los tipos de bloques comparten una única estructura JSON (`type`, `title`,
+`tone`, `text`, `items`), y todos los elementos comparten otra. El esquema que se envía al modelo
+en cada ronda ocupa, por tanto, unos pocos cientos de bytes sin importar cuántos tipos de bloques existan. Qué
+campos lee un tipo se aplica en `resolveView`; un campo que un tipo no lee se descarta,
+no se almacena, y se rechaza cualquier campo desconocido.
 
-**Icons are open, and can never fail a view.** An item's `icon` is any Lucide name,
-or `brand:<maker>` for a maker's mark. The server checks only its length and
-character set. The console resolves it - tolerating the spellings models produce,
-and following a retired Lucide name to its replacement - and draws a neutral mark for
-a name nothing answers to. The Lucide set is one generated JSON document
-(`web/src/generated/lucideIcons.json`, written by `pnpm icons:generate` and pinned to
-the installed package by a self-test), loaded the first time a panel shows an icon:
-importing the set as components would put two thousand modules in the startup graph,
-and importing each on demand would embed two thousand chunks in the binary.
+**Los iconos son abiertos y nunca pueden hacer que una vista falle.** El `icon` de un elemento es cualquier nombre de Lucide,
+o `brand:<maker>` para la marca de un creador. El servidor solo verifica su longitud y
+conjunto de caracteres. La consola lo resuelve —tolerando las grafías que producen los modelos
+y mapeando un nombre de Lucide retirado a su reemplazo— y dibuja una marca neutral para
+un nombre que no coincida con nada. El conjunto de Lucide es un documento JSON generado
+(`web/src/generated/lucideIcons.json`, escrito por `pnpm icons:generate` y fijado al
+paquete instalado mediante una autoprueba), que se carga la primera vez que un panel muestra un icono:
+importar el conjunto como componentes pondría dos mil módulos en el gráfico de inicio,
+e importar cada uno bajo demanda incrustaría dos mil fragmentos en el binario.
 
-**Links name pages, never URLs.** A `links` item carries a `route` from a closed
-list of console pages. The console resolves it under its own base path, so a panel
-cannot lead outside the deployment.
+**Los enlaces nombran páginas, nunca URLs.** Un elemento de tipo `links` contiene una `route` procedente de una
+lista cerrada de páginas de la consola. La consola la resuelve bajo su propia ruta base, por lo que un panel
+no puede conducir fuera del despliegue.
 
-## Consequences
+## Consecuencias
 
-- **A panel's figures are the model's statements.** A chart or table shows rows the
-  server resolved from a capability result; a panel shows text the model wrote, the
-  same as the sentences beside it. This is deliberate - a headline figure is usually
-  derived (a total, a share, a formatted amount) and has no single cell to reference
-  - but it means a panel carries the model's accuracy, not the capability's. The
-  system prompt tells the model to copy figures exactly and name their window, and
-  data that must be the capability's own figures still belongs in a chart or a table.
-- The presentation rules no longer hold displays back until the operator asks for
-  one. They ask for the one display that fits best when structure is clearer than
-  sentences, and keep the earlier discipline: displays are final-answer artifacts,
-  never progress reports, and the smallest complementary set.
-- A new block type is a server validation branch, a console component, an export
-  branch and a line in the tool description. It costs nothing in schema bytes.
-- An exported HTML page inlines Lucide icons as SVG. Maker marks are files the page
-  cannot carry and are left out; links are kept as the names of the pages they led to.
+- **Las cifras de un panel son afirmaciones del modelo.** Un gráfico o tabla muestra filas que el
+  servidor resolvió a partir del resultado de una capacidad; un panel muestra texto que escribió el modelo,
+  de la misma manera que las oraciones que lo acompañan. Esto es deliberado —una cifra principal suele
+  ser derivada (un total, una proporción, una cantidad con formato) y no tiene una sola celda a la cual
+  hacer referencia—, pero significa que un panel transmite la precisión del modelo, no la de la
+  capacidad. El mensaje del sistema (system prompt) indica al modelo que copie las cifras exactamente y nombre su ventana, y
+  los datos que deban ser estrictamente las cifras de la capacidad siguen pertenecienddo a un gráfico o una tabla.
+- Las reglas de presentación ya no retienen las visualizaciones hasta que el operador solicita una.
+  Solicitan la única visualización que encaja mejor cuando la estructura es más clara que
+  las oraciones, y mantienen la disciplina anterior: las visualizaciones son artefactos de respuesta final,
+  nunca informes de progreso, y constituyen el conjunto complementario más pequeño.
+- Un nuevo tipo de bloque implica una rama de validación en el servidor, un componente de consola, una rama de exportación
+  y una línea en la descripción de la herramienta. No tiene costo en bytes de esquema.
+- Una página HTML exportada incrusta los iconos de Lucide como SVG. Las marcas de los creadores son archivos que
+  la página no puede transportar y se omiten; los enlaces se conservan como los nombres de las páginas a las que conducían.

@@ -1,48 +1,26 @@
-# ADR 0018: Credential-bearing reads are audited fail-closed, once per reveal
+# ADR 0018: Las lecturas que contienen credenciales se auditan con política de fallo cerrado (fail-closed), una vez por revelación
 
-- Status: Accepted
-- Date: 2026-09-20
+- Estado: Aceptado
+- Fecha: 2026-09-20
 
-## Context
+## Contexto
 
-The audit stream recorded every credential change but no credential read. The raw
-configuration source was already covered by `config.reveal_source`, and
-`/management/config` returns only `safe_yaml`, so neither is the remaining gap.
-The two list responses that can carry plaintext credentials are:
+El flujo de auditoría registraba cada cambio de credenciales, pero ninguna lectura de estas. La fuente de configuración sin procesar ya estaba cubierta por `config.reveal_source`, y `/management/config` devuelve únicamente `safe_yaml`, por lo que ninguna de estas dos opciones representa la brecha restante. Las dos respuestas de listado que pueden transportar credenciales en texto plano son:
 
-- `GET /management/api-keys?include_keys=true`, which the key page needs to join
-  aliases and usage against the key text; and
-- `GET /management/providers?include_keys=true`, which the provider editor needs
-  to edit upstream keys.
+- `GET /management/api-keys?include_keys=true`, que la página de claves necesita para asociar alias y uso con el texto de la clave; y
+- `GET /management/providers?include_keys=true`, que el editor de proveedores necesita para editar las claves de upstream.
 
-Without a read record, the audit log could not answer the incident question "who
-read the keys, and when". The decision is not mechanical because a failed audit
-write can make a read unavailable, and because these lists can be polled.
+Sin un registro de lectura, el registro de auditoría no podía responder a la pregunta ante un incidente sobre "quién leyó las claves y cuándo". La decisión no es trivial porque un fallo en la escritura de la auditoría puede hacer que una lectura no esté disponible, y porque estas listas pueden ser consultadas mediante sondeos (polling).
 
-## Decision
+## Decisión
 
-1. **Audit the response that actually carries credential material.** A masked
-   list is a metadata read and is not recorded. `include_keys=true` on the two
-   list endpoints is the audit boundary; the raw source continues to use
-   `config.reveal_source`.
-2. **Fail closed.** The audit record is written after the credentials have been
-   read but before the response is emitted. If the audit store is unhealthy, the
-   response is `500` and no credential is returned. This mirrors the repository's
-   existing rule for sensitive exports and raw-source reveals.
-3. **Record one event per reveal, not one per credential.** The event identifies
-   the list and carries counts (`key_count`, and `provider_count` where relevant),
-   so an audit review can see the scope without turning one page load into a row
-   per key. Masked polling stays outside the log.
-4. **Give each surface its own action and target.** Caller-key reads use
-   `api_key.reveal` with target `client_api_key/list`; provider-key reads use
-   `provider.reveal_keys` with target `provider/list`.
+1. **Auditar la respuesta que realmente transporta material de credenciales.** Un listado enmascarado es una lectura de metadatos y no se registra. `include_keys=true` en los dos endpoints de listado constituye el límite de auditoría; la fuente sin procesar continúa utilizando `config.reveal_source`.
+2. **Aplicar fallo cerrado (fail-closed).** El registro de auditoría se escribe después de que las credenciales han sido leídas, pero antes de que se emita la respuesta. Si el almacén de auditoría no está operativo, la respuesta es un `500` y no se devuelve ninguna credencial. Esto refleja la regla existente en el repositorio para exportaciones sensibles y revelaciones desde la fuente sin procesar.
+3. **Registrar un evento por revelación, no uno por credencial.** El evento identifica el listado e incluye recuentos (`key_count` y `provider_count` cuando corresponda), de modo que una revisión de auditoría pueda ver el alcance sin convertir la carga de una página en una fila por cada clave. El sondeo enmascarado permanece fuera del registro.
+4. **Asignar a cada superficie su propia acción y objetivo.** Las lecturas de claves de llamadas utilizan `api_key.reveal` con el objetivo `client_api_key/list`; las lecturas de claves de proveedores utilizan `provider.reveal_keys` con el objetivo `provider/list`.
 
-## Consequences
+## Consecuencias
 
-- The key and provider pages cannot load their editing state while the audit store
-  is unavailable. That availability loss is accepted for an explicit credential
-  reveal; the masked list remains usable while the audit store is unhealthy.
-- A page refresh or query refetch records another read. The log stays bounded by
-  the explicit opt-in and by one record per response, not by one record per key.
-- Audit details contain counts and list identities only. No credential value,
-  key fingerprint or other secret-bearing material is copied into the audit row.
+- Las páginas de claves y proveedores no pueden cargar su estado de edición mientras el almacén de auditoría no esté disponible. Dicha pérdida de disponibilidad se acepta para una revelación explícita de credenciales; el listado enmascarado sigue estando operativo mientras el almacén de auditoría no funcione correctamente.
+- Una actualización de página o una nueva consulta (refetch) registra una nueva lectura. El registro se mantiene acotado mediante la activación explícita (opt-in) y a razón de un registro por respuesta, en lugar de un registro por cada clave.
+- Los detalles de la auditoría contienen únicamente recuentos e identificidades de las listas. Ningún valor de credencial, huella digital (fingerprint) de clave u otro material que contenga secretos se copia en la fila de auditoría.

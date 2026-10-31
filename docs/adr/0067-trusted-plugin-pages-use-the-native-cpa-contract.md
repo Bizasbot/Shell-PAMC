@@ -1,73 +1,63 @@
-# ADR 0067: Trusted plugin pages use the native CPA management contract
+# ADR 0067: Las páginas de plugins de confianza usan el contrato nativo de gestión de CPA
 
-- Status: Accepted
-- Date: 2026-10-07
-- Supersedes ADR 0060's core-root refusal, credential replacement, v0-only management
-  scope and write-only auditing; retains its same-origin hosting and installation trust decision.
-- Ordinary DTO allowlists in ADR 0038 remain unchanged.
+- Estado: Aceptado
+- Fecha: 2026-10-07
+- Reemplaza: La negativa al directorio raíz del núcleo, el reemplazo de credenciales, el alcance de gestión exclusivo para v0 y la auditoría de solo escritura del ADR 0060; conserva su decisión de confianza de alojamiento y origen cruzado (same-origin).
+- Las listas blancas de DTO ordinarias en el ADR 0038 permanecen sin cambios.
 
-## Context
+## Contexto
 
-Issue #151 exposed a protocol mismatch rather than a plugin-specific missing feature.
-Native pages can read effective configuration, v8 provider groups and the gateway model
-directory before calling namespaced plugin state and credential synchronization routes.
-The old first-segment denylist refused both native config reads and `/plugins/<id>/state`.
-Replacing explicit page credentials with the stored server key also made an invalid plugin
-login input appear accepted. Runtime rebasing did not cover v8 management or models.
+El issue #151 expuso un desajuste de protocolo en lugar de una funcionalidad faltante específica del plugin.
+Las páginas nativas pueden leer la configuración efectiva, los grupos de proveedores v8 y el directorio
+de modelos del gateway antes de llamar a las rutas con espacios de nombres para el estado del plugin y la sincronización de credenciales.
+La antigua lista negra del primer segmento rechazaba tanto las lecturas de configuración nativas como `/plugins/<id>/state`.
+Reemplazar las credenciales explícitas de la página con la clave de servidor almacenada también hizo que una entrada de inicio de sesión de plugin inválida pareciera aceptada. El rebasamiento en tiempo de ejecución (runtime rebasing) no cubría la gestión v8 ni los modelos.
 
-Masked configuration is not equivalent to native configuration for pages that derive
-credential identities from key, proxy, prefix and header material. The operator approved
-opening this trusted-plugin boundary in Issue #151. Installing a plugin already allows
-its code to execute with CPA's secrets, and its same-origin page has the operator's session.
+La configuración enmascarada no es equivalente a la configuración nativa para las páginas que derivan
+identidades de credenciales a partir de material de claves, proxy, prefijos y cabeceras. El operador aprobó
+abrir este límite de plugins de confianza en el issue #151. Instalar un plugin ya permite
+que su código se ejecute con los secretos de CPA, y su página con el mismo origen (same-origin) cuenta con la sesión del operador.
 
-## Decision
+## Decisión
 
-Keep the session-protected host at `<base>/api/v1/plugin-host/` and allow only this
-instance's fixed-origin surfaces:
+Mantener el host protegido por sesión en `<base>/api/v1/plugin-host/` y permitir únicamente las
+superficies de origen fijo de esta instancia:
 
-- Plugin resources under `/v0/resource/plugins/<id>/`, without credentials.
-- Native `/v0/management/*` and `/v8/management/*` with GET, HEAD, POST, PUT, PATCH and DELETE.
-- Only GET `/v1/models`, with caller client Authorization and no server-key fallback.
+- Recursos de complemento (plugin) bajo `/v0/resource/plugins/<id>/`, sin credenciales.
+- Rutas nativas `/v0/management/*` y `/v8/management/*` con GET, HEAD, POST, PUT, PATCH y DELETE.
+- Solo GET `/v1/models`, con el Authorization del cliente llamante y sin respaldo de clave de servidor (server-key fallback).
 
-Deny the arbitrary outbound `/v0/management/api-call` and
-`/v8/management/requests/api-call` bridges and their descendants. Reject unclean paths,
-traversal, backslashes and controls. Do not accept target URLs. Redirects are not followed;
-cookies and Set-Cookie never cross, and content headers remain allowlisted.
+Denegar los puentes salientes arbitrarios `/v0/management/api-call` y
+`/v8/management/requests/api-call` y sus descendientes. Rechazar rutas impuras,
+recorridos de directorios (traversal), barras invertidas y caracteres de control. No aceptar URLs de destino. Las redirecciones no se siguen;
+las cookies y Set-Cookie nunca se cruzan, y las cabeceras de contenido se mantienen en lista blanca.
 
-Preserve explicit Authorization and X-Management-Key on management calls, even empty
-headers, so CPA authenticates the caller's chosen key. Inject the stored management key
-only when neither header was supplied. Never place that server key in page resources,
-browser storage or the model directory. A plugin may separately ask the operator for a key.
+Preservar los encabezados Authorization y X-Management-Key explícitos en las llamadas de gestión, incluso si están vacíos, para que CPA autentique la clave elegida por el llamante. Inyectar la clave de gestión almacenada solo cuando no se haya proporcionado ninguna cabecera. Nunca colocar dicha clave de servidor en recursos de página, almacenamiento del navegador o en el directorio de modelos. Un plugin puede solicitar por separado una clave al operador.
 
-Native API responses are unprojected and may contain configuration secrets. Record every
-API read and write as `plugin.route_call` attempt and outcome, retaining only fixed surface,
-method and status. Do not record caller suffixes, queries, bodies, credentials or transport
-error strings. Failed attempt auditing aborts upstream execution; failed read-outcome
-auditing withholds the body. Preserve the success of an already-landed write when outcome
-auditing fails. Force API responses to `Cache-Control: no-store`.
+Las respuestas de la API nativa no están proyectadas y pueden contener secretos de configuración. Registrar cada
+intento y resultado de lectura y escritura de la API como `plugin.route_call`, conservando únicamente la superficie fija,
+el método y el estado. No registrar sufijos de llamadas, consultas, cuerpos, credenciales ni cadenas de errores de transporte. Los intentos fallidos de auditoría anulan la ejecución ascendente; los resultados de lectura fallidos de la auditoría retienen el cuerpo. Preservar el éxito de una escritura que ya se haya completado si falla la auditoría de resultados. Forzar las respuestas de la API a `Cache-Control: no-store`.
 
-Native writes join the existing process-wide provider/config write gate. Authenticate the
-caller against the fixed version read before creating an encrypted pre-write config copy;
-backup failure blocks mutation. All v8 writes and core v0 writes are conservatively gated,
-including plugin config/enabled/quota/store operations. Ordinary deep plugin actions such
-as credential synchronization retain plugin-owned execution without the config gate.
-Successful native writes invalidate the existing configuration-derived caches. Do not add
-OMC revision fields to CPA's wire contract: native writes retain native last-write semantics.
+Las escrituras nativas se unen a la puerta de escritura de configuración/proveedores existente a nivel de proceso. Autenticar al
+llamante frente a la versión fija leída antes de crear una copia de configuración preescritura cifrada;
+el fallo de la copia de seguridad bloquea la mutación. Todas las escrituras v8 y las escrituras v0 del núcleo están controladas de forma conservadora,
+incluyendo las operaciones de configuración, estado, cuota y almacenamiento del plugin. Las acciones profundas ordinarias del plugin, como
+la sincronización de credenciales, conservan la ejecución propiedad del plugin sin la puerta de configuración.
+Las escrituras nativas exitosas invalidan las cachés existentes derivadas de la configuración. No añadir
+campos de revisión de OMC al contrato de red (wire contract) de CPA: las escrituras nativas conservan la semántica nativa de última escritura.
 
-Rebase HTML/CSS/JavaScript and same-origin fetch, Request, XHR and EventSource requests
-for all three API surfaces. Leave external origins and already-hosted URLs unchanged.
-Demo refuses the whole host; Agent/MCP tools remain the sanitized declared capabilities.
+Rebasar solicitudes HTML/CSS/JavaScript y peticiones same-origin de fetch, Request, XHR y EventSource
+para las tres superficies de API. Dejar los origenes externos y las URLs ya alojadas sin cambios.
+Demo rechaza todo el host; las herramientas de Agent/MCP siguen siendo las capacidades declaradas desinfectadas.
 
-## Consequences and trade-offs
+## Consecuencias y compensaciones (trade-offs)
 
-A trusted plugin page can now read raw configuration including client/provider secrets.
-This is an intentional documented administrative boundary, not an ordinary DTO relaxation.
-Audit availability is required even for native reads. Conservative native-write backup
-classification may snapshot operational writes that do not ultimately save config; existing
-deduplication avoids duplicate copies. Generic deep plugin mutations remain plugin-owned.
+Una página de plugin de confianza ahora puede leer la configuración sin procesar, incluidos los secretos de clientes/proveedores.
+Este es un límite administrativo documentado e intencional, no una relajación ordinaria de DTO.
+La disponibilidad de auditoría es obligatoria incluso para las lecturas nativas. La clasificación conservadora de copias de seguridad de escrituras nativas puede generar capturas instantáneas de escrituras operativas que finalmente no guardan la configuración; la deduplicación existente evita copias duplicadas. Las mutaciones profundas genéricas de los plugins siguen siendo propiedad del plugin.
 
-The host provides protocol compatibility, not arbitrary inference, WebSocket transport or
-an external URL proxy. EventSource paths are rebased but upstream bodies remain bounded
-and buffered; this does not promise indefinite streaming. Plugin behavior and its own
-storage policy remain the plugin author's responsibility. Built generic startup tests and
-isolated real-plugin smoke complement, rather than replace, each other.
+El host proporciona compatibilidad de protocolo, no inferencia arbitraria, transporte WebSocket o
+un proxy de URL externo. Las rutas EventSource se rebasan pero los cuerpos ascendentes permanecen acotados
+y almacenados en búfer; esto no promete streaming indefinido. El comportamiento del plugin y su propia política
+de almacenamiento siguen siendo responsabilidad del autor del plugin. Las pruebas de inicio genéricas integradas y el
+humo de un plugin real aislado se complementan en lugar de reemplazarse mutuamente.

@@ -1,24 +1,24 @@
-# ADR 0031: Provider membership travels with the pricing catalog
+# ADR 0031: La pertenencia a un proveedor viaja con el catálogo de precios
 
-- Status: Accepted; ADR 0101 proposes channel-specific custom price overrides.
-- Date: 2026-09-28
+- Estado: Aceptado; el ADR 0101 propone anulaciones de precios personalizadas específicas de cada canal.
+- Fecha: 2026-09-28
 
-## Context
+## Contexto
 
-The Cost & Usage workbench must group models by the configured AI and OAuth providers operators manage. An OpenRouter author is a model maker, not necessarily the provider serving that model. Models may be available through several providers. Live per-credential discovery when the page opens would add network fanout and let partially failed reads misrepresent membership.
+El banco de trabajo de Costes y Uso (Cost & Usage workbench) debe agrupar los modelos según los proveedores de IA y OAuth configurados que gestionan los operadores. Un autor de OpenRouter es un creador de modelos, no necesariamente el proveedor que ofrece dicho modelo. Los modelos pueden estar disponibles a través de varios proveedores. El descubrimiento en directo por credencial al abrir la página añadiría dispersión de red (*network fanout*) y permitiría que lecturas parcialmente fallidas tergiversaran la pertenencia.
 
-## Decision
+## Decisión
 
-Collect non-secret provider membership during the same complete CPA discovery sweep that resolves model aliases. Publish it atomically with the authoritative model catalog in `pricing_catalog_state.providers_json` through additive migration 029. A failed sweep retains the complete preceding snapshot. Read-time projections reuse management display-name/icon overlays and the console's existing provider defaults and plugin-owned logos.
+Recopilar la pertenencia a proveedores (no secretos) durante el mismo barrido completo de descubrimiento de CPA que resuelve los alias de los modelos. Publicarlo de forma atómica con el catálogo de modelos autoritativo en `pricing_catalog_state.providers_json` mediante la migración aditiva 029. Un barrido fallido conserva la instantánea anterior completa. Las proyecciones en tiempo de lectura reutilizan las capas de nombres para mostrar/iconos de gestión, así como los valores predeterminados de proveedores y los logotipos propiedad de los complementos existentes en la consola.
 
-API-key providers retain their management ids. Active OAuth credentials are grouped by provider, using the maximum credential priority for group ordering. A shared model appears under each configured provider but keeps one global price identity. Missing provenance is shown explicitly as unconfirmed instead of inferred from a model name. Conflicting alias targets remain valid catalog entries with an empty price target, which prevents automatic matching without blocking other models.
+Los proveedores basados en claves API conservan sus IDs de gestión. Las credenciales OAuth activas se agrupan por proveedor, utilizando la prioridad máxima de la credencial para el orden de los grupos. Un modelo compartido aparece bajo cada proveedor configurado pero mantiene una única identidad de precio global. La procedencia faltante se muestra explícitamente como no confirmada en lugar de inferirse a partir del nombre de un modelo. Los destinos de alias en conflicto siguen siendo entradas válidas del catálogo con un destino de precio vacío, lo que evita la coincidencia automática sin bloquear otros modelos.
 
-Provider groups sort by descending priority, then natural name and stable id. Within each group, model names sort naturally with case-insensitive primary ordering and uppercase-first case ties. One global page bounds all groups to 20 membership rows. Provider marks belong to group headings; model identity metadata retains an extension point for future model-directory ownership.
+Los grupos de proveedores se ordenan por prioridad descendente, seguida de nombre natural y ID estable. Dentro de cada grupo, los nombres de los modelos se ordenan de forma natural con un orden primario insensible a mayúsculas/minúsculas y empates resueltos dando prioridad a las mayúsculas. Una única página global limita todos los grupos a 20 filas de pertenencia. Las marcas de los proveedores pertenecen a los encabezados de los grupos; los metadatos de identidad del modelo conservan un punto de extensión para la futura propiedad del directorio de modelos.
 
-## Consequences
+## Consecuencias
 
-- Workbench reads stay local and survive CPA outages with the last complete snapshot.
-- Membership can lag configuration until reconciliation; no incomplete live snapshot replaces it.
-- The JSON snapshot adds no per-model price dimension and cannot rewrite historical costs.
-- The existing `pricing_list` capability can expose membership for its bounded page without credential reads or new write permissions.
-- Positional provider identities retain the same re-keying requirements as provider-management metadata.
+- Las lecturas del banco de trabajo se mantendrán locales y sobrevivirán a las interrupciones de CPA utilizando la última instantánea completa.
+- La pertenencia puede retrasarse respecto a la configuración hasta que se produzca la reconciliación; ninguna instantánea en directo incompleta la reemplazará.
+- La instantánea JSON no añade ninguna dimensión de precio por modelo y no puede reescribir los costes históricos.
+- La funcionalidad existente `pricing_list` puede exponer la pertenencia para su página delimitada sin lecturas de credenciales ni nuevos permisos de escritura.
+- Las identidades de proveedores posicionales conservan los mismos requisitos de cambio de clave (*re-keying*) que los metadatos de gestión de proveedores.

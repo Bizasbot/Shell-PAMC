@@ -1,29 +1,10 @@
-# ADR 0091: Bounded context scheduling for browser probes
+# ADR 0091: Planificación de contextos acotados para sondas de navegador
 
-- Status: Accepted
-- Date: 2026-10-09
+- Estado: Aceptado
+- Fecha: 2026-10-09
 
-Allow at most two scenario workers inside one owned Vite/Chromium batch. Each
-scenario retains its fresh context, fixture state, storage, cookies, fault ledger,
-120-second budget and bounded close. Keep separate local batches and built/browser/
-demo lanes sequential; keep the 480-second batch watchdog and complete hosted shard
-membership. A queue stops admission on shutdown and joins every admitted worker
-before shared teardown. Outcomes/failures are collated in catalog order, and the
-watchdog names every active scenario/step rather than one overwritten global label.
+Permitir como máximo dos trabajadores de escenarios dentro de un lote propio de Vite/Chromium. Cada escenario conserva su contexto fresco, estado de fixtures, almacenamiento, cookies, libro de fallos (fault ledger), presupuesto de 120 segundos y cierre acotado. Mantener los lotes locales separados y las vías (lanes) de compilación/navegador/demostración secuenciales; conservar el perro guardián (watchdog) de lotes de 480 segundos y la pertenencia completa a shards alojados. Una cola detiene la admisión al apagarse y se une (joins) a cada trabajador admitido antes del desmontaje compartido. Los resultados/fallos se recopilan en el orden del catálogo, y el perro guardián nombra cada escenario/paso activo en lugar de una etiqueta global sobrescrita.
 
-Four representative complex scenarios retain all 276 checks in paired serial/two-
-worker samples. Measured lower wall time with similar CPU comes at higher memory
-and longer individual scenario durations; this is scheduling efficiency, not less
-coverage or a faster product. Catalog entrypoints choose two workers and expose
-`--workers 1` for identical serial reproduction; `verify:full:serial` explicitly
-selects it. The core runner keeps its serial default for direct harness callers.
-Do not infer that more workers are safe or beneficial. Complete catalog/fault and
-hosted evidence, resource limits and measurement caveats belong in
-`docs/plans/architecture-governance.md`.
+Cuatro escenarios complejos representativos conservan las 276 comprobaciones en muestras emparejadas en serie / de dos trabajadores. El menor tiempo de pared medido con una CPU similar conlleva una mayor memoria y duraciones individuales de escenario más largas; esto es eficiencia de planificación, no menor cobertura ni un producto más rápido. Los puntos de entrada del catálogo eligen dos trabajadores y exponen `--workers 1` para una reproducción serial idéntica; `verify:full:serial` lo selecciona explícitamente. El ejecutor principal (core runner) mantiene su valor predeterminado serial para los llamadores directos del arnés (harness). No infiera que más trabajadores son seguros o beneficiosos. El catálogo completo/fallos y evidencia alojada, los límites de recursos y las advertencias de medición pertenecen a `docs/plans/architecture-governance.md`.
 
-Real-browser harness tests retain all runtime/method/unknown-route/outbound faults
-in both schedules and show a fault in one context cannot fail its healthy sibling.
-Queue tests pin bounded admission, exact-once coverage, serial order, peer joining
-and shutdown. Reusing an already verified dashboard landing between locale cases
-avoids redundant bootstrap navigation; all actual failure/reload/home, locale,
-geometry, keyboard, progress and error assertions remain engine-owned.
+Las pruebas del arnés de navegador real conservan todos los fallos de tiempo de ejecución / método / ruta desconocida / salientes en ambas planificaciones y muestran que un fallo en un contexto no puede hacer fallar a su hermano saludable. Las pruebas de cola fijan la admisión acotada, la cobertura exacta única (exact-once), el orden serial, la unión de pares y el apagado. La reutilización de una página de destino (landing) del panel ya verificada entre casos de localización evita la navegación de arranque redundante; todas las afirmaciones reales de fallo/recarga/inicio, localización, geometría, teclado, progreso y errores siguen siendo propiedad del motor.

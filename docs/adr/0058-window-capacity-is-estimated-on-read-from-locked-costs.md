@@ -1,66 +1,31 @@
-# ADR 0058: Window capacity is estimated on read from locked costs
+# ADR 0058: La capacidad de la ventana se estima al leer de los costos bloqueados
 
-- Status: Accepted
-- Date: 2026-10-05
+- Estado: Aceptado
+- Fecha: 2026-10-05
 
-## Context
+## Contexto
 
-A subscription credential reports how much of a quota window is used as a
-percentage, never as an amount. Operators want to know what a window is worth:
-how many dollars of API-priced traffic, or how many tokens, 100% of it buys.
-OMC already holds both halves of that answer. `internal/quota` normalizes each
-window's used share, reset instant and period, and `usage_events` records every
-request a credential served with a cost locked at request time.
+Una credencial de suscripción informa qué porcentaje de una ventana de cuota se utiliza, pero nunca en cantidad. Los operadores quieren saber el valor de una ventana: cuántos dólares de tráfico con precio de API, o cuántos tokens, compra el 100% de esta. OMC ya posee ambas Mitades de esa respuesta. `internal/quota` normaliza la parte utilizada, el instante de restablecimiento y el período de cada ventana, y `usage_events` registra cada solicitud atendida por una credencial con un costo bloqueado en el momento de la solicitud.
 
-Two existing tools derive the figure the same way, recorded usage divided by the
-used share, and differ in what they guard against. One computes it in the
-browser for a single provider window with no guard beyond a positive share. The
-other also computes it in the browser, re-prices history at current prices, and
-maintains a persisted lifecycle of window cycles (three tables and their
-transitions) to know where a cycle starts and whether it was reset early.
-Neither withholds an estimate at a low used share, where upstream's whole-point
-rounding dominates the result.
+Dos herramientas existentes derivan la cifra de la misma manera (el uso registrado dividido por la parte utilizada) y difieren en aquello de lo que se protegen. Una la calcula en el navegador para la ventana de un solo proveedor sin otra protección que una parte positiva. La otra también la calcula en el navegador, re-cotiza el historial a los precios actuales y mantiene un ciclo de vida persistente de los ciclos de ventana (tres tablas y sus transacciones) para saber dónde comienza un ciclo y si se restableció antes de tiempo. Ninguna de las dos retiene una estimación cuando el porcentaje de uso es bajo, donde el redondeo de puntos enteros del proveedor domina el resultado.
 
-## Decision
+## Decisión
 
-Estimate a window's capacity on the server, when a quota is read.
+Estimar la capacidad de una ventana en el servidor, cuando se lee una cuota.
 
-- **Arithmetic is pure and lives in `internal/quota`**; `internal/api` supplies
-  its inputs from `internal/repository`. The console, the agent capabilities and
-  the generated demonstration read one result.
-- **The usage range ends at the observation**, `[reset − period, observed_at)`.
-  The share and the usage then describe the same interval without a rule that
-  rejects an estimate whenever a request is newer than the reading.
-- **Cost is the sum of Request Cost Snapshots.** An estimate is not rewritten by
-  a later price change, and a cycle with more than 5% of its requests unpriced
-  gets a token estimate only.
-- **Nothing is persisted.** The fields are joined after a snapshot is stored and
-  never enter `quota_snapshots`, so usage ingested after an observation is
-  counted on the next read and no migration is needed.
-- **A mid-cycle reset is read from the snapshots a credential already keeps**:
-  an earlier reading inside the same cycle that is higher than the current one
-  withholds the estimate. No cycle lifecycle is stored.
-- **An estimate is withheld below a 5% used share**, and every estimate carries
-  the relative error that half a percentage point puts on it.
-- **Scope is the windows every request draws on**: Codex and Claude 5-hour and
-  weekly. Model- and feature-scoped windows are excluded until usage can be
-  matched to their scope.
+- **La aritmética es pura y reside en `internal/quota`**; `internal/api` suministra sus entradas desde `internal/repository`. La consola, las capacidades del agente y la demostración generada leen un único resultado.
+- **El rango de uso termina en la observación**, `[reset − period, observed_at)`. La parte utilizada y el uso describen entonces el mismo intervalo sin una regla que rechace una estimación cada vez que una solicitud sea más reciente que la lectura.
+- **El costo es la suma de las instantáneas de costo de solicitud (Request Cost Snapshots).** Una estimación no se reescribe por un cambio de precio posterior, y un ciclo con más del 5% de sus solicitudes sin precio obtiene únicamente una estimación de tokens.
+- **No se persiste nada.** Los campos se unen después de almacenar una instantánea y nunca entran en `quota_snapshots`, por lo que el uso ingerido después de una observación se cuenta en la siguiente lectura y no se necesita migración.
+- **Un restablecimiento a mitad de ciclo se lee de las instantáneas que una credencial ya conserva**: una lectura anterior dentro del mismo ciclo que sea mayor que la actual retiene la estimación. No se almacena ningún ciclo de vida.
+- **Se retiene una estimación por debajo del 5% de uso**, y cada estimación incluye el error relativo que medio punto porcentual le imprime.
+- **El alcance son las ventanas de las que depende cada solicitud**: Codex y Claude de 5 horas y semanales. Las ventanas con alcance de modelo y de características quedan excluidas hasta que el uso pueda coincidir con su alcance.
 
-## Consequences
+## Consecuencias
 
-- The figure is honest about its precision and absent when it would mislead, at
-  the cost of showing nothing early in a cycle.
-- Traffic that bypassed the gateway is invisible to the numerator, so the
-  estimate is a lower bound for a credential also used elsewhere. The console
-  says so beside the figure.
-- The quota it measures is not metered in API dollars upstream, so the estimate
-  moves with the mix of models. It is a reading for the operator and must not
-  feed routing or a credential's status.
-- Each overview read costs one indexed aggregate per eligible window and one
-  snapshot-history read per credential that has one. That is proportional to the
-  number of subscription credentials, which is small.
-- Without a stored lifecycle there is no previous-cycle fallback: right after a
-  reset a window shows no estimate until 5% is used. A fallback derived from
-  snapshot history can be added without changing this decision.
-- A cycle whose reset instant is only approximate gets no estimate, because its
-  start cannot be placed.
+- La cifra es honesta acerca de su precisión y está ausente cuando podría inducir a error, a costa de no mostrar nada al principio de un ciclo.
+- El tráfico que omitió la pasarela es invisible para el numerador, por lo que la estimación es un límite inferior para una credencial utilizada también en otros lugares. La consola lo indica junto a la cifra.
+- La cuota que mide no se contabiliza en dólares de API en el origen, por lo que la estimación se mueve con la combinación de modelos. Es una lectura para el operador y no debe alimentar el enrutamiento ni el estado de una credencial.
+- Cada lectura de resumen cuesta un agregado indexado por ventana elegible y una lectura de historial de instantáneas por cada credencial que tenga una. Esto es proporcional al número de credenciales de suscripción, que es pequeño.
+- Sin un ciclo de vida almacenado no hay alternativa para el ciclo anterior: justo después de un restablecimiento, una ventana no muestra estimación hasta que se usa el 5%. Se puede agregar una alternativa derivada del historial de instantáneas sin cambiar esta decisión.
+- Un ciclo cuyo instante de restablecimiento es solo aproximado no obtiene estimación, porque su inicio no puede ubicarse.

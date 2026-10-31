@@ -1,76 +1,36 @@
-# ADR 0060: Plugin pages are hosted same-origin through a scoped plugin host
+# ADR 0060: Las páginas de plugins se sirven en el mismo origen (same-origin) a través de un host de plugins acotado
 
-- Status: Accepted
-- Narrows the "no arbitrary CPA endpoint proxy" rule for one bounded surface; the DTO
-  allowlist of ADR 0038 continues to govern every other management response.
+- Estado: Aceptado
+- Restringe la regla de "prohibir proxy arbitrario de endpoints de CPA" para una superficie acotada; la lista blanca de DTOs del ADR 0038 continúa gobernando cualquier otra respuesta de gestión.
 
-## Context
+## Contexto
 
-A CPA plugin can register pages (`menus` on `GET /v8/management/plugins`). Each is an HTML
-resource the plugin serves at `/v0/resource/plugins/<id>/...`, unauthenticated, and the
-page calls the plugin's own management routes at `/v0/management/<route>`, which CPA guards
-with the management key. CPA's management centre shows such a page in a same-origin frame
-and the page reuses the key that console keeps in the browser.
+Un plugin de CPA puede registrar páginas (`menus` en `GET /v8/management/plugins`). Cada una es un recurso HTML que el plugin sirve en `/v0/resource/plugins/<id>/...`, sin autenticar, y la página llama a las propias rutas de gestión del plugin en `/v0/management/<route>`, las cuales CPA protege con la clave de gestión. El centro de gestión de CPA muestra dicha página en un frame del mismo origen (same-origin) y la página reutiliza la clave que la consola mantiene en el navegador.
 
-Oh My CPA differs in three ways that make the same arrangement impossible as it stands:
-the browser never holds the management key; the console is usually served under a
-sub-path (`/omc`) of an origin that is not CPA's, so a page's CPA-root absolute paths do
-not reach CPA; and the facade answers only projected DTOs, never raw CPA responses.
+Oh My CPA difiere en tres aspectos que hacen imposible el mismo arreglo tal como está: el navegador nunca almacena la clave de gestión; la consola normalmente se sirve bajo una sub-ruta (`/omc`) de un origen que no es el de CPA, por lo que las rutas absolutas a la raíz de CPA de una página no llegan a CPA; y la fachada responde únicamente DTOs proyectados, nunca respuestas sin procesar de CPA.
 
-Existing plugin pages also assume their host: they build requests from
-`location.origin`, and read the host's colour scheme from
-`window.parent.document.documentElement`'s `data-theme`.
+Las páginas de plugins existentes también asumen su host: construyen peticiones a partir de `location.origin`, y leen el esquema de colores del host desde el atributo `data-theme` de `window.parent.document.documentElement`.
 
-## Decision
+## Decisión
 
-Serve plugin pages through a **plugin host** under `<base>/api/v1/plugin-host/`, behind the
-console session, and show them in a same-origin frame.
+Servir las páginas de plugins a través de un **host de plugins** bajo `<base>/api/v1/plugin-host/`, detrás de la sesión de la consola, y mostrarlas en un frame del mismo origen (same-origin).
 
-- `GET .../plugin-host/v0/resource/plugins/<id>/...` reads the plugin's resource from CPA
-  without the management key, as CPA itself serves it.
-- `GET|POST|PUT|PATCH|DELETE .../plugin-host/v0/management/<route>` calls a route a plugin
-  registered, with the management key added by the server. The first path segment must
-  not be one of CPA's own management roots (`config`, `config.yaml`, `auth-files`,
-  `api-keys`, `logs`, `plugins`, `plugin-store`, ...; the list is
-  `coreManagementSegments` in `internal/cpa/management/client_plugin_host.go`), so the
-  host cannot be used to read a raw configuration, credential or log through the back
-  door. Paths are cleaned and refused on traversal, backslashes and control characters.
-- The page's own `Authorization`, `X-Management-Key` and cookies are dropped; only a short
-  list of content headers is forwarded each way; `Set-Cookie` is never returned;
-  redirects are not followed and a `Location` is re-based.
-- HTML, CSS and JavaScript have their CPA-root references (`/v0/resource/plugins/`,
-  `/v0/management/`) re-based onto the host prefix, and HTML receives a small script that
-  re-bases the same prefixes at run time for `fetch`, `XMLHttpRequest` and `EventSource`.
-- Every non-`GET` plugin route call is audited (`plugin.route_call`: attempt, then
-  outcome), with the method and the status, never the body.
-- The frame's parent is a console-written document carrying `data-theme="dark|light"`, so
-  pages written for CPA's management centre follow the console's colour mode.
-- Only a running plugin's pages are listed, only those under its own id, and demo mode
-  refuses the whole surface.
+- `GET .../plugin-host/v0/resource/plugins/<id>/...` lee el recurso del plugin desde CPA sin la clave de gestión, tal como CPA mismo lo sirve.
+- `GET|POST|PUT|PATCH|DELETE .../plugin-host/v0/management/<route>` llama a una ruta que un plugin registró, con la clave de gestión agregada por el servidor. El primer segmento de la ruta no debe ser uno de los propios roots de gestión de CPA (`config`, `config.yaml`, `auth-files`, `api-keys`, `logs`, `plugins`, `plugin-store`, ...; la lista es `coreManagementSegments` en `internal/cpa/management/client_plugin_host.go`), por lo que el host no puede usarse para leer una configuración, credencial o log sin procesar a través de una puerta trasera. Las rutas se limpian y se rechazan ante intentos de path traversal, barras invertidas y caracteres de control.
+- Se eliminan los encabezados `Authorization`, `X-Management-Key` y las cookies propias de la página; solo se reenvía en cada dirección una lista corta de encabezados de contenido; nunca se devuelve `Set-Cookie`; las redirecciones no se siguen y se re-basa la cabecera `Location`.
+- HTML, CSS y JavaScript ven sus referencias a la raíz de CPA (`/v0/resource/plugins/`, `/v0/management/`) re-basadas al prefijo del host, y HTML recibe un pequeño script que re-basa los mismos prefijos en tiempo de ejecución para `fetch`, `XMLHttpRequest` y `EventSource`.
+- Cada llamada a una ruta de plugin que no sea `GET` se audita (`plugin.route_call`: intento y luego resultado), registrando el método y el estado, nunca el cuerpo.
+- El elemento padre del frame es un documento escrito por la consola que lleva `data-theme="dark|light"`, de modo que las páginas escritas para el centro de gestión de CPA sigan el modo de color de la consola.
+- Solo se listan las páginas de un plugin en ejecución, únicamente aquellas bajo su propio ID, y el modo demo rechaza toda la superficie.
 
-## Trade-offs
+## Compensaciones (Trade-offs)
 
-**A plugin page runs with the console's authority.** Same-origin is what makes existing
-pages work, and it means a page's script can call the console's API as the signed-in
-operator. An opaque-origin sandbox was rejected because it breaks `location.origin`,
-parent theme reads and storage, which the pages in circulation use. The trust decision is
-therefore the install: a plugin already executes inside the gateway process with the
-gateway's secrets, so its page is not a wider grant than the plugin itself, and the store
-keeps the typed-id confirmation for third-party plugins. The management key still never
-reaches the browser.
+**Una página de plugin se ejecuta con la autoridad de la consola.** El mismo origen (same-origin) es lo que hace funcionar a las páginas existentes, y significa que el script de una página puede llamar a la API de la consola como el operador con sesión iniciada. Se rechazó un sandbox de origen opaco (opaque-origin) porque rompe `location.origin`, las lecturas del tema padre y el almacenamiento, los cuales son utilizados por las páginas en circulación. La decisión de confianza es, por lo tanto, la instalación: un plugin ya se ejecuta dentro del proceso del gateway con los secretos del gateway, por lo que su página no representa un permiso más amplio que el plugin en sí, y la tienda mantiene la confirmación del ID tipado para plugins de terceros. La clave de gestión sigue sin llegar nunca al navegador.
 
-**The route guard is a denylist.** Plugin routes are arbitrary first segments, so they
-cannot be allow-listed without asking CPA which routes a plugin registered, which CPA does
-not report. The denylist is derived from CPA v8.0.15's route table and must be extended
-when CPA adds a management root; a plugin cannot shadow a core route, since CPA resolves
-its own routes first. Plugin route responses are the plugin's own and are passed through
-unprojected for that reason, as the plugin settings document already is.
+**El protector de rutas es una lista negra (denylist).** Las rutas de los plugins son segmentos iniciales arbitrarios, por lo que no se pueden incluir en una lista blanca sin consultar a CPA qué rutas registró un plugin, algo que CPA no reporta. La lista negra se deriva de la tabla de rutas de CPA v8.0.15 y debe extenderse cuando CPA agregue un root de gestión; un plugin no puede enmascarar una ruta del núcleo, ya que CPA resuelve sus propias rutas primero. Las respuestas de las rutas de plugins pertenecen al propio plugin y se transmiten sin proyectar por esa razón, tal como ya ocurre con el documento de configuración del plugin.
 
-**Re-basing is textual.** A page that assembles a CPA-root path from fragments at run time
-is caught by the request shim, not by the rewrite; a page that navigates the top window or
-opens a WebSocket to a CPA-root path is not re-based.
+**La re-base es textual.** Una página que ensambla una ruta a la raíz de CPA a partir de fragmentos en tiempo de ejecución es capturada por el *shim* de peticiones, no por la reescritura; una página que navega en la ventana superior o abre un WebSocket hacia una ruta de la raíz de CPA no es re-basada.
 
-## Consequences
+## Consecuencias
 
-Plugin pages appear in the navigation's Plugins group and in the plugin's settings drawer. The parity
-matrix marks plugin pages covered; plugin quota (`/plugins/:id/quota`) remains planned.
+Las páginas de plugins aparecen en el grupo Plugins de la navegación y en el panel lateral de configuración del plugin. La matriz de paridad marca las páginas de plugins como cubiertas; la cuota de plugins (`/plugins/:id/quota`) sigue planificada.

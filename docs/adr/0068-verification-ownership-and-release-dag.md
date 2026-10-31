@@ -1,63 +1,28 @@
-# ADR 0068: Fail-closed browser evidence and parallel release verification
+# ADR 0068: Evidencia de navegador con fallo cerrado y verificación de lanzamientos en paralelo
 
-- Status: Accepted
-- Date: 2026-10-07
-- Baseline: dc2002c0bec2968a99c0361526734fd0742d09df
-- Refines: ADR 0032's CI coverage and ADR 0066's publication workflow
+- Estado: Aceptado
+- Fecha: 2026-10-07
+- Línea base: dc2002c0bec2968a99c0361526734fd0742d09df
+- Refina: Cobertura de CI del ADR 0032 y flujo de publicación del ADR 0066
 
-## Context
+## Contexto
 
-The existing three probe shards provide full development-mode coverage, but release
-verification serialized the catalog inside a single local full-verification job.
-A probe could pass despite a captured page exception or an undeclared API receiving
-an empty successful mock. Publication consumers could check out a mutable tag after
-verification and label different source with the verified revision. Local logic
-iteration also paid for every suite and withheld short-check verdicts until peers
-finished.
+Las tres particiones (shards) de sondas actuales ofrecen cobertura completa en modo de desarrollo, pero la verificación de lanzamientos serializaba el catálogo dentro de un único trabajo local de verificación completa. Una sonda podía pasar a pesar de una excepción de página capturada o de una API no declarada que recibiera un mock exitoso y vacío. Los consumidores de las publicaciones podían extraer (checkout) una etiqueta mutable después de la verificación y etiquetar código fuente distinto con la revisión verificada. La iteración de lógica local también pagaba el costo de cada suite y retenía los veredictos de comprobación rápida hasta que los pares terminaban.
 
-## Decision
+## Decisión
 
-1. Keep required `static`, `browser` and aggregate `probes` merge checks. Run full
-   built acceptance on both PR and master, alongside the full three-shard development
-   catalog and production demo coverage. P0/smoke commands remain optional local tools.
-2. Resolve release identity once, fan out read-only static/browser/probe verification,
-   and aggregate every verdict before packaging/publication. Downstream checkouts use
-   that exact revision; re-resolve tag agreement at publication boundaries. Preserve
-   native cache isolation, fresh dependency installation, checksums, runtime smoke
-   and digest-only latest promotion.
-3. Make unexpected runtime/console/transport problems and unknown API contracts
-   scenario failures. Deliberate failures declare exact resource/marker and bounded
-   counts locally. Deny undeclared HTTP and WebSocket origins, block service workers,
-   and prove the harness verdict using real-browser negative scenarios.
-4. Own Vite readiness with a run-specific token and own Chromium through BrowserServer.
-   Bound scenario and shutdown lifetime; escalate only owned children/process groups.
-   Keep the existing batch watchdog rather than increasing assertion waits.
-5. Separate long OAuth/system flows into isolated contexts with unchanged claims and
-   explicit preconditions. Retain structured timings and review deterministic weights;
-   timings never decide whether a scenario runs.
-6. Narrow logic suites only in the local fast lane through a conservative import graph.
-   Unknowns widen and opaque suites always run; final static/CI discovery remains full.
-   Print completed verdicts immediately and spool detailed output.
-7. Add weekly/manual read-only race, fuzz, advisory and macOS/Windows runtime lanes.
-   Network-dependent advisory availability is not a normal hermetic PR prerequisite.
-   Ownership/review deadlines do not suppress advisory failures.
+1. Mantener las comprobaciones de fusión requeridas `static`, `browser` y el agregado de `probes`. Ejecutar la aceptación compilada completa tanto en PR como en `master`, junto con el catálogo completo de desarrollo de tres particiones y la cobertura de la demo de producción. Los comandos P0/smoke siguen siendo herramientas locales opcionales.
+2. Resolver la identidad del lanzamiento una sola vez, distribuir (fan out) la verificación estática/de navegador/de sondas en modo de solo lectura y agregar cada veredicto antes del empaquetado/publicación. Las extracciones posteriores (checkouts) utilizan exactamente esa revisión; se vuelve a resolver el acuerdo de etiquetas en los límites de publicación. Preservar el aislamiento de la caché nativa, la instalación limpia de dependencias, las sumas de verificación (checksums), el *smoke* en tiempo de ejecución y la promoción de la última versión (*latest*) exclusivamente por resumen (*digest*).
+3. Convertir en fallos de escenario los problemas inesperados de tiempo de ejecución/consola/transporte y los contratos de API desconocidos. Los fallos deliberados declaran el recurso/marcador exacto y recuentos acotados localmente. Denegar orígenes HTTP y WebSocket no declarados, bloquear *service workers* y probar el veredicto del arnés utilizando escenarios negativos de navegadores reales.
+4. Gestionar la disponibilidad de Vite con un token específico de la ejecución y Chromium a través de BrowserServer. Acotar el escenario y el tiempo de vida del cierre; escalar únicamente los procesos hijos/grupos de procesos propios. Mantener el *watchdog* por lotes existente en lugar de aumentar las esperas de aserción.
+5. Separar los flujos largos de OAuth y del sistema en contextos aislados con reclamaciones (claims) sin cambios y precondiciones explícitas. Conservar los tiempos estructurados y revisar los pesos deterministas; los tiempos nunca deciden si se ejecuta un escenario.
+6. Estrechar las suites de lógica únicamente en el carril rápido local mediante un grafo de importación conservador. Los elementos desconocidos amplían la ejecución y las suites opacas siempre se ejecutan; el descubrimiento final estático/de CI sigue siendo completo. Imprimir los veredictos completados inmediatamente y almacenar en búfer (*spool*) la salida detallada.
+7. Añadir carriles semanales/manuales de solo lectura para *race conditions*, pruebas de fuzzing (*fuzz*), advertencias y tiempos de ejecución de macOS/Windows. La disponibilidad de avisos dependientes de la red no es un requisito previo normal y hermético de los PR. Los plazos de propiedad/revisión no suprimen los fallos de advertencia.
 
-## Consequences and validation
+## Consecuencias y validación
 
-Full built PR acceptance deliberately increases that lane's work in exchange for
-coverage of domains the former P0 subset omitted. Release verification can overlap
-independent lanes, but actual hosted throughput and runner cost must be measured
-across compatible runs before claiming a percentage gain. New split weights remain
-provisional until sufficient samples exist.
+La aceptación completa de PR compilados aumenta deliberadamente el trabajo de ese carril a cambio de cubrir dominios que el subconjunto P0 anterior omitía. La verificación de lanzamientos puede solapar carriles independientes, pero el rendimiento real alojado (*hosted throughput*) y el costo del ejecutor deben medirse a través de ejecuciones compatibles antes de declarar una ganancia porcentual. Los nuevos pesos divididos siguen siendo provisionales hasta que existan muestras suficientes.
 
-Native target parallelism, trusted SPA artifact sharing and package/verification
-speculation are experiments, not automatic cache or publication-boundary changes.
-No native shared cache is restored. Foreign runtime tests do not certify code signing
-or all architectures. Tag checks narrow the mutable-ref window but cannot make
-cross-service publication transactional.
+El paralelismo de objetivos nativos, el intercambio de artefactos SPA de confianza y la especulación de paquetes/verificación son experimentos, no cambios automáticos en la caché o en los límites de publicación. No se restaura ninguna caché nativa compartida. Las pruebas de ejecución en entornos extranjeros no certifican la firma de código ni todas las arquitecturas. Las comprobaciones de etiquetas estrechan la ventana de referencias mutables, pero no pueden hacer que la publicación entre servicios sea transaccional.
 
-Semantic validators reject bypassed gates, mutable checkouts, incomplete shards and
-lost evidence. Script self-tests, actual browser fault injection, full catalog and
-built/demo gates are required for delivery. Review findings and reproducible local
-results live in `docs/plans/ci-testing-optimization.md`; hosted benchmarking remains
-an explicit follow-up measurement rather than a claimed local result.
+Los validadores semánticos rechazan las puertas omitidas, las extracciones mutables, las particiones incompletas y la evidencia perdida. Las autoeprobaciones de los scripts, la inyección real de fallos en el navegador y las puertas completas del catálogo y de compilación/demo son obligatorias para la entrega. Los hallazgos de las revisiones y los resultados locales reproducibles se encuentran en `docs/plans/ci-testing-optimization.md`; la evaluación comparativa alojada (*hosted benchmarking*) sigue siendo una medición de seguimiento explícita en lugar de un resultado local reivindicado.

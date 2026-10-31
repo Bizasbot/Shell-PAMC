@@ -1,43 +1,42 @@
-# ADR 0077: Composer settings use named picker lists
+# ADR 0077: La configuración del compositor utiliza listas de selección con nombre
 
-- Status: Accepted
-- Date: 2026-10-08
-- Supersedes the reasoning-scale and client-key-selector presentation in
+- Estado: Aceptado
+- Fecha: 2026-10-08
+- Reemplaza la presentación de la escala de razonamiento y el selector de claves de cliente en
   [ADR 0076](0076-the-agent-has-its-own-shell-and-names-its-model-in-the-composer.md).
-  Its conversation shell and target request semantics remain unchanged.
+  El shell de conversación y la semántica de las solicitudes de destino permanecen sin cambios.
 
-## Context
+## Contexto
 
-Model and reasoning are settings of the same message. Operators need to read the
-current choice, browse alternatives and confirm a change with the same interaction.
-Reasoning has short discrete names, while a model may have a long call-point name;
-the surfaces therefore share behaviour without sharing a fixed width.
+El modelo y el razonamiento son configuraciones del mismo mensaje. Los operadores necesitan leer la
+elección actual, explorar alternativas y confirmar un cambio mediante la misma interacción.
+El razonamiento tiene nombres cortos y discretos, mientras que un modelo puede tener un nombre de punto de llamada largo;
+por lo tanto, las superficies comparten el comportamiento sin compartir un ancho fijo.
 
-## Decision
+## Decisión
 
-`ComposerPicker` owns the popover, trigger and focus policy for both settings.
-`ComposerPickerList` offers named choices with a roving tab stop. Arrows, Home and
-End browse without changing a request; Enter, Space or click commits. Confirmation
-and Escape close the surface and return focus to the trigger.
+`ComposerPicker` gestiona el elemento flotante (popover), el disparador (trigger) y la directiva de foco para ambas configuraciones.
+`ComposerPickerList` ofrece opciones con nombre mediante una parada de tabulación móvil (*roving tab stop*). Las flechas, Inicio (Home) y
+Fin (End) permiten la exploración sin cambiar la solicitud; Intro (Enter), Espacio (Space) o un clic confirman la selección. La confirmación
+y Escape cierran la superficie y devuelven el foco al disparador.
 
-Model lists use a 304px surface, manufacturer marks and search beyond eight names.
-The client key is a secondary footer action: its list replaces the model list in the
-same surface, and choosing a different key returns to that key's available models.
+Las listas de modelos utilizan una superficie de 304px, marcas del fabricante y búsqueda cuando hay más de ocho nombres.
+La clave del cliente es una acción secundaria de pie de página (*footer*): su lista reemplaza a la lista de modelos en la
+misma superficie, y al elegir una clave diferente se regresa a los modelos disponibles para dicha clave.
 
-Reasoning lists use a 180px surface with model default first, followed by parameter
-names and secondary localized descriptions. The text trigger states the current parameter name
-(`Low`, `High`, `Max`, `xHigh`) across languages in foreground ink at regular 400
-weight. These display spellings do not change the stored or transmitted request value.
-A filled selected row and bold name identify the current choice. Reasoning leads
-with the parameter name; its localized description is trailing-aligned in muted ink.
-Identical descriptions are omitted. Model rows also carry an ink-colored check.
+Las listas de razonamiento utilizan una superficie de 180px con el valor predeterminado del modelo en primer lugar, seguido de los nombres de los parámetros
+y descripciones localizadas secundarias. El disparador de texto muestra el nombre del parámetro actual
+(`Low`, `High`, `Max`, `xHigh`) en todos los idiomas con tinta de primer plano a un peso regular de 400.
+Estas grafías de visualización no cambian el valor de la solicitud almacenado o transmitido.
+Una fila seleccionada rellena y un nombre en negrita identifican la opción actual. El razonamiento encabeza
+con el nombre del parámetro; su descripción localizada está alineada al final en tinta atenuada.
+Se omiten las descripciones idénticas. Las filas de modelos también muestran una marca de verificación del color de la tinta.
 
-Both surfaces are viewport-bounded and reuse existing palette, typography and motion
-tokens. Touch rows keep a 44px hit target.
+Ambas superficies están acotadas al *viewport* y reutilizan los tokens existentes de paleta, tipografía y movimiento.
+Las filas táctiles mantienen un área de impacto (*hit target*) de 44px.
 
-## Consequences
+## Consecuencias
 
-The model call-point name, key fingerprint and reasoning value travel unchanged.
-The empty reasoning value still omits the request field; a provider-specific stored
-value stays visible and selectable. The menu presents request values rather than
-model speed or answer-quality guarantees.
+El nombre del punto de llamada del modelo, la huella digital de la clave y el valor de razonamiento se transmiten sin cambios.
+El valor de razonamiento vacío sigue omitiendo el campo de solicitud; un valor almacenado específico del proveedor
+permanece visible y seleccionable. El menú presenta los valores de la solicitud en lugar de garantías de velocidad del modelo o calidad de respuesta.

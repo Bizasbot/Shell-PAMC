@@ -1,95 +1,61 @@
-# ADR 0038: Upstream credentials are written as v8 groups
+# ADR 0038: Las credenciales upstream se escriben como grupos v8
 
-- Status: Accepted
-- Date: 2026-09-29
-- Completes: [ADR 0034](0034-cpa-v8-is-the-baseline.md), decision 4, after
+- Estado: Aceptado
+- Fecha: 2026-09-29
+- Completa: [ADR 0034](0034-cpa-v8-is-the-baseline.md), decisión 4, después de
   [ADR 0037](0037-configuration-editing-uses-the-v8-configuration-api.md)
 
-## Context
+## Contexto
 
-After ADR 0037 the configuration page, its source view and the Keys page wrote through
-the v8 configuration API, but three editors still wrote through `/v0/management`:
+Después del ADR 0037, la página de configuración, su vista de código fuente y la página de Claves realizaban escrituras a través de la API de configuración de v8, pero tres editores aún escribían a través de `/v0/management`:
 
-- the provider pages, which read a family's credential list (`/<family>-api-key`,
-  `/openai-compatibility`), edited it and wrote the whole list back;
-- the OAuth model aliases (`PATCH /oauth-model-alias`);
-- per-plugin enablement and settings (`/plugins/<id>/enabled`, `/plugins/<id>/config`).
+- las páginas de proveedores, que leían la lista de credenciales de una familia (`/<family>-api-key`,
+  `/openai-compatibility`), la editaban y escribían la lista completa de vuelta;
+- los alias de modelos OAuth (`PATCH /oauth-model-alias`);
+- la habilitación y configuración por plugin (`/plugins/<id>/enabled`, `/plugins/<id>/config`).
 
-CPA v8 stores upstream credentials as groups. `api-keys.<family>` is a list of
-`{name, base-url, shared settings, keys: [...]}`, and a key may override any shared
-setting except `base-url`. CPA's runtime view, which is the v0 list, is those groups
-flattened into one entry per key, in order, each with its `auth-index`. The console
-addresses providers by their position in that list. Usage attribution, quota and key
-disablement are keyed by the `auth-index`, and only the v0 list carries it.
+CPA v8 almacena las credenciales upstream como grupos. `api-keys.<family>` es una lista de
+`{name, base-url, shared settings, keys: [...]}`, y una clave puede sobrescribir cualquier configuración compartida excepto `base-url`. La vista en tiempo de ejecución de CPA, que es la lista v0, consiste en dichos grupos aplanados en una entrada por clave, en orden, cada una con su `auth-index`. La consola hace referencia a los proveedores por su posición en esa lista. La atribución de uso, la cuota y la desactivación de claves se identifican mediante el `auth-index`, y solo la lista v0 lo incluye.
 
-A v0 list write discards the operator's grouping: CPA regroups the written family as
-one group per entry, named `<family>-<n>`, and loses the group names and shared settings.
-A v0 write to a pre-v8 file also bypasses the backup ADR 0037 takes before a conversion.
+Una escritura en la lista v0 descarta el agrupamiento del operador: CPA reagrupa la familia escrita como un grupo por entrada, nombrado como `<family>-<n>`, y pierde los nombres de grupo y las configuraciones compartidas. Una escritura v0 en un archivo anterior a v8 también omite la copia de seguridad que el ADR 0037 realiza antes de una conversión.
 
-Measured on CPA v8.0.2:
+Medido en CPA v8.0.2:
 
-- A key may override a group's `models`, `priority`, `excluded-models`, `disable-cooling`
-  and `request-retry`, including with a zero value (`models: []`, `priority: 0`).
-- `PATCH /v8/management/config` with `{"api-keys": {"claude": [...]}}` replaces that
-  family and keeps the others.
-- `plugins.configs.<id>` and `oauth.model-alias.<provider>` are ordinary paths:
-  `PATCH`, `PUT` and `DELETE` work on them.
+- Una clave puede sobrescribir `models`, `priority`, `excluded-models`, `disable-cooling`
+  y `request-retry` de un grupo, incluso con un valor cero (`models: []`, `priority: 0`).
+- `PATCH /v8/management/config` con `{"api-keys": {"claude": [...]}}` reemplaza esa
+  familia y mantiene las demás.
+- `plugins.configs.<id>` y `oauth.model-alias.<provider>` son rutas ordinarias:
+  `PATCH`, `PUT` y `DELETE` funcionan en ellas.
 
-## Decision
+## Decisión
 
-1. **Every configuration write uses the v8 configuration API.** It goes through the
-   change set of ADR 0037, which keeps a pre-v8 file before converting it. The remaining
-   `/v0/management` calls are reads (`client_v0.go`): the per-family lists, for each
-   key's `auth-index`, and the stored file, for the backup.
-2. **A provider write edits the file's own values and returns them to their groups.**
-   `EditableConfigAPIKeys` reads the v0 list, which supplies positions and `auth-index`,
-   and the family's stored groups. It matches the stored keys to the runtime entries in
-   order, by API key and base URL. Each entry therefore carries the stored settings and
-   the group it came from.
-   `UpdateConfigAPIKeys` writes the family back as groups, in the list's exact order:
-   - A setting the group stores takes the value its keys now agree on, or keeps its
-     stored value when they disagree.
-   - A key that differs states its own value, and a cleared value is its zero where
-     CPA reads absence as zero.
-   - A key its group cannot express moves to a group of its own named after the
-     original. That is a key with another base URL, or one that cleared a pointer
-     setting (`disable-cooling`, `request-retry`) where only absence means "inherit".
-     The keys after it continue in a group with the same settings.
-   - A new provider is a new group.
-3. **OpenAI-compatible providers are written as one group per provider.** Their keys go
-   under `keys`, and the unmodelled settings of each provider, key and model are carried
-   through.
-4. **OAuth model aliases and plugin settings write their own paths:**
-   - `oauth.model-alias.<provider>`, removed when the list is empty, together with any
-     other spelling of the same provider;
+1. **Cada escritura de configuración utiliza la API de configuración de v8.** Pasa a través del conjunto de cambios del ADR 0037, el cual conserva un archivo anterior a v8 antes de convertirlo. Las llamadas restantes a `/v0/management` son operaciones de lectura (`client_v0.go`): las listas por familia, para el `auth-index` de cada clave, y el archivo almacenado, para la copia de seguridad.
+2. **Una escritura de proveedor edita los valores propios del archivo y los devuelve a sus grupos.**
+   `EditableConfigAPIKeys` lee la lista v0, la cual proporciona las posiciones y el `auth-index`, y los grupos almacenados de la familia. Relaciona las claves almacenadas con las entradas en tiempo de ejecución en orden, por clave API y URL base. Por lo tanto, cada entrada incluye la configuración almacenada y el grupo del cual proviene.
+   `UpdateConfigAPIKeys` vuelve a escribir la familia como grupos, en el orden exacto de la lista:
+   - Una configuración que el grupo almacena toma el valor en el que sus claves ahora coinciden, o mantiene su valor almacenado cuando no están de acuerdo.
+   - Una clave que difiere indica su propio valor, y un valor borrado corresponde a su valor cero en los casos donde CPA interpreta la ausencia como cero.
+   - Una clave que su grupo no puede expresar se traslada a un grupo propio nombrado según el original. Esto aplica para una clave con otra URL base, o una que borró una configuración basada en punteros (`disable-cooling`, `request-retry`) donde solo la ausencia significa "heredar". Las claves posteriores continúan en un grupo con la misma configuración.
+   - Un proveedor nuevo constituye un grupo nuevo.
+3. **Los proveedores compatibles con OpenAI se escriben como un grupo por proveedor.** Sus claves se ubican bajo `keys`, y se conservan las configuraciones sin modelar de cada proveedor, clave y modelo.
+4. **Los alias de modelos OAuth y las configuraciones de plugins escriben en sus propias rutas:**
+   - `oauth.model-alias.<provider>`, el cual se elimina cuando la lista está vacía, junto con cualquier otra variante ortográfica del mismo proveedor;
    - `plugins.configs.<id>.enabled`;
    - `plugins.configs.<id>`.
-   The alias read applies CPA's own cleanup, so the console shows what the gateway uses.
+   La lectura de alias aplica la propia limpieza de CPA, por lo que la consola muestra lo que utiliza el gateway.
 
-## Consequences
+## Consecuencias
 
-- An edit through the console keeps the operator's group names and shared settings. An
-  untouched family is written back exactly as stored.
-- The first provider, alias or plugin write to a pre-v8 file converts it, after the same
-  backup as a configuration save.
-- A stored key that CPA's runtime leaves out is not part of the editable list, so a
-  write drops it. Examples are a duplicate, or a key without the base URL its family
-  requires. A whole-list v0 write dropped it too.
-- An edit starts from the stored entry, so a key's and a model's settings the form does
-  not show are kept, and a family default base URL the runtime reports is not written
-  into a key the file stores without one.
-- A provider write sends every key of its family, including one only that request adds,
-  and CPA's reason for a refusal can quote a value. The reason is scrubbed of the
-  stored file's secrets and the sent ones before the response or the audit log sees it.
-- A key whose base URL changes moves out of its group, so the file can gain a group
-  named `<group>-<n>`. The list's order, and so every provider id, is unchanged.
+- Una edición a través de la consola conserva los nombres de grupo y las configuraciones compartidas del operador. Una familia que no se modifica se reescribe exactamente tal como fue almacenada.
+- La primera escritura de proveedor, alias o plugin en un archivo anterior a v8 lo convierte, previa realización de la misma copia de seguridad que se genera al guardar la configuración.
+- Una clave almacenada que el tiempo de ejecución de CPA omite no forma parte de la lista editable, por lo que una escritura la descarta. Ejemplos de esto son un duplicado o una clave que carece de la URL base que su familia requiere. Una escritura v0 de lista completa también la descartaba.
+- Una edición parte de la entrada almacenada, por lo que se conservan la configuración de una clave y de un modelo que el formulario no muestra, y una URL base predeterminada de familia reportada por el tiempo de ejecución no se escribe en una clave que el archivo almacena sin una.
+- Una escritura de proveedor envía cada clave de su familia, incluyendo aquella agregada únicamente por esa solicitud, y el motivo de rechazo por parte de CPA puede citar un valor. El motivo es depurado de los secretos del archivo almacenado y de los enviados antes de que la respuesta o el registro de auditoría lo visualicen.
+- Una clave cuya URL base cambia sale de su grupo, por lo que el archivo puede adquirir un grupo nombrado como `<group>-<n>`. El orden de la lista, y por ende cada ID de proveedor, permanece sin cambios.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Keep the v0 list writes.** Rejected: they regroup the whole family on every write and
-  convert a pre-v8 file without a backup.
-- **Edit groups in the console.** Rejected for now: every provider id, overlay and usage
-  join is positional in the flattened list. Introducing groups there changes the provider
-  model rather than its storage, and nothing the operator does today needs it.
-- **Write one group per entry.** Rejected: that is exactly the v0 behaviour and discards
-  the operator's grouping.
+- **Mantener las escrituras de listas v0.** Rechazado: reagrupan a toda la familia en cada escritura y convierten un archivo anterior a v8 sin una copia de seguridad.
+- **Editar grupos en la consola.** Rechazado por ahora: cada ID de proveedor, superposición y unión de uso es posicional en la lista aplanada. Introducir grupos allí altera el modelo del proveedor en lugar de su almacenamiento, y ninguna acción que el operador realice hoy en día lo requiere.
+- **Escribir un grupo por entrada.** Rechazado: eso es exactamente el comportamiento de v0 y descarta el agrupamiento del operador.

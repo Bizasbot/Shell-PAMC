@@ -1,62 +1,75 @@
-# ADR 0048: The request list moves under a finger itself
+# ADR 0048: La lista de peticiones se desplaza directamente bajo el dedo
 
-- Status: Accepted
-- Date: 2026-10-01
+- Estado: Aceptado
+- Fecha: 2026-10-01
 
-## Context
+## Contexto
 
-On a phone the request list scrolled badly in three separate ways, all measured on the real list at
-390×664 with touch input dispatched through the DevTools protocol:
+En un teléfono, la lista de peticiones se desplazaba mal de tres formas distintas, todas medidas en
+la lista real a 390×664 con entrada táctil enviada a través del protocolo DevTools:
 
-- **The page around the list scrolled and bounced.** On phones the page was held to at least 760px,
-  taller than most phone screens, so the content pane scrolled as well. A drag that started on the
-  filters scrolled the pane, and a drag that reached either end of the list was handed on to the
-  pane. The pane then bounced at its own end, or reloaded the page when pulled down at the top. The
-  unfolded filter header took 399px of a 608px pane, and the footer sat below the screen.
-- **The list ran ahead of the finger.** The list is virtualized, so its holder clips its overflow and
-  the browser cannot scroll it for a finger. `@rc-component/virtual-list` emulates touch scrolling
-  instead: every touch move scrolls the list by the finger's travel and restarts a coast on a 16ms
-  interval. That coast keeps firing between moves while the finger is still down, so a 200px drag
-  moved the list up to 370px.
-- **A finger could fold the header but not unfold it.** The first scroll folded the header after the
-  list had already moved under the finger. The only ways back were a wheel turned up at the top and
-  the back-to-top pill, which is not shown at the top.
+- **La página alrededor de la lista se desplazaba y rebotaba.** En los teléfonos, la página se
+  mantenía en al menos 760px, más alta que la mayoría de las pantallas de teléfonos, por lo que el panel
+  de contenido también se desplazaba. Un arrastre que comenzaba en los filtros desplazaba el panel, y
+  un arrastre que llegaba a cualquiera de los extremos de la lista se transfería al panel. El panel
+  entonces rebotaba en su propio extremo, o recargaba la página al tirar hacia abajo en la parte
+  superior. La cabecera de filtro desplegada ocupaba 399px de un panel de 608px, y el pie de página
+  se encontraba fuera de la pantalla.
+- **La lista se adelantaba al dedo.** La lista está virtualizada, por lo que su contenedor recorta su
+  desbordamiento y el navegador no puede desplazarla directamente para un dedo.
+  `@rc-component/virtual-list` emula el desplazamiento táctil en su lugar: cada movimiento táctil
+  desplaza la lista según el recorrido del dedo y reinicia un deslizamiento inercial (*coast*) en un
+  intervalo de 16ms. Dicho deslizamiento sigue ejecutándose entre movimientos mientras el dedo sigue
+  presionando, por lo que un arrastre de 200px movía la lista hasta 370px.
+- **Un dedo podía plegar la cabecera pero no desplegarla.** El primer desplazamiento plegaba la
+  cabecera después de que la lista ya se hubiera movido bajo el dedo. Las únicas formas de volver atrás
+  eran usar la rueda del ratón hacia arriba en la parte superior y el botón flotante de volver arriba,
+  el cual no se muestra en la parte superior.
 
-## Decision
+## Decisión
 
-1. **On touch the page fits the screen and the list is its only scroller.** Below 640px, and wherever
-   a finger is the main pointer, the page and the list drop their minimum heights. Over the list the
-   browser keeps only sideways panning and zoom (`touch-action: pan-x pinch-zoom`), so a drag at
-   either end has nowhere to go.
-2. **The console moves the list under a finger** (`web/src/components/usage/requestListTouch.ts`).
-   Every touch move over the list is taken from the library with its `_virtualHandled` flag, which
-   the library already checks for touch moves, from a capture-phase listener on the page. The list
-   is moved by exactly the finger's travel and drawn synchronously, so it is on screen on the frame
-   the finger moved.
-3. **A release coasts at the speed the finger left with**, measured over the last 100ms and decaying
-   at iOS's normal rate (98% of the speed kept per 10ms). A finger that rested before lifting does not
-   coast. A tap on a coasting list stops it and is not delivered as a click, as on a native scroller;
-   a tap outside the list stops the coast and is delivered.
-   A wheel, a key, a page change and the return to the top all stop a coast.
-4. **The header folds and unfolds with the wheel's gestures.** A drag up on an unfolded header folds
-   it and moves nothing else, wherever it starts, as the first wheel notch does. A pull down of 48px
-   past the top of the list unfolds it, as the wheel's top bounce does. One gesture changes the header
-   at most once. Folding needs the list on the page: a page that is loading or found nothing never
-   folds the header, and a header folded before the list went away unfolds on a 48px pull down
-   anywhere on the page.
+1. **En pantallas táctiles, la página se ajusta a la pantalla y la lista es su único elemento de
+   desplazamiento.** Por debajo de 640px, y siempre que un dedo sea el puntero principal, la página y
+   la lista eliminan sus alturas mínimas. Sobre la lista, el navegador solo mantiene el paneo
+   horizontal y el zoom (`touch-action: pan-x pinch-zoom`), por lo que un arrastre en cualquiera de
+   los extremos no tiene a dónde ir.
+2. **La consola mueve la lista bajo el dedo** (`web/src/components/usage/requestListTouch.ts`). Cada
+   movimiento táctil sobre la lista se intercepta de la librería usando su indicador `_virtualHandled`
+   (que la librería ya comprueba para los movimientos táctiles) mediante un listener en fase de captura
+   en la página. La lista se desplaza exactamente lo que se mueve el dedo y se dibuja de forma
+   síncrona, de modo que aparece en pantalla en el mismo fotograma en que el dedo se movió.
+3. **Al soltar, se desliza por inercia a la velocidad con la que el dedo se retiró**, medida durante
+   los últimos 100ms y decayendo a la velocidad normal de iOS (98% de la velocidad retenida por cada
+   10ms). Un dedo que se detuvo antes de levantarse no genera deslizamiento inercial. Un toque
+   (*tap*) sobre una lista en deslizamiento la detiene y no se propaga como un clic, al igual que en un
+   componente de desplazamiento nativo; un toque fuera de la lista detiene el deslizamiento y sí se
+   propaga. Un movimiento de rueda, una tecla, un cambio de página y el retorno al inicio también
+   detienen el deslizamiento.
+4. **La cabecera se pliega y se despliega con los gestos de la rueda.** Un arrastre hacia arriba en
+   una cabecera desplegada la pliega y no mueve nada más, sin importar dónde comience, tal como lo
+   hace el primer nivel de la rueda. Un tirón hacia abajo de 48px más allá de la parte superior de la
+   lista la despliega, al igual que el rebote superior de la rueda. Un solo gesto modifica la
+   cabecera como máximo una vez. El plegado requiere que la lista esté en la página: una página que
+   está cargando o no ha encontrado resultados nunca pliega la cabecera, y una cabecera plegada antes
+   de que la lista desapareciera se despliega con un tirón de 48px en cualquier parte de la página.
 
-The coast is the one place the console imitates platform physics. A native scroller would avoid that,
-but it would need the list to be an ordinary overflowing element. At 100 to 500 rows a page, each a
-tall labelled row on a phone, the list has to stay virtualized.
+El deslizamiento inercial es el único aspecto en el que la consola imita la física de la plataforma.
+Un mecanismo de desplazamiento nativo evitaría esto, pero requeriría que la lista fuera un elemento
+con desbordamiento ordinario. Con entre 100 y 500 filas por página, cada una con una altura de fila
+etiquetada en un teléfono, la lista debe permanecer virtualizada.
 
-## Consequences
+## Consecuencias
 
-- On a 390×664 phone the folded list fills the screen with its footer visible. A drag moves the list
-  exactly as far as the finger, and nothing around the list moves at either end.
-- The layer depends on one more detail of `@rc-component/virtual-list`: a touch move flagged
-  `_virtualHandled` is not scrolled by the library. The `request-list-touch` probe drives real
-  touch input and fails if the list stops following the finger, coasting, stopping on a tap or
-  folding and unfolding its header. The previous implementation fails all of those checks.
-- The coast's speed and rate are pure functions with logic tests (`scripts/test-request-list-touch.ts`).
-- Only the request list is moved this way. A virtualized Select popup still uses the library's
-  emulation; it is short and opened briefly, and it is not where the console is read.
+- En un teléfono de 390×664, la lista plegada llena la pantalla con su pie de página visible. Un
+  arrastre mueve la lista exactamente la misma distancia que el dedo, y nada alrededor de la lista se
+  mueve en ninguno de los extremos.
+- La capa depende de un detalle adicional de `@rc-component/virtual-list`: un movimiento táctil
+  marcado como `_virtualHandled` no es desplazado por la librería. La prueba (`probe`)
+  `request-list-touch` simula entrada táctil real y falla si la lista deja de seguir al dedo, de
+  deslizarse por inercia, de detenerse ante un toque o de plegar y desplegar su cabecera. La
+  implementación anterior falla en todas estas comprobaciones.
+- La velocidad y la tasa de decaimiento del deslizamiento son funciones puras con pruebas lógicas
+  (`scripts/test-request-list-touch.ts`).
+- Solo la lista de peticiones se mueve de esta manera. Una ventana emergente de selección
+  (*Select*) virtualizada sigue utilizando la emulación de la librería; es corta y se abre brevemente,
+  y no es el lugar donde se lee la consola.

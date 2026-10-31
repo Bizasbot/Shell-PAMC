@@ -1,133 +1,156 @@
-# ADR 0017: A request record names the provider key that answered it, resolved at read time
+# ADR 0017: Un registro de solicitud nombra la clave de proveedor que lo respondió, resuelta en el momento de la lectura
 
-- Status: Accepted
-- Date: 2026-09-20
+- Estado: Aceptado
+- Fecha: 2026-09-20
 
-## Context
+## Contexto
 
-Two surfaces disagreed with what an operator needs to know about an upstream
-credential.
+Dos interfaces diferían en lo que un operador necesita saber sobre una credencial
+upstream.
 
-**The provider list printed one key per provider.** The name cell showed
-`security.MaskSecret` of `record.api_key`, which is CPA's first key entry for that
-provider. A provider configured with several keys therefore showed one of them,
-unlabelled, beside the provider's name - a fact that is wrong for every request the
-other keys served, and that invited the reader to believe that provider had one
-credential. ADR 0015 decision 4 had already reduced that cell to a mask (the tooltip
-repeated the mask rather than the value), so the remaining exposure was not a secret
-but a false claim.
+**La lista de proveedores mostraba una clave por proveedor.** La celda de nombre
+mostraba `security.MaskSecret` de `record.api_key`, que es la primera entrada de clave
+de CPA para ese proveedor. Por lo tanto, un proveedor configurado con varias claves
+mostraba una de ellas, sin etiqueta, junto al nombre del proveedor; un hecho que es
+incorrecto para cada solicitud que las otras claves atendieron, y que invitaba al
+lector a creer que ese proveedor tenía una sola credencial. La decisión 4 del ADR 0015
+ya había reducido esa celda a una máscara (la información sobre herramientas repetía la
+máscara en lugar del valor), por lo que la exposición restante no era un secreto,
+sino una afirmación falsa.
 
-**A request record could not name the key that answered.** The list shows the
-provider, and for an OAuth record the account and file it used, but an API-key
-record showed only the provider name. When a provider holds several keys, an
-operator diagnosing a failure or a bill could not tell which one was used.
+**Un registro de solicitud no podía nombrar la clave que lo respondió.** La lista
+muestra el proveedor y, para un registro OAuth, la cuenta y el archivo que utilizó,
+pero un registro de clave de API mostraba únicamente el nombre del proveedor. Cuando un
+proveedor posee varias claves, un operador que diagnostica un fallo o una factura no
+podía saber cuál se utilizó.
 
-The obstacle is that the fact does not exist in the record. CPA's usage payload
-carries the credential's runtime `auth_index`, which `usage_events` stores, and no
-key material. The keys exist only in CPA's configuration, which the console reads
-through the management API. Two shapes were available:
+El obstáculo es que dicho dato no existe en el registro. La carga útil de uso de CPA
+lleva el `auth_index` de ejecución de la credencial, que `usage_events` almacena, pero
+ningún material de clave. Las claves existen únicamente en la configuración de CPA,
+la cual la consola lee a través de la API de gestión. Había dos formas disponibles:
 
-1. **Resolve at read time.** Read CPA's credential lists, index them by auth index,
-   and attach a display mask to each record as the list is served.
-2. **Capture at ingestion.** Resolve the index while a record is being stored and
-   persist the mask on `usage_events`.
+1. **Resolver en el momento de la lectura.** Leer las listas de credenciales de CPA,
+   indexarlas por índice de autenticación y adjuntar una máscara de visualización a
+   cada registro a medida que se sirve la lista.
+2. **Capturar en la ingesta.** Resolver el índice mientras se almacena un registro y
+   persistir la máscara en `usage_events`.
 
-## Decision
+## Decisión
 
-1. **A request record names the provider key that answered it, resolved at read
-   time.** The usage list and the single-record view return an optional
-   `provider_key_mask` resolved from the credential lists CPA currently reports -
-   the four config API-key families and the `openai-compatibility` providers. The
-   browser renders it beneath the provider name and holds no credential to do so.
-2. **Resolution is current-config, never a snapshot.** The response states which
-   configured credential claims the record's index *now*. A credential that has
-   since been rotated or deleted stops claiming its index, so the row prints nothing
-   — immediately for a change made through this console, and within the cached read's
-   short TTL for one made outside it. A provider that has only been switched off is
-   not treated as a removal: it reports no index to claim, and the key that served an
-   earlier request stays named, because the provider's current state is not part of
-   the credential's identity. The console never reconstructs a key it cannot read,
-   and a mask is never inferred from a provider name, a position, a single configured
-   key, or the caller key.
-3. **Nothing is guessed when identification is ambiguous.** An unclaimed index, a
-   key CPA reports without an index, an index two entries claim (even when their
-   masks are alike), and a record with no index resolve to nothing. Only an API-key
-   record whose provider label names a credential list is a candidate at all: an
-   OAuth record's index identifies an auth file, not a provider key, and a provider
-   outside every key-backed list has no key to name. The resolved field is absent
-   rather than empty when there is none, so a consumer can tell "no key identified"
-   from "a key whose mask renders as nothing".
-4. **The mask is the only thing that leaves the process.** Resolution uses CPA's
-   configured values and `security.MaskSecret`; the plaintext reaches no cache entry
-   that outlives the read, no response, and no browser. ADR 0015 stands unchanged for
-   every other surface: the provider editor remains the one page that asks for the
-   values.
-5. **The provider list no longer prints a key at all.** The provider's own key
-   count stays visible in the models/headers column, and the editor drawer lists
-   every entry, masked, behind its own reveal. ADR 0015 decision 4's premise - that
-   the cell showed one key's mask - no longer holds, because the cell shows none.
-6. **The read is bounded and best effort.** Each credential list is read at most
-   once per TTL, concurrent pages share one read, failures are negatively cached, and
-   the enrichment has its own deadline inside the request. A gateway that cannot be
-   read leaves the masks empty and returns the request list unchanged.
+1. **Un registro de solicitud nombra la clave de proveedor que lo respondió, resuelta
+   en el momento de la lectura.** La lista de uso y la vista de registro único devuelven
+   un `provider_key_mask` opcional resuelto a partir de las listas de credenciales que
+   CPA reporta actualmente: las cuatro familias de claves de API de configuración y
+   los proveedores de `openai-compatibility`. El navegador lo renderiza debajo del
+   nombre del proveedor y no almacena ninguna credencial para hacerlo.
+2. **La resolución corresponde a la configuración actual, nunca a una
+   instantánea.** La respuesta indica qué credencial configurada reclama el índice
+   del registro *ahora*. Una credencial que desde entonces haya sido rotada o eliminada
+   deja de reclamar su índice, por lo que la fila no imprime nada (de forma inmediata
+   para un cambio realizado a través de esta consola, y dentro del breve TTL de la
+   lectura en caché para uno realizado fuera de ella). Un proveedor que simplemente ha
+   sido desactivado no se trata como una eliminación: no reporta ningún índice que
+   reclamar, y la clave que atendió una solicitud anterior permanece nombrada, porque
+   el estado actual del proveedor no forma parte de la identidad de la credencial. La
+   consola nunca reconstruye una clave que no puede leer, y una máscara nunca se infiere
+   a partir de un nombre de proveedor, una posición, una única clave configurada o la
+   clave del llamador.
+3. **No se adivina nada cuando la identificación es ambigua.** Un índice no reclamado,
+   una clave que CPA reporta sin índice, un índice que dos entradas reclaman (incluso
+   cuando sus máscaras son iguales) y un registro sin índice se resuelven a nada. Solo
+   un registro de clave de API cuya etiqueta de proveedor nombra una lista de
+   credenciales es candidato en absoluto: el índice de un registro OAuth identifica un
+   archivo de autenticación, no una clave de proveedor, y un proveedor fuera de cada
+   lista respaldada por claves no tiene ninguna clave que nombrar. El campo resuelto
+   está ausente en lugar de vacío cuando no hay ninguno, de modo que un consumidor
+   puede distinguir "ninguna clave identificada" de "una clave cuya máscara se renderiza
+   como nada".
+4. **La máscara es lo único que sale del proceso.** La resolución utiliza los valores
+   configurados de CPA y `security.MaskSecret`; el texto plano no llega a ninguna
+   entrada de caché que sobreviva a la lectura, a ninguna respuesta ni a ningún
+   navegador. El ADR 0015 se mantiene sin cambios para cualquier otra superficie: el
+   editor de proveedores sigue siendo la única página que solicita los valores.
+5. **La lista de proveedores ya no imprime ninguna clave.** El recuento de claves del
+   propio proveedor permanece visible en la columna de modelos/cabeceras, y el panel
+   del editor enumera cada entrada, enmascarada, detrás de su propio mecanismo para
+   revelarla. La premisa de la decisión 4 del ADR 0015 (que la celda mostraba la máscara
+   de una clave) deja de ser válida, porque la celda no muestra ninguna.
+6. **La lectura está acotada y es de mejor esfuerzo.** Cada lista de credenciales se
+   lee como máximo una vez por TTL, las páginas concurrentes comparten una sola
+   lectura, los fallos se almacenan en caché de forma negativa y el enriquecimiento
+   tiene su propio tiempo límite (deadline) dentro de la solicitud. Una pasarela que
+   no se puede leer deja las máscaras vacías y devuelve la lista de solicitudes sin
+   cambios.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- The provider list stops asserting something untrue about multi-key providers,
-  while the key count and the editor keep the information that is true.
-- A request record answers "which key answered this" for the case where it matters
-  most - several keys behind one provider - without the operator opening anything.
-- The resolution is expressed in the data the console already reads, so no schema
-  change, no migration, and no dependency on discovery being enabled is needed, and
-  historical records are covered from the first read.
-- Rotation and deletion degrade to silence rather than to a stale claim, which is
-  the failure direction a display label should have.
+- La lista de proveedores deja de afirmar algo falso sobre los proveedores de
+  múltiples claves, mientras que el recuento de claves y el editor conservan la
+  información que es verdadera.
+- Un registro de solicitud responde "qué clave respondió a esto" para el caso en el
+  que más importa (varias claves detrás de un solo proveedor) sin que el operador
+  tenga que abrir nada.
+- La resolución se expresa en los datos que la consola ya lee, por lo que no se
+  requiere ningún cambio de esquema, ninguna migración ni ninguna dependencia de que
+  el descubrimiento esté habilitado, y los registros históricos se cubren desde la
+  primera lectura.
+- La rotación y la eliminación se degradan hacia el silencio en lugar de hacia una
+  reclamación obsoleta, que es la dirección de fallo que debe tener una etiqueta de
+  visualización.
 
-### Trade-offs
+### Compensaciones (Trade-offs)
 
-- **The mask is not a historical fact.** Re-serving an old page after a key rotation
-  can show a different mask, or none, for the same record. The alternative -
-  persisting the mask at ingestion - would freeze a fact and pay for it with a
-  migration, an ingest-time dependency on CPA's configuration being readable, and a
-  permanently blank column for every record stored before it landed.
-- **The request list now reads CPA's credential lists.** That is a new outbound
-  dependency on the read path, bounded by a TTL, a shared read, a negative cache and
-  its own deadline, and it can only ever remove a label - never fail the page.
-- **A resolved mask is a claim about the current configuration, not proof about the
-  past.** An operator who renamed or re-keyed a credential since the request sees the
-  credential that claims the index today. This is the honest reading of an index that
-  CPA itself treats as the credential's runtime identity.
-- **Two keys can share a mask**, because a mask keeps only a short head and tail.
-  Distinguishing them is what the editor's reveal is for; the row's job is to say
-  which of a provider's keys served the request, not to prove it cryptographically.
+- **La máscara no es un hecho histórico.** Volver a servir una página antigua
+  después de una rotación de claves puede mostrar una máscara diferente, o ninguna,
+  para el mismo registro. La alternativa (persistir la máscara en la ingesta)
+  congelaría un hecho y lo pagaría con una migración, una dependencia en tiempo de
+  ingesta de que la configuración de CPA sea legible y una columna permanentemente en
+  blanco para cada registro almacenado antes de su implementación.
+- **La lista de solicitudes ahora lee las listas de credenciales de CPA.** Esa es una
+  nueva dependencia saliente en la ruta de lectura, acotada por un TTL, una lectura
+  compartida, una caché negativa y su propio tiempo límite, y solo puede eliminar una
+  etiqueta, nunca hacer fallar la página.
+- **Una máscara resuelta es una afirmación sobre la configuración actual, no una prueba
+  sobre el pasado.** Un operador que haya renombrado o cambiado la clave de una
+  credencial desde la solicitud ve la credencial que reclama el índice hoy. Esta es
+  la lectura honesta de un índice que la propia CPA trata como la identidad de
+  ejecución de la credencial.
+- **Dos claves pueden compartir una máscara**, debido a que una máscara conserva solo
+  un inicio y un final cortos. Distinguirlas es para lo que sirve la revelación del
+  editor; el trabajo de la fila es decir cuál de las claves de un proveedor atendió
+  la solicitud, no demostrarlo criptográficamente.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Persist the mask on each record at ingestion.** Rejected: it buys a frozen fact
-  at the cost of a migration, a permanently empty column for existing history, and an
-  ingest-time read of CPA configuration - so a gateway that is momentarily unreadable
-  would blank the label for traffic it can otherwise attribute. It also duplicates
-  what the console already reads live for every other provider fact.
-- **Resolve in the browser from the provider list it already fetches.** Rejected as
-  the contract, though it needs the same information: the usage page would have to be
-  handed per-entry masks on the sanitized provider response - widening what a surface
-  that displays no key receives - and the resolution rule would then live in two
-  places, once per client. Keeping it server-side holds one implementation and one
-  DTO, and lets the detail view and the list share it.
-- **Match provider identity as well as the auth index.** Rejected: CPA's provider
-  label for a compatibility record follows the name the operator gave it, so a rename
-  would orphan every request recorded before it even though the credential - and
-  CPA's index for it - is unchanged. The label therefore selects the credential
-  *list* while the index is the identity inside it, which is what keeps a renamed
-  provider's history resolvable.
-- **Fall back to the provider's only key when the index does not match.** Rejected:
-  "there is one configured key, so it must be the one" is an inference, and it becomes
-  wrong the moment a key is added or replaced - printing one key's mask on another
-  key's request. Omission is the answer the user chose, and it is the one that stays
-  true as the configuration changes.
-- **Keep the mask on the provider list and add it to the request list.** Rejected:
-  the provider list's line is the one that is structurally misleading, because it
-  cannot speak for the provider's other keys. Two surfaces printing the same mask
-  would not fix which of them is wrong.
+- **Persistir la máscara en cada registro en la ingesta.** Rechazado: adquiere un
+  hecho congelado a costa de una migración, una columna permanentemente vacía para el
+  historial existente y una lectura en tiempo de ingesta de la configuración de CPA (de
+  modo que una pasarela que no esté disponible momentáneamente dejaría en blanco la
+  etiqueta para el tráfico que de otro modo podría atribuir). También duplica lo que la
+  consola ya lee en vivo para cualquier otro dato del proveedor.
+- **Resolver en el navegador a partir de la lista de proveedores que ya obtiene.**
+  Rechazado como contrato, aunque necesita la misma información: a la página de uso se
+  le tendrían que entregar máscaras por entrada en la respuesta del proveedor
+  sanitizada, ampliando lo que recibe una superficie que no muestra ninguna clave, y la
+  regla de resolución viviría entonces en dos lugares, uno por cliente. Mantenerlo en
+  el lado del servidor mantiene una implementación y un DTO únicos, y permite que la
+  vista de detalles y la lista los compartan.
+- **Coincidir con la identidad del proveedor además del índice de autenticación.**
+  Rechazado: la etiqueta de proveedor de CPA para un registro de compatibilidad sigue
+  el nombre que el operador le dio, por lo que un cambio de nombre dejaría huérfano
+  cada registro realizado antes de él, a pesar de que la credencial —y el índice de
+  CPA para ella— no ha cambiado. Por lo tanto, la etiqueta selecciona la *lista* de
+  credenciales mientras que el índice es la identidad dentro de ella, lo que permite
+  que el historial de un proveedor renombrado siga siendo resoluble.
+- **Recurrir a la única clave del proveedor cuando el índice no coincide.** Rechazado:
+  "hay una clave configurada, por lo que debe ser esa" es una inferencia, y se vuelve
+  incorrecta en el momento en que se añade o reemplaza una clave, imprimiendo la máscara
+  de una clave en la solicitud de otra. La omisión es la respuesta que el usuario
+  eligió, y es la que permanece verdadera a medida que cambia la configuración.
+- **Mantener la máscara en la lista de proveedores y añadirla a la lista de
+  solicitudes.** Rechazado: la línea de la lista de proveedores es la que resulta
+  estructuralmente engañosa, porque no puede hablar por las otras claves del
+  proveedor. Dos superficies imprimiendo la misma máscara no arreglarían cuál de ellas
+  es la incorrecta.

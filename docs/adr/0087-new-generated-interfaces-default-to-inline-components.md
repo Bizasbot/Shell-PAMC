@@ -1,47 +1,23 @@
-# ADR 0087: New generated interfaces default to inline components
+# ADR 0087: Las nuevas interfaces generadas usan componentes inline por defecto
 
-- Status: Accepted
-- Date: 2026-10-08
-- Amends: [ADR 0082](0082-a-display-is-drawn-where-the-model-calls-it.md) for new-call framing and
-  [ADR 0085](0085-a-generated-ui-is-composed-from-components-and-drawn-as-it-is-written.md) for
-  the height bound and layout contract.
+- Estado: Aceptado
+- Fecha: 2026-10-08
+- Modifica: [ADR 0082](0082-a-display-is-drawn-where-the-model-calls-it.md) para el encuadre de nuevas llamadas y
+  [ADR 0085](0085-a-generated-ui-is-composed-from-components-and-drawn-as-it-is-written.md) para
+  el límite de altura y el contrato de diseño (*layout*).
 
-## Context
+## Contexto
 
-Generated interfaces are parts of an answer, not only standalone chart artifacts. A filter,
-calculator or workflow explorer should sit beside the text that explains it without adding
-another card, heading and scrolling viewport. The earlier 1600px height bound also forced
-ordinary dashboards to scroll inside the conversation, narrowing charts on classic scrollbars.
-Existing conversations must keep the presentation with which they were saved.
+Las interfaces generadas son partes de una respuesta, no solo artefactos de gráficos independientes. Un filtro, calculador o explorador de flujos de trabajo debe ubicarse junto al texto que lo explica sin agregar otra tarjeta (*card*), encabezado y ventana de desplazamiento (*viewport*) con scroll. El límite de altura anterior de 1600px también obligaba a los paneles ordinarios a desplazarse dentro de la conversación, estrechando los gráficos en las barras de desplazamiento clásicas. Las conversaciones existentes deben conservar la presentación con la que fueron guardadas.
 
-## Decision
+## Decisión
 
-New `render_ui` calls default to `frame: none`. The server stores that choice explicitly;
-`frame: card` remains stored as absence, preserving the interpretation of older views.
-Drafts use the same default for `render_ui`; legacy display drafts retain card framing.
-Models are instructed to write framing before markup, choose task-shaped local controls,
-compose from the offline component kit and use natural, responsive document layout.
+Las nuevas llamadas a `render_ui` utilizan `frame: none` por defecto. El servidor almacena explícitamente esa elección; `frame: card` se sigue almacenando como ausencia, preservando la interpretación de las vistas más antiguas. Los borradores utilizan el mismo valor predeterminado para `render_ui`; los borradores de visualización heredados conservan el encuadre de tarjeta. Se instruye a los modelos para que escriban el encuadre antes del marcado (*markup*), elijan controles locales con forma de tarea, compongan a partir del kit de componentes offline y utilicen un diseño de documento natural y responsivo.
 
-Content height grows and shrinks within 48px–16384px, matching the saved-image height ceiling.
-Resize and mutation observations coalesce into one animation-frame measurement, excluding
-viewport height so a previously taller component can shrink after filtering. A measurement a
-layout change alone produced and that repeats the last overflow is not sent: content sized from the
-frame itself (`min-height:100vh`, `height:100%`) is taller with every frame it is given, so
-reporting it would grow the frame into blank space without end. A content mutation always reports,
-so a component that is still being written keeps growing. Above the cap, content remains
-scrollable rather than disappearing. Embedded components share the console's
-surface and control radius values in live views, streamed previews and exports.
+La altura del contenido crece y se contrae dentro del rango de 48px–16384px, coincidiendo con el límite superior de altura de la imagen guardada. Las observaciones de cambio de tamaño (*resize*) y mutación se fusionan en una única medición de fotograma de animación (*animation frame*), excluyendo la altura del viewport para que un componente previamente más alto pueda encogerse después de filtrar. Una medición producida únicamente por un cambio de diseño y que repite el último desbordamiento (*overflow*) no se envía: el contenido dimensionado a partir del propio marco (`min-height:100vh`, `height:100%`) es más alto en cada fotograma que se le asigna, por lo que reportarlo haría crecer el marco hacia un espacio en blanco sin fin. Una mutación de contenido siempre se reporta, por lo que un componente que aún se está escribiendo continúa creciendo. Por encima del límite, el contenido sigue siendo desplazable en lugar de desaparecer. Los componentes incrustados comparten los valores de la superficie de la consola y el radio de control en las vistas en vivo, vistas previas transmitidas y exportaciones.
 
-A draft renders partial markup with a fresh script nonce granted only to the host bootstrap;
-model scripts, inline event handlers and JavaScript URLs cannot execute during streaming.
-The completed component activates its scripts only in the existing opaque-origin, network-blocked sandbox. Local
-interactions use frozen content. `OMC.compose` offers a reviewed message draft for new reads or
-writes; it neither sends the message nor bypasses capability approval.
+Un borrador procesa marcado parcial con un *nonce* de script fresco concedido solo al bootstrap del host; los scripts del modelo, los controladores de eventos en línea y las URL de JavaScript no se pueden ejecutar durante la transmisión (*streaming*). El componente completado activa sus scripts únicamente en el sandbox existente de origen opaco y red bloqueada. Las interacciones locales utilizan contenido congelado. `OMC.compose` ofrece un borrador de mensaje revisado para nuevas lecturas o escrituras; no envía el mensaje ni elude la aprobación de capacidades.
 
-## Consequences
+## Consecuencias
 
-The model can compose multiple complementary components among answer paragraphs while keeping
-simple answers textual. Historical framing and the existing security boundary remain stable.
-A taller bound permits more layout allocation from untrusted frame messages, but that allocation
-is finite and validated. Script-dependent controls become active only when generation completes;
-progressive markup is not a general-purpose incremental script compiler.
+El modelo puede componer múltiples componentes complementarios entre los párrafos de respuesta manteniendo las respuestas simples en formato de texto. El encuadre histórico y el límite de seguridad existente se mantienen estables. Un límite más alto permite una mayor asignación de diseño a partir de mensajes de marcos no confiables, pero dicha asignación es finita y validada. Los controles dependientes de scripts se activan únicamente cuando la generación se completa; el marcado progresivo no es un compilador de scripts incremental de propósito general.

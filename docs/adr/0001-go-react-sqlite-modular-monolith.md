@@ -1,45 +1,45 @@
-# ADR 0001: Go backend with embedded React and SQLite
+# ADR 0001: Backend en Go con React embebido y SQLite
 
-- Status: Accepted
-- Date: 2026-02-20
+- Estado: Aceptado
+- Fecha: 2026-02-20
 
-## Context
+## Contexto
 
-Oh My CPA is a self-hosted management and identity layer for CLIProxyAPI. It needs a long-running HTTP API, CPA Management API integration, a RESP usage collector, metadata synchronization, and a browser UI that works at a configurable sub-path such as `/omc`. The intended deployment is a single Docker Compose stack alongside CPA, with a small operational footprint and a simple persistent data directory.
+Oh My CPA es una capa de gestión e identidad autohospedada para CLIProxyAPI. Requiere una API HTTP de ejecución prolongada, integración con la API de gestión de CPA, un recolector de uso RESP, sincronización de metadatos y una interfaz de usuario web que funcione en una subruta configurable como `/omc`. El despliegue previsto es una única pila de Docker Compose junto a CPA, con una huella operativa reducida y un directorio de datos persistentes simple.
 
-## Decision
+## Decisión
 
-Use a modular monolith with:
+Utilizar un monolito modular con:
 
-- Go for the backend and background workers.
-- React with TypeScript, Vite, and Ant Design for the frontend.
-- React build output embedded into the Go binary with `go:embed`.
-- SQLite in WAL mode for the first deployment model, with one Oh My CPA replica.
-- The CPA Management API over HTTP and a small custom RESP client for usage collection.
-- Direct service-to-service CPA connections inside the Compose network; the public reverse proxy handles browser traffic only.
+- Go para el backend y los trabajadores en segundo plano.
+- React con TypeScript, Vite y Ant Design para el frontend.
+- La compilación de React embebida en el binario de Go mediante `go:embed`.
+- SQLite en modo WAL para el primer modelo de despliegue, con una sola réplica de Oh My CPA.
+- La API de gestión de CPA a través de HTTP y un pequeño cliente RESP personalizado para la recolección de uso.
+- Conexiones directas de servicio a servicio con CPA dentro de la red de Compose; el proxy inverso público gestiona únicamente el tráfico del navegador.
 
-The backend owns the runtime Base Path contract. The default UI path is `/omc`, the API is `/omc/api/v1`, and media is `/omc/media`. The proxy preserves the prefix.
+El backend posee el contrato de la ruta base en tiempo de ejecución. La ruta por defecto de la UI es `/omc`, la API es `/omc/api/v1` y los archivos multimedia son `/omc/media`. El proxy conserva el prefijo.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- One binary and one container are straightforward to distribute.
-- CGO-free builds can target common architectures when using `modernc.org/sqlite`.
-- Go's concurrency model fits long-lived collectors and graceful shutdown.
-- SQLite keeps the self-hosted installation simple and backup-friendly.
-- TypeScript retains safe modeling for the resource identity layer and Ant Design forms.
+- Un solo binario y un solo contenedor son fáciles de distribuir.
+- Las compilaciones sin CGO pueden apuntar a arquitecturas comunes al usar `modernc.org/sqlite`.
+- El modelo de concurrencia de Go se adapta bien a recolectores de larga duración y al apagado ordenado (graceful shutdown).
+- SQLite mantiene la instalación autohospedada simple y fácil de respaldar.
+- TypeScript mantiene un modelado seguro para la capa de identidad de recursos y los formularios de Ant Design.
 
-### Trade-offs
+### Compensaciones (Trade-offs)
 
-- SQLite is a single-writer, single-replica starting point; horizontal scaling needs a future PostgreSQL/lease design.
-- Usage ingestion must use durable inboxes, idempotency, and completeness indicators because CPA's queue/PubSub semantics are not an exactly-once log.
-- Frontend assets must be built before the Go binary and copied into the embed directory.
-- The public reverse proxy and application must agree on prefix preservation; stripping `/omc` breaks routing and callbacks.
+- SQLite es un punto de partida de escritor único y réplica única; el escalado horizontal requerirá en el futuro un diseño con PostgreSQL y concesiones (leases).
+- La ingesta de uso debe utilizar bandejas de entrada duraderas (inboxes), idempotencia e indicadores de completitud, ya que la semántica de cola/PubSub de CPA no es un registro de entrega única (exactly-once).
+- Los recursos del frontend deben compilarse antes del binario de Go y copiarse en el directorio de embebido (`embed`).
+- El proxy inverso público y la aplicación deben acordar la preservación del prefijo; eliminar `/omc` rompe el enrutamiento y las devoluciones de llamada (callbacks).
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Node.js backend**: viable, but less aligned with CPA/Usage Keeper and less convenient for a compact single binary.
-- **Full Ant Design Pro scaffold**: rejected for the initial product shell; use Ant Design and selected ProComponents without allowing a generic admin layout to define the resource-first experience.
-- **PostgreSQL from day one**: deferred because the first target is a self-hosted personal/small-team deployment where a durable SQLite file is a materially simpler installation.
-- **A generic Redis client for CPA RESP**: rejected because CPA exposes only a minimal RESP subset and generic clients may send unsupported negotiation commands.
+- **Backend en Node.js**: viable, pero menos alineado con CPA/Usage Keeper y menos conveniente para un único binario compacto.
+- **Andamio completo (scaffold) de Ant Design Pro**: rechazado para el envoltorio inicial del producto; se utiliza Ant Design y ProComponents seleccionados sin permitir que un diseño de administración genérico defina la experiencia orientada a recursos.
+- **PostgreSQL desde el primer día**: pospuesto porque el objetivo inicial es un despliegue autohospedado personal o para equipos pequeños, donde un archivo SQLite duradero constituye una instalación sustancialmente más simple.
+- **Un cliente Redis genérico para CPA RESP**: rechazado porque CPA expone únicamente un subconjunto mínimo de RESP y los clientes genéricos pueden enviar comandos de negociación no compatibles.

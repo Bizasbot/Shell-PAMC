@@ -1,103 +1,42 @@
-# ADR 0103: A quiet panel on a canvas, and only summoned layers lift
+# ADR 0103: Un panel silencioso en un lienzo y solo las capas convocadas se elevan
 
-- Status: Accepted
-- Date: 2026-10-21
-- Amends: ADR 0009's bound (the `fast` token is now 120ms), ADR 0011's derived set (eighteen tokens,
-  adding `canvas`), and ADR 0086's radius values.
+- Estado: Aceptado
+- Fecha: 2026-10-21
+- Modifica: El límite del ADR 0009 (el token `fast` ahora es de 120ms), el conjunto derivado del ADR 0011 (dieciocho tokens, añadiendo `canvas`) y los valores de radio del ADR 0086.
 
-## Context
+## Contexto
 
-The console was drawn as a terminal: every boundary a 1px line, zero shadows anywhere, 4px corners on
-everything from a pip to a dialog, and a motion budget of 50ms and 100ms. Each rule was defensible alone. Together they cost the interface its hierarchy:
+La consola se diseñó como un terminal: cada límite una línea de 1px, sin sombras en ninguna parte, esquinas de 4px en todo, desde un pip hasta un diálogo, y un presupuesto de movimiento de 50ms y 100ms. Cada regla era defendible por sí sola. En conjunto, le costaron a la interfaz su jerarquía:
 
-- **Everything was the same kind of object.** A card, a menu, a dialog and the page itself were all a
-  fill and a hairline, so the only thing telling a summoned menu from the card under it was a border
-  that matched the card's own. The rail, the header and the page were three regions divided by two
-  rules, which read as a grid of boxes rather than as navigation beside a document.
-- **Grouping was drawn with lines.** A settings group was a framed box with a ruled header strip and
-  ruled rows, so a page of settings was a stack of tables; the eye found the lines before the labels.
-- **Every fact wore a frame.** Status, counts, flags and rates were each a bordered chip, so a row
-  of a list was a strip of small boxes and the one exception in it - a failure - had no more weight
-  than the eleven expected facts around it.
-- **The motion budget was below the point where an entrance reads as one.** At 60ms a menu and at
-  100ms a dialog are a cut with a smear; antd's own entrances, which the budget shortened rather than
-  replaced, scale a panel from 80% (a dialog from 20%, out of the pointer), which at any duration reads
-  as flying in.
+- **Todo era el mismo tipo de objeto.** Una tarjeta, un menú, un diálogo y la página en sí eran un relleno y una línea fina (hairline), por lo que lo único que distinguía a un menú convocado de la tarjeta debajo de él era un borde que coincidía con el de la propia tarjeta. La barra lateral (rail), la cabecera y la página eran tres regiones divididas por dos reglas, que se leían como una cuadrícula de cajas en lugar de una navegación junto a un documento.
+- **El agrupamiento se dibujaba con líneas.** Un grupo de configuración era una caja enmarcada con una franja de cabecera con líneas y filas con líneas, de modo que una página de configuración era una pila de tablas; el ojo encontraba las líneas antes que las etiquetas.
+- **Cada dato llevaba un marco.** El estado, los recuentos, los indicadores (flags) y las tasas eran cada uno un chip con borde, por lo que una fila de una lista era una tira de cajas pequeñas y la única excepción en ella —un fallo— no tenía más peso que los once datos esperados a su alrededor.
+- **El presupuesto de movimiento estaba por debajo del punto en que una entrada se lee como un todo.** A 60ms un menú y a 100ms un diálogo son un corte con un desenfoque; las propias entradas de antd, que el presupuesto acortaba en lugar de reemplazar, escalan un panel desde el 80% (un diálogo desde el 20%, fuera del puntero), lo cual a cualquier duración se lee como si estuviera volando hacia adentro.
 
-The data surfaces - dense tables, tabular figures, the dashboard's readouts - did not have these
-problems, and nothing here changes how they read.
+Las superficies de datos —tablas densas, cifras tabulares, las lecturas del panel de control (dashboard)— no tenían estos problemas, y nada de esto cambia cómo se leen.
 
-## Decision
+## Decisión
 
-1. **The shell is a rail on a canvas and the page on one inset panel.** The navigation stands on a
-   new derived token, `canvas`, one step behind the page; the header and the route content are drawn
-   on a single panel at `bg`, inset 8px from the window and rounded by the card step. Neither the rail
-   nor the header carries a border of its own: the panel's edge is the separation. On a phone the
-   panel is the screen.
-2. **Rail entries are soft filled rows.** Hover and selection are foreground washes over whatever the
-   entry stands on (5% and 8%), so the same rule reads on the canvas and on the phone sheet; the
-   selected entry takes the text colour at weight 500. The 2px inset bar is retired. Group names are
-   quiet captions in reading case.
-3. **The corner scale nests: 2 · 6 · 8 · 12.** Marks 2px (a check box 4px, status pips round); controls, tags and inputs 6px; menus,
-   popovers, inner boxes and tiles 8px; cards, lists, dialogs, drawers and the content panel 12px. A
-   shape inside another takes the step below its frame. `pnpm check:style-tokens` enforces the
-   literals and refuses 5px as a step nobody chose. The conversation's corners move onto the
-   same scale (`THREAD_RADII`: document 8, control 6, surface 10, thread 12).
-4. **Static surfaces stay flat; summoned layers lift.** Cards, tables and the layout remain a fill and
-   a hairline. A layer the reader summoned - a menu, a popover, a select or date panel, a toast, a
-   dialog, a side sheet - carries a soft shadow (`--shadow-float`, `--shadow-overlay`) in addition to
-   its hairline, with a deeper pair in dark mode where a light shadow would not read. A desktop side
-   sheet floats like the page panel, inset 8px and rounded. The modal mask dims rather than hides
-   (12% in light, 50% in dark). The composer, the one object a reader writes into, sits on a raised
-   shadow that deepens to the floating one while focused.
-5. **Grouping is enclosure, not division.** A card is drawn on the panel's own ground and enclosed by
-   its hairline, never a second fill. Rows inside a settings group are divided by a dashed rule inset
-   from the edge. On the OMC settings page the group's name is a caption above its enclosure, and the
-   page takes a 920px reading column.
-6. **Quiet controls are fills.** A secondary button is a foreground wash (6%, 10% hovered, 13%
-   pressed) with a transparent edge and its label in the text colour in every state; a dashed button
-   keeps its dashed outline because it draws the slot it will fill. Every field - an input, a select,
-   the time window - is a filled well whose edge appears only under focus (antd's global `filled`
-   variant), so a toolbar of fields is one row of equal wells.
-   A row action is its glyph alone until the pointer brings a fill under it. The switch is a pill
-   with a raised knob; position and fill carry the state.
-7. **Facts are text; only exceptions are marked.** A verdict is a dot and a word, coloured in full
-   only when it is a failure; counts are a line of text divided by quiet dots; a tag is a soft fill
-   with no edge; a continuous reading (the cache rate) is its value in its hue. Status pips are round.
-   Column headers and captions are sentence case; log levels and unit marks, which label data, keep
-   their case. The bundled Sarasa face stays the default for both typeface roles, and the mono role
-   is reserved for strings read character by character - identifiers, keys, paths and code - so
-   names, models and figures follow the interface role an operator chooses.
-8. **Motion is gentle and still restrained: 120 · 160 · 180 · 240ms.** `fast` 120ms (hover, press,
-   colour), `float` 160ms (a summoned panel), `base` 180ms (route fade, disclosure), `slow` 240ms (a
-   dialog, a sheet). Entrances use a decelerating curve (`--ease-out`). A panel fades in while settling
-   the last 4% toward its origin; a menu also drops its last 4px toward its control; a dialog rises 8px
-   into place; a leaving panel fades over `fast`. Opacity and transform only, every keyframe with a
-   reduced-motion counterpart: a panel is pinned to its settled state, and a dialog, whose library
-   moves focus and unmounts on `animationend`, keeps an opacity-only fade. Nothing bounces or overshoots.
-   A button gives a little (97%) under a press. A palette change cross-fades the whole page over `slow`
-   through the View Transitions API, and holds every element's own transition off for the two frames
-   the repaint takes, so a switch is one composited movement instead of hundreds of colour eases. ADR 0009's
-   bound survives as a bound - a hover lands within `fast` - at the new value.
+1. **El shell es una barra lateral sobre un lienzo y la página en un panel inset.** La navegación se sitúa sobre un nuevo token derivado, `canvas`, un paso por detrás de la página; la cabecera y el contenido de la ruta se dibujan en un único panel en `bg`, con un inset de 8px desde la ventana y redondeado por el paso de tarjeta. Ni la barra lateral ni la cabecera llevan un borde propio: el borde del panel es la separación. En un teléfono, el panel es la pantalla.
+2. **Las entradas de la barra lateral son filas con relleno suave.** El *hover* y la selección son lavados en primer plano sobre lo que sea que se apoye la entrada (5% y 8%), de modo que la misma regla se lee en el lienzo y en la hoja del teléfono; la entrada seleccionada toma el color de texto con un peso de 500. La barra de inserción de 2px se retira. Los nombres de grupo son subtítulos silenciosos en capitalización de oración (reading case).
+3. **La escala de esquinas se anida: 2 · 6 · 8 · 12.** Marcas de 2px (una casilla de verificación de 4px, pips de estado redondos); controles, etiquetas (tags) e inputs de 6px; menús, popovers, cajas internas y mosaicos (tiles) de 8px; tarjetas, listas, diálogos, hojas laterales y el panel de contenido de 12px. Una forma dentro de otra toma el paso inferior a su marco. `pnpm check:style-tokens` aplica los literales y rechaza 5px como un paso que nadie eligió. Las esquinas de la conversación se trasladan a la misma escala (`THREAD_RADII`: documento 8, control 6, superficie 10, hilo 12).
+4. **Las superficies estáticas se mantienen planas; las capas convocadas se elevan.** Las tarjetas, las tablas y el diseño siguen siendo un relleno y una línea fina. Una capa que el lector convocó —un menú, un popover, un panel de selección o fecha, un aviso (toast), un diálogo, una hoja lateral— lleva una sombra suave (`--shadow-float`, `--shadow-overlay`) además de su línea fina, con un par más profundo en el modo oscuro donde una sombra clara no se leería. Una hoja lateral de escritorio flota como el panel de página, con un inset de 8px y redondeada. La máscara modal oscurece en lugar de ocultar (12% en claro, 50% en oscuro). El compositor, el único objeto en el que un lector escribe, se asienta sobre una sombra elevada que se profundiza hasta convertirse en la flotante mientras está enfocado.
+5. **El agrupamiento es inclusión, no división.** Una tarjeta se dibuja sobre el fondo propio del panel y está delimitada por su propia línea fina, nunca con un segundo relleno. Las filas dentro de un grupo de configuración están divididas por una regla discontinua (dashed) insertada desde el borde. En la página de configuración de OMC, el nombre del grupo es un subtítulo sobre su recinto, y la página adopta una columna de lectura de 920px.
+6. **Los controles silenciosos son rellenos.** Un botón secundario es un lavado de primer plano (6%, 10% en *hover*, 13% presionado) con un borde transparente y su etiqueta en el color del texto en cada estado; un botón discontinuo mantiene su contorno discontinuo porque dibuja el espacio que llenará. Cada campo —un input, un select, la ventana de tiempo— es un pozo relleno cuyo borde aparece solo bajo el enfoque (la variante global `filled` de antd), por lo que una barra de herramientas de campos es una fila de pozos iguales.
+   Una acción de fila es solo su glifo hasta que el puntero trae un relleno debajo de él. El interruptor (switch) es una píldora con un tirador elevado; la posición y el relleno transmiten el estado.
+7. **Los datos son texto; solo las excepciones están marcadas.** Un veredicto es un punto y una palabra, coloreados por completo solo cuando se trata de un fallo; los recuentos son una línea de texto dividida por puntos silenciosos; una etiqueta (tag) es un relleno suave sin borde; una lectura continua (la tasa de caché) es su valor en su tono. Los pips de estado son redondos. Los encabezados de columna y los subtítulos están en minúsculas con inicial mayúscula (sentence case); los niveles de registro y las marcas de unidad, que etiquetan datos, conservan sus mayúsculas/minúsculas. La fuente Sarasa incluida sigue siendo la predeterminada para ambos roles tipográficos, y el rol mono se reserva para cadenas leídas carácter por carácter —identificadores, claves, rutas y código—, por lo que los nombres, modelos y cifras siguen el rol de interfaz que el operador elija.
+8. **El movimiento es suave y sigue siendo moderado: 120 · 160 · 180 · 240ms.** `fast` 120ms (*hover*, presionado, color), `float` 160ms (un panel convocado), `base` 180ms (desvanecimiento de ruta, divulgación), `slow` 240ms (un diálogo, una hoja). Las entradas usan una curva de desaceleración (`--ease-out`). Un panel se desvanece mientras se asienta el último 4% hacia su origen; un menú también baja sus últimos 4px hacia su control; un diálogo asciende 8px a su lugar; un panel que se va se desvanece durante `fast`. Solo opacidad y transformación, cada fotograma clave con su contraparte de movimiento reducido (`reduced-motion`): un panel se fija en su estado asentado, y un diálogo, cuyo componente cambia el foco y se desmonta en `animationend`, mantiene un desvanecimiento exclusivo de opacidad. Nada rebota ni se pasa de largo. Un botón cede un poco (97%) al presionarlo. Un cambio de paleta hace un fundido cruzado de toda la página en `slow` a través de la API de Transiciones de Vista (View Transitions API), y mantiene desactivada la transición propia de cada elemento durante los dos fotogramas que toma el *repaint*, por lo que un cambio es un movimiento compuesto en lugar de cientos de transiciones de color. El límite del ADR 0009 sobrevive como límite —un *hover* aterriza dentro de `fast`— en el nuevo valor.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- Hierarchy is legible at a glance: chrome on the canvas, the work on the panel, and anything above
-  the work visibly above it.
-- Settings pages read as forms rather than tables, and the rail as navigation rather than a column of
-  boxes.
-- The palette contract is unchanged in kind. `canvas` is derived like every other relationship, so an
-  operator's palette gets a canvas without authoring one, and no authored token moved.
+- La jerarquía es legible de un vistazo: los elementos cromáticos en el lienzo, el trabajo en el panel y cualquier elemento por encima del trabajo visiblemente por encima de él.
+- Las páginas de configuración se leen como formularios en lugar de tablas, y la barra lateral como navegación en lugar de una columna de cajas.
+- El contrato de la paleta no cambia en su naturaleza. `canvas` se deriva como cualquier otra relación, por lo que la paleta de un operador obtiene un lienzo sin necesidad de crear uno, y ningún token creado se ha movido.
 
-### Trade-offs
+### Desventajas
 
-- **Shadows exist again.** Dark mode needs much deeper shadows to read, and a shadow is a paint cost a
-  border was not; both are confined to summoned layers, of which a page shows one or two at a time.
-- **The motion budget is roughly doubled.** A hover now takes up to 120ms where it took 50ms. That is
-  still well inside the point where a hover drags, but it is a relaxation of a documented constraint,
-  and the dashboard's `roll` token (240ms) is no longer the only motion that long.
-- **Dashboard cards moved from `surface` to `bg`.** The heatmap's two zero states were calibrated
-  against the old card fill; they keep their order and stay quiet against the new ground, but their
-  measured ratios changed (`docs/design.md` §2 carries the current numbers).
+- **Las sombras vuelven a existir.** El modo oscuro necesita sombras mucho más profundas para leerse, y una sombra representa un coste de renderizado (*paint*) que un borde no tenía; ambas se limitan a las capas convocadas, de las cuales una página muestra una o dos a la vez.
+- **El presupuesto de movimiento se duplica aproximadamente.** Un *hover* ahora toma hasta 120ms donde antes tomaba 50ms. Sigue estando muy dentro del umbral en el que un *hover* se siente pesado, pero es una relajación de una restricción documentada, y el token `roll` del panel de control (240ms) ya no es el único movimiento de esa duración.
+- **Las tarjetas del panel de control se trasladaron de `surface` a `bg`.** Los dos estados cero del mapa de calor (*heatmap*) se calibraron con el antiguo relleno de tarjeta; mantienen su orden y se ven silenciosos contra el nuevo fondo, pero sus proporciones medidas cambiaron (`docs/design.md` §2 contiene los números actuales).

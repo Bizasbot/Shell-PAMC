@@ -1,39 +1,25 @@
-# ADR 0043: Agent approval is decided inline, under the call that raised it
+# ADR 0043: La aprobación del agente se decide en línea, bajo la llamada que la originó
 
-- Status: Accepted
-- Date: 2026-09-29
-- Supersedes: the dialog presentation of [ADR 0035](0035-agent-authorization-is-one-decision.md)
+- Estado: Aceptado
+- Fecha: 2026-09-29
+- Reemplaza a: la presentación en diálogo de [ADR 0035](0035-agent-authorization-is-one-decision.md)
 
-## Context
+## Contexto
 
-ADR 0035 made an approval one allow-or-deny decision and presented it as a dialog that opened as
-soon as a run stopped for it. The decision held up; the dialog did not. It covered the answer the
-operator was deciding about - often the model's explanation of why it wanted the change - and it
-covered the conversation on a phone entirely. With runs now stopping on an explicit AG-UI interrupt
-naming the call that raised it (ADR 0041), the natural place for the decision is that call.
+El ADR 0035 estableció que una aprobación es una única decisión de permitir o denegar, y la presentó como un diálogo que se abría en cuanto una ejecución se detenía para solicitarla. La decisión se mantiene; el diálogo no. Este último cubría la respuesta sobre la cual el operador estaba decidiendo —a menudo la explicación del modelo sobre por qué deseaba el cambio— y cubría por completo la conversación en un teléfono. Dado que las ejecuciones ahora se detienen en una interrupción explícita de AG-UI que nombra la llamada que la originó (ADR 0041), el lugar natural para tomar la decisión es dicha llamada.
 
-## Decision
+## Decisión
 
-An approval is drawn as a card in the transcript, directly under the capability call that prepared
-it, through assistant-ui's native tool approval:
+Una aprobación se representa como una tarjeta en la transcripción, directamente debajo de la llamada de capacidad que la preparó, mediante la aprobación de herramientas nativa de assistant-ui:
 
-- The card shows what ADR 0035 requires - the capability, its permission, the target, the prepared
-  changes and, for a destructive capability, the "cannot be undone" line - and one Allow and one
-  Deny. A private input (a secret, an OAuth hand-off) is collected on the card and posted only to
-  the decision endpoint.
-- While a decision is open the composer refuses to send and says so, with a control that brings
-  the card into view and focuses it; the call chain holding it opens by itself.
-- Deciding continues the run: the page resumes the interrupt it decided. A decision made in another
-  tab is picked up by polling the open operation and continues the run here too.
-- A question (`ask_question`) keeps its place in the composer, as ADR 0035 decided; it now reaches
-  the run through the framework's resume-tool-call channel, which lands in the same continuation.
+- La tarjeta muestra lo que exige el ADR 0035: la capacidad, su permiso, el destino, los cambios preparados y, para una capacidad destructiva, la línea de "no se puede deshacer", junto con un botón de Permitir y uno de Denegar. Una entrada privada (un secreto, un traspaso de OAuth) se recopila en la tarjeta y se envía únicamente al endpoint de decisión.
+- Mientras una decisión esté pendiente, el compositor se niega a enviar mensajes y lo indica mediante un aviso, acompañado de un control que trae la tarjeta a la vista y la enfoca; la cadena de llamadas que la contiene se abre automáticamente.
+- Tomar una decisión reanuda la ejecución: la página reanuda la interrupción sobre la cual se decidió. Una decisión tomada en otra pestaña se detecta mediante sondeo (*polling*) de la operación abierta y también reanuda la ejecución aquí.
+- Una pregunta (`ask_question`) mantiene su lugar en el compositor, tal como lo decidió el ADR 0035; ahora llega a la ejecución a través del canal de reanudación de llamadas de herramientas del framework, el cual aterriza en la misma continuación.
 
-Everything else in ADR 0035 stands: one decision, no typed challenge, the revision binding, one-time
-consumption, the audit trail and the rule that external agents cannot approve.
+Todo lo demás en el ADR 0035 sigue en pie: una única decisión, sin desafío tipado, el enlace de revisión, el consumo de un solo uso, la traza de auditoría (*audit trail*) y la regla de que los agentes externos no pueden aprobar.
 
-## Consequences
+## Consecuencias
 
-- The operator reads the reason for a change and decides it in one place, and nothing covers the
-  conversation.
-- A waiting approval can scroll out of view; the composer's notice is what keeps it from being
-  missed.
+- El operador lee la razón de un cambio y toma la decisión en un solo lugar, y nada oculta la conversación.
+- Una aprobación en espera puede quedar fuera de la pantalla al desplazarse; el aviso del compositor es lo que evita que se pase por alto.

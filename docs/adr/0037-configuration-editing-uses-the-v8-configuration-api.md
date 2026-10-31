@@ -1,101 +1,100 @@
-# ADR 0037: Configuration editing uses the v8 configuration API
+# ADR 0037: La edición de configuración utiliza la API de configuración de v8
 
-- Status: Accepted
-- Date: 2026-09-29
-- Implements: [ADR 0034](0034-cpa-v8-is-the-baseline.md), decision 4
+- Estado: Aceptado
+- Fecha: 2026-09-29
+- Implementa: [ADR 0034](0034-cpa-v8-is-the-baseline.md), decisión 4
 
-## Context
+## Contexto
 
-ADR 0034 made CPA v8 the baseline but left the configuration editors on `/v0/management`:
-the configuration page, the source view and the Keys page read the stored file, placed
-each field by the file's layout (legacy, v8 or mixed) with a relocation table copied from
-CPA, and wrote the whole YAML document back through `PUT /v0/management/config.yaml`. A
-save guard refused documents CPA v8 would accept and partly ignore. That design existed
-to avoid one event: a v8 configuration write migrates a legacy file, rewriting it in
-CPA's own layout (four-space indentation, defaults added, unknown sections commented out,
-comments of relocated keys moved).
+El ADR 0034 estableció CPA v8 como la base pero dejó los editores de configuración en `/v0/management`:
+la página de configuración, la vista de código fuente y la página de Claves leían el archivo almacenado,
+ubicaban cada campo según el diseño del archivo (legado, v8 o mixto) con una tabla de reubicación copiada de
+CPA, y volvían a escribir todo el documento YAML mediante `PUT /v0/management/config.yaml`. Un
+guardián de guardado rechazaba los documentos que CPA v8 aceptaría e ignoraría parcialmente. Dicho diseño existía
+para evitar un evento: una escritura de configuración de v8 migra un archivo legado, reescribiéndolo en el
+propio diseño de CPA (indentación de cuatro espacios, valores predeterminados añadidos, secciones desconocidas comentadas
+y comentarios de claves reubicadas movidos).
 
-CPA v8's configuration API makes most of that machinery unnecessary. Measured on v8.0.2
+La API de configuración de CPA v8 hace innecesaria la mayor parte de ese mecanismo. Medido en v8.0.2
 (`docs/cpa-v8-compat.md` §4):
 
-- `GET /v8/management/config` and `/config.yaml` render the stored file in the v8 layout,
-  whatever layout it is stored in, and never modify it.
-- `PATCH /v8/management/config` merges values, `PUT /config/<path>` replaces one path and
-  `DELETE /config/<path>` removes it. Each touches only its path; the rest of the file is
-  kept as CPA renders it.
-- A write that names a legacy field, an unknown section or a value of the wrong type is
-  refused (`400`/`422 invalid_config`) with a message naming the offending path, and
-  nothing is written.
-- The first write to a legacy file converts the whole file, once.
+- `GET /v8/management/config` y `/config.yaml` renderizan el archivo almacenado en el diseño v8,
+  independientemente del diseño en el que esté almacenado, y nunca lo modifican.
+- `PATCH /v8/management/config` fusiona valores, `PUT /config/<path>` reemplaza una ruta y
+  `DELETE /config/<path>` la elimina. Cada una afecta únicamente a su ruta; el resto del archivo
+  se mantiene tal como lo renderiza CPA.
+- Una escritura que nombra un campo legado, una sección desconocida o un valor del tipo incorrecto es
+  rechazada (`400`/`422 invalid_config`) con un mensaje que indica la ruta infractora, y
+  no se escribe nada.
+- La primera escritura en un archivo legado convierte todo el archivo, una sola vez.
 
-The operator decided (2026-09-28) that the first release requires CPA v8, that a pre-v8
-file is converted rather than preserved in its old layout, and that no editing capability
-may be lost in the move.
+El operador decidió (2026-09-28) que la primera versión requiere CPA v8, que un archivo
+anterior a v8 se convierte en lugar de conservarse en su diseño antiguo y que no se debe perder ninguna
+capacidad de edición en el proceso.
 
-## Decision
+## Decisión
 
-1. **The editors read and write the v8 layout only.** The editor schema names v8 paths.
-   `GET /management/config` returns CPA's v8 rendering with secrets masked, and its
-   revision is the SHA-256 of that rendering. The relocation table, the layout detection,
-   the legacy-spelling fallbacks and the save guard are removed.
-2. **The visual editor and the Keys page save only what changed.** The console diffs the
-   draft against the document it was loaded from and sends `PATCH /management/config`
-   with `{revision, changes}`, one change per edited path (`value` or `remove`). The
-   backend checks the revision under the provider write gate, restores masked secrets
-   per value, and applies the set as one `PATCH` for scalars and lists, one `PUT` per map
-   value and one `DELETE` per removal. The answer carries CPA's new rendering, which
-   becomes the editor's baseline; a draft with newer edits is carried over onto it.
-3. **The source view writes the whole document through `PUT /v8/management/config.yaml`.**
-   It edits CPA's v8 rendering, so a legacy name typed there is refused by CPA with its
-   own explanation (`422 config_rejected`, shown in the console's language with CPA's
-   reason quoted). The save restored the hidden values into what it sent, so any of them
-   the reason quotes is removed from it first.
-4. **A legacy file is backed up before it is converted.** Before any v8 configuration
-   write, the client reads the stored file through `GET /v0/management/config.yaml` (the
-   only route that returns the file as stored) and, when it is not a v8 file, stores it
-   encrypted in `cpa_config_backups` (migration 030, the latest ten kept; a retried save
-   of the same file reuses its copy). The file is read before every such write rather
-   than remembered as converted, because an operator can put a legacy file back. The
-   other v8 writes after which CPA saves the file (installing or deleting a plugin,
-   enabling or disabling a credential) take the same copy first. If the copy cannot be
-   kept, the write is refused before anything is sent (`503 config_backup_failed`). The console marks a legacy file on the configuration
-   page and offers the kept copies for download (`GET /management/config/backups`,
-   `GET /management/config/backups/{id}`, the latter audited as `config.reveal_backup`).
-5. **Scalar writes use the same path.** `PUT /management/config/{key}`, which the Agent's
-   `config_set` also uses, writes the key's v8 path through the change set instead of a v0
-   flat setter.
+1. **Los editores leen y escriben únicamente el diseño v8.** El esquema del editor nombra rutas v8.
+   `GET /management/config` devuelve el renderizado v8 de CPA con los secretos enmascarados, y su
+   revisión es el SHA-256 de dicho renderizado. Se eliminan la tabla de reubicación, la detección de diseño,
+   los respaldos de sintaxis legada y el guardián de guardado.
+2. **El editor visual y la página de Claves guardan únicamente lo que cambió.** La consola compara el
+   borrador con el documento desde el cual se cargó y envía `PATCH /management/config`
+   con `{revision, changes}`, un cambio por ruta editada (`value` o `remove`). El
+   backend verifica la revisión bajo la compuerta de escritura del proveedor, restaura los secretos enmascarados
+   por valor y aplica el conjunto como un `PATCH` para escalares y listas, un `PUT` por cada
+   valor de mapa y un `DELETE` por cada eliminación. La respuesta incluye el nuevo renderizado de CPA, el cual
+   se convierte en la línea base del editor; un borrador con ediciones más recientes se transfiere sobre este.
+3. **La vista de código fuente escribe todo el documento a través de `PUT /v8/management/config.yaml`.**
+   Edita el renderizado v8 de CPA, por lo que un nombre legado escrito allí es rechazado por CPA con su
+   propia explicación (`422 config_rejected`, mostrada en el idioma de la consola citando la razón de CPA).
+   El guardado restauró los valores ocultos en lo que envió, por lo que cualquiera de ellos que
+   la razón mencione se elimina primero.
+4. **Se realiza una copia de seguridad de un archivo legado antes de convertirlo.** Antes de cualquier escritura
+   de configuración en v8, el cliente lee el archivo almacenado a través de `GET /v0/management/config.yaml` (la
+   única ruta que devuelve el archivo tal como está almacenado) y, cuando no es un archivo v8, lo almacena
+   encriptado en `cpa_config_backups` (migración 030, se conservan los últimos diez; un guardado
+   reintentado del mismo archivo reutiliza su copia). El archivo se lee antes de cada escritura de este tipo
+   en lugar de recordarse como convertido, ya que un operador puede volver a colocar un archivo legado. Las
+   otras escrituras en v8 tras las cuales CPA guarda el archivo (instalar o eliminar un plugin,
+   habilitar o deshabilitar una credencial) toman la misma copia primero. Si la copia no se puede
+   conservar, la escritura se rechaza antes de enviar nada (`503 config_backup_failed`). La consola marca un archivo legado en la página de
+   configuración y ofrece las copias conservadas para su descarga (`GET /management/config/backups`,
+   `GET /management/config/backups/{id}`, siendo este último auditado como `config.reveal_backup`).
+5. **Las escrituras escalares utilizan la misma ruta.** `PUT /management/config/{key}`, que el
+   `config_set` del Agente también utiliza, escribe la ruta v8 de la clave a través del conjunto de
+   cambios en lugar de un configurador plano de v0.
 
-## Consequences
+## Consecuencias
 
-- The file is no longer preserved byte for byte across the first save. CPA's conversion
-  keeps every value it knows and the comments of the keys it moves, adds its defaults,
-  and turns unknown sections into comments. The original is recoverable from the backup,
-  and every later save is a per-path write.
-- A concurrent edit of an unrelated setting is no longer overwritten by a save: the
-  revision still refuses a save prepared against a moved document, and the conflict
-  dialog's reload now keeps the visual editor's edits on top of the latest document.
-- A change set is not atomic across its requests. It is ordered so that the requests CPA
-  is most likely to refuse (the merge that carries typed values) come first, but a set
-  whose later request fails leaves the earlier ones applied. That failure is reported as
-  `config_partially_applied` (audited as a failure with `partially_applied`), not as a
-  refusal that changed nothing, and the editor's next save meets the revision conflict
-  dialog, which reloads the state CPA holds.
-- `/v0/management` keeps three roles (`internal/cpa/management/client_v0.go`): the
-  per-family credential lists (the only source of `auth-index`), the stored-file read
-  the backup needs, and the writes whose editors have not moved yet (provider
-  credentials, OAuth model aliases, per-plugin enablement and settings).
-- The masked view now also masks upstream `api-key` values wherever they appear; the
-  v8 layout's `api-keys.<family>` groups made them part of the editor's document.
+- El archivo ya no se conserva byte por byte a partir del primer guardado. La conversión de CPA
+  conserva cada valor que conoce y los comentarios de las claves que mueve, añade sus valores predeterminados
+  y convierte las secciones desconocidas en comentarios. El original se puede recuperar a partir de la copia de seguridad,
+  y cada guardado posterior es una escritura por ruta.
+- Una edición concurrente de una configuración no relacionada ya no se sobrescribe mediante un guardado:
+  la revisión sigue rechazando un guardado preparado contra un documento movido, y la recarga del
+  diálogo de conflictos ahora mantiene las ediciones del editor visual por encima del documento más reciente.
+- Un conjunto de cambios no es atómico en todas sus solicitudes. Está ordenado de modo que las solicitudes que CPA
+  tiene más probabilidades de rechazar (la fusión que transporta valores tipados) van primero, pero un conjunto
+  cuya solicitud posterior falla deja aplicadas las anteriores. Dicho fallo se reporta como
+  `config_partially_applied` (auditado como un fallo con `partially_applied`), no como un
+  rechazo que no cambió nada, y el siguiente guardado del editor se encuentra con el diálogo de conflicto
+  de revisión, el cual recarga el estado que mantiene CPA.
+- `/v0/management` mantiene tres roles (`internal/cpa/management/client_v0.go`): las
+  listas de credenciales por familia (la única fuente de `auth-index`), la lectura del archivo almacenado
+  que necesita la copia de seguridad y las escrituras cuyos editores aún no se han movido (credenciales
+  de proveedores, alias de modelos OAuth, habilitación y configuración por plugin).
+- La vista enmascarada ahora también enmascara los valores de `api-key` ascendentes donde sea que aparezcan;
+  los grupos `api-keys.<family>` del diseño v8 los convirtieron en parte del documento del editor.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Keep writing whole files through v0 and preserve the legacy layout (ADR 0028's
-  rule).** Rejected: it keeps a copied relocation table, a layout-dependent editor and a
-  save guard alive only to avoid CPA's one-time conversion, and every save still
-  overwrites concurrent edits.
-- **Write the whole v8 document through `PUT /v8/management/config.yaml` from the visual
-  editor.** Rejected: it has the same overwrite problem and sends every setting for a
-  one-field change.
-- **Convert without a backup.** Rejected: the conversion drops comments and unknown
-  sections, and an operator adopting OMC on an existing gateway must be able to get the
-  original back.
+- **Seguir escribiendo archivos completos a través de v0 y preservar el diseño legado (regla del
+  ADR 0028).** Rechazado: mantiene una tabla de reubicación copiada, un editor dependiente del diseño y un
+  guardián de guardado vivos únicamente para evitar la conversión única de CPA, y cada guardado sigue
+  sobrescribiendo las ediciones concurrentes.
+- **Escribir todo el documento v8 a través de `PUT /v8/management/config.yaml` desde el editor
+  visual.** Rechazado: presenta el mismo problema de sobrescritura y envía toda la configuración por
+  un cambio de un solo campo.
+- **Convertir sin una copia de seguridad.** Rechazado: la conversión descarta los comentarios y las
+  secciones desconocidas, y un operador que adopte OMC en una pasarela existente debe poder recuperar el original.

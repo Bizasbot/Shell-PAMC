@@ -1,60 +1,25 @@
-# ADR 0052: Loading is measured, and first-load placeholders breathe
+# ADR 0052: Se mide la carga y los marcadores de posición de primera carga respiran
 
-- Status: Accepted
-- Date: 2026-10-02
-- Amends: design.md §7 rules 2 and 3 as they apply to loading feedback. The motion budget, the
-  200ms show delay and the rule that a refresh never replaces painted data are unchanged.
+- Estado: Aceptado
+- Fecha: 2026-10-02
+- Modifica: design.md §7 reglas 2 y 3 en lo que respecta a la retroalimentación de carga. El presupuesto de movimiento, el retraso de visualización de 200ms y la regla de que una actualización nunca reemplaza los datos pintados permanecen sin cambios.
 
-## Context
+## Contexto
 
-The console showed work in flight in three unrelated ways. The app-wide bar under the header was
-an indeterminate slide on a 900ms loop: it said "something is happening" and nothing about how
-much, so a page waiting on its last slow read looked exactly like a page that had just started.
-First loads were a mix of antd `Spin` spinners centred in empty space (the shell, every lazy
-route, the OAuth credential list, the icon library), antd `Skeleton active` - the sweeping
-gradient §7 rule 3 forbids - on six surfaces, and static `Skeleton` paragraphs elsewhere. None of
-the placeholders matched the geometry of what replaced them, so content landed with a jump.
-Two waits drew nothing at all: the whole authenticated tree while the stored preferences are
-read (the time zone guard), and a page's own lazy editor or drawer body.
+La consola mostraba el trabajo en curso de tres maneras no relacionadas. La barra general de la aplicación bajo la cabecera era un desplazamiento indeterminado en un bucle de 900ms: indicaba que "algo está pasando" y nada sobre cuánto, por lo que una página esperando su última lectura lenta se veía exactamente igual que una página que acababa de empezar. Las primeras cargas eran una mezcla de spinners `Spin` de antd centrados en espacios vacíos (el shell, cada ruta diferida, la lista de credenciales de OAuth, la biblioteca de iconos), `Skeleton active` de antd —el degradado de barrido que prohíbe la regla 3 de §7— en seis superficies, y párrafos estáticos `Skeleton` en otros lugares. Ninguno de los marcadores de posición coincidía con la geometría de lo que los reemplazaba, por lo que el contenido aterrizaba con un salto. Dos esperas no dibujaban nada en absoluto: todo el árbol autenticado mientras se leen las preferencias almacenadas (el protector de zona horaria), y el propio editor diferido o cuerpo de cajón de una página.
 
-Static placeholders were the rule because §7 rule 3 bans shimmer, but a frozen grey frame reads as
-a page that has stalled, which is the impression the rule was meant to avoid.
+Los marcadores de posición estáticos eran la regla porque la regla 3 de §7 prohíbe el brillo (*shimmer*), pero un marco gris congelado se percibe como una página que se ha bloqueado, que es la impresión que la regla pretendía evitar.
 
-## Decision
+## Decisión
 
-1. **The bar measures counted work.** Every non-silent query and every module download behind a
-   Suspense boundary (the shell, a route, an editor, a drawer body) is a task. A batch opens with
-   the first task and closes with the last; a settled task counts in full, and a pending one
-   earns credit on an exponential curve capped at 85% of its share, so only a task actually
-   settling can finish the bar. The bar never moves backwards: a task joining the batch lowers the
-   model's value, and the drawn bar holds until the model passes it again. Done, it holds full for
-   one `base` beat and fades over another. The policy is the pure `web/src/utils/loadProgress.ts`;
-   `ProgressBar` draws it.
-2. **The same bar is used wherever work is counted.** Under the console header (`DataProgress`),
-   under the shell placeholder's header, and along the sign-in page's top edge for the session check
-   and the sign-in request. A silent poll is still not counted.
-3. **First-load placeholders are first-party and drawn at the content's geometry.** One kit
-   (`web/src/components/common/Placeholder.tsx`) replaces antd `Skeleton` and page-level `Spin`:
-   the shell's rail and header, the page head, list rows, table rows, dashboard tiles, paragraph
-   bodies and the icon library's tiles. A region carries the localized `common.loading` status
-   name, because the blocks themselves are decoration.
-4. **Placeholders breathe.** Each block cycles opacity between 1 and 0.45 over 1400ms, delayed one
-   `--motion-base` per row so the wave runs down the frame. This is not rule 3's shimmer: no
-   gradient moves, and opacity stays on the compositor. It is a recorded `duration` exception in
-   `scripts/check-motion.mjs` and is frozen at a static 0.7 under reduced motion.
+1. **La barra mide el trabajo contado.** Cada consulta no silenciosa y cada descarga de módulo detrás de un límite de Suspense (el shell, una ruta, un editor, el cuerpo de un cajón) es una tarea. Un lote se abre con la primera tarea y se cierra con la última; una tarea completada cuenta por completo, y una pendiente obtiene crédito en una curva exponencial limitada al 85% de su participación, de modo que solo una tarea que realmente se complete puede finalizar la barra. La barra nunca retrocede: una tarea que se une al lote reduce el valor del modelo, y la barra dibujada se mantiene hasta que el modelo la supera nuevamente. Al terminar, se mantiene llena durante un pulso `base` y se desvanece durante otro. La política está en el archivo puro `web/src/utils/loadProgress.ts`; `ProgressBar` la dibuja.
+2. **Se utiliza la misma barra dondequiera que se cuente el trabajo.** Bajo la cabecera de la consola (`DataProgress`), bajo la cabecera del marcador de posición del shell, y a lo largo del borde superior de la página de inicio de sesión para la comprobación de sesión y la solicitud de inicio de sesión. Un sondeo silencioso (*silent poll*) sigue sin contarse.
+3. **Los marcadores de posición de primera carga son de primera parte y se dibujan según la geometría del contenido.** Un kit (`web/src/components/common/Placeholder.tsx`) reemplaza a `Skeleton` de antd y a `Spin` a nivel de página: el carril y la cabecera del shell, la cabecera de la página, las filas de listas, las filas de tablas, los mosaicos del panel (*dashboard*), los cuerpos de párrafo y los mosaicos de la biblioteca de iconos. Una región lleva el nombre de estado localizado `common.loading`, ya que los bloques en sí mismos son decorativos.
+4. **Los marcadores de posición respiran.** Cada bloque alterna su opacidad entre 1 y 0.45 en un intervalo de 1400ms, con un retraso de un `--motion-base` por fila para que la ola recorra el marco. Esto no es el brillo de la regla 3: no se mueve ningún degradado y la opacidad se mantiene en el compositor. Es una excepción de `duration` registrada en `scripts/check-motion.mjs` y se congela a un valor estático de 0.7 bajo movimiento reducido.
 
-## Consequences
+## Consecuencias
 
-- Rule 2 ("keep the animated area tiny") now has a stated exception: a placeholder frame can
-  cover a page. It is acceptable because it exists only while nothing has ever loaded. A refresh
-  keeps its data on screen (`keepPreviousData`) and never shows a placeholder, so the frame never
-  animates over content.
-- The bar runs a frame loop while painted. It writes one transform and, in tenths, the
-  `aria-valuenow` of a `progressbar`, directly to the DOM rather than through React state. Under
-  reduced motion the pending credit is dropped and the bar steps only when a task settles.
-- The pending credit is an estimate. The bar's length is "the share of counted work done, with
-  pending work given partial credit", not a byte count. Work the console cannot see (a request
-  made outside React Query and outside a Suspense boundary) does not move it.
-- A placeholder that must match a surface's geometry has to change when that surface does. The
-  shell placeholder reads the rail's group sizes from a constant beside it, not from the rail's
-  own definition.
+- La regla 2 ("mantener el área animada pequeña") ahora tiene una excepción declarada: un marco de marcador de posición puede cubrir una página. Es aceptable porque solo existe mientras no se ha cargado nada todavía. Una actualización mantiene sus datos en pantalla (`keepPreviousData`) y nunca muestra un marcador de posición, por lo que el marco nunca se anima sobre el contenido.
+- La barra ejecuta un bucle de fotogramas mientras está pintada. Escribe una transformación y, en décimas, el `aria-valuenow` de un `progressbar`, directamente en el DOM en lugar de a través del estado de React. Con movimiento reducido, el crédito pendiente se descarta y la barra avanza solo cuando una tarea se completa.
+- El crédito pendiente es una estimación. La longitud de la barra es "la proporción del trabajo contado realizado, otorgando crédito parcial al trabajo pendiente", no un recuento de bytes. El trabajo que la consola no puede ver (una solicitud realizada fuera de React Query y fuera de un límite de Suspense) no la mueve.
+- Un marcador de posición que debe coincidir con la geometría de una superficie tiene que cambiar cuando lo hace dicha superficie. El marcador de posición del shell lee los tamaños de grupo del carril de una constante junto a él, no de la propia definición del carril.

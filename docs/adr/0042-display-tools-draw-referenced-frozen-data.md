@@ -1,53 +1,30 @@
-# ADR 0042: Display tools draw referenced data, frozen on the call
+# ADR 0042: Las herramientas de visualización representan datos referencionados, congelados en la llamada
 
-- Status: Accepted
-- Date: 2026-09-29
+- Estado: Aceptado
+- Fecha: 2026-09-29
 
-## Context
+## Contexto
 
-An answer about usage is usually a trend or a comparison, and the Agent could only write it as
-prose or as a Markdown table typed out by the model. Both have the same two faults. The numbers
-are the model's retelling of a capability result, so a transcription error is indistinguishable
-from the data; and every row costs tokens twice - once when the capability returns it and again
-when the model repeats it.
+Una respuesta sobre uso suele ser una tendencia o una comparación, y el Agente solo podía escribirla en prosa o como una tabla en Markdown generada por el modelo. Ambas tienen los mismos dos defectos. Los números son la reinterpretación que hace el modelo del resultado de una capacidad, por lo que un error de transcripción es indistinguible de los datos; y cada fila cuesta tokens dos veces: una cuando la capacidad los devuelve y otra cuando el modelo los repite.
 
-Letting the model emit a chart specification with its own data would draw the figures but keep
-both faults. Letting the browser read a capability result directly would draw real data but tie
-the picture to whatever that result means when the page is next opened, and would put
-capability-shaped parsing in the browser for every capability.
+Permitir que el modelo emita una especificación de gráfico con sus propios datos dibujaría las figuras pero mantendría ambos defectos. Permitir que el navegador lea el resultado de una capacidad directamente dibujaría datos reales, pero vincularía la imagen a lo que ese resultado signifique la próxima vez que se abra la página, y requeriría un análisis con la forma de la capacidad en el navegador para cada capacidad.
 
-## Decision
+## Decisión
 
-The Agent has two display tools, `render_chart` and `render_table`, offered only when the client
-declares it can draw them (the console does; the MCP bridge does not).
+El Agente tiene dos herramientas de visualización, `render_chart` y `render_table`, que solo se ofrecen cuando el cliente declara que puede representarlas (la consola lo hace; el puente MCP no).
 
-- **Data is referenced, not transcribed.** The model names `source {call_id, path}`: a successful
-  capability call of this conversation and a dot path to its rows - objects, or positional arrays
-  beside a `columns` list, which is how a `database_query` result is referenced. The
-  server resolves the reference, projects the named fields and checks them - a chart's `y` fields
-  must be numeric, a field must exist in some row, nested values are refused. `inline` rows (at most
-  200) exist only for figures the model derived itself and no capability returned.
-- **The view is frozen on the trace.** The resolved dataset - kind, title, chart specification,
-  columns, rows and its source - is stored on the call's trace, so a reload shows the same figures
-  whatever the deployment's data has done since, and an export carries exactly what was drawn.
-- **The model receives a receipt, not the rows**: `{rendered, rows, fields}`. A refusal is an
-  ordinary `invalid_tool_arguments` result with a detail naming the field of the request to change,
-  and it never quotes stored data.
-- **They are not capabilities.** They change nothing, so they never pass through the executor,
-  never prepare an operation, never interrupt a run and are not audited as operations.
-- Bounds: 1000 rows, 12 table columns, 8 chart series, 96 KiB per view; a larger array is refused
-  with the instruction to aggregate first.
+- **Los datos se referencian, no se transcriben.** El modelo nombra un `source {call_id, path}`: una llamada a capacidad exitosa de esta conversación y una ruta con puntos (dot path) hacia sus filas (objetos, o arreglos posicionales junto con una lista `columns`, que es la forma en que se referencia el resultado de una `database_query`). El servidor resuelve la referencia, proyecta los campos nombrados y los valida: los campos `y` de un gráfico deben ser numéricos, un campo debe existir en alguna fila y se rechazan los valores anidados. Las filas `inline` (como máximo 200) existen solo para figuras que el modelo derivó por sí mismo y que ninguna capacidad devolvió.
+- **La vista se congela en el registro (trace).** El conjunto de datos resuelto (tipo, título, especificación de gráfico, columnas, filas y su fuente) se almacena en el registro de la llamada, de modo que una recarga muestra las mismas figuras sin importar lo que los datos del despliegue hayan cambiado desde entonces, y una exportación incluye exactamente lo que se dibujó.
+- **El modelo recibe un recibo, no las filas**: `{rendered, rows, fields}`. Un rechazo es un resultado ordinario de tipo `invalid_tool_arguments` con un detalle que nombra el campo de la solicitud que debe modificarse, y nunca cita datos almacenados.
+- **No son capacidades.** No cambian nada, por lo que nunca pasan por el ejecutor, nunca preparan una operación, nunca interrumpen una ejecución y no se auditan como operaciones.
+- Límites: 1000 filas, 12 columnas de tabla, 8 series de gráficos, 96 KiB por vista; un arreglo más grande se rechaza con la instrucción de agregar primero.
 
-The console draws a view only from a turn that succeeded: the figures form a result section after the answer, outside the collapsed call chain - a table with sorting and CSV copy and download, a chart on the console's chart stack (series palette, shared tooltip, motion rules), loaded lazily, with a switch to the rows behind it and a PNG download. While the turn runs, a stopped answer or a refused reference keeps the display call in the trace as ordinary work; a chart or table the model drew while investigating is not published as an answer's result.
+La consola dibuja una vista únicamente a partir de un turno que tuvo éxito: las figuras forman una sección de resultados después de la respuesta, fuera de la cadena de llamadas colapsada (una tabla con ordenamiento, copia y descarga en CSV; un gráfico en la pila de gráficos de la consola con paleta de series, información sobre herramientas compartida y reglas de movimiento), cargada de forma perezosa (lazy), con un interruptor para ver las filas detrás de ella y descarga en PNG. Mientras se ejecuta el turno, una respuesta detenida o una referencia rechazada mantienen la llamada de visualización en el registro como trabajo ordinario; un gráfico o tabla que el modelo dibujó mientras investigaba no se publica como resultado de una respuesta.
 
-## Consequences
+## Consecuencias
 
-- A chart's figures are a capability's figures. What the model can get wrong is which result it
-  points at and how it describes it, both of which the operator can check in the call details.
-- Displays are final-answer artifacts: investigation stays in the trace, so a long task cannot
-  turn the transcript into a gallery of intermediate figures.
-- A chart or table costs its data once in tokens.
-- A stored conversation grows by the frozen rows; the per-view byte bound and the session's existing
-  trimming by whole turns keep that bounded.
-- A new capability needs nothing to be drawable: any result holding its rows as objects, or as
-  positional arrays beside their column names, can be referenced.
+- Las cifras de un gráfico son las cifras de una capacidad. Lo que el modelo puede hacer mal es a qué resultado apunta y cómo lo describe, los cuales el operador puede verificar en los detalles de la llamada.
+- Las visualizaciones son artefactos de respuesta final: la investigación permanece en el registro, por lo que una tarea larga no puede convertir la transcripción en una galería de figuras intermedias.
+- Un gráfico o tabla cuesta sus datos una sola vez en tokens.
+- Una conversación almacenada crece según las filas congeladas; el límite de bytes por vista y el recorte existente de la sesión por turnos completos mantienen esto acotado.
+- Una nueva capacidad no necesita nada para poder ser representada: cualquier resultado que mantenga sus filas como objetos, o como arreglos posicionales junto con los nombres de sus columnas, puede ser referenciado.

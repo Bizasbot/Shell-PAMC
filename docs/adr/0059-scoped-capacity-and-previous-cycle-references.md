@@ -1,56 +1,22 @@
-# ADR 0059: Scoped capacity and previous-cycle references
+# ADR 0059: Capacidad acotada y referencias del ciclo anterior
 
-- Status: Accepted
-- Extends ADR 0058's read-time estimation; supersedes its global-only scope and
-  absence of previous-cycle references.
+- Estado: Aceptado
+- Extiende la estimación en tiempo de lectura del ADR 0058; reemplaza su ámbito
+  estrictamente global y la ausencia de referencias del ciclo anterior.
 
-## Decision
+## Decisión
 
-Keep capacity estimates as read-time joins from locked request costs, and extend
-that join to model-metered windows. Prefer the upstream-served model recorded by
-CPA; otherwise accept recognizable canonical requested identities. Claude's
-Sonnet, Opus and Fable windows meter families, while an explicit model window
-meters that model release (including dated snapshots). Antigravity group names
-are mapped by an exact reviewed allowlist, never by substring guesses. Every
-recorded identity must be classifiable; an unresolved alias, unknown group or
-unknown period withholds the entire scoped numerator, not just its dollar value.
+Mantener las estimaciones de capacidad como uniones (joins) en tiempo de lectura a partir de costos de solicitudes bloqueadas, y extender dicha unión a las ventanas medidas por modelo. Se prefiere el modelo servido por el upstream registrado por CPA; de lo contrario, se aceptan identidades solicitadas canónicas reconocibles. Las ventanas de Claude para Sonnet, Opus y Fable miden familias, mientras que una ventana de modelo explícita mide esa versión del modelo (incluyendo instantáneas fechadas). Los nombres de los grupos de Antigravity se mapean mediante una lista blanca exacta y revisada, nunca mediante adivinanzas basadas en subcadenas. Toda identidad registrada debe poder ser clasificada; un alias no resuelto, un grupo desconocido o un período desconocido anulan todo el numerador acotado, no solo su valor en dólares.
 
-When a fresh, valid current cycle has too little consumption, no recorded traffic
-or no used-share reading, expose the final retained estimate of the immediately
-preceding scheduled cycle as a **Previous-Cycle Capacity Reference**. It is not the
-previous cycle's total actual usage. Its `basis`, observation time, start and reset
-instant travel with the estimate, while `usage` and `capacity_unavailable` continue
-to describe the current cycle. The console labels the reference and its observation
-time; Agent/MCP consumers receive the same provenance. Never skip a cycle, cross
-changed model scopes or periods, or reuse an early-reset cycle to find a number.
-Adjacent boundaries may differ by at most one second to tolerate derived-clock
-rounding.
+Cuando un ciclo actual fresco y válido tiene muy poco consumo, ningún tráfico registrado o ninguna lectura de participación usada (used-share), se expone la estimación final retenida del ciclo programado inmediatamente anterior como una **Referencia de Capacidad del Ciclo Anterior** (Previous-Cycle Capacity Reference). No es el uso real total del ciclo anterior. Su `basis`, el tiempo de observación y los instantes de inicio y restablecimiento viajan junto con la estimación, mientras que `usage` y `capacity_unavailable` continúan describiendo el ciclo actual. La consola etiqueta la referencia y su tiempo de observación; los consumidores de Agent/MCP reciben la misma procedencia. Nunca se debe omitir un ciclo, cruzar ámbitos o períodos de modelos modificados, ni reutilizar un ciclo de restablecimiento temprano para encontrar un valor. Los límites adyacentes pueden diferir por un máximo de un segundo para tolerar el redondeo de relojes derivados.
 
-Detect a reset anywhere in the retained sequence, even after consumption recovers.
-A used-share drop greater than one percentage point or a premature boundary
-replacement greater than one second is reset evidence. Persist only its sticky
-`has_mid_cycle_reset` observation flag in the existing window JSON, until the cycle
-ends. This preserves detected resets after the 50-snapshot retention evicts their
-original readings, without lifecycle tables or a migration. Failed and disabled
-refreshes never become new observations; quota status alone is not freshness
-provenance, because cooldown can override an error status.
-A failed history read does not block fresh observations: save them with a sticky
-`has_incomplete_history` marker for that cycle, withhold estimates/references and log
-the evidence failure. This is distinct from an observed upstream reset.
+Detectar un restablecimiento en cualquier punto de la secuencia retenida, incluso después de que el consumo se recupere. Una caída en la participación usada superior a un punto porcentual o un reemplazo prematuro de límite superior a un segundo constituye evidencia de restablecimiento. Persistir únicamente su indicador de observación adherente (`has_mid_cycle_reset`) en el JSON de ventana existente, hasta que finalice el ciclo. Esto preserva los restablecimientos detectados después de que la retención de 50 instantáneas expulse sus lecturas originales, sin necesidad de tablas de ciclo de vida ni de una migración. Las actualizaciones fallidas y deshabilitadas nunca se convierten en nuevas observaciones; el estado de cuota por sí solo no es procedencia de frescura, ya que el enfriamiento (cooldown) puede anular un estado de error.
+Una lectura de historial fallida no bloquea las observaciones frescas: estas se guardan con un marcador adherente `has_incomplete_history` para dicho ciclo, reteniendo las estimaciones/referencias y registrando la falla de evidencia. Esto es distinto de un restablecimiento de upstream observado.
 
-## Consequences
+## Consecuencias
 
-- Missing, corrupt or unreadable history and unreadable usage fail closed. A missing
-  preceding snapshot yields no reference; it is not a reason to invent one.
-- The evidence is bounded by retained observations. A reset that was never observed
-  cannot be detected; a migrated installation has no sticky evidence for evicted
-  history. A real persisted lifecycle could provide stronger historical guarantees,
-  at the cost of schema and maintenance work.
-- A new Antigravity group needs an explicit reviewed mapping. Opaque aliases need a
-  served model identity; current alias configuration cannot reconstruct historical
-  routing, so the estimate does not depend on live CPA alias/model reads.
-- Late-arriving events inside an observation's range are included on the next read.
-  The estimate can change on backfill; it is not a frozen balance or routing input.
-- The error allowance covers half-point percentage rounding only. It is an
-  approximate relative uncertainty, not a statistical confidence interval; external
-  traffic, incomplete price coverage and model mix remain separate limitations.
+- Un historial faltante, corrupto o ilegible y un uso ilegible fallan de manera segura (fail closed). Una instantánea precedente faltante no produce ninguna referencia; no es motivo para inventar una.
+- La evidencia está acotada por las observaciones retenidas. Un restablecimiento que nunca fue observado no puede ser detectado; una instalación migrada no tiene evidencia adherente para el historial expulsado. Un ciclo de vida persistido real podría proporcionar mayores garantías históricas, a costa de un mayor trabajo de esquema y mantenimiento.
+- Un nuevo grupo de Antigravity necesita un mapeo explícito y revisado. Los alias opacos necesitan una identidad de modelo servida; la configuración de alias actual no puede reconstruir el enrutamiento histórico, por lo que la estimación no depende de lecturas de alias/modelo en vivo de CPA.
+- Los eventos que llegan tarde dentro del rango de una observación se incluyen en la siguiente lectura. La estimación puede cambiar en la carga retroactiva (backfill); no es un saldo congelado ni un dato de entrada para el enrutamiento.
+- El margen de error cubre únicamente el redondeo de porcentaje de medio punto. Es una incertidumbre relativa aproximada, no un intervalo de confianza estadístico; el tráfico externo, la cobertura de precios incompleta y la combinación de modelos siguen siendo limitaciones separadas.

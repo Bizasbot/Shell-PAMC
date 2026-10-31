@@ -1,44 +1,27 @@
-# ADR 0003: Lock request costs to request-time price versions
+# ADR 0003: Bloquear los costes de las solicitudes a las versiones de precios en el momento de la solicitud
 
-## Status
+## Estado
 
-Accepted
+Aceptado
 
-## Context
+## Contexto
 
-The old cost query joined every usage event to the mutable `model_prices` row.
-Changing a price therefore changed historical invoices and dashboard totals.
-The old sync scope also used historical traffic, which made removed models stay
-in the maintenance list indefinitely.
+La consulta de costes anterior unía cada evento de uso con la fila mutable de `model_prices`.
+Por lo tanto, cambiar un precio alteraba las facturas históricas y los totales del panel de control.
+El ámbito de sincronización anterior también utilizaba tráfico histórico, lo que hacía que los modelos eliminados permanecieran en la lista de mantenimiento indefinidamente.
 
-## Decision
+## Decisión
 
-Maintain a durable snapshot of the current CPA model catalog separately from
-usage history. A complete CPA catalog refresh atomically replaces that snapshot;
-partial or failed discovery leaves the last complete snapshot intact. A model
-alias stores its canonical pricing identity, so aliases do not need separate
-manual maintenance when CPA changes their target.
+Mantener una instantánea duradera del catálogo actual de modelos de CPA separada del historial de uso. Una actualización completa del catálogo de CPA reemplaza atómicamente dicha instantánea; un descubrimiento parcial o fallido deja intacta la última instantánea completa. Un alias de modelo almacena su identidad de precios canónica, por lo que los alias no necesitan un mantenimiento manual separado cuando CPA cambia su destino.
 
-Keep `model_prices` as the current editable projection and append immutable rows
-to `model_price_versions` whenever a price is created, changed, or retired.
-When a usage event is inserted, select the latest version effective at the
-event's request timestamp and store its version id plus an integer USD-nanos
-cost in the same transaction. A missing or invalid price is stored as usage
-with status `unpriced`/`invalid_price`, never as zero and never as a future
-backfill. Rows that predate this migration are `legacy_unpriced` because their
-original price cannot be reconstructed.
+Mantener `model_prices` como la proyección editable actual y añadir filas inmutables a `model_price_versions` cada vez que se cree, modifique o retire un precio.
+Cuando se insértelo un evento de uso, seleccionar la última versión efectiva en la marca de tiempo de la solicitud del evento y almacenar su ID de versión junto con un coste en USD-nanos como entero en la misma transacción. Un precio ausente o no válido se almacena como uso con el estado `unpriced`/`invalid_price`, nunca como cero y nunca como una retroalimentación (*backfill*) futura. Las filas anteriores a esta migración se marcan como `legacy_unpriced` porque su precio original no se puede reconstruir.
 
-Manual edits are restricted to the current CPA catalog and are protected both
-in the service and in the SQL upsert. Removing a manual price retires its
-current version; the next catalog refresh can recreate an automatic price for
-future requests without changing existing snapshots.
+Las ediciones manuales están restringidas al catálogo actual de CPA y están protegidas tanto en el servicio como en el *upsert* de SQL. Eliminar un precio manual retira su versión actual; la siguiente actualización del catálogo puede recrear un precio automático para futuras solicitudes sin alterar las instantáneas existentes.
 
-## Consequences
+## Consecuencias
 
-- Historical costs remain stable across price changes, model removal, delayed
-  queue delivery, and retries.
-- The pricing page only asks users to maintain currently configured CPA models.
-- Existing databases lose no usage telemetry, but old rows cannot be assigned
-  an invented historical cost.
-- A catalog refresh requires a successful CPA management read and can wait for
-  the configured metadata source to identify a new model's rates.
+- Los costes históricos se mantendrán estables ante cambios de precios, eliminación de modelos, entrega retrasada en cola y reintentos.
+- La página de precios solo solicita a los usuarios que mantengan los modelos de CPA configurados actualmente.
+- Las bases de datos existentes no pierden telemetría de uso, pero a las filas antiguas no se les puede asignar un coste histórico inventado.
+- Una actualización del catálogo requiere una lectura exitosa de la gestión de CPA y puede esperar a que la fuente de metadatos configurada identifique las tarifas de un nuevo modelo.

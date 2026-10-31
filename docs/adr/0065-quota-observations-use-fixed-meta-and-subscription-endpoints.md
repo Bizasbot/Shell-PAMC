@@ -1,76 +1,79 @@
-# ADR 0065: Quota observations use fixed Meta and subscription endpoints
+# ADR 0065: Las observaciones de cuota utilizan puntos de conexión fijos de Meta y de suscripción
 
-- Status: Accepted
-- Date: 2026-10-06
+- Estado: Aceptado
+- Fecha: 2026-10-06
 
-## Context
+## Contexto
 
-The CPAMC comparison at `ee79a794526a30c03748a8864a9ac6589a31833b`
-identified missing Meta Muse quota observations and live xAI and Antigravity plan
-readings. CPA's general API-call surface can send credential-bearing requests to
-arbitrary destinations. Adding these observations therefore changes an existing
-security boundary, even though the console still offers no general API-call tool.
+La comparación de CPAMC en `ee79a794526a30c03748a8864a9ac6589a31833b`
+identificó observaciones faltantes de cuota para Meta Muse y lecturas en vivo de planes
+de xAI y Antigravity. La superficie general de llamadas API de CPA puede enviar solicitudes
+portadoras de credenciales a destinos arbitrarios. Por lo tanto, añadir estas observaciones
+modifica una frontera de seguridad existente, a pesar de que la consola aún no ofrece ninguna
+herramienta general de llamadas API.
 
-Meta is a special case: `/muse-code/key` returns subscription usage alongside a
-minted LLM key. CPA's OAuth access token can already be that LLM key; the endpoint
-requires the credential's separately persisted Device Client Access (DCA) token.
-Its POST is not a pure read and can mint a key upstream. A credential marker must
-not silently substitute the wrong token.
+Meta es un caso especial: `/muse-code/key` devuelve el uso de la suscripción junto con una
+clave LLM acuñada. El token de acceso OAuth de CPA ya puede ser esa clave LLM; el punto de
+conexión requiere el token de Acceso de Cliente de Dispositivo (DCA) de la credencial guardado por
+separado. Su solicitud POST no es una lectura pura y puede acuñar una clave en el servidor upstream.
+Un marcador de credencial no debe sustituir silenciosamente el token incorrecto.
 
-## Decision
+## Decisión
 
-Add four individual HTTPS endpoint paths to the compiled quota allowlist:
+Añadir cuatro rutas individuales de puntos de conexión HTTPS a la lista blanca de cuotas compilada:
 
-| Endpoint | Server-owned request |
+| Punto de conexión | Solicitud propiedad del servidor |
 | --- | --- |
-| `https://api.meta.ai/muse-code/key` | POST `{}` with the stored DCA bearer and `x-api-version: 1.0.0` |
-| `https://cli-chat-proxy.grok.com/v1/user` | GET with the fixed `include=subscription` query |
+| `https://api.meta.ai/muse-code/key` | POST `{}` con el bearer DCA almacenado y `x-api-version: 1.0.0` |
+| `https://cli-chat-proxy.grok.com/v1/user` | GET con el parámetro de consulta fijo `include=subscription` |
 | `https://cli-chat-proxy.grok.com/v1/settings` | GET |
-| `https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist` | POST with `metadata.ideType: ANTIGRAVITY` |
+| `https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist` | POST con `metadata.ideType: ANTIGRAVITY` |
 
-These entries admit no additional path segment or lookalike suffix; existing
-URL validation refuses traversal. Neither the browser nor Agent/MCP supplies a
-target, method, bearer or arbitrary request body. xAI subscription reads enrich a
-successful CLI billing observation, not an API-key health fallback. Antigravity
-uses only the daily Code Assist endpoint, without trying extra subscription hosts.
-Both providers continue to use CPA's server-side credential substitution.
+Estas entradas no admiten ningún segmento de ruta adicional ni sufijos similares; la validación de
+URL existente rechaza el recorrido (`traversal`). Ni el navegador ni Agent/MCP proporcionan un
+destino, método, bearer o cuerpo de solicitud arbitrario. Las lecturas de suscripción de xAI
+enriquecen una observación de facturación exitosa de la CLI, no un respaldo (*fallback*) de salud de
+claves API. Antigravity utiliza únicamente el punto de conexión diario de Code Assist, sin probar
+servidores de suscripción adicionales. Ambos proveedores continúan utilizando la sustitución de
+credenciales del lado del servidor de CPA.
 
-For Meta only, the Go quota service downloads the selected stored credential from
-CPA and extracts exactly its `dca_token`. Missing/invalid DCA tokens and runtime-only
-credentials fail without an upstream call; an LLM key or another token field is
-never substituted. Token material is request-local and never included in the
-normalized DTO, snapshot, audit details, browser state or Agent output. The console
-must write an attempt audit before this download and exchange, for individual and
-batch observations. Batch selection is trimmed and deduplicated before auditing
-or calling CPA, so one credential is exchanged once per request, with at most ten
-distinct credentials refreshed. The existing capability engine audits Agent/MCP writes before
-execution. An outcome-audit failure does not undo or retry an exchange that already
-succeeded. No returned API key is saved back to CPA or retained by OMC.
+Solo para Meta, el servicio de cuotas en Go descarga la credencial almacenada seleccionada desde
+CPA y extrae exactamente su `dca_token`. Los tokens DCA faltantes o inválidos y las credenciales
+que solo existen en tiempo de ejecución fallan sin realizar una llamada upstream; nunca se sustituye
+una clave LLM ni otro campo de token. El material del token es local a la solicitud y nunca se incluye
+en el DTO normalizado, la instantánea (`snapshot`), los detalles de auditoría, el estado del navegador
+o la salida del Agente. La consola debe registrar una auditoría de intento antes de esta descarga e
+intercambio, tanto para observaciones individuales como por lotes. La selección por lotes se recorta y
+desduplica antes de auditar o llamar a CPA, de modo que una credencial se intercambia una vez por
+solicitud, actualizando como máximo diez credenciales distintas. El motor de capacidades existente
+audita las escrituras de Agent/MCP antes de su ejecución. Un fallo en la auditoría de resultados no
+deshace ni reintenta un intercambio que ya tuvo éxito. Ninguna clave API devuelta se guarda de vuelta
+en CPA ni es retenida por OMC.
 
-Decode only plan name, explicit subscription-active state and the two quota
-windows from Meta's success document. Discard minted keys and account data. Every
-Meta transport, HTTP or decoding failure uses bounded diagnostic text rather than
-upstream bodies/errors, which can echo tokens, keys or personal data. Unknown
-usage remains unknown, never zero. Unknown subscription-active state remains
-absent, not false.
+Decodificar únicamente el nombre del plan, el estado explícito de suscripción activa y las dos
+ventanas de cuota del documento de éxito de Meta. Descartar las claves acuñadas y los datos de cuenta.
+Todo transporte de Meta, fallo HTTP o de decodificación utiliza texto de diagnóstico acotado en lugar
+de cuerpos/errores upstream, los cuales pueden hacer eco de tokens, claves o datos personales. El uso
+desconocido permanece desconocido, nunca cero. El estado de suscripción activa desconocido permanece
+ausente, no falso.
 
-Subscription observations are supplemental: their failure must not discard a
-successful independent quota/billing reading. xAI retains its billing fallback
-label and extra-usage data when neither plan endpoint answers. Antigravity never
-assumes Pro after a failed subscription read; an unrecognized live tier is labelled
-with its upstream name/id but graded unknown, and an absent live tier is unknown.
+Las observaciones de suscripción son suplementarias: su fallo no debe descartar una lectura
+independiente y exitosa de cuota/facturación. xAI retiene su etiqueta de respaldo de facturación y los
+datos de uso adicional cuando ninguno de los puntos de conexión del plan responde. Antigravity nunca
+asume Pro tras una lectura fallida de suscripción; un nivel en vivo no reconocido se etiqueta con su
+nombre/id upstream pero se califica como desconocido, y un nivel en vivo ausente se considera desconocido.
 
-## Consequences and verification
+## Consecuencias y verificación
 
-The new authority is four paths, not four hosts or open endpoint families. Meta
-refresh is explicitly a key-exchange-backed observation, not advertised as a
-side-effect-free read. The console and existing `quota_list`/`quota_refresh` tools
-expose only normalized subscription/window fields; no new general proxy capability
-or secret-bearing Agent capability is introduced.
+La nueva autoridad consta de cuatro rutas, no de cuatro servidores o familias de puntos de
+conexión abiertos. La actualización de Meta es explícitamente una observación respaldada por intercambio
+de claves, no promocionada como una lectura libre de efectos secundarios. La consola y las herramientas
+existentes `quota_list`/`quota_refresh` exponen únicamente campos normalizados de suscripción/ventana;
+no se introduce ninguna nueva capacidad de proxy general ni capacidad de Agente que maneje secretos.
 
-The contract is based on pinned CPAMC source and CPA v8.0.2 source, not a live
-vendor-account experiment. Hermetic quota tests pin request shapes, DCA selection,
-endpoint boundaries, unknown readings and independent subscription failures.
-The real-router Meta regression verifies fail-closed auditing and absence of
-secrets from responses and stored snapshots. Demo responses remain local fixture
-observations and never contact a vendor.
+El contrato se basa en el código fuente fijado de CPAMC y de CPA v8.0.2, no en un experimento con una
+cuenta de proveedor en vivo. Las pruebas de cuotas herméticas fijan las formas de solicitud, la selección
+de DCA, los límites de los puntos de conexión, las lecturas desconocidas y los fallos de suscripción
+independientes. La regresión real del enrutador de Meta verifica la auditoría de fallo seguro y la
+ausencia de secretos en las respuestas y las instantáneas almacenadas. Las respuestas de demostración
+siguen siendo observaciones de fixtures locales y nunca contactan a un proveedor.

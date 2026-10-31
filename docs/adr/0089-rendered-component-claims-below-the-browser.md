@@ -1,37 +1,41 @@
-# ADR 0089: Rendered component claims below the browser
+# ADR 0089: Declaraciones de componentes renderizados por debajo del navegador
 
-- Status: Accepted
-- Date: 2026-10-09
+- Estado: Aceptado
+- Fecha: 2026-10-09
 
-The existing Go and Node layers cannot observe React Query subscriptions,
-optimistic updates shared by mounted readers, asynchronous hook ownership or the
-real provider-to-component connection. Browser probes can, but adding every
-interleaving to a full-page scenario makes feedback and diagnosis unnecessarily
-expensive. The first pilot renders the real preference hook, QueryClient, API
-client, feedback surface, token-display provider and context readout; controlled
-responses expose the intermediate state rather than merely calling pure functions.
+Las capas existentes de Go y Node no pueden observar las suscripciones de React Query,
+las actualizaciones optimistas compartidas por lectores montados, la propiedad de hooks
+asíncronos o la conexión real entre proveedor y componente. Las sondas del navegador
+sí pueden hacerlo, pero añadir cada interacción a un escenario de página completa hace que
+el feedback y el diagnóstico sean innecesariamente costosos. El primer piloto renderiza
+el hook de preferencias real, QueryClient, cliente API, superficie de retroalimentación,
+proveedor de visualización de tokens y lectura de contexto; las respuestas controladas
+exponen el estado intermedio en lugar de limitarse a llamar a funciones puras.
 
-Use a separate Vitest/jsdom/React Testing Library lane for these claims, alongside
-(not instead of) existing Node logic tests. Discover `*.component.test.tsx` under
-`web/src` automatically. Keep isolated environments and one worker initially,
-explicit unmount/global/cache/request cleanup, fail on empty discovery, and reuse
-the repository's bounded process ownership and diagnostics. Run the complete
-component layer in static/CI verification and for affected frontend changes; add
-conservative selection only when measured growth makes it worthwhile.
+Utilice un carril separado de Vitest/jsdom/React Testing Library para estas declaraciones,
+junto con (no en lugar de) las pruebas lógicas de Node existentes. Descubra automáticamente
+archivos `*.component.test.tsx` bajo `web/src`. Mantenga entornos aislados y un solo worker
+inicialmente, limpieza explícita de desmontaje/globales/caché/peticiones, fallo ante un
+descubrimiento vacío, y reutilice la propiedad de procesos acotados y los diagnósticos
+del repositorio. Ejecute la capa de componentes completa en la verificación estática/CI
+y para cambios frontend afectados; añada una selección conservadora solo cuando el
+crecimiento medido haga que valga la pena.
 
-A separate config avoids the product dev server, proxy, asset staging and editor
-workers. Vitest's in-process Vite transformation is not a product HTTP listener.
-All dependencies are development-only; production entrypoints, styles, API
-contracts and browser scheduling remain unchanged.
+Una configuración separada evita el servidor de desarrollo del producto, el proxy, la
+preparación de assets y los workers del editor. La transformación de Vite dentro del proceso
+de Vitest no es un listener HTTP de producto. Todas las dependencias son exclusivamente para
+desarrollo; los puntos de entrada de producción, los estilos, los contratos de API y la
+programación del navegador permanecen sin cambios.
 
-jsdom is not evidence of geometry, real focus, scroll, painting, image encoding,
-browser history or navigation lifecycle. Keep those in Chromium, including the
-settings control's real wiring/reload/phone behavior and cross-stack persistence.
-Move a browser claim only after recording its lower-layer owner and a mutation
-that proves the replacement catches the fault. The initial pilot strengthens
-async coverage and removes no browser assertion. This avoids a wholesale Jest-like
-replacement and the false economy of simulated layout or blanket error suppression.
+jsdom no es evidencia de geometría, foco real, desplazamiento (scroll), renderizado (painting),
+codificación de imágenes, historial del navegador o ciclo de vida de navegación. Mantenga
+esos aspectos en Chromium, incluido el comportamiento real de cableado/recarga/teléfono
+del control de configuración y la persistencia entre pilas. Mueva una declaración del
+navegador solo después de registrar su propietario de capa inferior y una mutación que
+pruebe que el reemplazo detecta el fallo. El piloto inicial fortalece la cobertura
+asíncrona y no elimina ninguna aserción del navegador. Esto evita un reemplazo masivo al
+estilo Jest y la falsa economía del diseño simulado o la supresión generalizada de errores.
 
-Measurements, fault injections, claim mapping and rollout obligations are in
-`docs/plans/architecture-governance.md`; commands and discovery live in
-`docs/testing.md`.
+Las mediciones, inyecciones de fallos, mapeo de declaraciones y obligaciones de despliegue
+se encuentran en `docs/plans/architecture-governance.md`; los comandos y el descubrimiento
+viven en `docs/testing.md`.

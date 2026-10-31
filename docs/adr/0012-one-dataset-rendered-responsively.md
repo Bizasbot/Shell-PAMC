@@ -1,85 +1,50 @@
-# ADR 0012: A list is one dataset rendered responsively, not an operator-facing view switch
+# ADR 0012: Una lista es un conjunto de datos renderizado de forma responsiva, no un selector de vista para el operador
 
-- Status: Accepted
-- Date: 2026-09-19
+- Estado: Aceptado
+- Fecha: 2026-09-19
 
-## Context
+## Contexto
 
-`docs/design.md` §7 and `DESIGN.md`'s Open List Rule both said: *"One table serves every viewport
-width — it scrolls sideways on narrow screens instead of becoming a second layout."* That sentence was
-written in `b9cf688`, in the change that removed the key-management page's **table/card view toggle**
-and with it the narrow-screen card layout and its stylesheet. The reasoning recorded there was sound
-and is still sound: two views of one dataset cost two descriptions of it, the operator has to find the
-switch, and the removed toggle had already produced a status column and a rename modal that could
-disagree with the table beside them.
+La sección §7 de `docs/design.md` y la Regla de Lista Abierta de `DESIGN.md` establecían lo siguiente: *"Una sola tabla sirve para cualquier ancho de pantalla; se desplaza horizontalmente en pantallas estrechas en lugar de convertirse en un segundo diseño"*. Dicha frase se escribió en `b9cf688`, en el cambio que eliminó el **selector de vista de tabla/tarjeta** de la página de gestión de claves y, con él, el diseño de tarjetas para pantallas estrechas junto con su hoja de estilos. El razonamiento registrado en ese momento era sólido y lo sigue siendo: dos vistas de un mismo conjunto de datos implican dos descripciones del mismo, el operador tiene que encontrar el selector, y el selector eliminado ya había generado una columna de estado y un modal de cambio de nombre que podían entrar en contradicción con la tabla situada al lado.
 
-What was never measured was the cost of the sentence in its place. On a phone it is this, from a
-390×844 audit of the built console:
+Lo que nunca se midió fue el costo de mantener dicha frase en su lugar. En un teléfono, según una auditoría de 390×844 de la consola compilada, el resultado es el siguiente:
 
-| Surface | Inner scroller at a 316px card | Consequence |
+| Superficie | Desplazador interno en una tarjeta de 316px | Consecuencia |
 | --- | --- | --- |
-| Key management | 316 → 980px | the reveal, copy and edit controls — which §2 requires to be "in the open" because a secret behind a menu sits one click further — were 664px further |
-| AI providers | 316 → 1081px | the protocol tag was clipped mid-word ("Codex (Res"), which reads as broken text |
-| Plugins | 316 → 537px | the name column crushed to one character per line |
-| Pricing | columns crushed | the 价格 / 倍率 header rendered one character per line |
+| Gestión de claves | 316 → 980px | los controles para revelar, copiar y editar —que §2 exige que estén "a la vista" porque un secreto oculto tras un menú requiere un clic adicional— quedaban 664px más lejos |
+| Proveedores de IA | 316 → 1081px | la etiqueta del protocolo se cortaba a mitad de palabra ("Codex (Res"), lo que se lee como texto roto |
+| Plugins | 316 → 537px | la columna de nombres se reducía a un carácter por línea |
+| Precios | columnas reducidas | el encabezado 价格 / 倍率 se renderizaba a un carácter por línea |
 
-and, on the same measurement, none of those scrollers carried any affordance that it *was* a scroller:
-`hasFadeOrHint: false`, and `scrollbar-width: thin` is invisible on a touch device. A rule that made
-every list page scroll sideways had also removed the only thing that said so.
+y, según esa misma medición, ninguno de estos desplazadores contaba con ningún indicador visual de que *fuera* un desplazador: `hasFadeOrHint: false`, y `scrollbar-width: thin` es invisible en un dispositivo táctil. Una regla que obligaba a todas las páginas de listas a desplazarse horizontalmente también había eliminado el único elemento que lo indicaba.
 
-So the sentence was doing what it said — refusing a second layout — at a cost it had not priced.
+Por lo tanto, la frase estaba cumpliendo su propósito —rechazar un segundo diseño— pero a un costo que no se había evaluado.
 
-## Decision
+## Decisión
 
-**The rule is revised from "one table, scrolled sideways" to "one dataset, rendered responsively".**
+**La regla se modifica de "una sola tabla, desplazada horizontalmente" a "un conjunto de datos, renderizado de forma responsiva".**
 
-A list surface now renders as a table above **640px** and as labelled rows at 640px and below.
-The change is made by *width* alone - `useIsPhoneViewport` is a `(max-width: 640px)` query and no
-pointer query is involved, so a narrow desktop window gets rows and a wide tablet gets the table,
-which is what each of them can actually use. It is never a control the operator has to find, and the two renderings are
-derived from one description of the record:
+Una superficie de lista ahora se renderiza como una tabla por encima de **640px** y como filas etiquetadas a 640px y por debajo.
+El cambio se realiza únicamente en función del *ancho* — `useIsPhoneViewport` es una consulta `(max-width: 640px)` y no interviene ninguna consulta de puntero (`pointer query`), por lo que una ventana de escritorio estrecha obtiene filas y una tableta ancha obtiene la tabla, que es lo que cada una de ellas puede utilizar realmente. Nunca es un control que el operador tenga que buscar, y ambas representaciones se derivan de una única descripción del registro:
 
-- The columns stay the single description of what a record shows — their order, their titles and their
-  own render functions. `phoneRowFields` turns them into the row's labels and values, so a column
-  added to the table reaches the row, and a value cannot be formatted two ways.
-- The dataset, the filters, the URL, the actions, the empty states and the counts are one
-  implementation. Nothing about *what* is listed, or what selecting it means, differs by width.
-- There is no toggle, no preference and no remembered mode. An operator cannot put the console into a
-  phone arrangement on a desktop, or the reverse.
+- Las columnas siguen siendo la única descripción de lo que muestra un registro: su orden, sus títulos y sus propias funciones de renderizado. `phoneRowFields` las convierte en las etiquetas y valores de la fila, de modo que una columna añadida a la tabla llega a la fila, y un valor no puede formatearse de dos maneras distintas.
+- El conjunto de datos, los filtros, la URL, las acciones, los estados vacíos y los recuentos conforman una única implementación. Nada acerca de *qué* se lista, o qué significa seleccionarlo, difiere según el ancho.
+- No hay ningún selector, preferencia ni modo recordado. Un operador no puede configurar la consola en una disposición para teléfono en un escritorio, ni viceversa.
 
-What `b9cf688` rejected does not come back: there is no status column, no rename modal, no
-independently-styled card vocabulary, and no second place for a field list to live.
+Lo que `b9cf688` rechazó no regresa: no hay columna de estado, ni modal de cambio de nombre, ni vocabulario de tarjetas con estilos independientes, ni un segundo lugar donde deba residir una lista de campos.
 
-## Consequences
+## Consecuencias
 
-- **The narrow-screen table's touch affordances are freed up.** A row stops being a 4px-gap cluster of
-  28px controls, which is the cluster the touch rules had to accept overlapping hit areas for; the
-  actions get a line of their own.
-- **The 640px breakpoint is now load-bearing for layout, not only for size.** It joins 900px (the
-  shell changes shape) and the request list's `920px` container query (that list's own width no longer
-  fits its columns), and the three are documented together in `docs/design.md` §8. A fourth number
-  needs a reason stated beside it.
-- **Every list surface now has two renderings to keep honest**, which is the real cost and the reason
-  for the derivation rather than a second hand-written field list. `scripts/test-phone-rows.ts` pins
-  the derivation's silent-omission property: a column that is addressable and not explicitly skipped
-  becomes a field.
-- **`docs/design.md` §7, `DESIGN.md` and the key list's own comment are amended in the same change**,
-  because the old sentence is quoted in all three.
-- The table remains for wide viewports, and the sideways scroll inside its card remains the console's
-  convention *there* — where a pointer can drag it and a scrollbar is visible.
+- **Se liberan las facilidades táctiles de la tabla para pantallas estrechas.** Una fila deja de ser un grupo con una separación de 4px de controles de 28px, que es el grupo para el cual las reglas táctiles tenían que aceptar áreas de impacto superpuestas; las acciones obtienen su propia línea.
+- **El punto de interrupción (`breakpoint`) de 640px ahora es fundamental para el diseño**, no solo para el tamaño. Se une a 900px (la shell cambia de forma) y a la consulta de contenedor de `920px` de la lista de peticiones (el ancho de esa lista ya no se ajusta a sus columnas), y los tres se documentan juntos en la sección §8 de `docs/design.md`. Un cuarto número necesita una justificación explícita al lado.
+- **Cada superficie de lista ahora tiene dos representaciones que mantener sincronizadas**, lo cual es el costo real y la razón de la derivación en lugar de una segunda lista de campos escrita a mano. `scripts/test-phone-rows.ts` fija la propiedad de omisión silenciosa de la derivada: una columna que sea direccionable y no se omita explícitamente se convierte en un campo.
+- **La sección §7 de `docs/design.md`, `DESIGN.md` y el propio comentario de la lista de claves se modifican en el mismo cambio**, debido a que la frase anterior se cita en los tres lugares.
+- La tabla se mantiene para viewports anchos, y el desplazamiento horizontal dentro de su tarjeta sigue siendo la convención de la consola *ahí* —donde un puntero puede arrastrarla y la barra de desplazamiento es visible.
 
-## Alternatives considered
+## Alternativas consideradas
 
-**Keep one table and make the sideways scroll usable** — a sticky identity column, a sticky action
-column, an edge fade and no resize handle on touch. This preserves the sentence exactly, and it was the
-cheaper option. It was rejected because the measurements above are not about the scroll being hard to
-perform but about the controls being *off the screen*: pinning two columns of a 980px table into 316px
-leaves the middle unusable, and the key list would still need one scroll before a secret could be
-revealed.
+**Mantener una sola tabla y hacer que el desplazamiento horizontal sea usable** — una columna de identidad fija, una columna de acción fija, un desvanecimiento en los bordes y sin controlador de cambio de tamaño en dispositivos táctiles. Esto preserva la frase exactamente y era la opción más económica. Se rechazó porque las mediciones anteriores no se deben a que el desplazamiento sea difícil de realizar, sino a que los controles están *fuera de la pantalla*: fijar dos columnas de una tabla de 980px en 316px deja la parte central inutilizable, y la lista de claves seguiría necesitando un desplazamiento antes de poder revelar un secreto.
 
-**A read-only summary on phones** — the cheapest and the least useful: an operator on a phone is
-usually there precisely to act, which is why the console is reachable at all.
+**Un resumen de solo lectura en teléfonos** — la opción más económica y la menos útil: un operador en un teléfono suele estar ahí precisamente para actuar, razón por la cual la consola es accesible en primer lugar.
 
-**Reinstate the table/card toggle** — rejected for the reasons `b9cf688` recorded, which this ADR
-endorses rather than overturns: an operator-facing choice between two views is a second description of
-the dataset, and the operator has to know it exists.
+**Restablecer el selector de tabla/tarjeta** — se rechaza por las razones registradas en `b9cf688`, las cuales este ADR respalda en lugar de revocar: una opción orientada al operador entre dos vistas constituye una segunda descripción del conjunto de datos, y el operador tiene que saber que existe.

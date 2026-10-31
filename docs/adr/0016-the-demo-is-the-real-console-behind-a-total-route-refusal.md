@@ -1,150 +1,148 @@
-# ADR 0016: The public demo is the ordinary binary with its gateway replaced, and its boundary is a route classification
+# ADR 0016: La demo pública es el binario ordinario con su pasarela reemplazada, y su límite es una clasificación de rutas
 
-- Status: Accepted; superseded in part by [ADR 0021](0021-the-public-demonstration-is-generated-data-behind-the-real-console.md)
-- Date: 2026-09-20
+- Estado: Aceptado; reemplazado en parte por el [ADR 0021](0021-the-public-demonstration-is-generated-data-behind-the-real-console.md)
+- Fecha: 2026-09-20
 
-> **What still holds.** The demo mode described here is live: `internal/demo` and the
-> route classification are what generate the public demonstration's dataset, and they
-> are how the self-hosted paths are tested without a gateway.
+> **Lo que sigue vigente.** El modo demo descrito aquí está activo: `internal/demo` y la
+> clasificación de rutas son lo que genera el conjunto de datos de la demostración pública, y
+> son la forma en que se prueban las rutas autoalojadas sin una pasarela.
 >
-> **What changed.** The public hosting and the execution model. ADR 0021 moved the
-> demonstration to a Cloudflare Worker serving generated data, so the public page no
-> longer runs this binary and no longer simulates a visitor's writes. The decision above
-> is unchanged as the account of the fixture; `docs/ops/cloudflare-demo.md` is the
-> current runbook.
+> **Lo que cambió.** El alojamiento público y el modelo de ejecución. El ADR 0021 movió la
+> demostración a un Cloudflare Worker que sirve datos generados, por lo que la página pública
+> ya no ejecuta este binario ni simula escrituras de visitantes. La decisión anterior
+> permanece sin cambios en cuanto a la descripción del componente; `docs/ops/cloudflare-demo.md` es la
+> guía operativa actual.
 
-## Context
+## Contexto
 
-Oh My CPA needs a demonstration that can be linked from the README: reachable by
-anyone, showing the real console rather than screenshots, requiring no CPA
-management key, no provider key and no OAuth credential, and deploying itself from
-`master`. The pressure this creates is toward a second artefact - a mocked frontend,
-a demo branch, a separate fixture service - and the cost of that is a console that
-diverges from the one operators run, silently, until somebody notices.
+Oh My CPA necesita una demostración que pueda enlazarse desde el README: accesible para
+cualquiera, que muestre la consola real en lugar de capturas de pantalla, que no requiera ninguna clave de
+gestión de CPA, ninguna clave de proveedor ni ninguna credencial OAuth, y que se despliegue por sí misma desde
+`master`. La presión que esto genera apunta hacia un segundo artefacto - un frontend simulado,
+una rama de demo, un servicio de fixtures separado -, y el costo de eso es una consola que
+se desvía de la que ejecutan los operadores, en silencio, hasta que alguien lo nota.
 
-Three decisions had to be made.
+Hubo que tomar tres decisiones.
 
-**Where the gateway data comes from.** The console reads CPA through
-`internal/cpa/management` in about twenty handlers, each with its own DTO allowlist.
-Options: an adapter implementing a management-client interface; a fixture HTTP service
-as a second process; or a fixture HTTP service in-process.
+**De dónde provienen los datos de la pasarela.** La consola lee CPA a través de
+`internal/cpa/management` en unos veinte manejadores (handlers), cada uno con su propia lista blanca de DTOs.
+Opciones: un adaptador que implemente una interfaz de cliente de gestión; un servicio HTTP
+de fixtures como un segundo proceso; o un servicio HTTP de fixtures dentro del mismo proceso.
 
-**How the dangerous surface is closed.** The console has routes that start a real
-sign-in, move credential material, execute plugins, write the gateway configuration,
-spend a quota entitlement and hand back raw request and error logs. Options: hide the
-controls; refuse at each handler; or refuse at the route table.
+**Cómo se cierra la superficie peligrosa.** La consola tiene rutas que inician un inicio de
+sesión real, mueven material de credenciales, ejecutan complementos (plugins), escriben la configuración de la pasarela,
+gastan una cuota y devuelven registros (logs) sin procesar de solicitudes y errores. Opciones: ocultar los
+controles; rechazar en cada manejador; o rechazar en la tabla de rutas.
 
-**How anyone gets in.** Options: a published demo password; a session minted for
-whoever opens the page; or no session at all on the API.
+**Cómo entra cualquiera.** Opciones: una contraseña de demo publicada; una sesión generada para
+quien abra la página; o ninguna sesión en absoluto en la API.
 
-## Decision
+## Decisión
 
-### 1. Demo mode is a configuration of the ordinary process
+### 1. El modo demo es una configuración del proceso ordinario
 
-`OMCPA_DEMO_MODE=true` is read by `internal/config`, is off by default, and changes
-only what it must: the data directory, the database filename, the master key when
-none is supplied, the base path default, the listening address when the platform
-announces one, and the public origin. `internal/app` starts the fixture and points
-the existing configuration at it. Nothing is compiled out, and no page, handler or
-DTO has a demo variant.
+`OMCPA_DEMO_MODE=true` es leído por `internal/config`, está desactivado por defecto, y cambia
+solo lo estrictamente necesario: el directorio de datos, el nombre de archivo de la base de datos, la clave maestra cuando
+no se proporciona ninguna, la ruta base por defecto, la dirección de escucha cuando la plataforma
+anuncia una, y el origen público. `internal/app` inicia el fixture y apunta
+la configuración existente hacia él. No se compila nada por fuera, y ninguna página, manejador o DTO tiene una variante de demo.
 
-### 2. The gateway is replaced at the socket, not at the interface
+### 2. La pasarela se reemplaza en el socket, no en la interfaz
 
-`internal/demo` serves the CPA management API on `127.0.0.1` and the application is
-pointed at it through the ordinary configuration path, so every existing read - the
-credential projection, the provider lists, the configuration document, the model
-catalogue, the plugin lists, the log tail - runs unmodified.
+`internal/demo` sirve la API de gestión de CPA en `127.0.0.1` y la aplicación apunta
+hacia ella a través de la ruta de configuración ordinaria, de modo que cada lectura existente - la
+proyección de credenciales, las listas de proveedores, el documento de configuración, el catálogo de modelos,
+las listas de complementos, la cola de registros - se ejecuta sin modificaciones.
 
-The cost is an in-process HTTP hop and a fixture that has to answer the endpoints the
-console actually reads. The alternative was rejected because the interface spans
-about forty methods: an adapter would have had to reproduce every response shape from
-Go structs, and the seam would have to be threaded through every handler that builds
-a client, which is where a demo branch would start leaking into the product.
+El costo es un salto HTTP dentro del mismo proceso y un fixture que debe responder a los endpoints que
+la consola realmente lee. La alternativa fue rechazada porque la interfaz abarca
+unos cuarenta métodos: un adaptador habría tenido que reproducir cada forma de respuesta a partir
+de estructuras de Go, y el punto de unión tendría que haberse enhebrado a través de cada manejador que construye
+un cliente, que es donde una rama de demo comenzaría a filtrarse en el producto.
 
-The fixture never dials the URL it is handed. It resolves the requested provider
-endpoint against its own catalogue and refuses anything else, so "the demonstration
-performs no outbound request" is a property of the code. It publishes no plugin logo
-URL, and the plugin-logo inliner is not installed in demo mode, for the same reason.
-The pricing sync loop and the capture pipeline are not started, because both would
-reach outside the process.
+El fixture nunca marca la URL que se le entrega. Resuelve el endpoint del
+proveedor solicitado contra su propio catálogo y rechaza cualquier otra cosa, de modo que "la demostración
+no realiza ninguna solicitud saliente" es una propiedad del código. No publica ninguna URL de
+logotipo de complemento, y el inyector de logotipos de complementos no está instalado en el modo demo, por la misma razón.
+El bucle de sincronización de precios y la canalización de captura no se inician, porque ambos
+alcanzarían el exterior del proceso.
 
-### 3. The boundary is a total route classification, and an unclassified route is refused
+### 3. El límite es una clasificación total de rutas, y se rechaza cualquier ruta no clasificada
 
-`internal/api/demo_policy.go` holds one table of `method + chi route pattern +
-verdict`, first match wins, ordered from the specific to the general. The test suite
-walks the router the server actually serves and fails if any registered route has no
-verdict, so adding an endpoint forces a decision instead of inheriting one. At
-runtime an unclassified path is refused.
+`internal/api/demo_policy.go` contiene una tabla de `método + patrón de ruta chi +
+veredicto`, la primera coincidencia gana, ordenada de lo específico a lo general. La suite
+de pruebas recorre el enrutador que el servidor realmente sirve y falla si alguna ruta registrada no tiene
+veredicto, por lo que agregar un endpoint obliga a tomar una decisión en lugar de heredar una. En tiempo de
+ejecución, una ruta no clasificada es rechazada.
 
-Refusals answer `403` with a marker header and a message naming the reason. Reads are
-marked as belonging to a demo, and a write carries a header saying its result is not
-durable.
+Los rechazos responden con un `403`, una cabecera (header) de marcador y un mensaje que nombra el motivo. Las lecturas se
+marcan como pertenecientes a una demo, y una escritura lleva una cabecera que indica que su resultado no es
+duradero.
 
-Two consequences are deliberate:
+Dos consecuencias son deliberadas:
 
-- **The table's order is load-bearing.** The trailing wildcard that serves the SPA is
-  last. While it was first, it classified every `GET` in the application as public,
-  and the credential download and the request log were both allowed. The test that
-  exercises the refusals over HTTP found it.
-- **Hiding a control is never the boundary.** The console still disables the buttons,
-  because a control that cannot work should not offer to, but every one of those
-  routes is refused by the server, which is what the suite asserts on.
+- **El orden de la tabla es crucial.** El comodín final (wildcard) que sirve la SPA está
+  al final. Mientras estuvo al principio, clasificaba cada `GET` de la aplicación como público,
+  y tanto la descarga de credenciales como el registro de solicitudes estaban permitidos. La prueba que
+  ejerce los rechazos sobre HTTP lo descubrió.
+- **Ocultar un control nunca es el límite.** La consola aún deshabilita los botones,
+  porque un control que no puede funcionar no debe ofrecer hacerlo, pero cada una de esas
+  rutas es rechazada por el servidor, que es lo que la suite valida.
 
-### 4. A session is issued to whoever asks, including on an ordinary API read
+### 4. Se emite una sesión a cualquiera que lo solicite, incluso en una lectura ordinaria de la API
 
-The demonstration has no secret to protect, so the session is not a credential
-boundary - the route classification is. It exists so the console's ordinary
-navigation works.
+La demostración no tiene ningún secreto que proteger, por lo que la sesión no es un límite de credenciales
+(la clasificación de rutas lo es). Existe para que la navegación ordinaria de la consola
+funcione.
 
-It is issued on any unauthenticated request rather than only on the sign-in endpoint
-because the platform runs several container instances behind one address, each with
-its own fixture key: a cookie minted by one instance is invalid at the next, and the
-console issues its first queries in parallel with the session check. Refusing those
-reads produced the observed failure - a working page falling back to a sign-in card
-about a second after it rendered. Issuing the session instead makes every request
-succeed and every instance self-sufficient.
+Se emite en cualquier solicitud no autenticada en lugar de solo en el endpoint de
+inicio de sesión porque la plataforma ejecuta varias instancias de contenedores detrás de una dirección, cada una con
+su propia clave de fixture: una cookie acuñada por una instancia no es válida en la siguiente, y la
+consola emite sus primeras consultas en paralelo con la verificación de sesión. Rechazar esas
+lecturas producía el fallo observado: una página funcional que recurría a una tarjeta de inicio de
+sesión aproximadamente un segundo después de renderizarse. Emitir la sesión en su lugar hace que cada solicitud
+tenga éxito y cada instancia sea autosuficiente.
 
-## Consequences
+## Consecuencias
 
-**Accepted:**
+**Aceptadas:**
 
-- The demo's data is fabricated and says so in the docs. It is not a claim about any
-  particular deployment's traffic.
-- The demo reports a healthy capture state it does not have, because the panel that
-  reads it is the request list's own header; the numbers beside it are read from the
-  database. This is a presentation choice, and it is recorded here rather than left
-  to be discovered.
-- Seeding writes about fourteen thousand requests and takes about four seconds on a
-  cold start. The database is deleted and rebuilt on every boot, because a platform
-  that scales to zero would otherwise come back with a history that ends hours ago
-  and empty short windows.
-- The fixture duplicates the provider quota URLs rather than importing
-  `internal/quota`'s constants, so a change there cannot silently change what the
-  demo answers. A test pins the two lists to each other.
+- Los datos de la demo son fabricados y se advierte de ello en la documentación. No es una afirmación sobre el tráfico
+  de ningún despliegue en particular.
+- La demo informa sobre un estado de captura saludable que no tiene, porque el panel que
+  lo lee es la propia cabecera de la lista de solicitudes; los números al lado se leen de la
+  base de datos. Esta es una decisión de presentación, y se registra aquí en lugar de dejar
+  que se descubra por cuenta propia.
+- El almacenamiento de datos inicial (seeding) escribe unas catorce mil solicitudes y toma unos cuatro segundos en un
+  arranque en frío. La base de datos se borra y se reconstruye en cada inicio, porque de lo contrario
+  una plataforma que escala a cero regresaría con un historial que termina hace horas
+  y ventanas cortas vacías.
+- El fixture duplica las URL de cuotas de proveedores en lugar de importar
+  las constantes de `internal/quota`, por lo que un cambio allí no puede alterar silenciosamente lo que
+  la demo responde. Una prueba vincula ambas listas entre sí.
 
-**Rejected:**
+**Rechazadas:**
 
-- **A mocked frontend or a demo branch.** It would diverge from the console
-  operators run, and the divergence would be invisible until it mattered.
-- **A published demo password.** The password would be public anyway, and it would
-  suggest the credential protects something.
-- **Refusing at each handler.** About twenty handlers would each carry a demo branch,
-  and a new handler would inherit none of them - the opposite of a total
-  classification.
-- **Intercepting the demo at the network boundary** (a firewall rule, a proxy that
-  refuses egress). It would make the property environmental, so it could be false in
-  a deployment that forgot the rule while looking identical in the repository.
+- **Un frontend simulado o una rama de demo.** Se desviaría de la consola que
+  ejecutan los operadores, y la desviación sería invisible hasta que importara.
+- **Una contraseña de demo publicada.** La contraseña sería pública de todos modos, y
+  sugeriría que la credencial protege algo.
+- **Rechazar en cada manejador.** Unos veinte manejadores llevarían cada uno una rama de demo,
+  y un nuevo manejador no heredaría ninguna de ellas, lo opuesto a una clasificación
+  total.
+- **Interceptar la demo en el límite de la red** (una regla de cortafuegos, un proxy que
+  rechaza el tráfico saliente). Haría que la propiedad fuera ambiental, por lo que podría ser falsa en
+  un despliegue que olvidó la regla aunque pareciera idéntico en el repositorio.
 
-**Cost to the self-hosted path:** none beyond the configuration switch. Demo mode is
-not set, the fixture is never started, the policy middleware is not installed, and
-the database filename is the one it always was. `internal/api`'s test suite asserts
-that a self-hosted router answers an unclassified path with the ordinary API rather
-than a demo refusal.
+**Costo para la ruta autoalojada:** ninguno más allá del conmutador de configuración. El modo demo no está configurado, el fixture nunca se inicia, el middleware de políticas no está instalado y
+el nombre de archivo de la base de datos es el de siempre. La suite de pruebas de `internal/api`
+afirma que un enrutador autoalojado responde a una ruta no clasificada con la API ordinaria en
+lugar de un rechazo de demo.
 
-## References
+## Referencias
 
-- `docs/architecture.md` §12 — the demo's shape, seeding and platform adaptation
-- `docs/ops/vercel-demo.md` — the deployment runbook and the console steps
-- `internal/api/demo_policy.go`, `internal/demo/` — the implementation
-- ADR 0001 — the process shape the demo reuses rather than replaces
-- ADR 0015 — the credential rule the demo's refusals extend to a public deployment
+- `docs/architecture.md` §12 — la forma de la demo, el seeding y la adaptación a la plataforma
+- `docs/ops/vercel-demo.md` — la guía operativa de despliegue y los pasos de la consola
+- `internal/api/demo_policy.go`, `internal/demo/` — la implementación
+- ADR 0001 — la forma del proceso que la demo reutiliza en lugar de reemplazar
+- ADR 0015 — la regla de credenciales que los rechazos de la demo extienden a un despliegue público

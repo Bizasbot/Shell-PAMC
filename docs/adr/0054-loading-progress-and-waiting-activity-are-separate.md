@@ -1,44 +1,22 @@
-# ADR 0054: Loading progress and waiting activity are separate
+# ADR 0054: El progreso de carga y la actividad de espera están separados
 
-- Status: Accepted
-- Date: 2026-10-03
-- Amends: ADR 0052's loading-bar presentation, accessible value and completion lifecycle.
-  Task accounting, the 200ms delay, first-load placeholders and refresh data retention remain.
+- Estado: Aceptado
+- Fecha: 2026-10-03
+- Modifica: La presentación de la barra de carga, el valor accesible y el ciclo de vida de finalización del ADR 0052.
+  La contabilidad de tareas, el retraso de 200 ms, los marcadores de posición de carga inicial y la retención de datos en la actualización se mantienen sin cambios.
 
-## Context
+## Contexto
 
-Queries and lazy imports reveal their start and settlement, but not their total duration. Capped
-pending credit is an estimate: a single pending task approaches 85%, and adding tasks can lower
-the target while a never-backwards fill waits for it to catch up. In a replay of the existing
-policy, one task added at two seconds held the fill for approximately 1.3 seconds. A stationary
-fill can look stalled even when the client is still waiting. Announcing this estimate as an
-accessible percentage implies a precision the source cannot supply.
+Las consultas (queries) y las importaciones diferidas revelan su inicio y resolución, pero no su duración total. El crédito pendiente limitado es una estimación: una sola tarea pendiente se acerca al 85%, y agregar tareas puede reducir el objetivo mientras un llenado que nunca retrocede espera a que lo alcance. En una reproducción de la directiva existente, una tarea agregada a los dos segundos retuvo el llenado durante aproximadamente 1,3 segundos. Un llenado estático puede parecer bloqueado incluso cuando el cliente todavía está esperando. Anunciar esta estimación como un porcentaje accesible implica una precisión que la fuente no puede proporcionar.
 
-## Decision
+## Decisión
 
-Keep the task-driven rough fill and separate waiting activity from completed work. The shared
-2px bar uses its existing 18% accent-tinted track, an accent fill at 65% opacity, and a solid
-accent marker inside the fill's frontier. The clipped window is at most 64px and 16% of track
-width; the marker is at most 16px and 25% of the window. Its 1200ms linear CSS transform/opacity
-cycle fades at the wrap and continues independently when the fill holds. It indicates pending
-client work, not an upstream heartbeat, a remaining-time prediction or additional completed work.
+Mantener el llenado aproximado impulsado por tareas y separar la actividad de espera del trabajo completado. La barra compartida de 2 px utiliza su pista existente con tinte de acento al 18%, un relleno de acento al 65% de opacidad y un marcador de acento sólido dentro de la frontera del relleno. La ventana recortada es de como máximo 64 px y el 16% del ancho de la pista; el marcador es de como máximo 16 px y el 25% de la ventana. Su ciclo lineal de transformación/opacidad en CSS de 1200 ms se desvanece al completarse el ciclo y continúa de manera independiente cuando el llenado se detiene. Indica trabajo pendiente del cliente, no un latido (*heartbeat*) ascendente, una predicción de tiempo restante o trabajo completado adicional.
 
-Keep the localized `progressbar` name and omit `aria-valuenow`. Actual pending tasks own
-`aria-busy`. Final settlement stops activity and closes the fill within one resolved base-motion
-beat, followed by the existing one-beat hold and one-beat fade. Content does not wait for the
-animation; failures and cancellations are settlements rather than success verdicts.
+Mantener el nombre localizado `progressbar` y omitir `aria-valuenow`. Las tareas pendientes reales controlan `aria-busy`. La resolución final detiene la actividad y cierra el llenado en un pulso de movimiento base ya resuelto, seguido de la retención de un pulso y el desvanecimiento de un pulso existentes. El contenido no espera a la animación; los fallos y cancelaciones son resoluciones en lugar de veredictos de éxito.
 
-Inject the lifecycle clock and scheduler in `web/src/utils/progressController.ts`. Source
-notifications must not reset the drawing clock or activity animation. Reduced motion removes
-activity and pending estimates, performs task-event-only updates and retires completed work
-immediately. Live changes preserve the batch and never shrink its fill. Hidden documents suspend
-frames, show timers and activity; unfinished work resumes from its state, while completed work
-is not replayed. React does not rerender per animation frame and frames perform no layout reads.
+Inyectar el reloj del ciclo de vida y el planificador (*scheduler*) en `web/src/utils/progressController.ts`. Las notificaciones de origen no deben reiniciar el reloj de dibujo ni la animación de actividad. El movimiento reducido elimina la actividad y las estimaciones pendientes, realiza actualizaciones basadas únicamente en eventos de tareas y retira el trabajo completado de inmediato. Los cambios en vivo preservan el lote y nunca reducen su llenado. Los documentos ocultos suspenden los fotogramas, muestran temporizadores y actividad; el trabajo inacabado se reanuda desde su estado, mientras que el trabajo completado no se vuelve a reproducir. Reactไม่ se vuelve a renderizar por fotograma de animación y los fotogramas no realizan lecturas de diseño (*layout reads*).
 
-## Consequences
+## Consecuencias
 
-The fill remains approximate, but a held estimate no longer carries the entire burden of
-expressing waiting. The activity cycle is a narrow, documented motion-budget exception with
-mandatory reduced-motion coverage. Lifecycle decisions are tested with injected time; browser
-probes own real animation, clipping, color, geometry and transition cancellation. Palette
-values and theme token mappings remain unchanged.
+El llenado sigue siendo aproximado, pero una estimación detenida ya no carga con toda la responsabilidad de expresar la espera. El ciclo de actividad es una excepción estrecha y documentada del presupuesto de movimiento con cobertura obligatoria para movimiento reducido (*reduced motion*). Las decisiones sobre el ciclo de vida se prueban con tiempo inyectado; las sondas del navegador controlan la animación real, el recorte, el color, la geometría y la cancelación de transiciones. Los valores de la paleta y las asignaciones de *tokens* de temas permanecen inalterados.

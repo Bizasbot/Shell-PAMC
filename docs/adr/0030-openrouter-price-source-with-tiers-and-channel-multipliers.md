@@ -1,71 +1,30 @@
-# ADR 0030: OpenRouter is the price source, and a price carries tiers and a channel multiplier
+# ADR 0030: OpenRouter es la fuente de precios, y un precio incluye niveles (tiers) y un multiplicador de canal
 
-- Status: Accepted
-- Date: 2026-09-28
-- Extends: ADR 0003 (request-time price snapshots), which stands unchanged
+- Estado: Aceptado
+- Fecha: 2026-09-28
+- Extiende: ADR 0003 (capturas de precios en el momento de la solicitud), el cual permanece sin cambios
 
-## Context
+## Contexto
 
-Prices were synced from models.dev. Its catalogue lists every model once per
-relay and aggregator that resells it, so matching needed a hand-kept table of
-"first-party" provider ids per family and still priced some models at a
-reseller's rate. A price was four flat rates and a multiplier: it could not say
-that a prompt above 200K tokens costs twice as much, or that a model is cheaper
-overnight, though the providers publish exactly that. A cache rate the catalogue
-left out was stored as zero, which billed cached tokens as free.
+Los precios se sincronizaban desde models.dev. Su catálogo lista cada modelo una vez por cada *relay* y agregador que lo revende, por lo que la coincidencia requería una tabla mantenida a mano de IDs de proveedores de "primer nivel" por familia, y aun así tarificaba algunos modelos a la tarifa de un revendedor. Un precio consistía en cuatro tarifas fijas y un multiplicador: no podía expresar que un *prompt* de más de 200K tokens cuesta el doble, o que un modelo es más económico durante la noche, a pesar de que los proveedores publican exactamente eso. Una tarifa de caché omitida por el catálogo se almacenaba como cero, lo que facturaba los tokens en caché como gratuitos.
 
-The console also treated price as a page of its own. A request with no price
-showed a dash with no way to fix it where it was seen; the page's only
-guidance was a models.dev tab and a simulated budget chart.
+La consola también trataba el precio como una página independiente. Una solicitud sin precio mostraba un guion sin forma de solucionarlo en el lugar donde se visualizaba; la única guía de la página era una pestaña de models.dev y un gráfico de presupuesto simulado.
 
-Finally, CPA routes one model through several channels - an OAuth subscription,
-the vendor's own API, a relay that resells at a discount - and a single
-per-model multiplier cannot say that the same model costs 30% of list through
-one of them.
+Por último, CPA enruta un modelo a través de varios canales (una suscripción OAuth, la propia API del proveedor, un *relay* que revende con descuento) y un único multiplicador por modelo no puede expresar que el mismo modelo cuesta el 30% del precio de lista a través de uno de ellos.
 
-## Decision
+## Decisión
 
-1. **OpenRouter's public model list is the only automatic source.** It lists a
-   model once under its maker's namespace, carries dated canonical slugs, and
-   publishes long-context and time-of-day overrides. The URL is a constant and
-   needs no key. models.dev is removed; rows it priced keep their rate and
-   `modelsdev` source until a sync matches them, and versions written under it
-   stay priceable.
-2. **A missing cache rate is the prompt rate, not zero.** An omission means no
-   discount is published.
-3. **A price carries tiers.** A tier applies when every condition it carries
-   holds - a prompt threshold counted over the full input, a half-open UTC window
-   read from the request's own timestamp - and exactly one tier governs a request:
-   the highest threshold, then a windowed tier, then stored order. The tier is
-   chosen inside the insertion transaction and its index stored with the cost, so
-   a late-ingested request is priced by when it ran, not when it arrived.
-4. **A channel multiplier is locked like a price.** Channels are the provider
-   labels CPA records on a request. Multipliers are versioned append-only, the
-   version in force at the request timestamp is stored beside the price version,
-   and a missing or retired channel is 1×. Cost = tiered base × model multiplier ×
-   channel multiplier, rounded once.
-5. **Three pricing modes.** `auto` follows the automatic match, `linked` follows an
-   OpenRouter model the operator chose, `custom` uses the operator's rates. A sync
-   refreshes the first two and never touches the third, and never replaces a pin
-   with its own match. A name that only resembles a listed model is suggested,
-   never matched.
-6. **Pricing happens where a cost is seen.** One editor opens in place from the
-   price book, the request list, the request drawer and the dashboard's model
-   ranking. A request's detail explains its stored amount from the versions it
-   locked.
+1. **La lista pública de modelos de OpenRouter es la única fuente automática.** Lista un modelo una vez bajo el espacio de nombres de su creador, incluye *slugs* canónicos fechados y publica anulaciones (*overrides*) para contextos largos y horarios del día. La URL es una constante y no requiere clave. Se elimina models.dev; las filas que este tarificaba conservan su tarifa y fuente `modelsdev` hasta que una sincronización las coincida, y las versiones escritas bajo este siguen siendo tarificables.
+2. **Una tarifa de caché faltante es la tarifa del *prompt*, no cero.** Una omisión significa que no se publica ningún descuento.
+3. **Un precio incluye niveles (*tiers*).** Un nivel se aplica cuando se cumple cada condición que contiene: un umbral de *prompt* contado sobre la entrada completa, una ventana UTC semiabierta leída de la propia marca de tiempo de la solicitud; y exactamente un nivel rige una solicitud: el umbral más alto, luego un nivel con ventana, y finalmente el orden almacenado. El nivel se elige dentro de la transacción de inserción y su índice se almacena junto con el costo, de modo que una solicitud ingerida tarde se tarifa según cuándo se ejecutó, no cuándo llegó.
+4. **Un multiplicador de canal se bloquea como un precio.** Los canales son las etiquetas de proveedores que CPA registra en una solicitud. Los multiplicadores están versionados y son de solo adición (*append-only*), la versión vigente en la marca de tiempo de la solicitud se almacena junto con la versión del precio, y un canal faltante o retirado es 1×. Costo = base por niveles × multiplicador del modelo × multiplicador del canal, redondeado una vez.
+5. **Tres modos de tarificación.** `auto` sigue la coincidencia automática, `linked` sigue un modelo de OpenRouter elegido por el operador, `custom` utiliza las tarifas del operador. Una sincronización actualiza los dos primeros y nunca toca el tercero, y nunca reemplaza una fijación (*pin*) con su propia coincidencia. Un nombre que solo se asemeja a un modelo listado se sugiere, nunca se empareja automáticamente.
+6. **La tarificación ocurre donde se visualiza un costo.** Un editor se abre *in situ* desde el libro de precios, la lista de solicitudes, el panel lateral de solicitudes y la clasificación de modelos del panel de control. El detalle de una solicitud explica su importe almacenado a partir de las versiones que bloqueó.
 
-## Consequences
+## Consecuencias
 
-- Migration 028 rebuilds `model_prices` and `pricing_sync_state` (SQLite cannot
-  relax a CHECK constraint) with the version triggers dropped, so existing rows
-  are copied verbatim and nothing is repriced; `model_price_versions` is only
-  extended because request snapshots reference it.
-- The pricing schema gate moves to version 28.
-- A request's recorded cost can now differ from `rates × tokens` of its base
-  price: the breakdown names the tier and both multipliers so the difference is
-  explained rather than surprising.
-- Automatic prices change when OpenRouter's change, on the next sync. That is the
-  point of `auto`; an operator who wants a fixed rate chooses `custom`.
-- The demo no longer carries hand-written rates for synced models: it prices them
-  from a trimmed copy of the real OpenRouter list with the production decoder and
-  matcher.
+- La migración 028 reconstruye `model_prices` y `pricing_sync_state` (SQLite no puede relajar una restricción CHECK) descartando los desencadenadores (*triggers*) de versión, por lo que las filas existentes se copian textualmente y no se retarifica nada; `model_price_versions` solo se amplía porque las instantáneas de solicitudes la referencian.
+- El control del esquema de precios pasa a la versión 28.
+- El costo registrado de una solicitud ahora puede diferir de `tarifas × tokens` de su precio base: el desglose nombra el nivel y ambos multiplicadores para que la diferencia se explique en lugar de resultar sorprendente.
+- Los precios automáticos cambian cuando lo hacen los de OpenRouter, en la siguiente sincronización. Ese es el propósito de `auto`; un operador que desee una tarifa fija elige `custom`.
+- La demo ya no incluye tarifas escritas a mano para los modelos sincronizados: los tarifa a partir de una copia recortada de la lista real de OpenRouter con el decodificador y el comparador de producción.

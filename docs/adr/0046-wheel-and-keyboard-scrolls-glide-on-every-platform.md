@@ -1,79 +1,33 @@
-# ADR 0046: Wheel and keyboard scrolls glide on every platform
+# ADR 0046: Desplazamiento fluido con rueda y teclado en todas las plataformas
 
-- Status: Accepted; ADR 0102 makes the live routing map's trip a second scoped exception to
-  `prefers-reduced-motion`.
-- Date: 2026-10-01
+- Estado: Aceptado; el ADR 0102 convierte el trayecto del mapa de rutas en vivo en una segunda excepción acotada a `prefers-reduced-motion`.
+- Fecha: 2026-10-01
 
-## Context
+## Contexto
 
-The console scrolled smoothly on macOS and in steps on Windows. The difference was in the input,
-not in the console:
+La consola se desplazaba con fluidez en macOS y a saltos en Windows. La diferencia estaba en la entrada, no en la consola:
 
-- A trackpad, a phone and macOS deliver a scroll as a stream of small offsets that are already
-  smoothed, so any scroller glides.
-- A notched mouse wheel on Windows or Linux delivers one 100px jump per notch. Whether the browser
-  animates the jump is the operating system's choice. Chromium and Firefox both stop animating it
-  when Windows' "Animation effects" setting is off, and many readers turn that off to make the
-  desktop feel faster.
-- The request list is a virtualized list (`@rc-component/virtual-list`, under antd's `Listy`). It
-  clips its own overflow and applies every wheel delta itself, in one jump, so it stepped on every
-  Windows desk whatever the setting was. It is the page the console is used through.
+- Un trackpad, un teléfono y macOS proporcionan el desplazamiento como un flujo de pequeños desplazamientos que ya vienen suavizados, por lo que cualquier elemento de desplazamiento se desliza suavemente.
+- Una rueda de ratón con muescas en Windows o Linux proporciona un salto de 100px por cada muesca. Que el navegador anime el salto depende de la elección del sistema operativo. Tanto Chromium como Firefox detienen la animación cuando la configuración de "Efectos de animación" de Windows está desactivada, y muchos lectores la desactivan para que el escritorio se sienta más rápido.
+- La lista de peticiones es una lista virtualizada (`@rc-component/virtual-list`, bajo `Listy` de antd). Recorta su propio desbordamiento y aplica cada delta de rueda por sí misma, en un solo salto, por lo que avanzaba a tirones en cada escritorio de Windows sin importar la configuración. Es la página a través de la cual se utiliza la consola.
 
-The design was tuned on the stream. With 100px steps, the request list's live-tail rules (follow at
-the top, hold when reading, collapse the header on the first notch) still worked, but the page read
-as a series of cuts instead of one surface.
+El diseño se afinó en el flujo. Con pasos de 100px, las reglas de seguimiento en vivo de la lista de peticiones (seguir en la parte superior, mantener al leer, colapsar la cabecera en la primera muesca) seguían funcionando, પરંતુ la página se percibía como una serie de recortes en lugar de una superficie continua.
 
-The same Windows setting is also how Chromium reports `prefers-reduced-motion: reduce`. The console
-honours that query for every animation it owns (`docs/design.md` §7). So "honour reduced motion" and
-"glide for a Windows reader who turned animations off" cannot both hold if the glide counts as an
-animation like the others.
+La misma configuración de Windows es también la forma en que Chromium informa `prefers-reduced-motion: reduce`. La consola respeta esa consulta para cada animación que posee (`docs/design.md` §7). Por lo tanto, "respetar el movimiento reducido" y "deslizarse suavemente para un lector de Windows que desactivó las animaciones" no pueden cumplirse al mismo tiempo si el desplazamiento fluido cuenta como una animación igual que las demás.
 
-## Decision
+## Decisión
 
-1. **A console-wide layer smooths discrete steps and nothing else**
-   (`web/src/utils/scrollSmoothing.ts`, installed once by `useScrollSmoothing` in `App.tsx`). Wheel
-   notches (line or page mode, or a pixel-mode event whose legacy `wheelDeltaY` is a multiple of
-   120) and the scrolling keys (arrows, Page Up/Down, Space, Home, End) glide to the position they
-   would have jumped to. Continuous streams (trackpads, every pixel-mode source on Apple platforms)
-   and touch are never intercepted, because they already glide and smoothing them again would only
-   add lag. Zoom, horizontal and modified wheels keep their native meaning. Keys are left to any
-   editable control or composite widget that owns them.
-2. **The glide has its own motion token, `scroll` (160ms, easeOutCubic)**, `MOTION_SCROLL` in
-   `web/src/theme/themeConfig.ts`. Each notch retargets the glide from where it is, so the token
-   bounds how far the glide trails the last notch, not the length of a scroll. The easing starts
-   moving at once, because the console's `ease` curve starts at rest and would stall at every notch.
-3. **Virtualized lists are driven through their own wheel handling.** The layer claims the notch
-   with the library's nested-list flag (`_virtualHandled`) so the list does not jump, then hands the
-   list each frame's step as a wheel event of its own. Writing the holder's `scrollTop` directly
-   does not work: the list re-applies its offset from React state one frame later and drags every
-   frame back.
-4. **A component can still give a notch another meaning.** React's wheel listener is passive, so
-   `preventDefault` from a React handler does not reach the layer. Such a component calls
-   `consumeWheel(nativeEvent)` instead; the request list does this when the first notch collapses
-   its header.
-5. **The glide is on by default, including under reduced motion.** It is input following the
-   reader's own hand, not motion the page starts: macOS and iOS keep inertial scrolling under Reduce
-   Motion for the same reason. The Windows switch that reports reduced motion is also the switch
-   that removes the browser's own glide, so following it would keep the stepping for exactly the
-   readers who reported it. The `omc_scroll_smoothing` preference (`on`, `system`, `off`) on the OMC
-   settings page lets a reader hand the decision back to the system's setting, or turn the glide
-   off.
-6. **Every motion besides the scroll glide and the live routing map's trip still honours
-   `prefers-reduced-motion`.** The routing map is the second scoped exception (ADR 0102). That
-   includes the request list's animated return to the top, which moves the page further than the
-   reader's hand did. Programmatic corrections are never smoothed, and a glide stops as soon as
-   anything else writes its scroller's offset, so a correction always lands.
+1. **Una capa general en la consola suaviza los pasos discretos y nada más**
+   (`web/src/utils/scrollSmoothing.ts`, instalada una sola vez por `useScrollSmoothing` en `App.tsx`). Las muescas de la rueda (modo línea o página, o un evento en modo píxel cuyo `wheelDeltaY` heredado es múltiplo de 120) y las teclas de desplazamiento (flechas, Re Pág/Av Pág, Espacio, Inicio, Fin) se deslizan suavemente hasta la posición a la que habrían saltado. Los flujos continuos (trackpads, cualquier fuente en modo píxel en plataformas Apple) y la tecnología táctil nunca se interceptan, porque ya se deslizan de forma fluida y volver a suavizarlos solo añadiría retraso. El zoom, las ruedas horizontales y modificadas conservan su significado nativo. Las teclas se dejan para cualquier control editable o widget compuesto que las posea.
+2. **El desplazamiento fluido tiene su propio token de movimiento, `scroll` (160ms, easeOutCubic)**, `MOTION_SCROLL` en `web/src/theme/themeConfig.ts`. Cada muesca reorienta el deslizamiento desde donde se encuentra, por lo que el token limita qué tan lejos se retrasa el desplazamiento respecto a la última muesca, no la longitud de un desplazamiento. La aceleración comienza a moverse inmediatamente, porque la curva `ease` de la consola comienza en reposo y se detendría en cada muesca.
+3. **Las listas virtualizadas se controlan a través de su propio manejo de rueda.** La capa reclama la muesca con el indicador de lista anidada de la biblioteca (`_virtualHandled`) para que la lista no salte, y luego le entrega a la lista el paso de cada fotograma como un evento de rueda propio. Escribir directamente el `scrollTop` del contenedor no funciona: la lista vuelve a aplicar su desplazamiento desde el estado de React un fotograma más tarde y arrastra cada fotograma hacia atrás.
+4. **Un componente aún puede darle otro significado a una muesca.** El escuchador de rueda de React es pasivo, por lo que `preventDefault` desde un controlador de React no llega a la capa. Dicho componente llama a `consumeWheel(nativeEvent)` en su lugar; la lista de peticiones hace esto cuando la primera muesca colapsa su cabecera.
+5. **El desplazamiento fluido está activado por defecto, incluso con movimiento reducido.** Es una entrada que sigue la propia mano del lector, no un movimiento que inicia la página: macOS y iOS mantienen el desplazamiento inercial bajo Reducir Movimiento por la misma razón. El interruptor de Windows que informa sobre el movimiento reducido es también el interruptor que elimina el desplazamiento fluido del propio navegador, por lo que seguirlo mantendría los saltos exactamente para los lectores que los señalaron. La preferencia `omc_scroll_smoothing` (`on`, `system`, `off`) en la página de configuración de OMC permite al lector devolver la decisión a la configuración del sistema o desactivar el desplazamiento fluido.
+6. **Cualquier otro movimiento además del desplazamiento fluido y el trayecto del mapa de rutas en vivo sigue respetando `prefers-reduced-motion`.** El mapa de rutas es la segunda excepción acotada (ADR 0102). Esto incluye el retorno animado de la lista de peticiones a la parte superior, que mueve la página más allá de lo que lo hizo la mano del lector. Las correcciones programáticas nunca se suavizan, y un deslizamiento fluido se detiene tan pronto como cualquier otra cosa escribe el desplazamiento de su elemento, por lo que una corrección siempre se aplica.
 
-## Consequences
+## Consecuencias
 
-- The same build scrolls the same way on macOS, Windows, Linux and phones, and the request list
-  glides on Windows for the first time.
-- A reader who needs reduced motion for vestibular reasons and uses a notched wheel on Windows gets a
-  160ms glide by default, and has to choose `Follow system` or `Off` once. That trade-off is
-  intended, and the setting sits under Appearance next to the theme mode.
-- The layer depends on two details of `@rc-component/virtual-list`: the `_virtualHandled` flag and
-  the fact that it accepts dispatched wheel events. The `scroll-smoothing` browser probe drives the
-  real request list and fails if either changes. With the layer disabled, the probe shows the
-  100px steps.
-- A component that calls `stopPropagation` on a native wheel event hides it from the layer's bubble
-  phase. No console component does this; one that needs to should call `consumeWheel` as well.
+- La misma compilación se desplaza de la misma manera en macOS, Windows, Linux y teléfonos, y la lista de peticiones se desliza suavemente en Windows por primera vez.
+- Un lector que necesite movimiento reducido por razones vestibulares y utilice una rueda con muescas en Windows obtiene un desplazamiento fluido de 160ms por defecto, y tiene que elegir `Seguir al sistema` o `Desactivado` una vez. Dicho compromiso es intencionado, y la configuración se encuentra en Apariencia, junto al modo de tema.
+- La capa depende de dos detalles de `@rc-component/virtual-list`: el indicador `_virtualHandled` y el hecho de que acepta eventos de rueda enviados. La sonda de navegador `scroll-smoothing` controla la lista de peticiones real y falla si alguno de ellos cambia. Con la capa deshabilitada, la sonda muestra los pasos de 100px.
+- Un componente que llama a `stopPropagation` en un evento de rueda nativo lo oculta de la fase de propagación (*bubble*) de la capa. Ningún componente de la consola hace esto; uno que lo necesite debería llamar a `consumeWheel` también.

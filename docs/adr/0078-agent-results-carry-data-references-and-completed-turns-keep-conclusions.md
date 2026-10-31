@@ -1,63 +1,35 @@
-# ADR 0078: Agent results carry data references and completed turns keep conclusions
+# ADR 0078: Los resultados del agente transportan referencias de datos y los turnos completados conservan las conclusiones
 
-- Status: Accepted
-- Date: 2026-10-08
-- Extends: ADR 0042, ADR 0072, ADR 0073
+- Estado: Aceptado
+- Fecha: 2026-10-08
+- Extiende: ADR 0042, ADR 0072, ADR 0073
 
-## Context
+## Contexto
 
-An exported usage-analysis run spent 24 model rounds and 35 calls answering one statistics
-question. Eleven Canvas calls failed while the model confused operation ids with tool-call ids,
-result-envelope paths with data-relative paths, and nested fields with top-level fields.
-Completed investigations also replayed SQL and generated HTML in later trivial messages.
+Una ejecución exportada de análisis de uso consumió 24 rondas del modelo y 35 llamadas para responder a una sola pregunta estadística. Once llamadas a Canvas fallaron mientras el modelo confundía los IDs de operación con los IDs de llamadas a herramientas, las rutas de envoltorios de resultados (`result-envelope`) con rutas relativas a datos, y campos anidados con campos de nivel superior. Las investigaciones completadas también volvieron a ejecutar SQL y generaron HTML en mensajes posteriores triviales.
 
-The Agent already declares the complete capability catalogue, preserves authoritative traces,
-uses executor authorization and freezes referenced rows into sandboxed display artifacts. These
-boundaries are valuable; the improvement belongs at the interface between tool results and
-subsequent model requests.
+El Agente ya declara el catálogo completo de capacidades, preserva trazas autoritativas, utiliza la autorización del ejecutor y congela las filas referenciadas en artefactos de visualización aislados (`sandboxed`). Estos límites son valiosos; la mejora corresponde a la interfaz entre los resultados de las herramientas y las solicitudes posteriores del modelo.
 
-## Decision
+## Decisión
 
-The Agent runtime adds bounded, value-free dataset descriptors to private model messages.
-A descriptor includes a stable `data_ref` derived from the tool-call id and data-relative path,
-the legacy source coordinates, selectable scalar fields and row count. Handles are resolved
-only against successful, non-display traces retained in the same conversation. They are not
-authorization tokens, network addresses or executor operation identifiers.
+El motor de ejecución (`runtime`) del Agente añade descriptores de conjuntos de datos acotados y libres de valores a los mensajes privados del modelo. Un descriptor incluye un `data_ref` estable derivado del ID de la llamada a la herramienta y la ruta relativa a los datos, las coordenadas de origen heredadas, los campos escalares seleccionables y el recuento de filas. Los identificadores (`handles`) se resuelven únicamente contra trazas exitosas que no sean de visualización retenidas en la misma conversación. No son tokens de autorización, direcciones de red ni identificadores de operación del ejecutor.
 
-Canvas accepts `source {data_ref}` with top-level `fields`. Legacy coordinates remain supported.
-Schema errors explain declared field paths and types without echoing submitted values. Failed
-Canvas calls receive available descriptors; consecutive failures receive targeted repair guidance.
-The runtime does not silently correct calls or impose a fixed round/call ceiling.
+Canvas acepta `source {data_ref}` con `fields` de nivel superior. Las coordenadas heredadas siguen siendo compatibles. Los errores de esquema explican las rutas y tipos de campos declarados sin hacer eco de los valores enviados. Las llamadas fallidas a Canvas reciben los descriptores disponibles; las fallas consecutivas reciben orientación de reparación específica. El motor de ejecución no corrige silenciosamente las llamadas ni impone un límite fijo de rondas/llamadas.
 
-Completed successful turns contribute their question, images, conclusion and bounded dataset
-and operation metadata to later requests. Displayed datasets take priority. Mutation outcomes
-and operator refusals remain explicit, and omitted outcomes never imply success. Raw messages,
-traces and frozen views stay stored; current-turn context budgeting is unchanged. Missing details
-can be queried through existing capabilities.
+Los turnos exitosos completados contribuyen con su pregunta, imágenes, conclusión y metadatos acotados de conjuntos de datos y operaciones a las solicitudes posteriores. Los conjuntos de datos mostrados tienen prioridad. Los resultados de mutación y las negativas del operador permanecen explícitos, y los resultados omitidos nunca implican éxito. Los mensajes sin procesar, las trazas y las vistas congeladas permanecen almacenados; la asignación de presupuesto para el contexto del turno actual no cambia. Los detalles faltantes se pueden consultar a través de las capacidades existentes.
 
-The system prompt states domain vocabulary, consistent half-open windows, cost-evidence
-requirements, and the configured request alias and effort as untrusted metadata. Request aliases
-are not claims about actual upstream model identity. Display receipts acknowledge server-side
-validation and storage, not successful browser execution.
+El prompt del sistema establece el vocabulario del dominio, ventanas semiabiertas consistentes, requisitos de evidencia de costos, y el alias de solicitud configurado junto con el esfuerzo como metadatos no confiables. Los alias de solicitud no son afirmaciones sobre la identidad real del modelo upstream. Los recibos de visualización reconocen la validación y el almacenamiento del lado del servidor, no la ejecución exitosa en el navegador.
 
-## Consequences
+## Consecuencias
 
-- A model can reuse a supplied data handle without reconstructing ids and paths.
-- Later requests avoid replaying completed SQL/HTML repair transcripts while preserving sources.
-- Summaries are deterministic and bounded, not an additional summarization-model request.
-- Some historical non-display details require another capability read. Up to eight descriptors
-  and eight recent mutation/refusal outcomes are retained per completed turn.
-- Dataset inference is bounded to eight references per result, six object levels, 256 visited
-  nodes, twelve scalar fields per descriptor and the existing renderable row limit.
-- Console projections, MCP results, approval gates, the complete capability catalogue and the
-  offline Canvas sandbox retain their existing contracts.
-- Source-bound data remains exact; custom unbound markup remains available. Provenance enforcement
-  for arbitrary generated JavaScript and browser rendering verification require separate work.
+- Un modelo puede reutilizar un identificador de datos proporcionado sin reconstruir IDs y rutas.
+- Las solicitudes posteriores evitan reproducir transcripciones de reparación de SQL/HTML completadas mientras preservan las fuentes.
+- Los resúmenes son deterministas y acotados, no una solicitud adicional de un modelo de resumen.
+- Algunos detalles históricos que no son de visualización requieren otra lectura de capacidad. Se retienen hasta ocho descriptores y ocho resultados recientes de mutación/negativa por turno completado.
+- La inferencia de conjuntos de datos está acotada a ocho referencias por resultado, seis niveles de objetos, 256 nodos visitados, doce campos escalares por descriptor y el límite de filas renderizables existente.
+- Las proyecciones de la consola, los resultados de MCP, las puertas de aprobación, el catálogo completo de capacidades y el sandbox offline de Canvas conservan sus contratos existentes.
+- Los datos vinculados a la fuente siguen siendo exactos; el marcado personalizado sin vincular sigue estando disponible. La aplicación de la procedencia para JavaScript generado arbitrario y la verificación del renderizado en el navegador requieren trabajo adicional.
 
-## Verification
+## Verificación
 
-Go tests in `internal/agent/data_sources_test.go` exercise reference resolution, private-feedback
-boundaries, schema repair, bounded history and a fixture-model follow-up that draws the original
-rows without another read. Prompt tests include maximum ordinary aliases and highly escaped
-metadata. Existing Agent API projection, authorization, resumption and browser scenarios remain
-the regression gates.
+Las pruebas de Go en `internal/agent/data_sources_test.go` ejercitan la resolución de referencias, los límites de retroalimentación privada, la reparación de esquemas, el historial acotado y un modelo de prueba (`fixture-model`) de seguimiento que dibuja las filas originales sin otra lectura. Las pruebas de prompt incluyen los alias ordinarios máximos y metadatos altamente escapados. Las proyecciones existentes de la API del Agente, la autorización, la reanudación y los escenarios de navegador siguen siendo los controles de regresión.

@@ -1,59 +1,28 @@
-# ADR 0085: A generated UI is composed from components and drawn as it is written
+# ADR 0085: Una interfaz generada se compone de componentes y se dibuja a medida que se escribe
 
-- Status: Accepted
-- Date: 2026-10-09
-- Amends: [ADR 0072](0072-canvases-run-in-a-sandboxed-frame.md), whose frame gains a preview and a
-  taller cap; [ADR 0073](0073-charts-and-tables-are-canvases-and-a-command-can-hold-an-answer-to-one.md),
-  whose kit gains components and a diagram; and
-  [ADR 0080](0080-work-in-flight-is-shown-where-it-will-land.md), whose draft figure was a loader
-  until the call settled.
+- Estado: Aceptado
+- Fecha: 2026-10-09
+- Modifica: [ADR 0072](0072-canvases-run-in-a-sandboxed-frame.md), cuyo marco ahora incluye una vista previa y un límite de altura mayor; [ADR 0073](0073-charts-and-tables-are-canvases-and-a-command-can-hold-an-answer-to-one.md), cuyo kit adquiere componentes y un diagrama; y
+  [ADR 0080](0080-work-in-flight-is-shown-where-it-will-land.md), cuya figura preliminar era un indicador de carga hasta que se completaba la llamada.
 
-## Context
+## Contexto
 
-`render_ui` gave the model a sandboxed page, theme variables, and helpers for a chart and a table.
-Everything else was the model's own CSS, written without knowing the frame it would be drawn in.
-The results were uneven in exactly the ways an operator notices: layouts designed for a 1050px
-page squeezed into a 750px frame, cards nested in cards, an "architecture diagram" that was a grid
-of boxes with no connections, content taller than the frame's 720px cap scrolling inside it, and a
-canvas whose measured height missed overflowing content and grew a scrollbar over its last column.
-A canvas also showed nothing but a loader for the whole time its markup was being written.
+`render_ui` proporcionaba al modelo una página en un entorno aislado (sandbox), variables de temas y ayudantes para una tabla y un gráfico. Todo lo demás era CSS propio del modelo, escrito sin conocer el marco en el que se renderizaría. Los resultados eran inconsistentes de exactamente las formas que un operador nota: diseños pensados para una página de 1050px comprimidos en un marco de 750px, tarjetas anidadas dentro de tarjetas, un "diagrama de arquitectura" que era una cuadrícula de cajas sin conexiones, contenido más alto que el límite de 720px del marco desplazándose (scroll) en su interior, y un lienzo (canvas) cuya altura medida pasaba por alto el contenido desbordado y generaba una barra de desplazamiento sobre su última columna. Un lienzo también mostraba únicamente un indicador de carga durante todo el tiempo en que se escribía su marcado.
 
-Interfaces of this kind that read as one product do two things: they are assembled from a library
-of components, and they appear while they are generated.
+Las interfaces de este tipo que se perciben como un solo producto hacen dos cosas: se ensamblan a partir de una biblioteca de componentes y aparecen mientras se van generando.
 
-## Decision
+## Decisión
 
-1. **The frame carries components, and the model composes from them.** The kit's stylesheet adds
-   `omc-stack`, `omc-row`, `omc-grid`, `omc-card`, `omc-stat`, `omc-badge`, `omc-callout`,
-   `omc-kv`, `omc-field` and `omc-tabs`, drawn with the console's tokens, radii and spacing, and
-   every one fluid. Tabs are wired from markup (`data-omc-tabs`, `data-tab`, `data-panel`).
-2. **A diagram is a call.** `OMC.diagram` takes nodes and edges, layers the nodes by their distance
-   from a source, and draws the arrows between their boxes: side by side in a wide frame, an
-   indented tree in a narrow one. A node can be picked to read its detail and see what it touches.
-3. **The tool states the frame as a layout contract.** The `html` parameter's description gives
-   the frame's width on a desktop and a phone, says the height follows the content and that
-   padding, surface and title are supplied, and asks for fluid widths, no nested cards and the
-   components before custom CSS. It lives on the parameter rather than in the system prompt, whose
-   budget is 6 KiB and which every turn pays for whether or not it draws.
-4. **Nothing a canvas draws leaves the frame.** Media is capped to the frame's width, preformatted
-   text scrolls inside its own block, the reported height includes content overflowing the
-   document's box, and the cap rises from 720px to 1600px so a canvas is read by scrolling the
-   conversation rather than a box inside it.
-5. **A canvas is drawn as it is written.** While the call's arguments arrive, the draft figure
-   holds a preview frame with the canvas's sandbox, policy, tokens and components and none of its
-   scripts. The console decodes the `html` string as far as it has been written - cut back to its
-   last whole character - and posts it every 120ms; the preview assigns it as markup, which never
-   runs a script and drops an unfinished tag. The finished canvas replaces the preview at the
-   height the preview had reached.
+1. **El marco incluye componentes, y el modelo compone a partir de ellos.** La hoja de estilos del kit agrega `omc-stack`, `omc-row`, `omc-grid`, `omc-card`, `omc-stat`, `omc-badge`, `omc-callout`, `omc-kv`, `omc-field` y `omc-tabs`, renderizados con los tokens, radios y espaciados de la consola, siendo todos ellos fluidos. Las pestañas (tabs) se conectan desde el marcado (`data-omc-tabs`, `data-tab`, `data-panel`).
+2. **Un diagrama es una llamada.** `OMC.diagram` toma nodos y aristas, organiza los nodos en capas según su distancia desde una fuente y dibuja las flechas entre sus cajas: lado a lado en un marco ancho, o como un árbol indentado en uno estrecho. Se puede seleccionar un nodo para leer sus detalles y ver con qué está conectado.
+3. **La herramienta define el marco como un contrato de diseño.** La descripción del parámetro `html` indica el ancho del marco en un equipo de escritorio y en un teléfono, especifica que la altura se adapta al contenido y que el relleno (padding), la superficie y el título ya están provistos, y solicita anchos fluidos, evitar tarjetas anidadas y colocar los componentes antes del CSS personalizado. Esto reside en el parámetro en lugar de en el mensaje del sistema (system prompt), cuyo presupuesto es de 6 KiB y el cual consume recursos en cada turno, independientemente de si se dibuja algo o no.
+4. **Nada de lo que dibuja un lienzo sale del marco.** Los elementos multimedia se limitan al ancho del marco, el texto preformateado se desplaza dentro de su propio bloque, la altura reportada incluye el contenido que desborda la caja del documento, y el límite máximo aumenta de 720px a 1600px para que un lienzo se lea desplazando la conversación en lugar de una caja dentro de ella.
+5. **Un lienzo se dibuja a medida que se escribe.** A medida que llegan los argumentos de la llamada, la figura preliminar mantiene un marco de vista previa con el entorno aislado, la política, los tokens y los componentes del lienzo, pero sin sus scripts. La consola decodifica la cadena `html` hasta el punto en que se haya escrito —recortando hasta su último carácter completo— y la publica cada 120 ms; la vista previa la asigna como marcado, lo cual nunca ejecuta un script y descarta una etiqueta inconclusa. El lienzo final reemplaza a la vista previa a la altura que esta última hubiera alcanzado.
 
-## Consequences
+## Consecuencias
 
-- A canvas written with the components looks like the console whichever model wrote it, and a
-  model that ignores them still gets a frame its content cannot overflow sideways.
-- What a canvas computes - a chart, a diagram, a control's state - is absent from the preview and
-  appears when the canvas settles. The static structure around it is what streams.
-- The preview and the canvas are two frames, so the swap redraws the figure once. Holding the
-  height keeps the conversation from moving when it does.
-- The tool declaration is longer. It is sent only on turns that offer `render_ui`.
-- The components are a contract with stored conversations: a class a stored canvas uses has to keep
-  meaning what it meant, so they are added to rather than renamed.
+- Un lienzo escrito con los componentes se ve como la consola sin importar qué modelo lo haya escrito, y un modelo que los ignore de todos modos obtiene un marco cuyo contenido no puede desbordarse lateralmente.
+- Lo que calcula un lienzo —un gráfico, un diagrama, el estado de un control— está ausente en la vista previa y aparece cuando el lienzo se asienta. Lo que se transmite por streaming es la estructura estática que lo rodea.
+- La vista previa y el lienzo son dos marcos, por lo que el intercambio vuelve a renderizar la figura una vez. Mantener la altura evita que la conversación se desplace cuando esto ocurre.
+- La declaración de la herramienta es más larga. Se envía únicamente en los turnos que ofrecen `render_ui`.
+- Los componentes son un contrato con las conversaciones almacenadas: una clase que usa un lienzo guardado debe conservar su significado, por lo que se añaden nuevos componentes en lugar de renombrar los existentes.

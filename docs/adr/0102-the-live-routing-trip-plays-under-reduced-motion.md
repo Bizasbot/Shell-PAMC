@@ -1,79 +1,33 @@
-# ADR 0102: The live routing trip plays under reduced motion
+# ADR 0102: El recorrido de enrutamiento en vivo se reproduce con movimiento reducido
 
-- Status: Accepted
-- Date: 2026-10-17
+- Estado: Aceptado
+- Fecha: 2026-10-17
 
-## Context
+## Contexto
 
-`docs/design.md` §7 rule 9 animates a newly stored request across the dashboard's live routing map: a
-dot leaves the model, crosses the gateway to the credential CPA chose, waits there for a beat, and
-returns, while the lanes it uses flow and the nodes it reaches light. The rule also said that under
-`prefers-reduced-motion: reduce` no dot, flow or glow is drawn and the readings update in place.
+El documento `docs/design.md` §7, regla 9 anima una solicitud recién almacenada a través del mapa de enrutamiento en vivo del panel: un punto sale del modelo, cruza la pasarela hasta la credencial elegida por el CPA, espera allí un instante y regresa, mientras los carriles utilizados fluyen y los nodos alcanzados se iluminan. La regla también establecía que bajo `prefers-reduced-motion: reduce` no se dibuja ningún punto, flujo o brillo, y las lecturas se actualizan en el lugar.
 
-That made the map disappear for a group of readers it was built for. Chromium on Windows reports the
-**Animation effects** switch as `prefers-reduced-motion: reduce`, and many operators turn that switch
-off for reasons unrelated to motion sensitivity: an older workstation, a remote desktop session, a
-laptop on battery. On exactly those machines the panel becomes a static diagram, and the one reading
-it exists for - which model's request went to which credential, and whether the answer came back - is
-no longer visible; the rows still count attempts, but the path is gone.
+Eso hizo que el mapa desapareciera para un grupo de lectores para quienes fue construido. Chromium en Windows reporta el interruptor de **Efectos de animación** como `prefers-reduced-motion: reduce`, y muchos operadores desactivan ese interruptor por razones no relacionadas con la sensibilidad al movimiento: una estación de trabajo más antigua, una sesión de escritorio remoto, una laptop funcionando con batería. Exactamente en esas máquinas, el panel se convierte en un diagrama estático, y la única lectura para la existencia del cual fue creado —la solicitud de qué modelo fue a qué credencial, y si la respuesta regresó— ya no es visible; las filas todavía cuentan los intentos, pero la ruta ha desaparecido.
 
-The map is also not ordinary chrome motion. Its trip is the encoding: the design already accepts that
-the panel is the console's one lit surface (§2), and every other animation is either a hover
-acknowledgement, a disclosure, or a number acknowledging that it moved. A static version of the trip
-is not the same reading slowed down; it is a different, weaker reading.
+El mapa tampoco es un movimiento común de la interfaz. Su recorrido es la codificación: el diseño ya acepta que el panel es la única superficie iluminada de la consola (§2), y cualquier otra animación es una confirmación al pasar el cursor, una revelación, o un número que confirma que se movió. Una versión estática del recorrido no es la misma lectura ralentizada; es una lectura diferente y más débil.
 
-## Decision
+## Decisión
 
-1. **The live routing map plays its full trip for every reader**, regardless of
-   `prefers-reduced-motion`. That covers the travelling dot, the lane flow, the node glows, and rows
-   entering and leaving; the panel no longer consults the query at all.
-2. **The exception is scoped to the routing map.** Apart from the input-following scroll glide
-   (ADR 0046), every other animation in the console keeps honouring the query: drawers, disclosures,
-   the GitHub count, the loading bar, chart marks, placeholders and the KPI readouts are unchanged. No
-   global "ignore reduced motion" switch is introduced.
-3. **The exception is recorded where the budget is enforced.** `scripts/check-motion.mjs` gains a
-   `reduced` exception kind, keyed by file, selector and property, with the reason and a stale-entry
-   failure. The routing lane's flow is the only selector in the table. `scripts/acceptance/probes/routingMap.mjs`
-   asserts that a request arriving under `reducedMotion: 'reduce'` still produces a packet and a flowing
-   lane, so the behaviour is demonstrated rather than inferred from the absence of a guard.
-4. **The motion itself stays bounded.** The map still animates only opacity and transform, except the
-   lane-flow dash offset; at most eight requests replay from one read, staggered 70ms apart; at most
-   sixteen are on the map at once; a burst past that is skipped rather than queued; and hiding the page
-   ends every trip. The exception does not relax the concurrency or lifecycle limits.
-5. **The lines carry identity, not verdicts.** A sibling change in the same delivery gives each model
-   lane a cool `--route-*` slot and makes credential lanes neutral, so the trip's colour cannot be read
-   as success, warning or failure. The answer's tone stays on the node's wash and port ring and in the
-   row's text. This removes the other source of ambiguity on this surface: a green, amber or red line
-   beside a model's name meant two things at once.
+1. **El mapa de enrutamiento en vivo reproduce su recorrido completo para cada lector**, independientemente de `prefers-reduced-motion`. Esto abarca el punto en movimiento, el flujo de los carriles, el brillo de los nodos y las filas que entran y salen; el panel ya no consulta la regla en absoluto.
+2. **La excepción se limita al mapa de enrutamiento.** Aparte del desplazamiento suave que sigue a la entrada (ADR 0046), cualquier otra animación en la consola sigue respetando la regla: los cajones, las revelaciones, el contador de GitHub, la barra de carga, las marcas de los gráficos, los marcadores de posición y las lecturas de los KPI no cambian. No se introduce ningún interruptor global para "ignorar el movimiento reducido".
+3. **La excepción se registra donde se aplica el presupuesto.** `scripts/check-motion.mjs` adquiere un tipo de excepción `reduced`, organizado por archivo, selector y propiedad, con la razón y un fallo por entrada obsoleta. El flujo del carril de enrutamiento es el único selector en la tabla. `scripts/acceptance/probes/routingMap.mjs` afirma que una solicitud que llega bajo `reducedMotion: 'reduce'` aún produce un paquete y un carril en flujo, por lo que el comportamiento se demuestra en lugar de inferirse de la ausencia de un protector.
+4. **El movimiento en sí se mantiene acotado.** El mapa sigue animando únicamente la opacidad y la transformación, excepto el desplazamiento del trazo discontinuo del flujo del carril; como máximo, ocho solicitudes se reproducen a partir de una lectura, escalonadas con 70 ms de diferencia; como máximo, dieciséis están en el mapa a la vez; una ráfaga que supere eso se omite en lugar de encolarse; y ocultar la página finaliza cada recorrido. La excepción no relaja los límites de concurrencia o ciclo de vida.
+5. **Las líneas transmiten identidad, no veredictos.** Un cambio hermano en la misma entrega otorga a cada carril de modelo un espacio neutral `--route-*` y hace que los carriles de credenciales sean neutrales, de modo que el color del recorrido no pueda interpretarse como éxito, advertencia o fallo. El tono de la respuesta permanece en el matiz y el anillo del puerto del nodo, y en el texto de la fila. Esto elimina la otra fuente de ambigüedad en esta superficie: una línea verde, ámbar o roja al lado del nombre de un modelo significaba dos cosas a la vez.
 
-## Consequences
+## Consecuencias
 
-- A reader on Windows who turned animation effects off for performance sees the live routing panel work
-  as designed. A reader who needs reduced motion for vestibular reasons gets this one trip in full; the
-  reach is bounded by the map's small dot, short hops and the caps above, but the trade-off is real and
-  is stated rather than hidden.
-- The routing map is now the second motion that ignores the preference, after the input-following
-  scroll glide (ADR 0046). Unlike the glide, there is no preference to hand the decision back to the
-  system; adding one would ask an operator to find a setting before the panel tells them anything, and
-  the reading exists only while they are looking at it.
-- The check-motion exception table now has a third kind. Its self-test exercises the waiver in both
-  directions: a listed selector passes without a reduced-motion block, an unlisted one still fails, and
-  an unused entry fails.
-- The design document's rule 9 and the live-routing section both name the exception, so a future
-  "honour reduced motion everywhere" cleanup has to confront the decision instead of silently undoing
-  it. `DESIGN.md` carries the same note at summary depth.
+- Un lector en Windows que desactivó los efectos de animación por rendimiento ve el panel de enrutamiento en vivo funcionar tal como fue diseñado. Un lector que necesita movimiento reducido por razones vestibulares obtiene este único recorrido completo; el alcance está acotado por el pequeño punto del mapa, los saltos cortos y los límites superiores, pero la compensación es real y se explicita en lugar de ocultarse.
+- El mapa de enrutamiento es ahora el segundo movimiento que ignora la preferencia, después del desplazamiento suave que sigue a la entrada (ADR 0046). A diferencia del desplazamiento, no hay preferencia para devolver la decisión al sistema; agregar una requeriría que un operador busque una configuración antes de que el panel le muestre algo, y la lectura existe solo mientras la está mirando.
+- La tabla de excepciones de `check-motion` ahora tiene un tercer tipo. Su autoevaluación ejercita la exención en ambas direcciones: un selector listado pasa sin un bloque de movimiento reducido, uno no listado sigue fallando y una entrada no utilizada falla.
+- La regla 9 del documento de diseño y la sección de enrutamiento en vivo nombran la excepción, por lo que una futura limpieza de "honrar el movimiento reducido en todas partes" debe enfrentar la decisión en lugar de deshacerla silenciosamente. `DESIGN.md` incluye la misma nota a nivel de resumen.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Keep the static reading under reduced motion.** This is what the panel did, and it is what the
-  Windows population saw. It satisfies the preference literally but deletes the panel's answer for the
-  readers most likely to have the switch off.
-- **Draw a calm variant: no travel, just a sequential highlight of the model, its lane, the credential
-  and back.** This respects the preference more closely while still animating, but it is a second
-  rendering of the trip to design, test and keep in step with the first, and it still moves light
-  across the map on a timer. The map's reading is the travel; a stepped version is not obviously
-  calmer, only less legible.
-- **Add a preference with `On` / `Follow system` / `Off`, defaulting to `On`, as scroll smoothing
-  does.** It gives a motion-sensitive reader a way out, but it adds a setting that has to be discovered
-  before the panel is usable, and the panel's reading is transient rather than a persistent view. The
-  scoped exception is smaller and easier to reason about.
+- **Mantener la lectura estática bajo movimiento reducido.** Esto es lo que hacía el panel y lo que veía la población de Windows. Satisface la preferencia literalmente pero elimina la respuesta del panel para los lectores con mayor probabilidad de tener el interruptor desactivado.
+- **Dibujar una variante tranquila: sin desplazamiento, solo un resaltado secuencial del modelo, su carril, la credencial y el regreso.** Esto respeta la preferencia de manera más cercana mientras sigue animando, pero es una segunda representación del recorrido que requiere diseño, pruebas y mantenimiento a la par de la primera, y aún así mueve luz a través del mapa mediante un temporizador. La lectura del mapa es el desplazamiento; una versión por pasos no es obviamente más tranquila, solo menos legible.
+- **Agregar una preferencia con `On` / `Seguir sistema` / `Off`, predeterminada en `On`, como lo hace el suavizado de desplazamiento.** Ofrece una salida al lector sensible al movimiento, pero agrega una configuración que debe descubrirse antes de que el panel sea utilizable, y la lectura del panel es transitoria en lugar de una vista persistente. La excepción acotada es más pequeña y fácil de razonar.

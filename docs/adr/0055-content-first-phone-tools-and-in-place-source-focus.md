@@ -1,23 +1,10 @@
-# ADR 0055: Content-first phone tools and in-place source focus
+# ADR 0055: Herramientas telefónicas centradas en el contenido y enfoque de código fuente in-situ
 
-- Status: Accepted
-- Date: 2026-10-03
+- Estado: Aceptado
+- Fecha: 2026-10-03
 
-The console keeps one business workflow across viewports, while phones need room to read and act.
-At the existing 640px phone boundary, expose primary actions and disclose secondary tools through
-click-open labelled menus with selected preference state, 44px rows, focus restoration and platform
-Back. `PageHeader.mobileActions` chooses this rendering explicitly rather than hiding arbitrary desktop
-buttons. Keep the 900px navigation boundary, existing visual tokens and desktop action arrangement.
+La consola mantiene un flujo de trabajo de negocio único en todos los viewports, mientras que los teléfonos necesitan espacio para leer y actuar. En el límite actual para teléfonos de 640px, se exponen las acciones principales y se revelan las herramientas secundarias mediante menús desplegables con etiquetas, estado de preferencia seleccionado, filas de 44px, restauración del foco y el botón Atrás de la plataforma. `PageHeader.mobileActions` elige esta representación de forma explícita en lugar de ocultar botones arbitrarios de escritorio. Se mantiene el límite de navegación de 900px, los tokens visuales existentes y la disposición de las acciones de escritorio.
 
-The configuration page uses compact non-sticky chrome, locally scrolling categories, retained group
-descriptions and a dirty-only measured bottom action bar. YAML wraps by default on phones; a manual
-choice survives this source session, rotation and focus changes. A focused workspace fixes the same
-Monaco container inside the visible viewport instead of moving or remounting the editor: the draft,
-undo stack, selection and scroll are part of the user's working state. Background siblings become
-inert while modal portals stay usable, and nested overlays join the existing history contract.
+La página de configuración utiliza elementos cromáticos compactos no fijos (non-sticky), categorías con desplazamiento local, descripciones de grupo conservadas y una barra de acción inferior que solo aparece cuando hay cambios pendientes (dirty-only). YAML ajusta las líneas (wraps) por defecto en los teléfonos; una elección manual persiste durante esta sesión de código fuente, los cambios de rotación y las modificaciones del foco. Un espacio de trabajo enfocado fija el mismo contenedor Monaco dentro del viewport visible en lugar de mover o volver a montar el editor: el borrador, la pila de deshacer, la selección y el desplazamiento forman parte del estado de trabajo del usuario. Los elementos hermanos en segundo plano se vuelven inertes mientras los portales modales siguen operativos, y las superposiciones anidadas se integran al contrato de historial existente.
 
-This approach pays for effect-owned viewport/focus observers and careful nested overlay ordering,
-but avoids two editors, duplicated save logic and state transfer between them. Keyboard/caret pan
-bounds are observed with `visualViewport`; pinch zoom remains the browser's responsibility. Geometry,
-focus, editing and Back are browser assertions; viewport policy is logic-tested. Real iPhone keyboard
-and selection acceptance remains necessary in addition to simulated viewport tests.
+Este enfoque requiere observar el viewport y el foco mediante efectos dedicados, además de un ordenamiento cuidadoso de las superposiciones anidadas, pero evita tener dos editorios, lógica de guardado duplicada y transferencia de estado entre ellos. Los límites de desplazamiento del teclado y el cursor (caret pan) se observan con `visualViewport`; el zoom por pellizco (pinch zoom) sigue siendo responsabilidad del navegador. La geometría, el foco, la edición y el botón Atrás son aserciones del navegador; la política del viewport se prueba mediante lógica. La aceptación del teclado real y la selección en iPhone siguen siendo necesarias además de las pruebas simuladas del viewport.

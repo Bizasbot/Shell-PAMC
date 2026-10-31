@@ -1,119 +1,124 @@
-# ADR 0013: A plugin owns its provider's brand mark, and the server inlines it
+# ADR 0013: Un plugin es dueño de la marca de su proveedor, y el servidor la incrusta
 
-- Status: Accepted; decision 1's *"Only an effectively-enabled plugin contributes"* clause is
-  superseded by [ADR 0014](0014-plugin-branding-does-not-depend-on-plugin-enablement.md)
-- Date: 2026-09-19
+- Estado: Aceptado; la cláusula *"Solo un plugin efectivamente habilitado contribuye"* de la decisión 1 es
+  reemplazada por [ADR 0014](0014-plugin-branding-does-not-depend-on-plugin-enablement.md)
+- Fecha: 2026-09-19
 
-## Context
+## Contexto
 
-The provider tabs on **OAuth quota** and **OAuth management**, the credential cards, the quota cards,
-the request records, the provider table and the dashboard's provider rows all draw a brand mark for
-the provider behind a row. Two defects were reported against them:
+Las pestañas de proveedores en **Cuota de OAuth** y **Gestión de OAuth**, las tarjetas de credenciales,
+las tarjetas de cuota, los registros de solicitudes, la tabla de proveedores y las filas de proveedores del
+panel muestran una marca de la marca (logotipo) del proveedor detrás de una fila. Se informaron dos defectos
+en relación con ellas:
 
-1. **Devin, Meta and a plugin-registered provider (Codebuddy) drew a neutral placeholder** while their
-   artwork sat unused in the bundle. The tabs resolved a mark through
-   `web/src/components/common/providerMetadata.ts` alone, and that table had no row for them, so the
-   mark was the empty string. `QuotaCard`/`AuthFileCard` escaped it only because they additionally
-   consulted the vendored catalog.
-2. **A plugin-provided icon was not used.** A plugin is the only authority on what the provider it
-   registers looks like: the vendored catalog cannot be updated by installing a plugin, so a mark
-   guessed from the provider key can belong to somebody else's brand.
+1. **Devin, Meta y un proveedor registrado por un plugin (Codebuddy) mostraban un marcador de posición neutral**
+   mientras sus gráficos permanecían sin usar en el paquete. Las pestañas resolvían una marca únicamente
+   a través de `web/src/components/common/providerMetadata.ts`, y esa tabla no tenía ninguna fila para ellos,
+   por lo que la marca era una cadena vacía. `QuotaCard`/`AuthFileCard` se salvaban solo porque además
+   consultaban el catálogo incluido.
+2. **No se utilizaba un icono proporcionado por un plugin.** Un plugin es la única autoridad sobre cómo se ve
+   el proveedor que registra: el catálogo incluido no se puede actualizar instalando un plugin, por lo que
+   una marca adivinada a partir de la clave del proveedor puede pertenecer a la marca de otra persona.
 
-The second point has a constraint the first does not. A plugin publishes its logo as an absolute URL
-(CodeBuddy's plugin ships `https://cdn.jsdelivr.net/…/workbuddy/default.svg`), and this console cannot
-load that in the browser:
+El segundo punto tiene una restricción que el primero no tiene. Un plugin publica su logotipo como una URL
+absoluta (el plugin de CodeBuddy incluye `https://cdn.jsdelivr.net/…/workbuddy/default.svg`), y esta consola no
+puede cargar eso en el navegador:
 
-- AGENTS.md forbids a frontend resource that requires a CDN, and `README.md` promises no runtime CDN
-  request; the SPA is embedded in the Go binary precisely so a deployment has no static-file
-  dependency.
-- The console already serves itself under `Content-Security-Policy-Report-Only: … img-src 'self' data:
-  blob:` — a policy that a browser-side fetch of the plugin's host contradicts, and that this ADR
-  brings the image path into line with rather than relaxing.
+- AGENTS.md prohíbe un recurso frontend que requiera una CDN, y `README.md` promete que no habrá solicitudes
+- a una CDN en tiempo de ejecución; la SPA está incrustada en el binario de Go precisamente para que un
+  despliegue no tenga dependencias de archivos estáticos.
+- La consola ya se sirve a sí misma bajo `Content-Security-Policy-Report-Only: … img-src 'self' data:
+  blob:` — una política que contradice una recuperación del host del plugin desde el navegador, y con la cual
+  este ADR alinea la ruta de la imagen en lugar de relajarla.
 
-So the requirement "use the plugin's own icon" and the invariant "the browser loads nothing from
-outside the binary" cannot both hold if the browser is the fetcher.
+Por lo tanto, el requisito "usar el propio icono del plugin" y el invariante "el navegador no carga nada desde
+fuera del binario" no pueden cumplirse simultáneamente si el navegador es el encargado de realizar la petición.
 
-## Decision
+## Decisión
 
-**1. The plugin's published logo outranks the catalog mark, everywhere a provider's mark is drawn.**
-`web/src/types/pluginOAuthProviders.ts` resolves the plugin list into provider-key logos, keyed by both
-`oauth_provider` and the plugin's own id (a plugin whose auths are typed by its id has to resolve to the
-same mark). `LobeIcon.tsx`'s `ProviderBrandIcon` is the one component that chooses between the plugin's
-logo and the catalog mark, so the surfaces cannot disagree about a provider. Only an
-effectively-enabled plugin contributes. The catalog mark remains the fallback, and an unmatched
-provider is left *unbranded* rather than resolved to a default brand.
+**1. El logotipo publicado del plugin supera a la marca del catálogo, en todas partes donde se dibuje la marca de un proveedor.**
+`web/src/types/pluginOAuthProviders.ts` resuelve la lista de plugins en logotipos basados en la clave del proveedor,
+claveada tanto por `oauth_provider` como por el propio id del plugin (un plugin cuyas autenticaciones se escriben
+por su id debe resolverse con la misma marca). `ProviderBrandIcon` en `LobeIcon.tsx` es el único componente que
+elige entre el logotipo del plugin y la marca del catálogo, por lo que las interfaces no pueden entrar en conflicto
+sobre un proveedor. Solo un plugin efectivamente habilitado contribuye. La marca del catálogo sigue siendo la alternativa
+(fallback), y un proveedor no coincidente se deja *sin marca* en lugar de resolverse a una marca predeterminada.
 
-**2. The Go process fetches that logo and inlines it.** `internal/api/management_plugin_logos.go` is
-called from the plugin list: it fetches the declared URL, requires an image media type from a bound
-allowlist, caps the body at 512 KiB, and reports an inline `data:` URL on both `logo` and
-`metadata.logo`. A logo that cannot be inlined is reported as **absent**, which is what drives the
-catalog fallback. The frontend accepts only inline `data:image/*`, so a URL the browser may not load
-cannot reach an `img` at all.
+**2. El proceso de Go recupera ese logotipo y lo incrusta.** Se llama a `internal/api/management_plugin_logos.go`
+desde la lista de plugins: este recupera la URL declarada, requiere un tipo de contenido multimedia (media type)
+de imagen a partir de una lista blanca vinculada, limita el cuerpo a 512 KiB e informa una URL `data:` incrustada
+tanto en `logo` como en `metadata.logo`. Un logotipo que no se pueda incrustar se reporta como **ausente**, lo que
+activa la alternativa del catálogo. El frontend acepta únicamente `data:image/*` incrustado, por lo que una URL que
+el navegador no deba cargar no puede llegar de ninguna manera a una etiqueta `img`.
 
-**3. A plugin-declared URL is held to a stricter destination policy than an operator-typed one.**
-`internal/api/outbound_fetch.go` shares the redirect rule (a redirect that changes scheme or host is
-refused) between the two outbound fetches, but not the destination rule:
+**3. Una URL declarada por un plugin se rige por una política de destino más estricta que una escrita por un operador.**
+`internal/api/outbound_fetch.go` comparte la regla de redirección (se rechaza cualquier redirección que cambie
+el esquema o el host) entre ambas recuperaciones salientes, pero no la regla de destino:
 
-| Fetch | Who chose the URL | Plaintext HTTP | Address check |
+| Recuperación | Quién eligió la URL | HTTP en texto plano | Comprobación de dirección |
 | --- | --- | --- | --- |
-| Model-list pull | the operator, for a provider they run | allowed for localhost, loopback and private literals | none beyond the scheme |
-| Plugin logo | an installed plugin's manifest | allowed only to this machine | resolved address refused in the dialer unless it is public internet space: the operator's network, carrier-grade NAT (`100.64.0.0/10`), multicast, unspecified and the reserved IANA blocks are all refused, and the fetch connects directly so the check cannot be moved onto a proxy |
+| Obtención de lista de modelos | el operador, para un proveedor que ejecuta | permitido para localhost, loopback y literales privados | ninguna más allá del esquema |
+| Logotipo de plugin | el manifiesto de un plugin instalado | permitido únicamente para esta máquina | se rechaza la dirección resuelta en el marcador (dialer) a menos que sea un espacio público de Internet: la red del operador, NAT a escala de operador (`100.64.0.0/10`), multidifusión (multicast), no especificado y los bloques IANA reservados son todos rechazados, y la recuperación se conecta directamente para que la comprobación no pueda trasladarse a un proxy |
 
-The asymmetry is the point: a self-hosted relay on the operator's LAN is a normal model-pull target,
-while a plugin manifest is third-party input and must not become a way to reach the operator's network
-or `169.254.169.254`. Checking the **resolved** address at dial time is what makes that a boundary
-rather than a name check — it also closes DNS rebinding.
+La asimetría es el objetivo: un *relay* autohospedado en la LAN del operador es un destino normal de obtención de
+modelos, mientras que el manifiesto de un plugin es una entrada de terceros y no debe convertirse en una forma de
+llegar a la red del operador o a `169.254.169.254`. Comprobar la dirección **resuelta** en el momento de la llamada
+es lo que convierte esto en un límite en lugar de una comprobación de nombres; también cierra la reanudación de DNS
+(DNS rebinding).
 
-**4. The plugin list is projected into the console's own DTO.** `PluginItemDTO` declares the response
-fields explicitly, like every other management surface, so a field added to the facade model for
-decoding cannot widen this API without a decision, and manifest text is bounded on the way out.
+**4. La lista de plugins se proyecta en el propio DTO de la consola.** `PluginItemDTO` declara explícitamente
+los campos de respuesta, como cualquier otra superficie de gestión, por lo que un campo añadido al modelo de fachada
+para su decodificación no puede ampliar esta API sin una decisión previa, y el texto del manifiesto está acotado
+en la salida.
 
-## Consequences
+## Consecuencias
 
-- **The plugin's own mark is drawn and the browser still loads only inline or same-origin artwork.**
-  Verified live: the CodeBuddy plugin's jsdelivr logo arrives as `data:image/svg+xml;base64,…`
-  (5 670 bytes) with zero CDN URLs in the response.
-- **The deployment now contacts the plugin's host** (once per hour at most, per URL). An air-gapped
-  deployment cannot, and falls back to the bundled mark — stated in `README.md` and `README.zh-CN.md`.
-- **An operator's stored icon override no longer applies to a plugin-owned provider.** That is the
-  accepted cost of the plugin owning its provider's identity, and it is recorded in `CONTEXT.md`'s
-  naming rule, which otherwise says icons belong to Oh My CPA.
-- **A logo hosted on the operator's own LAN will not load**, by design (see the table above); the
-  fallback is the catalog mark.
-- **A manifest may still point the fetch at a service on this machine**, and that is allowed on
-  purpose: loopback is the machine itself, which a self-hosted or locally developed plugin store
-  legitimately uses, and the request carries no credential, must answer with an image type from the
-  allowlist, and is capped and cached. Refusing it would trade that case away for little - the plugin
-  already runs in-process inside CPA, so it can reach local services directly if it wants to.
-- **Failures are cached for an hour, but a fetch that ran out of its budget is not.** The console polls
-  the plugin list, so an unreachable host must not be re-fetched per poll — and running out of time is
-  not an answer about the logo, so a slow poll cannot cost a plugin its mark for a whole TTL.
-- **One deadline covers the whole plugin list**, because what must stay bounded is the polled response,
-  not each request.
-- Keeping it honest: `scripts/test-provider-icons.ts` asserts that every built-in OAuth provider
-  reaches a mark whose artwork actually ships in the bundle — the invariant the reported bug violated —
-  and the browser suite asserts a catalog brand, a plugin-published logo and a request row.
+- **Se dibuja la propia marca del plugin y el navegador sigue cargando únicamente recursos gráficos incrustados o del mismo origen.**
+  Verificado en vivo: el logotipo de jsdelivr del plugin CodeBuddy llega como `data:image/svg+xml;base64,…`
+  (5 670 bytes) con cero URLs de CDN en la respuesta.
+- **El despliegue ahora se comunica con el host del plugin** (como máximo una vez por hora, por URL). Un despliegue
+  aislado (air-gapped) no puede hacerlo y recurre a la marca incluida en el paquete, tal como se indica en `README.md`
+  y `README.zh-CN.md`.
+- **La anulación de icono almacenada por un operador ya no se aplica a un proveedor propiedad de un plugin.** Ese es
+  el costo aceptado de que el plugin sea propietario de la identidad de su proveedor, y está registrado en la regla
+  de nomenclatura de `CONTEXT.md`, que por lo demás establece que los iconos pertenecen a Oh My CPA.
+- **Un logotipo alojado en la propia LAN del operador no se cargará**, por diseño (véase la tabla anterior); la alternativa
+  es la marca del catálogo.
+- **Un manifiesto aún puede apuntar la recuperación a un servicio en esta máquina**, y eso se permite a propósito:
+  el bucle invertido (*loopback*) es la propia máquina, que una tienda de plugins autohospedada o desarrollada localmente
+  utiliza legítimamente, y la solicitud no transporta credenciales, debe responder con un tipo de imagen de la lista blanca,
+  y está limitada y en caché. Rechazarlo cambiaría ese caso por muy poco beneficio: el plugin ya se ejecuta dentro del
+  proceso en CPA, por lo que puede acceder a los servicios locales directamente si lo desea.
+- **Los fallos se almacenan en caché durante una hora, pero una recuperación que agotó su presupuesto no.** La consola
+  consulta la lista de plugins, por lo que un host inaccesible no debe volverse a consultar en cada sondeo (poll),
+  y agotar el tiempo no constituye una respuesta sobre el logotipo, por lo que un sondeo lento no puede costarle
+  a un plugin su marca durante todo un TTL.
+- **Un único plazo temporal (deadline) cubre toda la lista de plugins**, porque lo que debe mantenerse acotado es
+  la respuesta sondeada, no cada solicitud individual.
+- Manteniendo la coherencia: `scripts/test-provider-icons.ts` afirma que cada proveedor OAuth integrado alcanza
+  una marca cuyos gráficos realmente se incluyen en el paquete —el invariante que el error reportado violaba—,
+  y el conjunto de pruebas del navegador afirma una marca de catálogo, un logotipo publicado por un plugin y una fila de solicitud.
 
-## Alternatives considered
+## Alternativas consideradas
 
-**Keep loading the plugin's logo in the browser** (the behaviour before this change). It satisfies "use
-the plugin's own icon" in one line, and it was rejected because it makes the console's rendering depend
-on a third-party host: the mark disappears silently when that host is unreachable, and the deployment's
-stated offline contract and its own CSP both say the browser loads nothing from outside the binary.
+**Seguir cargando el logotipo del plugin en el navegador** (el comportamiento anterior a este cambio). Satisface el
+requisito de "usar el propio icono del plugin" en una sola línea, y fue rechazado porque hace que el renderizado de la
+consola dependa de un host de terceros: la marca desaparece silenciosamente cuando ese host no está accesible, y tanto
+el contrato fuera de línea declarado del despliegue como su propia CSP establecen que el navegador no carga nada desde fuera del binario.
 
-**Refuse remote logos and keep only the catalog mark** (the smallest correct change, and what a code
-review of this work first suggested). Rejected because it silently discards the plugin's declared mark —
-the operator sees a brand the plugin did not choose, with no signal that the plugin published one — and
-it leaves the requirement in the report unmet.
+**Rechazar los logotipos remotos y conservar únicamente la marca del catálogo** (el cambio correcto más pequeño, y lo que
+una revisión de código de este trabajo sugirió inicialmente). Rechazado porque descarta silenciosamente la marca declarada
+del plugin —el operador ve una marca que el plugin no eligió, sin ninguna señal de que el plugin haya publicado una— y deja
+sin cumplir el requisito del informe.
 
-**Ask plugins to publish inline `data:` artwork instead.** The console already accepts it, and it would
-remove the fetch entirely. It cannot be a decision here: it would break every plugin that already
-declares a URL, and the plugin API's own field is documented as a display asset reference.
+**Pedir a los plugins que publiquen gráficos `data:` incrustados en su lugar.** La consola ya los acepta y eliminaría
+la recuperación por completo. No puede ser una decisión aquí: rompería todos los plugins que ya declaran una URL, y el
+propio campo de la API de plugins está documentado como una referencia a un recurso de visualización.
 
-**Fetch the logo at build time and bundle it.** Impossible in principle: plugins are installed at
-runtime, after the binary is built — the plugin list is exactly the thing that changes without a
-rebuild.
+**Recuperar el logotipo en tiempo de compilación e incluirlo en el paquete.** Imposible en principio: los plugins se
+instalan en tiempo de ejecución, después de que se compila el binario; la lista de plugins es exactamente aquello que
+cambia sin necesidad de una nueva compilación.
 
-**Use the same destination policy as a model pull** (allow LAN plaintext). Rejected: it would let an
-installed plugin point this process at any address inside the operator's network and have the response
-served back to the console, which is a capability the operator never granted.
+**Utilizar la misma política de destino que para la obtención de modelos** (permitir texto plano en LAN). Rechazado:
+permitiría que un plugin instalado apuntara este proceso a cualquier dirección dentro de la red del operador y obtuviera
+la respuesta devuelta a la consola, lo cual es una capacidad que el operador nunca otorgó.

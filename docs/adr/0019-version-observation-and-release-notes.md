@@ -1,149 +1,149 @@
-# ADR 0019: Version observation is a state, and its change log is fetched per product
+# ADR 0019: La observación de versiones es un estado y su registro de cambios se obtiene por producto
 
-- Status: Accepted
-- Date: 2026-09-22
+- Estado: Aceptado
+- Fecha: 2026-09-22
 
-## Context
+## Contexto
 
-The System Information page reported a version comparison as a boolean derived from
-string inequality: `latest_version != cpa_version`. That treats `7.3.5` and `7.3.11`
-as different in the right direction by luck rather than by rule, ignores direction
-entirely, and cannot express the case the project actually ships — `OMCPA_VERSION`
-defaults to `v0.1.0-dev` and the public demo builds as `v0.1.0-demo`, neither of which
-is a release version at all. A failed check was indistinguishable from "up to date",
-because both produced an empty `latest_version`.
+La página de Información del Sistema informaba de una comparación de versiones como un booleano derivado de
+la desigualdad de cadenas: `latest_version != cpa_version`. Esto trataba `7.3.5` y `7.3.11`
+como diferentes en la dirección correcta por suerte más que por regla, ignoraba la dirección
+por completo y no podía expresar el caso que el proyecto realmente distribuye —`OMCPA_VERSION`
+tiene por defecto `v0.1.0-dev` y la compilación de demostración pública se compila como `v0.1.0-demo`, ninguno de los cuales
+es una versión de lanzamiento en absoluto. Una comprobación fallida era indistinguible de "actualizado",
+porque ambos producían un `latest_version` vacío.
 
-The running gateway version was also learned as a side effect of a lookup that
-depends on reaching GitHub, so a deployment that could not reach the internet could
-not say which gateway version it was running.
+La versión del gateway en ejecución también se conocía como un efecto secundario de una búsqueda que
+depende de llegar a GitHub, por lo que un despliegue que no pudiera acceder a internet no
+podía indicar qué versión del gateway estaba ejecutando.
 
-Adding release notes raised three further questions that the code cannot answer for
-itself:
+La incorporación de notas de lanzamiento planteó tres preguntas adicionales que el código no puede responder por
+sí mismo:
 
-1. Release notes come from a third-party host (`api.github.com`), reached by the
-   server rather than the browser. Its unauthenticated budget is 60 requests per hour
-   per address, so "fetch on render" would spend the operator's whole allowance on
-   reloads.
-2. Notes are untrusted remote Markdown, rendered into the console.
-3. The console has no release history of its own: the repository has no releases or
-   tags, so its own change log is legitimately empty today.
+1. Las notas de lanzamiento provienen de un host de terceros (`api.github.com`), al que accede el
+   servidor en lugar del navegador. Su presupuesto sin autenticar es de 60 solicitudes por hora
+   por dirección, por lo que "obtener al renderizar" gastaría todo el cupo del operador en
+   recargas.
+2. Las notas son Markdown remoto no confiable, renderizado en la consola.
+3. La consola no tiene su propio historial de lanzamientos: el repositorio no tiene lanzamientos ni
+   etiquetas, por lo que su propio registro de cambios está legítimamente vacío hoy en día.
 
-## Decision
+## Decisión
 
-**A comparison is a state, not a boolean.** `update_available`, `up_to_date`,
-`update_ahead`, and `indeterminate`, where `indeterminate` carries a reason. Only
-versions that parse as plain dotted release versions are compared. A suffixed build
-version (`-dev`, `-demo`, a fork's marker) reports `indeterminate` with a reason
-rather than "up to date" or "behind": the console cannot place such a build on the
-release line, and inventing a position for it would be a precise-looking wrong answer.
-A build newer than every release reports `update_ahead`, because "ahead of publication"
-is not an update to install.
+**Una comparación es un estado, no un booleano.** `update_available`, `up_to_date`,
+`update_ahead` e `indeterminate`, donde `indeterminate` conlleva un motivo. Solo
+se comparan las versiones que se analizan como versiones de lanzamiento simples con puntos. Una versión de compilación con sufijo
+(`-dev`, `-demo`, un marcador de bifurcación) informa `indeterminate` con un motivo
+en lugar de "actualizado" o "desactualizado": la consola no puede ubicar dicha compilación en
+la línea de lanzamiento, e inventar una posición para ella sería una respuesta incorrecta de apariencia precisa.
+Una compilación más nueva que cada lanzamiento informa `update_ahead`, porque "adelantado a la publicación"
+no es una actualización para instalar.
 
-**The running gateway version is read from the gateway**, from the response headers of
-a management endpoint the page already calls, independently of whether any release
-check succeeded.
+**La versión del gateway en ejecución se lee desde el gateway**, a partir de las cabeceras de respuesta de
+un endpoint de gestión que la página ya llama, independientemente de si alguna comprobación de lanzamiento
+tuvo éxito.
 
-**The change log covers a computed interval, not everything.** For each product, the
-stable releases in `(running, newest]`, grouped by version, newest first, ordered by
-version rather than by publication time so a backport published later does not appear
-above a newer release. Prereleases are excluded. When the running version is not
-comparable no interval is claimed and the newest release is shown alone.
+**El registro de cambios cubre un intervalo calculado, no todo.** Para cada producto, los
+lanzamientos estables en `(running, newest]`, agrupados por versión, del más nuevo al más antiguo, ordenados por
+versión en lugar de por tiempo de publicación para que una corrección retroportada (backport) publicada más tarde no aparezca
+por encima de un lanzamiento más nuevo. Se excluyen los lanzamientos previos (prereleases). Cuando la versión en ejecución no es
+comparable, no se reclama ningún intervalo y el lanzamiento más nuevo se muestra solo.
 
-**The versioned metadata is stored; the notes are not.** `release_index` and
-`release_check_state` (migration 024) hold tags, names, dates, prerelease flags and
-the check outcome, so "is there a newer version" survives a restart and works offline.
-A release body is held in process memory only and is never written to the database that
-holds the audit trail. The consequence is visible rather than hidden: the page reports
-whether it holds notes and renders an entry with its version, date and source link when
-it does not, instead of an empty change log that would read as "nothing changed".
+**Los metadatos versionados se almacenan; las notas no.** `release_index` y
+`release_check_state` (migración 024) contienen etiquetas, nombres, fechas, indicadores de lanzamiento previo y
+el resultado de la comprobación, de modo que "¿hay una versión más nueva?" sobrevive a un reinicio y funciona sin conexión.
+El cuerpo de un lanzamiento se mantiene solo en la memoria del proceso y nunca se escribe en la base de datos que
+contiene el registro de auditoría (audit trail). La consecuencia es visible en lugar de estar oculta: la página informa
+si contiene notas y renderiza una entrada con su versión, fecha y enlace de origen cuando
+no las tiene, en lugar de un registro de cambios vacío que se leería como "nada ha cambiado".
 
-**A conditional request's validator is trusted only with its body.** A `304` is answered
-against a representation the process must still hold, so stored ETags are dropped at
-start-up and the first check after a restart is unconditional. Validators are also only
-sent when the cached snapshot came from a single page: page one's validator says nothing
-about page two, and treating it as a whole-snapshot answer would leave the older pages
-unverified while the code assumed they were current. Conditional requests are used because
-they can avoid transferring a body the process already holds; whether GitHub also excludes
-them from rate-limit accounting is not something this project relies on, and the operator's
-budget is treated as spent either way.
+**El validador de una solicitud condicional solo es de confianza junto con su cuerpo.** Un `304` se responde
+frente a una representación que el proceso todavía debe retener, por lo que las ETag almacenadas se descartarán al
+iniciar y la primera comprobación después de un reinicio será incondicional. Los validadores también se envían únicamente
+cuando la instantánea en caché proviene de una sola página: el validador de la página uno no dice nada
+sobre la página dos, y tratarlo como una respuesta de instantánea completa dejaría las páginas
+más antiguas sin verificar mientras el código asumía que están al día. Se utilizan solicitudes condicionales porque
+pueden evitar transferir un cuerpo que el proceso ya posee; si GitHub además las excluye
+de la contabilización del límite de tasa no es algo en lo que este proyecto confíe, y el presupuesto del operador
+se trata como gastado de cualquier manera.
 
-**A snapshot is published in one transaction.** The release index and the successful check metadata
-are one fact - "this is what the feed said, and here is when and how it was read" - and committing
-them separately left a window where they could disagree: a failure or shutdown between the writes
-would present this feed's versions with the previous source's provenance. The notes and validators
-are installed in memory only after that transaction commits, so the in-memory copy can never describe
-an index the database does not have. A failure rolls both back, which a test induces with a database
-trigger so the rollback is observable.
+**Una instantánea se publica en una sola transacción.** El índice de lanzamiento y los metadatos de comprobación exitosa
+son un único hecho: "esto es lo que decía el canal de noticias, y aquí es cuándo y cómo se leyó", y confirmarlos
+por separado dejaba una ventana donde podían diferir: un fallo o apagado entre las escrituras
+presentaría las versiones de este canal de noticias con la procedencia de la fuente anterior. Las notas y los validadores
+se instalan en memoria solo después de que esa transacción se confirma (commits), por lo que la copia en memoria nunca puede describir
+un índice que la base de datos no tiene. Un fallo revierte ambos, lo que una prueba induce mediante un
+activador (trigger) de base de datos para que la reversión sea observable.
 
-**The bookkeeping that records an outcome has its own deadline, created after the read.**
-A budget spanning the feed read measured the wrong thing: the read's own timeout is longer, so a
-legitimately slow fetch expired the context that was meant to persist its result and left the
-`running` flag set - the very failure the detached context exists to prevent. Detaching a context and
-bounding it are separate requirements, and the bound belongs to the phase it protects.
+**El registro que guarda un resultado tiene su propio plazo límite (deadline), creado después de la lectura.**
+Un presupuesto que abarcaba la lectura del canal de noticias medía lo incorrecto: el tiempo de espera (timeout) de la propia lectura es más largo, por lo que una
+recuperación legítimamente lenta caducaba el contexto destinado a persistir su resultado y dejaba el
+indicador `running` activado, justo el fallo que el contexto desacoplado existe para evitar. Desacoplar un contexto y
+acotarlo son requisitos separados, y el límite pertenece a la fase que protege.
 
-**A check is subject to a floor, and failures never overwrite the answer.**
-`CheckFloor` (fifteen minutes) is the shortest interval between two real reads of the feed.
-Opening the page and the manual button still check on every use, but inside the floor the
-answer comes from the stored index and the response says so (`served_from_cache`), so the
-button never claims a check it did not perform. A sweep runs every six hours and is exempt
-because it is far outside any floor (`OMCPA_UPDATE_CHECK_ENABLED=false` stops the sweep
-only). A failed check leaves the stored index and the last-success timestamp intact and
-records the reason and the attempt time, so the page reports the previous answer and why the
-new attempt failed. The floor is measured from the last attempt rather than the last
-success, so a broken feed is not retried on every page view. Each product is checked and
-reported independently. A conditional request's validator is trusted only while the process
-still holds the body it describes, so stored ETags are cleared at start-up.
+**Una comprobación está sujeta a un umbral mínimo (floor), y los fallos nunca sobrescriben la respuesta.**
+`CheckFloor` (quince minutos) es el intervalo más corto entre dos lecturas reales del canal de noticias.
+Abrir la página y el botón manual siguen comprobando en cada uso, pero dentro del umbral mínimo la
+respuesta proviene del índice almacenado y la respuesta lo indica (`served_from_cache`), por lo que el
+botón nunca afirma haber realizado una comprobación que no ejecutó. Un análisis periódico (sweep) se ejecuta cada seis horas y está exento
+porque está muy fuera de cualquier umbral (`OMCPA_UPDATE_CHECK_ENABLED=false` detiene el
+análisis periódico únicamente). Una comprobación fallida deja intactos el índice almacenado y la marca de tiempo del último éxito,
+registrando el motivo y la hora del intento, de modo que la página informa la respuesta anterior y el porqué
+falló el nuevo intento. El umbral se mide desde el último intento en lugar del último
+éxito, por lo que un canal de noticias roto no se reintenta en cada visualización de página. Cada producto se comprueba e
+informa de forma independiente. El validador de una solicitud condicional solo es de confianza mientras el proceso
+todavía retenga el cuerpo que describe, por lo que las ETag almacenadas se borran al iniciar.
 
-**Rendering does not execute remote content.** Release bodies render through
-`react-markdown` without `rehype-raw`, so HTML in a release body is never executed;
-images are rendered as links rather than loaded, so opening the page makes no request
-to a third-party host; external links open in a new tab with `noopener noreferrer`.
+**El renderizado no ejecuta contenido remoto.** Los cuerpos de los lanzamientos se renderizan a través de
+`react-markdown` sin `rehype-raw`, por lo que el HTML en el cuerpo de un lanzamiento nunca se ejecuta;
+las imágenes se renderizan como enlaces en lugar de cargarse, por lo que abrir la página no realiza ninguna solicitud
+a un host de terceros; los enlaces externos se abren en una pestaña nueva con `noopener noreferrer`.
 
-**The source is a repository identifier, never a URL.** The host is
-`api.github.com` as a compile-time constant; only `owner/name` is configurable
-(`OMCPA_OMC_REPO`, `OMCPA_CPA_REPO`) and it is validated by shape before use. The
-process follows `HTTP_PROXY`/`HTTPS_PROXY`, matching the pricing sync, because both are
-reads of a fixed public endpoint.
+**La fuente es un identificador de repositorio, nunca una URL.** El host es
+`api.github.com` como una constante de tiempo de compilación; solo `owner/name` es configurable
+(`OMCPA_OMC_REPO`, `OMCPA_CPA_REPO`) y se valida por su formato antes de su uso. El
+proceso sigue `HTTP_PROXY`/`HTTPS_PROXY`, coincidiendo con la sincronización de precios, ya que ambas son
+lecturas de un endpoint público fijo.
 
-**The demonstration answers from a fixture and performs no outbound request.** The
-demo builds the production service with only its feed source swapped, so the page
-demonstrates the real comparison and the real merged log, and its release routes are
-refused by the demo policy table (`internal/api/demo_policy.go`).
+**La demostración responde a partir de un archivo fixture y no realiza ninguna solicitud saliente.** La
+demostración compila el servicio de producción solo con su fuente de canal de noticias intercambiada, por lo que la página
+demuestra la comparación real y el registro combinado real, y sus rutas de lanzamiento son
+rechazadas por la tabla de directivas de demostración (`internal/api/demo_policy.go`).
 
-## Consequences
+## Consecuencias
 
-- The console can now be wrong in a visible way it could not before: it can say "I
-  cannot tell whether you are up to date". That is the intended trade — the previous
-  behaviour asserted currency on no evidence.
-- A restart costs one unconditional request per product, because validators are
-  dropped with the bodies they described.
-- Sixty unauthenticated requests per hour per address is the real ceiling. A check costs one
-  request per product and a second only when a feed's first page is full, and the floor caps
-  how often that can happen: at most a handful of checks an hour, so the budget is shared with
-  whatever else the operator runs rather than consumed by page views. If it is still reached,
-  the page keeps the previous index, names the reset time, and does not silently present stale
-  data as current.
-- The console's own change log stays empty until the project publishes releases. The
-  page states that rather than hiding the card, and no release automation was added.
-- Notes are unavailable after a restart until the next successful check. Storing them
-  was considered and rejected: it would put arbitrarily large, untrusted, third-party
-  text into the database that holds the audit trail, for a page whose other half works
-  without it.
+- La consola ahora puede estar equivocada de una manera visible en la que antes no podía estarlo: puede decir "No
+  puedo determinar si estás actualizado". Esa es la compensación intencionada; el comportamiento
+- anterior afirmaba la vigencia sin ninguna evidencia.
+- Un reinicio cuesta una solicitud incondicional por producto, porque los validadores se
+- descartan junto con los cuerpos que describían.
+- Sesenta solicitudes sin autenticar por hora y dirección es el límite real. Una comprobación cuesta una
+  solicitud por producto y una segunda solo cuando la primera página de un canal está llena, y el umbral mínimo limita
+  con qué frecuencia puede suceder eso: como mucho un puñado de comprobaciones por hora, por lo que el presupuesto se comparte con
+  lo que sea que el operador ejecute en lugar de ser consumido por las visitas a las páginas. Si aun así se alcanza,
+  la página mantiene el índice anterior, indica la hora de restablecimiento y no presenta silenciosamente datos
+  obsoletos como actuales.
+- El propio registro de cambios de la consola permanece vacío hasta que el proyecto publique lanzamientos. La
+  página indica esto en lugar de ocultar la tarjeta, y no se añadió automatización de lanzamientos.
+- Las notas no están disponibles después de un reinicio hasta la siguiente comprobación exitosa. Almacenarlas
+  se consideró y se rechazó: introduciría texto de terceros, arbitrariamente grande y no confiable,
+  en la base de datos que contiene el registro de auditoría, para una página cuya otra mitad funciona
+  sin él.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Store notes in SQLite.** Rejected for the reason above; the split is now visible in
-  the UI, which is what makes the simpler choice defensible.
-- **Throttle the manual check.** Rejected at first on the operator's explicit choice of an
-  unthrottled check with the quota consequence stated. That choice was then reversed by
-  measurement rather than argument: the sixty-request hourly budget was exhausted in
-  practice, by page loads at up to two requests per product, and the console reported the
-  exhausted limit in place of a version. The floor that replaced it keeps the visible
-  behaviour honest instead of hiding the change - a call inside the floor still answers, and
-  it reports that the answer came from the store.
-- **Discard bodies and re-fetch per release.** Rejected after checking the API: the
-  list response already includes bodies, so discarding them costs extra requests rather
-  than fewer.
-- **Read only CPA's `/latest-version` and skip GitHub for the gateway.** Rejected
-  because that endpoint reports a version number and no change log, which is the whole
-  feature.
+- **Almacenar notas en SQLite.** Rechazado por el motivo anterior; la división ahora es visible en
+  la interfaz de usuario, lo que hace que la opción más simple sea defendible.
+- **Limitar (throttle) la comprobación manual.** Rechazado al principio por la elección explícita del operador de una
+  comprobación sin limitar con la consecuencia de cuota indicada. Esa elección fue luego revertida por
+  medición en lugar de por argumento: el presupuesto horario de sesenta solicitudes se agotó en
+  la práctica, debido a cargas de página de hasta dos solicitudes por producto, y la consola informó el
+  límite agotado en lugar de una versión. El umbral mínimo que lo reemplazó mantiene honesto el
+  comportamiento visible en lugar de ocultar el cambio; una llamada dentro del umbral sigue respondiendo, e
+  informa que la respuesta provino del almacén.
+- **Descartar cuerpos y volver a obtenerlos por lanzamiento.** Rechazado tras comprobar la API: la
+  respuesta de la lista ya incluye los cuerpos, por lo que descartarlos cuesta solicitudes adicionales en
+  lugar de menos.
+- **Leer solo `/latest-version` de CPA y omitir GitHub para el gateway.** Rechazado
+  porque ese endpoint informa de un número de versión y ningún registro de cambios, que es toda la
+  característica.

@@ -1,48 +1,48 @@
-# ADR 0101: Custom model prices are scoped by the recorded channel
+# ADR 0101: Los precios de modelos personalizados tienen un ámbito limitado al canal registrado
 
-- Status: Proposed
-- Date: 2026-10-16
-- Amends: ADR 0031's global-price-only assumption
+- Estado: Propuesto
+- Fecha: 2026-10-16
+- Modifica: La suposición de precio exclusivo global del ADR 0031
 
-## Context
+## Contexto
 
-Model Square advertises client call names, including provider prefixes and aliases.
-The price catalog and request cost lock use upstream models. Forwarding a prefixed
-call name into the price editor fails catalog validation. Mapping every edit to the
-shared model would also prevent two channels from charging different input, output,
-cache and time-of-day rates for that same model. A channel-wide multiplier cannot
-express independent rates or schedules per model.
+Model Square anuncia nombres de llamadas de clientes, incluidos prefijos de proveedores y alias.
+El catálogo de precios y el bloqueo del costo de las solicitudes utilizan modelos upstream. Reenviar un nombre de llamada
+con prefijo al editor de precios falla en la validación del catálogo. Mapear cada edición al
+modelo compartido también impediría que dos canales cobren tarifas diferentes de entrada, salida,
+caché y hora del día para ese mismo modelo. Un multiplicador a nivel de canal no puede
+expresar tarifas o programaciones independientes por modelo.
 
-## Decision
+## Decisión
 
-Keep the shared price book and add custom `(channel, upstream model)` overrides.
-Channel means the exact provider label recorded in usage events, matching the
-existing channel-multiplier contract. It is not a configuration row id or a routing
-prefix; configuration rows sharing that label share a pricing scope.
+Mantener el libro de precios compartido y agregar sobrescrituras personalizadas de `(canal, modelo upstream)`.
+Canal significa la etiqueta de proveedor exacta registrada en los eventos de uso, coincidiendo con
+el contrato existente de multiplicador de canal. No es un ID de fila de configuración ni un
+prefijo de enrutamiento; las filas de configuración que comparten esa etiqueta comparten un ámbito de precios.
 
-Migration 043 adds the current override table and a channel discriminator to the
-existing append-only price history. Historical rows default to the shared scope.
-Ingestion selects the channel override effective at request time, falling back to
-the shared scope when none is available. A deletion records a channel tombstone.
-The existing channel multiplier applies after either price, and recorded requests
-continue to reference their original immutable price and multiplier versions.
+La migración 043 agrega la tabla de sobrescrituras actual y un discriminador de canal al
+historial de precios existente de solo adición (append-only). Las filas históricas toman por defecto el ámbito compartido.
+La ingesta selecciona la sobrescritura de canal efectiva en el momento de la solicitud, recurriendo
+al ámbito compartido cuando no hay ninguna disponible. Una eliminación registra una lápida (tombstone) de canal.
+El multiplicador de canal existente se aplica después de cualquiera de los precios, y las solicitudes registradas
+continúan haciendo referencia a sus versiones originales e inmutables de precio y multiplicador.
 
-The existing model editor endpoints take an optional channel query parameter.
-Channel writes require persisted provider membership and custom mode. Shared
-automatic prices, operator links and custom prices continue to work unchanged.
-Model Square resolves explicit routes and offers every distinct channel/model
-target. The price book shows one effective price per provider/model membership,
-labels channel overrides and inherited shared prices, and keeps editing for both
-scopes accessible from that row.
+Los endpoints existentes del editor de modelos aceptan un parámetro de consulta opcional de canal.
+Las escrituras de canales requieren la pertenencia a un proveedor persistido y el modo personalizado. Los precios
+automáticos compartidos, los enlaces de operadores y los precios personalizados continúan funcionando sin cambios.
+Model Square resuelve rutas explícitas y ofrece cada objetivo distinto de canal/modelo.
+El libro de precios muestra un precio efectivo por cada membresía de proveedor/modelo,
+etiqueta las sobrescrituras de canal y los precios compartidos heredados, y mantiene la edición para ambos
+ámbitos accesible desde esa fila.
 
-## Consequences
+## Consecuencias
 
-- Operators can set independent rates, cache prices, long-context and time tiers
-  without introducing synthetic model identities or changing CPA configuration.
-- Automatic synchronization changes shared rates without overwriting overrides.
-- Restoring the shared price affects future requests; late events still resolve
-  prices at their original timestamps, and no recorded cost is backfilled.
-- Channel overrides are custom rates; independent per-channel automatic links
-  and a finer identity than CPA's recorded provider label are outside this change.
-- The existing agent pricing capabilities continue to operate on shared prices.
-  Channel overrides are managed through the console and authenticated REST API.
+- Los operadores pueden establecer tarifas independientes, precios de caché, contextos largos y niveles horarios
+  sin introducir identidades de modelos sintéticas ni cambiar la configuración de CPA.
+- La sincronización automática cambia las tarifas compartidas sin sobrescribir las sobrescrituras.
+- Restaurar el precio compartido afecta a las solicitudes futuras; los eventos tardíos aún resuelven
+  los precios en sus marcas de tiempo originales, y no se recalculan retroactivamente los costos registrados.
+- Las sobrescrituras de canales son tarifas personalizadas; los enlaces automáticos independientes por canal
+  y una identidad más precisa que la etiqueta de proveedor registrada de CPA quedan fuera de este cambio.
+- Las capacidades existentes de precios de agentes continúan operando sobre los precios compartidos.
+- Las sobrescrituras de canales se gestionan a través de la consola y la API REST autenticada.

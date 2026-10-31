@@ -1,55 +1,25 @@
-# ADR 0053: Bundle gates protect loading boundaries and report growth
+# ADR 0053: Las puertas de paquetes (_bundle gates_) protegen los límites de carga e informan sobre el crecimiento
 
-- Status: Accepted
-- Date: 2026-10-02
+- Estado: Aceptado
+- Fecha: 2026-10-02
 
-## Context
+## Contexto
 
-The embedded, offline console still ships resources to a browser, so cold transfer,
-parse and execution costs matter. However, lazy route inventories are not startup
-costs, and a named entry chunk is not its transitive dependency graph. Per-chunk
-quotas repeatedly approached ordinary feature/copy growth: after PR 114 the entry
-was 313.97 KiB against 314 KiB. Tens of bytes of remaining margin did not represent
-a measured user-experience boundary. Conversely, moving code into another eager
-chunk could satisfy an entry quota without reducing startup work.
+La consola embebida y sin conexión todavía envía recursos a un navegador, por lo que los costos de transferencia en frío, análisis sintáctico (_parse_) y ejecución siguen importando. Sin embargo, los inventarios de rutas perezosas (_lazy_) no son costos de inicio, y un fragmento (_chunk_) con nombre no equivale a su grafo de dependencias transitivas. Las cuotas por fragmento se acercaban repetidamente al crecimiento ordinario de características y textos: después del PR 114, la entrada era de 313.97 KiB frente a 314 KiB. Unos pocas decenas de bytes de margen restante no representaban un límite medido de la experiencia de usuario. Por el contrario, mover código a otro fragmento ansioso (_eager_) podía cumplir con la cuota de entrada sin reducir el trabajo de inicio.
 
-The old CI preparation step stopped before production browser acceptance on any
-budget failure, losing independent correctness evidence from an otherwise valid
-build. Limits must detect architectural mistakes without becoming a routine
-feature tax or preventing diagnosis.
+El antiguo paso de preparación en la CI se detenía antes de la aceptación del navegador de producción ante cualquier fallo de presupuesto, perdiendo evidencia de corrección independiente de una compilación por lo demás válida. Los límites deben detectar errores arquitectónicos sin convertirse en un impuesto rutinario por características ni impedir el diagnóstico.
 
-## Decision
+## Decisión
 
-1. Capture Rollup chunk ownership and static/dynamic imports outside the served
-   distribution. Validate chunk hashes and edges against production artifacts.
-   Walk the HTML entry/modulepreload static closure, not filename conventions.
-2. Refuse eager route, authenticated shell, chart, Markdown and Monaco modules.
-   Also enforce the configuration page's on-demand YAML editor boundary.
-3. Report raw and level-6 per-file gzip estimates, startup JS/CSS, entry, largest
-   JS, total JS, icon SVGs and dist. Retain per-file/source evidence for attribution.
-4. Compare only with an exact-revision baseline, fetched from a successful push
-   CI report or supplied explicitly. A single measured bootstrap reference
-   supports the first deployment of the policy. Missing evidence is stated;
-   unrelated revisions are never substituted. Ordinary growth is advisory.
-5. Keep broad absolute anomaly ceilings: startup JS 3 MiB raw / 1 MiB gzip,
-   startup CSS 256 / 96 KiB, largest JS 4 MiB raw, total JS 16 MiB raw, total
-   dist 20 MiB raw, Lobe SVGs 2 MiB raw. These allow material headroom relative
-   to the measured baseline, not a claim about acceptable latency. Change them
-   deliberately with measurements rather than as part of each feature.
-6. Separate the bundle verdict from valid-build browser/demo evidence. CI and
-   full local verification remain failed when the bundle gate fails, after
-   collecting the other results. Build, secret and toolchain prerequisites remain.
+1. Capturar la propiedad de los fragmentos de Rollup y las importaciones estáticas/dinámicas fuera de la distribución servida. Validar los hashes de los fragmentos y las aristas (_edges_) frente a los artefactos de producción. Recorrer el cierre estático de entrada HTML/modulepreload, no las convenciones de nombres de archivos.
+2. Rechazar módulos ansiosos de rutas, shell autenticado, gráficos (_charts_), Markdown y Monaco. Hacer cumplir también el límite del editor de YAML bajo demanda en la página de configuración.
+3. Informar sobre las estimaciones gzip brutas y de nivel 6 por archivo, JS/CSS de inicio, entrada, JS más grande, JS total, SVG de iconos y dist. Retener la evidencia por archivo/fuente para su atribución.
+4. Comparar únicamente con una línea base de revisión exacta, obtenida de un informe de CI de un _push_ exitoso o proporcionada explícitamente. Una única referencia de arranque medida respalda la primera implementación de la política. Se indica la evidencia faltante; nunca se sustituyen revisiones no relacionadas. El crecimiento ordinario es meramente informativo.
+5. Mantener techos amplios de anomalías absolutas: JS de inicio 3 MiB en crudo / 1 MiB gzip, CSS de inicio 256 / 96 KiB, JS más grande 4 MiB en crudo, JS total 16 MiB en crudo, dist total 20 MiB en crudo, SVG de Lobe 2 MiB en crudo. Estos permiten un margen material en relación con la línea base medida, no una afirmación sobre la latencia aceptable. Modificarlos deliberadamente con mediciones en lugar de hacerlo como parte de cada característica.
+6. Separar el veredicto del paquete de la evidencia válida de compilación del navegador/demostración. La CI y la verificación local completa siguen fallando cuando la puerta del paquete falla, después de recopilar los demás resultados. Los requisitos previos de compilación, secretos y cadena de herramientas se mantienen.
 
-## Consequences
+## Consecuencias
 
-Normal localized copy and page-local dependencies no longer require quota edits.
-Actual dependency edges prevent renamed/shared chunks from hiding eager heavy
-modules. Script fixtures can falsify graph, baseline and verdict decisions without
-paying for a browser per case. Production acceptance still validates embedded
-resources, paths and behavior; size reporting is not a latency benchmark.
+Los textos localizados normales y las dependencias locales de página ya no requieren ediciones de cuota. Las aristas de dependencia reales evitan que los fragmentos renombrados o compartidos oculten módulos pesados ansiosos. Las pruebas automatizadas de _scripts_ pueden falsear las decisiones de grafo, línea base y veredicto sin pagar el costo de un navegador por cada caso. La aceptación en producción sigue validando los recursos embebidos, las rutas y el comportamiento; el informe de tamaño no es una prueba comparativa de latencia (_benchmark_) de latencia.
 
-CI retains reports for 30 days with read-only Actions access. Artifact expiration,
-unavailable successful base runs or retrieval failures reduce comparison coverage
-and are visible in the report, but cannot disable structural or absolute checks.
-The collector adds temporary build metadata and compression/report work; it adds
-no runtime dependency, resource endpoint or deployed metadata.
+La CI conserva los informes durante 30 días con acceso de solo lectura en Actions. La expiración de artefactos, las ejecuciones base exitosas no disponibles o los fallos de recuperación reducen la cobertura de comparación y son visibles en el informe, pero no pueden deshabilitar las comprobaciones estructurales o absolutas. El recolector añade metadatos temporales de compilación y trabajo de compresión/informes; no añade ninguna dependencia en tiempo de ejecución, extremo de recursos ni metadatos desplegados.

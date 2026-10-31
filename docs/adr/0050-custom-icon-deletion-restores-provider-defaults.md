@@ -1,21 +1,21 @@
-# ADR 0050: Custom icon deletion restores provider defaults
+# ADR 0050: La eliminación de iconos personalizados restaura los valores predeterminados del proveedor
 
-- Status: Accepted
-- Date: 2026-10-02
-- Supersedes: The reference-protection deletion policy in ADR 0049. Its asset storage, validation and branding decisions remain unchanged.
+- Estado: Aceptado
+- Fecha: 2026-10-02
+- Reemplaza: La política de eliminación de protección por referencias en el ADR 0049. Sus decisiones sobre almacenamiento de activos, validación y marcas permanecen sin cambios.
 
-## Context
+## Contexto
 
-A shared asset may have several provider assignments, including legacy name-key overrides. Requiring operators to locate and change each assignment before deleting an unwanted icon makes library maintenance unnecessarily difficult. Simply deleting the artwork would leave dangling references, while substituting a fixed catalog ID would override the defaults appropriate to different provider families and plugin identities.
+Un activo compartido puede tener varias asignaciones de proveedores, incluidas anulación por claves de nombres heredadas. Exigir a los operadores que localicen y cambien cada asignación antes de eliminar un icono no deseado dificulta innecesariamente el mantenimiento de la biblioteca. Simplemente eliminar la obra de arte dejaría referencias huérfanas, mientras que sustituir un ID de catálogo fijo anularía los valores predeterminados apropiados para diferentes familias de proveedores e identidades de complementos.
 
-## Decision
+## Decisión
 
-Allow deletion of referenced custom icons after an explicit confirmation. The picker shows the asset, its current reference count and the consequence: all affected providers return to their normal default icon or placeholder. Cancel receives initial focus. Editing, library browsing and deletion confirmation remain views inside the existing picker rather than additional overlays.
+Permitir la eliminación de iconos personalizados referenciados previa confirmación explícita. El selector muestra el activo, su recuento de referencias actual y la consecuencia: todos los proveedores afectados vuelven a su icono predeterminado normal o marcador de posición. El botón Cancelar recibe el foco inicial. La edición, la exploración de la biblioteca y la confirmación de eliminación siguen siendo vistas dentro del selector existente en lugar de superposiciones adicionales.
 
-The repository removes every exact `custom:<id>` override from the persisted `provider_icons` mapping and deletes the asset within one transaction. Unrelated assignments and preference keys remain unchanged. Asset deletion failure, missing assets and stale revision-bound approval roll back the entire reset. Preference writes continue validating custom IDs inside their own transaction, so concurrent selection/deletion cannot create dangling references.
+El repositorio elimina cada anulación exacta `custom:<id>` del mapeo persistido `provider_icons` y elimina el activo en una sola transacción. Las asignaciones no relacionadas y las claves de preferencias permanecen sin cambios. El fallo en la eliminación del activo, los activos faltantes y la aprobación obsoleta ligada a revisión revierten todo el restablecimiento. Las escrituras de preferencias continúan validando los ID personalizados dentro de su propia transacción, por lo que la selección/eliminación concurrente no puede crear referencias huérfanas.
 
-Agent/MCP deletion stays destructive and high-risk. Its confirmation includes the reference count and default-reset impact, never artwork bytes; approval applies to the asset revision and resets all assignments present at execution time. Deletion invalidates both icon metadata and preferences. The picker mirrors only matching overrides into its shared preference cache, avoiding a whole-document refetch over unrelated optimistic edits, and clears any matching provider-drawer draft selection.
+La eliminación por parte de Agentes/MCP sigue siendo destructiva y de alto riesgo. Su confirmación incluye el recuento de referencias y el impacto del restablecimiento predeterminado, nunca los bytes de la obra de arte; la aprobación se aplica a la revisión del activo y restablece todas las asignaciones presentes en el momento de la ejecución. La eliminación invalida tanto los metadatos de los iconos como las preferencias. El selector refleja solo las anulaciones coincidentes en su caché de preferencias compartidas, evitando una nueva obtención de todo el documento por ediciones optimistas no relacionadas, y borra cualquier selección de borrador en el panel del proveedor que coincida.
 
-## Consequences
+## Consecuencias
 
-Operators can remove unwanted artwork without navigating to each provider. Removing an override preserves plugin authority and per-surface default resolution rather than freezing a catalog choice. Deletion permanently removes the asset and its assignments; recovery requires the existing database backup or importing artwork again. Reference counts are an explanatory snapshot, not a lock on assignments while confirmation is open.
+Los operadores pueden eliminar obras de arte no deseadas sin tener que navegar a cada proveedor. La eliminación de una anulación preserva la autoridad del complemento y la resolución predeterminada por superficie en lugar de congelar una elección del catálogo. La eliminación borra permanentemente el activo y sus asignaciones; la recuperación requiere la copia de seguridad de la base de datos existente o volver a importar la obra de arte. Los recuentos de referencias son una instantánea explicativa, no un bloqueo en las asignaciones mientras la confirmación está abierta.

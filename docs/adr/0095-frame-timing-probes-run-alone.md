@@ -1,37 +1,25 @@
-# ADR 0095: Frame-timing probes run alone
+# ADR 0095: Las sondas de temporización de fotogramas se ejecutan en solitario
 
-- Status: Accepted; execution ownership updated for Playwright Test on 2026-10-20
-- Date: 2026-10-12
-- Amends: ADR 0091's two-worker scheduling, for scenarios that assert motion frame by frame.
+- Estado: Aceptado; la propiedad de la ejecución se actualizó para Playwright Test el 2026-10-20
+- Fecha: 2026-10-12
+- Modifica: La programación de dos workers del ADR 0091, para escenarios que afirman el movimiento fotograma a fotograma.
 
-## Context
+## Contexto
 
-ADR 0091 runs two scenario contexts at once inside each probe batch and records the cost:
-individual scenarios take longer. Most scenarios wait on conditions, so a slower page only
-makes them wait longer. Two do not: `scroll-smoothing` samples the request list once per
-animation frame and fails when a turning wheel leaves it still on three or more shown frames,
-and `request-list-touch` taps a flicked list and requires it to be coasting at that moment.
-The defects they guard against are a stall at every notch (about twelve frames over a turn of
-six notches) and a list that never coasts. A sibling context rendering on the same runner CPU
-drops a few frames the product does not drop, and the pull request runs on hosted runners and
-locally failed exactly these checks while every condition-based scenario beside them passed.
-A retry or a looser threshold would also admit part of the defect each check exists to catch.
+El ADR 0091 ejecuta dos contextos de escenarios a la vez dentro de cada lote de sondas y registra el coste: los escenarios individuales tardan más. La mayoría de los escenarios esperan a que se cumplan condiciones, por lo que una página más lenta solo hace que esperen más tiempo. Dos no lo hacen: `scroll-smoothing` toma muestras de la lista de solicitudes una vez por fotograma de animación y falla cuando una rueda que gira la deja detenida en tres o más fotogramas mostrados, y `request-list-touch` toca una lista desplazada mediante un flick y requiere que esté deslizándose por inercia en ese momento. Los defectos contra los que protegen son una interrupción en cada muesca (alrededor de doce fotogramas en un giro de seis muescas) y una lista que nunca se desliza por inercia. Un contexto hermano que se renderiza en el mismo ejecutor de CPU pierde algunos fotogramas que el producto no pierde, y la solicitud de extracción se ejecuta en ejecutores alojados y falló localmente exactamente en estas comprobaciones mientras todos los escenarios basados en condiciones que estaban al lado pasaban. Un reintento o un umbral más laxo también admitirían parte del defecto que cada comprobación existe para detectar.
 
-## Decision
+## Decisión
 
-1. A scenario that asserts motion frame by frame is marked `shouldRunAlone` in
-   `scripts/acceptance/scenarios.mjs`, with its reason beside the mark. Today that is
-   `scroll-smoothing` and `request-list-touch`.
-2. `scripts/testing/probes.ts` runs shared scenarios with the configured Playwright Test
-   worker count first, then invokes the marked scenarios with one worker. A failure in
-   the shared part still runs the exclusive part, and every verdict is retained.
-3. Frame thresholds, per-scenario budgets and shard membership remain protected; the native runner owns deadlines and reports.
-   Marking a scenario is not a way to make a flaky one pass: it is for a scenario whose claim
-   is about frames, with the frame-level reason stated.
+1. Un escenario que afirma el movimiento fotograma a fotograma se marca como `shouldRunAlone` en
+   `scripts/acceptance/scenarios.mjs`, con su razón junto a la marca. Hoy en día esos son
+   `scroll-smoothing` y `request-list-touch`.
+2. `scripts/testing/probes.ts` ejecuta los escenarios compartidos con el recuento de workers de Playwright Test configurado primero, y luego invoca los escenarios marcados con un solo worker. Un fallo en la parte compartida aún ejecuta la parte exclusiva, y se conserva cada veredicto.
+3. Los umbrales de fotogramas, los presupuestos por escenario y la pertenencia a los shards permanecen protegidos; el ejecutor nativo posee los plazos y los informes.
+   Marcar un escenario no es una forma de hacer que uno inestable pase: es para un escenario cuya afirmación trata sobre fotogramas, indicando la razón a nivel de fotograma.
 
-## Consequences
+## Consecuencias
 
-- A batch holding a marked scenario takes that scenario's serial time on top of the shared
-  part, about a minute on the shard that holds both.
-- `--workers 1` and `verify:full:serial` behave as before; the mark changes nothing when
-  there is only one worker.
+- Un lote que contiene un escenario marcado toma el tiempo en serie de ese escenario además de la parte
+  compartida, alrededor de un minuto en el shard que contiene a ambos.
+- `--workers 1` y `verify:full:serial` se comportan como antes; la marca no cambia nada cuando
+  solo hay un worker.

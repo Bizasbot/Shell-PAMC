@@ -1,74 +1,34 @@
-# ADR 0062: Dashboard statistics are permanent usage facts; request records roll
+# ADR 0062: Las estadísticas del panel son hechos de uso permanentes; los registros de solicitudes rotan
 
-- Status: Accepted
-- Date: 2026-10-06
-- Supersedes: the "one source, read the detail table" reasoning in ADR 0005 for the
-  token grid's query, and the hourly/daily overview rollups. ADR 0005's DOM-grid
-  decision is unchanged.
+- Estado: Aceptado
+- Fecha: 2026-10-06
+- Reemplaza: El razonamiento de "una sola fuente, leer la tabla de detalles" en el ADR 0005 para la consulta de la cuadrícula de tokens, y las agregaciones (*rollups*) generales por hora/día. La decisión de la cuadrícula DOM del ADR 0005 permanece sin cambios.
 
-## Context
+## Contexto
 
-Usage is stored three times at three sizes. On a deployment with 121 302 request
-records over 23.5 days, the captured payloads (`usage_inboxes`) held 82.5% of a 710 MB
-database, the typed request records (`usage_events`) and their indexes about 16%, and
-the hourly and daily rollups a fraction of one percent.
+El uso se almacena tres veces en tres tamaños distintos. En un despliegue con 121 302 registros de solicitudes durante 23.5 días, las cargas útiles capturadas (`usage_inboxes`) ocupaban el 82.5% de una base de datos de 710 MB, los registros de solicitudes tipados (`usage_events`) y sus índices aproximadamente el 16%, y las agregaciones por hora y día una fracción del uno por ciento.
 
-Retention removed all three at the same horizon. The rollups carried neither cost nor
-provider nor credential, so the cost tile, the model panels, the provider list and the
-token grid read request records directly. A dashboard could therefore never show more
-than the retention horizon, and keeping statistics longer meant keeping the two largest
-tables longer. The default horizon was 400 days only so the year-long token grid stayed
-readable.
+La retención eliminaba los tres componentes en el mismo horizonte temporal. Las agregaciones (*rollups*) no incluían costo, proveedor ni credencial, por lo que el mosaico de costos, los paneles de modelos, la lista de proveedores y la cuadrícula de tokens leían los registros de solicitudes directamente. En consecuencia, un panel nunca podía mostrar un período mayor al horizonte de retención, y mantener las estadísticas por más tiempo significaba conservar las dos tablas más grandes durante más tiempo. El horizonte predeterminado era de 400 días únicamente para que la cuadrícula de tokens de un año se mantuviera legible.
 
-Operators want the opposite coupling: statistics for as long as the deployment exists,
-and detail for as long as it is useful.
+Los operadores prefieren el acoplamiento inverso: estadísticas durante todo el tiempo que exista el despliegue, y detalles solo durante el tiempo que resulten útiles.
 
-## Decision
+## Decisión
 
-1. **Two permanent fact tables.** `usage_facts_15m` and `usage_facts_daily` are keyed by
-   bucket, client key group, model, model alias, credential, provider and auth type, and
-   carry every measure a dashboard panel prints, including the request-time cost
-   snapshot. They are never pruned.
-2. **Fifteen minutes is the fine grain.** Every civil UTC offset in use is a multiple of
-   fifteen minutes, so a local calendar day is a whole number of buckets in any time
-   zone. An hourly grain cannot serve `+05:30`.
-3. **One fold, one checkpoint, split by event id.** Both grains are written in one
-   transaction under the `facts` checkpoint. A read takes facts for ids at or below the
-   checkpoint and request records above it, in a single SQL statement. Event times
-   arrive out of order, so a timestamp boundary would count a late record twice.
-4. **One query layer.** `Repository.QueryUsageFacts` serves every panel; a new panel adds
-   a grouping or a measure to it rather than another scan of request records.
-5. **Every table declares a lifecycle.** `TABLE_LIFECYCLES` classifies each table as
-   permanent, rolling, owner-bounded or replaced, with the rule that expires its rows. A
-   test fails for an undeclared table, so a new feature states how its data ends when it
-   is added. One engine, `RunLifecycle`, deletes in small batches, never deletes a
-   request record the facts have not absorbed, and records the instant it has reached.
-6. **Payloads leave first.** A payload that was decoded into a request record is kept
-   seven days by default (`OMCPA_USAGE_INBOX_RETENTION_DAYS`), and is stored once: the
-   ciphertext, with no second redacted copy beside it.
-7. **An all-time dashboard window.** `preset=all` starts at the first recorded usage. It
-   is offered by the dashboard only; the request list reads request records and keeps
-   its bounded windows.
-8. **Request records default to ninety days**, down from 400. The longer horizon
-   existed only for the token grid, which no longer reads request records. Ninety days
-   is the longest window the request list offers, so every preset it shows is fully
-   backed.
+1. **Dos tablas de hechos permanentes.** `usage_facts_15m` y `usage_facts_daily` están indexadas por intervalo (*bucket*), grupo de claves de cliente, modelo, alias de modelo, credencial, proveedor y tipo de autenticación, y almacenan cada métrica que un panel muestra, incluida la instantánea del costo en el momento de la solicitud. Nunca se depuran.
+2. **Quince minutos es la granularidad fina.** Cualquier desfase horario civil UTC en uso es un múltiplo de quince minutos, por lo que un día calendario local equivale a un número exacto de intervalos en cualquier zona horaria. Una granularidad por hora no puede dar soporte a `+05:30`.
+3. **Un consolidado (*fold*), un punto de control (*checkpoint*), dividido por ID de evento.** Ambas granularidades se escriben en una sola transacción bajo el punto de control `facts`. Una lectura toma los hechos para los ID iguales o anteriores al punto de control y los registros de solicitudes posteriores a este, en una sola sentencia SQL. Los tiempos de los eventos llegan desordenados, por lo que un límite basado en marcas de tiempo contaría un registro tardío dos veces.
+4. **Una capa de consulta.** `Repository.QueryUsageFacts` da servicio a todos los paneles; un nuevo panel añade una agrupación o una métrica a esta función en lugar de realizar otro recorrido (*scan*) sobre los registros de solicitudes.
+5. **Cada tabla declara un ciclo de vida.** `TABLE_LIFECYCLES` clasifica cada tabla como permanente, rotativa, limitada por el propietario o reemplazada, aplicando la regla que expira sus filas. Una prueba falla si una tabla no está declarada, asegurando que cada nueva característica especifique cómo finaliza su vida útil al ser añadida. Un único motor, `RunLifecycle`, elimina registros en lotes pequeños, nunca borra un registro de solicitud que los hechos no hayan absorbido y registra el instante alcanzado.
+6. **Las cargas útiles se eliminan primero.** Una carga útil que ha sido decodificada en un registro de solicitud se conserva durante siete días por defecto (`OMCPA_USAGE_INBOX_RETENTION_DAYS`), y se almacena una sola vez: el texto cifrado, sin una segunda copia redactada al lado.
+7. **Una ventana de panel histórico completo.** `preset=all` comienza desde el primer uso registrado. Esta opción es ofrecida únicamente por el panel; la lista de solicitudes lee los registros de solicitudes y mantiene sus ventanas acotadas.
+8. **Los registros de solicitudes se establecen en noventa días por defecto**, reduciéndose desde los 400 anteriores. El horizonte más largo existía únicamente para la cuadrícula de tokens, la cual ya no lee los registros de solicitudes. Noventa días es la ventana más amplia que ofrece la lista de solicitudes, por lo que cada valor predeterminado (*preset*) que muestra está completamente respaldado.
 
-## Consequences
+## Consecuencias
 
-- Dashboard reads scale with distinct dimension combinations per bucket instead of with
-  requests: the grouped model read over 100 000 records fell from about 0.74 s to about
-  0.02 s once folded.
-- Behind the detail horizon a window is widened to whole fifteen-minute buckets and
-  cannot be drawn finer. The response reports the bounds that were read.
-- Statistics for requests deleted before this change are not recoverable; the facts are
-  backfilled from the request records that still exist, by the ordinary fold.
-- A fact row's dimensions are fixed at fold time. A new dimension needs a migration and
-  can be backfilled only as far back as request records still reach.
-- Deleting rows does not shrink the file. Space returns to the file system only through
-  the operator-started compaction.
-- Re-decoding after a decoder fix is possible only within the payload retention.
-- On upgrade, a deployment that sets neither variable loses request records older than
-  ninety days and decoded payloads older than seven, once the facts have absorbed
-  them. Statistics are unaffected. Setting `OMCPA_USAGE_RETENTION_DAYS=400` and
-  `OMCPA_USAGE_INBOX_RETENTION_DAYS=0` before upgrading keeps the previous behaviour.
+- Las lecturas del panel escalan en función de las combinaciones de dimensiones distintas por intervalo en lugar de hacerlo según el número de solicitudes: la lectura agrupada de modelos sobre 100 000 registros pasó de aproximadamente 0.74 s a unos 0.02 s una vez consolidada.
+- Más allá del horizonte de detalles, la ventana se amplía a intervalos completos de quince minutos y no se puede representar con mayor precisión. La respuesta informa los límites que fueron leídos.
+- Las estadísticas de las solicitudes eliminadas antes de este cambio no se pueden recuperar; los hechos se retroalimentan a partir de los registros de solicitudes que aún existen mediante el proceso de consolidación ordinario.
+- Las dimensiones de una fila de hechos son fijas en el momento de la consolidación. Una nueva dimensión requiere una migración y solo puede retroalimentarse hasta donde los registros de solicitudes aún alcancen.
+- La eliminación de filas no reduce el tamaño del archivo. El espacio se libera en el sistema de archivos únicamente mediante la compactación iniciada por el operador.
+- Volver a decodificar tras una corrección en el decodificador solo es posible dentro del período de retención de la carga útil.
+- Al actualizar, un despliegue que no configure ninguna de las dos variables perderá los registros de solicitudes anteriores a noventa días y las cargas útiles decodificadas de más de siete días, una vez que los hechos las hayan absorbido. Las estadísticas no se verán afectadas. Configurar `OMCPA_USAGE_RETENTION_DAYS=400` y `OMCPA_USAGE_INBOX_RETENTION_DAYS=0` antes de actualizar mantiene el comportamiento previo.

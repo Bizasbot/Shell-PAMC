@@ -1,95 +1,103 @@
-# ADR 0010: The console owns no client-key state — CPA's `api-keys` is the only model
+# ADR 0010: La consola no posee ningún estado de clave de cliente; el campo `api-keys` de CPA es el único modelo
 
-- Status: Accepted
-- Date: 2026-09-18
+- Estado: Aceptado
+- Fecha: 2026-09-18
 
-## Context
+## Contexto
 
-CPA authenticates inbound caller requests against its `api-keys:` list and nothing else. A client
-key therefore has exactly two states there: present (accepted) or absent (rejected with
-`401 Unauthorized`). The console had nonetheless grown a third state of its own — "temporarily
-disabled" keys were removed from the `api-keys` draft and remembered in the `ui_preferences` key
-`omc_disabled_client_keys`.
+CPA autentica las solicitudes de llamadas entrantes contra su lista `api-keys:` y nada más. Por lo
+tanto, una clave de cliente tiene exactamente dos estados allí: presente (aceptada) o ausente
+(rechazada con `401 Unauthorized`). No obstante, la consola había desarrollado un tercer estado propio:
+las claves "temporalmente deshabilitadas" se eliminaban del borrador de `api-keys` y se recordaban en
+la clave de `ui_preferences` llamada `omc_disabled_client_keys`.
 
-That state could not be persisted. `omc_disabled_client_keys` was never added to `knownPreferences`
-in `internal/api/management_preferences.go`, which is the whole public surface of the preferences
-API: the write was answered with `400 unsupported preference key`, `listPreferences` filtered the
-key out of every read, and the optimistic value in the shared query cache was rolled back. So the
-reachable behaviour was the opposite of the intended one — disabling a key removed it from the
-configuration document, the console recorded no trace of it, and the toast reported that the key was
-parked and reversible.
+Dicho estado no se podía persistir. `omc_disabled_client_keys` nunca se añadió a `knownPreferences` en
+`internal/api/management_preferences.go`, que es toda la superficie pública de la API de preferencias:
+la escritura respondía con `400 unsupported preference key`, `listPreferences` filtraba la clave de
+cada lectura y el valor optimista en la caché de consultas compartida se revertía. De modo que el
+comportamiento alcanzable era el opuesto al pretendido: deshabilitar una clave la eliminaba del
+documento de configuración, la consola no registraba rastro de ello y el mensaje flotante (toast)
+informaba que la clave había sido estacionada y que la acción era reversible.
 
-The mistaken model was cheap to describe and expensive to keep: a state Oh My CPA stores but CPA does
-not honour is not a control, it is a claim. Had the flag persisted, CPA would still have accepted the
-key while the console displayed "disabled" — the failure mode of a security-looking label with no
-enforcement behind it.
+El modelo erróneo era económico de describir y costoso de mantener: un estado que Oh My CPA almacena
+pero que CPA no respeta no es un control, es una afirmación. Si el indicador se hubiera persistido,
+CPA habría seguido aceptando la clave mientras la consola mostraba "deshabilitada" (el modo de fallo
+de una etiqueta con apariencia de seguridad pero sin cumplimiento que la respalde).
 
-## Decision
+## Decisión
 
-1. **A client key has no disabled state.** The console models a key as present or absent. Stopping a
-   key means removing it from `api-keys`, through the same revision-guarded draft transaction as
-   every other configuration write.
+1. **Una clave de cliente no tiene estado deshabilitado.** La consola modela una clave como presente o
+   ausente. Detener una clave significa eliminarla de `api-keys`, a través de la misma transacción de
+   borrador protegida por revisión que cualquier otra escritura de configuración.
 
-2. **Removal is irreversible for the secret, and the console says so.** Oh My CPA stores no copy of
-   a key value, so the delete confirmation states that the value cannot be recovered and that it must
-   be copied first if it is wanted. An alias and the key's historical traffic outlive the removal,
-   because `client_key_aliases` and `usage_events` are keyed by the usage fingerprint rather than by
-   the key text.
+2. **La eliminación es irreversible para el secreto, y la consola lo advierte.** Oh My CPA no
+   almacena ninguna copia del valor de una clave, por lo que la confirmación de eliminación indica que
+   el valor no se puede recuperar y que debe copiarse primero si se necesita. Un alias y el tráfico
+   histórico de la clave sobreviven a la eliminación, porque `client_key_aliases` y `usage_events` se
+   identifican mediante la huella digital de uso en lugar del texto de la clave.
 
-3. **The configuration panel points instead of editing.** The `grp_apikeys` group renders a pointer
-   panel — the configured key count plus a jump to the dedicated page — in place of a second editor
-   of the same field. This supersedes the earlier handling that hid the group entirely, which left
-   the panel silent about a field it owns. Two editors of one document were deliberately never
-   introduced, and this ADR keeps it that way: no surface writes keys outside the key page's own
-   draft flow.
+3. **El panel de configuración apunta en lugar de editar.** El grupo `grp_apikeys` renderiza un panel
+   de redirección —el recuento de claves configuradas más un salto a la página dedicada— en lugar de
+   un segundo editor para el mismo campo. Esto reemplaza el manejo anterior que ocultaba el grupo por
+   completo, lo cual dejaba al panel sin mención alguna sobre un campo del cual es propietario. Se
+   evitó deliberadamente introducir dos editores para un mismo documento, y este ADR lo mantiene así:
+   ninguna superficie escribe claves fuera del propio flujo de borrador de la página de claves.
 
-4. **No preference key is registered for key state.** The removal required no migration, because the
-   write had never once succeeded.
+4. **No se registra ninguna clave de preferencia para el estado de la clave.** La eliminación no
+   requirió ninguna migración, ya que la escritura nunca había tenido éxito ni una sola vez.
 
-5. **One display mask shape, computed independently of the secret's length.** The key list renders
-   the same constant-shape mask as the request list (`security.MaskSecret`: a short head, a fixed
-   bullet run, a short tail), so the same key reads the same way on both surfaces, and the mask never
-   reveals how long the secret is.
+5. **Una única forma de máscara de visualización, calculada independientemente de la longitud del
+   secreto.** La lista de claves renderiza la misma máscara de forma constante que la lista de
+   solicitudes (`security.MaskSecret`: un inicio corto, una ejecución fija de viñetas, un final
+   corto), de modo que la misma clave se lee de la misma manera en ambas superficies, y la máscara
+   nunca revela la longitud del secreto.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- The console stops reporting a state CPA does not have. "Disabled" no longer appears anywhere the
-  gateway would in fact keep accepting calls.
-- The destructive path is the explicit one. Removing a key is visibly destructive at the moment it is
-  confirmed, instead of arriving as a state that silently dropped the key from the document.
-- One document, one writer. Keys are edited on the key-management page only, so each surface holds at
-  most one draft of `config.yaml` and the revision guard has nothing ambiguous to arbitrate.
-- The configuration panel is no longer silent about `api-keys`: an operator who looks there is told
-  where the field lives and how many keys exist.
-- The key list lost the state concept with it — an unlabelled status pip, an enable/disable filter and
-  a status column existed only to serve the state that is now gone.
+- La consola deja de reportar un estado que CPA no posee. "Deshabilitada" ya no aparece en ningún
+  lugar donde el gateway de hecho seguiría aceptando llamadas.
+- La ruta destructiva es la explícita. Eliminar una clave es visiblemente destructivo en el momento
+  en que se confirma, en lugar de llegar como un estado que eliminó silenciosamente la clave del
+  documento.
+- Un documento, un escritor. Las claves se editan únicamente en la página de gestión de claves, por
+  lo que cada superficie mantiene como máximo un borrador de `config.yaml` y el control de revisión
+  no tiene nada ambiguo que arbitrar.
+- El panel de configuración ya no omite `api-keys`: a un operador que lo consulte se le indica dónde
+  reside el campo y cuántas claves existen.
+- La lista de claves perdió el concepto de estado junto con él: un indicador de estado sin etiqueta,
+  un filtro de habilitar/deshabilitar y una columna de estado existían únicamente para dar servicio al
+  estado que ahora ha desaparecido.
 
-### Trade-offs
+### Compensaciones (Trade-offs)
 
-- **There is no way to park a key.** An operator who wants to stop traffic without losing the secret
-  must copy the value out first. That is a real capability loss, and it is the honest limit of CPA's
-  model rather than a console choice.
-- **Discoverability now depends on a pointer.** A panel showing a count and a button is one click
-  further from the field than the field itself would have been.
-- **The removed state is not covered by an automated test**, because it was never reachable through
-  the accepted write path; there is no behaviour to assert against. The guarantee is the absence of
-  the code, and the two names that would reintroduce it (`omc_disabled_client_keys`, a key-status
-  preference) are specific enough to grep for.
+- **No hay forma de estacionar una clave.** Un operador que desee detener el tráfico sin perder el
+  secreto debe copiar primero el valor. Esa es una pérdida real de capacidad, y representa el límite
+  honesto del modelo de CPA en lugar de una elección de la consola.
+- **La detectabilidad (discoverability) ahora depende de un enlace.** Un panel que muestra un
+  recuento y un botón está un clic más lejos del campo de lo que habría estado el campo en sí.
+- **El estado eliminado no está cubierto por una prueba automatizada**, porque nunca fue alcanzable a
+  través de la ruta de escritura aceptada; no hay comportamiento contra el cual hacer aseveraciones.
+  La garantía es la ausencia del código, y los dos nombres que lo reintroducirían
+  (`omc_disabled_client_keys`, una preferencia de estado de clave) son lo suficientemente específicos
+  como para buscarlos con `grep`.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Register the preference and persist the parked keys.** Rejected on three counts: it contradicts
-  the model, since CPA would still accept the key; it turns the preferences table into a secret store
-  for gateway keys, against the boundary that keeps caller secrets out of console storage; and it
-  would have made the console's "disabled" label a false security claim rather than a bug.
-- **Keep a console-side flag that hides the key without touching `api-keys`.** Rejected: a hidden row
-  still authenticates. This is the specific failure of the removed feature in a form that would
-  finally persist, which is strictly worse than the version that failed loudly.
-- **Enforce disablement at CPA's protocol level, the way provider disablement works
-  (`excluded-models: ['*']`).** Rejected: an inbound caller key is not a credential that routes
-  upstream, so there is no upstream exclusion to set.
-- **Keep the group hidden in the configuration panel.** Rejected: a field the panel owns but never
-  mentions is the discoverability defect the pointer panel fixes, and it is what left a dead
-  `api-keys` entry in the visual workbench.
+- **Registrar la preferencia y persistir las claves estacionadas.** Rechazado por tres motivos:
+  contradice el modelo, ya que CPA seguiría aceptando la clave; convierte la tabla de preferencias
+  en un almacén de secretos para las claves del gateway, en contra del límite que mantiene los
+  secretos de los llamadores fuera del almacenamiento de la consola; y habría convertido la etiqueta
+  de "deshabilitada" de la consola en una falsa afirmación de seguridad en lugar de un error.
+- **Mantener un indicador del lado de la consola que oculte la clave sin tocar `api-keys`.**
+  Rechazado: una fila oculta sigue autenticando. Este es el fallo específico de la característica
+  eliminada en una forma que finalmente persistiría, lo cual es estrictamente peor que la versión que
+  falló ruidosamente.
+- **Hacer cumplir la desactivación a nivel de protocolo de CPA, de la forma en que funciona la
+  desactivación de proveedores (`excluded-models: ['*']`).** Rechazado: una clave de llamada entrante
+  no es una credencial que se enrute hacia arriba, por lo que no hay exclusión ascendente que
+  configurar.
+- **Mantener el grupo oculto en el panel de configuración.** Rechazado: un campo que el panel posee
+  pero del que nunca habla es el defecto de detectabilidad que soluciona el panel de redirección, y
+  es lo que dejaba una entrada muerta de `api-keys` en el entorno de trabajo visual.

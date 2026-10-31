@@ -1,72 +1,30 @@
-# ADR 0051: Every configuration write keeps a restorable backup
+# ADR 0051: Toda escritura de configuración conserva una copia de seguridad restaurable
 
-- Status: Accepted
-- Date: 2026-10-02
-- Supersedes: Decision 4 of [ADR 0037](0037-configuration-editing-uses-the-v8-configuration-api.md) (a backup only before converting a pre-v8 file). Its other decisions remain unchanged.
+- Estado: Aceptado
+- Fecha: 2026-10-02
+- Reemplaza a: Decisión 4 de [ADR 0037](0037-configuration-editing-uses-the-v8-configuration-api.md) (una copia de seguridad solo antes de convertir un archivo anterior a v8). Sus otras decisiones permanecen sin cambios.
 
-## Context
+## Contexto
 
-ADR 0037 kept CPA's stored `config.yaml` only before the write that converts a pre-v8 file,
-because that conversion is irreversible from CPA. Every other write was unrecoverable from
-Oh My CPA as well: a wrong provider edit, a plugin install that rewrote the file, or a
-source-view save that dropped a section left the operator to reconstruct the previous file
-by hand. The hook that read the stored file before each write already ran before every one
-of them; it only discarded what it read when the file was already v8.
+El ADR 0037 conservaba el `config.yaml` almacenado de CPA únicamente antes de la escritura que convierte un archivo anterior a v8, debido a que dicha conversión es irreversible desde CPA. Cualquier otra escritura tampoco se podía recuperar desde Oh My CPA: una edición incorrecta de un proveedor, la instalación de un complemento que reescribía el archivo o el guardado de una vista de código que eliminaba una sección obligaban al operador a reconstruir el archivo anterior a mano. El *hook* que leía el archivo almacenado antes de cada escritura ya se ejecutaba antes de todas ellas; simplemente descartaba lo leído cuando el archivo ya era v8.
 
-## Decision
+## Decisión
 
-1. **Every write after which CPA saves the file keeps the stored file first.** The client
-   hook (`management.ConfigBackup`) runs before a change set, a whole-document save, a
-   plugin install or removal, and a credential status change, and hands the file as stored
-   (`GET /v0/management/config.yaml`) to the store whatever its layout. A copy identical to
-   the gateway's newest one is not stored twice, so refused retries do not consume the
-   retention. A write whose copy cannot be kept is refused before anything is sent
-   (`503 config_backup_failed`), except a v8 file with no store configured at all.
-2. **Each copy records what it preceded and its layout.** The client method names the kind
-   of write (`config_changes`, `config_source`, `provider_keys`, `client_keys`,
-   `oauth_aliases`, `plugin_settings`, `plugin_install`, `plugin_delete`,
-   `credential_status`, `restore`, `manual`); an outer operation's name wins over the
-   method it calls (`management.WithBackupReason`). Copies taken before migration 033 are
-   `legacy_conversion`.
-3. **Retention is the operator's.** v8 copies are kept to a retention chosen on the
-   configuration page (default 20, between 5 and 100, stored in
-   `cpa_config_backup_settings`); lowering it deletes the oldest copies at once. Pre-v8
-   copies are kept apart, the latest ten, so everyday writes never push out the only
-   record of an unconverted file.
-4. **Restore happens on the server.** `POST /management/config/backups/{id}/restore`
-   decrypts the copy and writes it through `PUT /v8/management/config.yaml` under the
-   provider write gate, without a revision check: replacing whatever is there is the
-   request. That write keeps the file it replaces like any other, so a restore is undone
-   by restoring that copy. The document never reaches the browser. Only a v8 copy can be
-   restored, because the v8 API refuses every pre-v8 field name; a pre-v8 copy stays
-   download-only rather than reopening a v0 write path. The console withholds restore
-   while the editor has unsaved changes.
-5. **The rest of the lifecycle is explicit and audited.** A manual copy
-   (`POST /management/config/backups`, `config.create_backup`), the retention
-   (`PUT /management/config/backups/settings`, `config.backup_settings`), deletion of one
-   copy (`DELETE /management/config/backups/{id}`, `config.delete_backup`, fail-closed),
-   restore (`config.restore_backup`, fail-closed) and download (`config.reveal_backup`,
-   fail-closed) each leave an audit row. None of them is an agent capability: a restore is
-   a whole-document write, which agents are not given.
+1. **Cada escritura tras la cual CPA guarda el archivo conserva primero el archivo almacenado.** El *hook* del cliente (`management.ConfigBackup`) se ejecuta antes de un conjunto de cambios, de un guardado de documento completo, de la instalación o eliminación de un complemento y de un cambio de estado de credenciales, y entrega el archivo tal como está almacenado (`GET /v0/management/config.yaml`) al almacenamiento sin importar su estructura. Una copia idéntica a la más reciente de la pasarela no se almacena dos veces, por lo que los reintentos rechazados no consumen la retención. Una escritura cuya copia no se pueda conservar se rechaza antes de enviar nada (`503 config_backup_failed`), excepto un archivo v8 sin ningún almacenamiento configurado en absoluto.
+2. **Cada copia registra a qué antecede y su estructura.** El método del cliente nombra el tipo de escritura (`config_changes`, `config_source`, `provider_keys`, `client_keys`, `oauth_aliases`, `plugin_settings`, `plugin_install`, `plugin_delete`, `credential_status`, `restore`, `manual`); el nombre de una operación externa prevalece sobre el método al que llama (`management.WithBackupReason`). Las copias tomadas antes de la migración 033 son `legacy_conversion`.
+3. **La retención pertenece al operador.** Las copias v8 se conservan según una retención elegida en la página de configuración (predeterminado 20, entre 5 y 100, almacenada en `cpa_config_backup_settings`); reducir este valor elimina las copias más antiguas de inmediato. Las copias anteriores a v8 se mantienen separadas (las últimas diez), de modo que las escrituras cotidianas nunca desplacen el único registro de un archivo no convertido.
+4. **La restauración ocurre en el servidor.** `POST /management/config/backups/{id}/restore` descifra la copia y la escribe mediante `PUT /v8/management/config.yaml` bajo el control de escritura del proveedor, sin comprobación de revisión: reemplazar lo que haya es la solicitud. Dicha escritura conserva el archivo que reemplaza como cualquier otra, por lo que una restauración se deshace restaurando esa copia. El documento nunca llega al navegador. Solo se puede restaurar una copia v8, ya que la API v8 rechaza cualquier nombre de campo anterior a v8; una copia anterior a v8 permanece solo para descarga en lugar de reabrir una ruta de escritura v0. La consola bloquea la restauración mientras el editor tenga cambios sin guardar.
+5. **El resto del ciclo de vida es explícito y auditado.** Una copia manual (`POST /management/config/backups`, `config.create_backup`), la retención (`PUT /management/config/backups/settings`, `config.backup_settings`), la eliminación de una copia (`DELETE /management/config/backups/{id}`, `config.delete_backup`, con fallo seguro), la restauración (`config.restore_backup`, con fallo seguro) y la descarga (`config.reveal_backup`, con fallo seguro) dejan cada una una fila de auditoría. Ninguna de ellas es una capacidad de agente: una restauración es una escritura de documento completo, las cuales no se conceden a los agentes.
 
-## Consequences
+## Consecuencias
 
-- Each configuration write costs one encrypted insert next to the stored-file read it
-  already made. Copies are at most 2 MiB; the worst-case table is bounded by the retention.
-- A failing database now blocks every configuration write, not only the conversion of a
-  pre-v8 file: the promise that each operation can be undone is kept fail-closed.
-- A copy captures an edit made outside Oh My CPA, because it is read just before the next
-  write rather than remembered from the last one.
-- A restored file is CPA's v8 file as stored; CPA re-validates it, and a copy CPA no longer
-  accepts (after a release that renamed a setting) is refused with its reason, leaving the
-  file unchanged.
+- Cada escritura de configuración cuesta una inserción cifrada además de la lectura del archivo almacenado que ya realizaba. Las copias son de como máximo 2 MiB; el peor de los casos para la tabla está acotado por la retención.
+- Una base de datos con fallos ahora bloquea cada escritura de configuración, no solo la conversión de un archivo anterior a v8: la promesa de que cada operación se puede deshacer se mantiene con fallo seguro.
+- Una copia captura una edición realizada fuera de Oh My CPA, debido a que se lee justo antes de la siguiente escritura en lugar de recordarse desde la última.
+- Un archivo restaurado es el archivo v8 de CPA tal como está almacenado; CPA lo vuelve a validar, y una copia que CPA ya no acepta (tras una versión que cambió el nombre de un ajuste) se rechaza con su motivo, dejando el archivo sin cambios.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Snapshot after each write.** Rejected: it misses edits made outside Oh My CPA between
-  writes, and a failed snapshot after a landed write cannot be refused any more.
-- **Restore a pre-v8 copy through `PUT /v0/management/config.yaml`.** Rejected: it reopens a
-  v0 write path the v8 baseline retired, and CPA silently drops shadowed legacy keys on it.
-- **Keep the retention in `ui_preferences`.** Rejected: preferences describe how the
-  operator reads the console and are written by an allowlisted generic endpoint; the
-  retention changes what the server deletes and needs its own validated write.
+- **Crear una instantánea (*snapshot*) después de cada escritura.** Rechazado: no detecta las ediciones realizadas fuera de Oh My CPA entre escrituras, y una instantánea fallida tras una escritura exitosa ya no se puede rechazar.
+- **Restaurar una copia anterior a v8 mediante `PUT /v0/management/config.yaml`.** Rechazado: reabre una ruta de escritura v0 que la línea base de v8 retiró, y CPA descarta silenciosamente las claves heredadas ensombrecidas en ella.
+- **Mantener la retención en `ui_preferences`.** Rechazado: las preferencias describen cómo el operador lee la consola y son escritas por un extremo genérico autorizado; la retención cambia lo que el servidor elimina y necesita su propia escritura validada.

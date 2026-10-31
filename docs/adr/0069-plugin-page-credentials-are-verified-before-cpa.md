@@ -1,63 +1,62 @@
-# ADR 0069: Plugin page management credentials are verified before CPA
+# ADR 0069: Las credenciales de gestión de la página de complementos se verifican antes de CPA
 
-- Status: Accepted
-- Date: 2026-10-07
-- Supersedes ADR 0067's decision to forward explicit Authorization and X-Management-Key
-  to CPA for validation, and its authentication of native writes against the fixed
-  version read. Everything else in ADR 0067 stands.
+- Estado: Aceptado
+- Fecha: 2026-10-07
+- Reemplaza: La decisión de la ADR 0067 de reenviar explícitamente Authorization y X-Management-Key
+  a CPA para su validación, y su autenticación de escrituras nativas frente a la versión leída fija.
+  Todo lo demás en la ADR 0067 sigue vigente.
 
-## Context
+## Contexto
 
-ADR 0067 forwarded a hosted page's explicit management credential so that CPA, not the
-host, decided whether it was valid. CPA counts failed management authentications per
-client address and bans the address for 30 minutes after five failures; the ban is
-checked before the key, so a banned address is refused even with the correct key.
-Loopback clients are counted and banned like any other (CPA v8.0.17,
+La ADR 0067 reenviaba la credencial de gestión explícita de una página alojada para que CPA, no el
+host, decidiera si era válida. CPA cuenta las autenticaciones de gestión fallidas por
+dirección de cliente y bloquea la dirección durante 30 minutos tras cinco fallos; el bloqueo se
+comprueba antes de la clave, por lo que a una dirección bloqueada se le deniega el acceso incluso con la clave correcta.
+Los clientes loopback se cuentan y se bloquean como cualquier otro (CPA v8.0.17,
 `AuthenticateManagementKey`).
 
-Every hosted page reaches CPA from the Oh My CPA process. A plugin page that asks the
-operator for a management key therefore spent the console's own ban budget on each
-mistyped key. A few wrong entries left every CPA-backed console feature refused -
-configuration, providers, credentials, plugins and usage collection - until the ban
-expired or CPA restarted. The collector already treats that budget as scarce
-(`AuthCooldown` in `internal/usage/ingest/runner.go`).
+Cada página alojada llega a CPA desde el proceso de Oh My CPA. Por lo tanto, una página de complementos que solicita
+una clave de gestión al operador gastaba el propio presupuesto de bloqueos de la consola con cada clave mal escrita.
+Unos pocos intentos erróneos dejaban inaccesible cualquier función de la consola respaldada por CPA
+(configuración, proveedores, credenciales, complementos y recopilación de uso) hasta que el
+bloqueo expiraba o CPA se reiniciaba. El recolector ya trata ese presupuesto como un recurso escaso
+(`AuthCooldown` en `internal/usage/ingest/runner.go`).
 
-## Decision
+## Decisión
 
-No credential supplied by a page is sent to CPA's management API.
+No se envía ninguna credencial proporcionada por una página a la API de gestión de CPA.
 
-`PluginRoute` reads a page's credential with CPA's precedence: a Bearer Authorization,
-otherwise the raw Authorization value, otherwise X-Management-Key. When either header is
-present, even empty, the credential is compared in constant time with the instance's
-stored management key. A mismatch is answered `401` in CPA's wire shape
-(`invalid management key`, or `missing management key` for an empty credential) with no
-upstream request, configuration backup or write. A match, and a page that sends neither
-header, proceed with the stored key as the only credential on the upstream request.
+`PluginRoute` lee la credencial de una página respetando la precedencia de CPA: un valor Bearer Authorization,
+en su defecto el valor raw de Authorization, o de lo contrario X-Management-Key. Cuando cualquiera de las cabeceras está
+presente, incluso si está vacía, la credencial se compara en tiempo constante con la clave de gestión
+almacenada de la instancia. Una discrepancia se responde con un `401` con el formato de red de CPA
+(`invalid management key`, o `missing management key` para una credencial vacía) sin
+petición ascendente (*upstream*), copia de seguridad de configuración ni escritura. Si hay coincidencia, o si la página no envía
+ninguna de las dos cabeceras, la petición continúa utilizando la clave almacenada como única credencial en la solicitud ascendente.
 
-Native writes no longer authenticate against the version read first: the page
-credential is already settled before the pre-write backup is taken.
+Las escrituras nativas ya no se autentican frente a la versión leída primero: la
+credencial de la página ya está validada antes de realizar la copia de seguridad previa a la escritura.
 
-The call is still audited as `plugin.route_call`, with the refusal recorded as a failed
-outcome with status 401. Resource and model-directory credential rules are unchanged.
+La llamada sigue registrándose en la auditoría como `plugin.route_call`, y el rechazo se registra como un resultado fallido
+con estado 401. Las reglas de credenciales de recursos y del directorio de modelos no cambian.
 
-## Consequences and trade-offs
+## Consecuencias y contrapartidas
 
-A wrong key typed into a plugin page still fails visibly, which was the reason ADR 0067
-stopped replacing page credentials, and it can no longer lock the console out of CPA.
+Una clave incorrecta introducida en una página de complementos sigue fallando de forma visible, que fue la razón por la que
+la ADR 0067 dejó de reemplazar las credenciales de las páginas, y ahora ya no puede bloquear el acceso de la consola a CPA.
 
-The host accepts only the key stored for the instance. CPA has no list of management
-keys, but it can honour up to three secrets at once: the configured
-`remote-management.secret-key`, the `MANAGEMENT_PASSWORD` environment variable, and, for
-loopback clients only, the `--password` local password. When these differ, a secret other
-than the stored one is refused on this surface although CPA would accept it. That is
-accepted: the stored key is the one every other console feature depends on, the page
-already holds the operator's session authority, and the refusal costs nothing at CPA.
-Testing an unknown credential against CPA instead would spend the very budget this
-decision protects.
+El host acepta únicamente la clave almacenada para la instancia. CPA no tiene una lista de claves de
+gestión, pero puede admitir hasta tres secretos a la vez: el configurado
+`remote-management.secret-key`, la variable de entorno `MANAGEMENT_PASSWORD` y, solo para
+clientes loopback, la contraseña local `--password`. Cuando estos difieren, se rechaza en esta superficie un secreto
+distinto al almacenado, a pesar de que CPA lo aceptaría. Esto se asume como aceptable: la clave
+almacenada es de la que depende cualquier otra característica de la consola, la página ya posee la autoridad de
+sesión del operador y el rechazo no tiene coste en CPA. Probar una credencial desconocida frente a CPA en su lugar
+gastaríai el mismo presupuesto que esta decisión protege.
 
-Local refusals are not rate limited. They require an authenticated console session,
-whose sign-in is itself throttled, and a session can already act through the host with
-the stored key without presenting one.
+Los rechazos locales no están limitados por tasa (*rate limited*). Requieren una sesión de consola autenticada,
+cuyo inicio de sesión ya está limitado por sí mismo, y una sesión ya puede actuar a través del host con
+la clave almacenada sin necesidad de presentar una.
 
-The refusal text mirrors CPA's but is produced here; a change to CPA's wording does not
-propagate. Pages are expected to branch on the status.
+El texto del rechazo imita al de CPA pero se genera aquí; un cambio en la redacción de CPA no
+se propaga automáticamente. Se espera que las páginas actúen en función del código de estado.

@@ -1,164 +1,69 @@
-# ADR 0005: The token heatmap is a DOM grid, and it folds days from one source
+# ADR 0005: El mapa de calor de tokens es una cuadrícula DOM y agrupa los días de una sola fuente
 
-- Status: Accepted
-- Date: 2026-09-14
+- Estado: Aceptado
+- Fecha: 2026-09-14
 
-## Context
+## Contexto
 
-ADR 0004 adopted `@ant-design/charts` as the visualization runtime and named "token
-density heatmaps" as one of the capabilities that motivated the choice. The dashboard's next
-increment is that heatmap: a field of daily token volume below the six KPI tiles.
+El ADR 0004 adoptó `@ant-design/charts` como el entorno de ejecución de visualización y nombró a los "mapas de calor de densidad de tokens" como una de las capacidades que motivaron dicha elección. El siguiente incremento del panel de control es precisamente ese mapa de calor: un campo de volumen diario de tokens ubicado debajo de los seis mosaicos de KPI.
 
-Three questions had to be settled before building it, and two of the three have answers
-that contradict the obvious reading of ADR 0004.
+Debían resolverse tres preguntas antes de construirlo, y dos de ellas tienen respuestas que contradicen la lectura obvia del ADR 0004.
 
-**How should it be drawn?** The library offers a `Heatmap` mark, which is the direct
-reading of "adopt a charting runtime for heatmaps". But this panel is a grid of individually
-addressable days, and its whole interaction model is "read a day, open a day". A canvas mark
-gives none of that: no per-cell text, no focusable cells, no per-cell click target, no
-readable structure for assistive technology.
+**¿Cómo debe dibujarse?** La biblioteca ofrece una marca `Heatmap`, que es la lectura directa de "adoptar un entorno de ejecución de gráficos para mapas de calor". Pero este panel es una cuadrícula de días direccionables individualmente, y todo su modelo de interacción es "leer un día, abrir un día". Una marca de lienzo (canvas) no ofrece nada de eso: no hay texto por celda, ni celdas enfocables, ni destino de clic por celda, ni estructura legible para tecnologías de asistencia.
 
-**What should it plot?** `/management/dashboard` answers a *sliding window* - fifteen minutes to
-ninety days, refetched on a tail poll as often as every five seconds. This panel covers a fixed
-rolling year, because a field whose width is its own data's age is not a calendar - at the 24h
-default it would be one column. Putting a year of daily history into the windowed response would
-aggregate it on every tail poll, and the window's parameters are shared with the request list.
+**¿Qué debe representar?** `/management/dashboard` responde a una *ventana deslizante* (sliding window) —de quince minutos a noventa días, reconsultada mediante sondeo de cola (tail poll) con una frecuencia de hasta cinco segundos. Este panel cubre un año rodante fijo, porque un campo cuya anchura es la antigüedad de sus propios datos no es un calendario; con el valor predeterminado de 24 horas, sería una sola columna. Incluir un año de historial diario en la respuesta con ventana requeriría agregarlo en cada sondeo de cola, y los parámetros de la ventana se comparten con la lista de solicitudes.
 
-**What shape should it be?** A contribution graph is two-dimensional: seven weekday rows by
-one column per week. The rows are the whole point - they make a weekly rhythm a row and a
-trend a direction - and the shape and the span are one decision, since at seven rows a
-quarter's worth of days would be thirteen columns rather than a field.
+**¿Qué forma debe tener?** Un gráfico de contribuciones es bidimensional: siete filas de días de la semana por una columna por semana. Las filas son el objetivo principal: convierten un ritmo semanal en una fila y una tendencia en una dirección; además, la forma y el intervalo son una sola decisión, ya que con siete filas, los días equivalentes a un trimestre sumarían trece columnas en lugar de un campo completo.
 
-**How should the days be resolved?** This is the part that turned out to matter most. A
-day is a local calendar day, and the obvious implementations of that are both wrong:
-grouping an hourly rollup by an offset-shifted bucket start cannot split a UTC hour that
-straddles a fractional-offset local midnight (India's `+05:30` puts local midnight at
-18:30 UTC, inside the 18:00 hour), and any single fixed offset is wrong for every day on
-the far side of a daylight-saving transition rather than only on the two transition days.
+**¿Cómo deben resolverse los días?** Este es el aspecto que resultó ser más importante. Un día es un día calendario local, y las implementaciones obvias de este concepto son incorrectas: agrupar una consolidación horaria (rollup) mediante el inicio de un segmento desplazado por un desfase no puede dividir una hora UTC que abarca una medianoche local con un desfase fraccionario (el `+05:30` de India sitúa la medianoche local a las 18:30 UTC, dentro de la hora de las 18:00); asimismo, cualquier desplazamiento fijo único es incorrecto para todos los días posteriores a una transición de horario de verano, y no solo para los dos días en que ocurre dicha transición.
 
-## Decision
+## Decisión
 
-1. **Render the grid as DOM.** One cell per day in a CSS grid, seven weekday rows by a
-   column per week, each with a `title`, an `aria-label` and a roving `tabindex`. The panel
-   never imports the chart runtime, so `vendor-charts` is unchanged and still reached only
-   by the trend marks.
+1. **Renderizar la cuadrícula como DOM.** Una celda por día en una cuadrícula CSS (CSS grid), con siete filas de días de la semana y una columna por semana; cada celda cuenta con un `title`, un `aria-label` y un `tabindex` dinámico (roving). El panel nunca importa el entorno de ejecución de gráficos, por lo que `vendor-charts` permanece sin cambios y solo se accede a él mediante las marcas de tendencia.
 
-2. **Serve it from a dedicated endpoint**, `GET /management/dashboard/token-heatmap`,
-   with its own query, its own refresh cadence and its own failure mode.
+2. **Servirlo desde un endpoint dedicado**, `GET /management/dashboard/token-heatmap`, con su propia consulta, su propia frecuencia de actualización y su propio modo de fallo.
 
-3. **Build the days on the server from the viewer's IANA timezone.** The client sends
-   `tz`; the server resolves each day with `time.Date`/`AddDate` in that zone and returns
-   every day of the span with its exact inclusive instant bounds. A local day is therefore
-   23, 24 or 25 hours as the zone requires, and the bounds a cell aggregated are the same
-   bounds its drill-down opens.
+3. **Construir los días en el servidor a partir de la zona horaria IANA del visor.** El cliente envía `tz`; el servidor resuelve cada día utilizando `time.Date`/`AddDate` en dicha zona y devuelve cada día del intervalo con sus límites exactos e inclusivos de instante. Por lo tanto, un día local dura 23, 24 o 25 horas según lo requiera la zona, y los límites que agrega una celda son los mismos límites que abre su vista de detalle (drill-down).
 
-4. **Walk the span as civil dates, and resolve each day's bounds independently.** Chile
-   springs forward *at* midnight, so `2020-09-06` has no local `00:00` and Go normalizes that
-   civil date to `2020-09-05 23:00`. Walking the span with `AddDate` on a resolved instant
-   therefore emits `2020-09-05` twice and never emits `2020-09-06`: the grid reports its full
-   371 days while carrying 370 distinct ones, and every day after the transition shifts a
-   column. Each day's key comes from the arithmetic date, and its start from the first instant
-   whose local clock reads that date - which on a midnight transition is an hour later than
-   midnight, making that day 23 hours long rather than 24.
+4. **Recorrer el intervalo como fechas civiles y resolver los límites de cada día de forma independiente.** Chile adelanta su hora *exactamente a* medianoche, por lo que `2020-09-06` no tiene una hora `00:00` local y Go normaliza dicha fecha civil a `2020-09-05 23:00`. Por consiguiente, recorrer el intervalo con `AddDate` sobre un instante resuelto emite `2020-09-05` dos veces y nunca emite `2020-09-06`: la cuadrícula informa sus 371 días totales mientras contiene 370 días distintos, y cada día posterior a la transición desplaza una columna. La clave de cada día proviene de la fecha aritmética, y su inicio proviene del primer instante cuyo reloj local marca esa fecha —lo cual, en una transición a medianoche, ocurre una hora después de la medianoche, haciendo que ese día dure 23 horas en lugar de 24—.
 
-5. **Fold from one source: the detail table.** No rollup-plus-tail split, and no
-   rounding of the window to a bucket boundary.
+5. **Agrupar a partir de una única fuente: la tabla de detalles.** Sin división entre consolidación y cola (rollup-plus-tail), y sin redondeo de la ventana al límite de un segmento (bucket).
 
-6. **Clamp the final day to the read instant** rather than to the following local
-   midnight, so a record timestamped in the future cannot inflate today's total.
+6. **Limitar el día final al instante de lectura** en lugar de a la medianoche local siguiente, de modo que un registro con marca de tiempo en el futuro no pueda inflar el total del día de hoy.
 
-7. **Colour is a continuous ramp of the theme accent, not a semantic or stepped one.** Brightness is
-   the square root of the day's volume against the window's own busiest day, mixed in OKLCH from the
-   cell's empty fill up to the accent. Stepped cutoffs quantised away the day-to-day difference the
-   panel exists to show; a status hue would imply a verdict the panel has no basis for.
+7. **El color es una rampa continua del acento del tema**, no una escala semántica o escalonada. El brillo es la raíz cuadrada del volumen del día frente al día con más actividad de la ventana, mezclado en espacio OKLCH desde el relleno vacío de la celda hasta el color de acento. Los cortes escalonados cuantificaban y eliminaban las diferencias diarias que el panel existe para mostrar; un tono de estado implicaría un veredicto para el cual el panel no tiene fundamentos.
 
-8. **One view.** The panel shades the day's own token volume and nothing else. Weekly and
-   cumulative readings were built and then removed: they answer "how did that week go" and "how
-   quickly did the span accumulate", which are different questions from the one the grid is asked,
-   and a control that changes what the colours mean makes the field unreadable at a glance.
+8. **Una sola vista.** El panel muestra el volumen de tokens propio del día y nada más. Se construyeron lecturas semanales y acumulativas que posteriormente fueron eliminadas: responden a "¿cómo fue esa semana?" y "¿con qué rapidez se acumuló el intervalo?", que son preguntas distintas a la que se le plantea a la cuadrícula; además, un control que modifica el significado de los colores hace que el campo sea ilegible a simple vista.
 
-9. **The tooltip opens on click and carries the drill-down as a link.** The cell itself does not
-   navigate. Every cell is interactive, including one with nothing stored: its tooltip says so and
-   carries no link, because there would be nothing to open.
+9. **La información emergente (tooltip) se abre al hacer clic y contiene la vista de detalle como enlace.** La celda en sí misma no navega. Cada celda es interactiva, incluso una sin datos almacenados: su tooltip lo indica y no contiene ningún enlace, ya que no habría nada que abrir.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- The panel is keyboard- and screen-reader-operable, and its cells are real elements: the
-  probe asserts computed fills, attribute counts and rendered text rather than reading
-  pixels out of a canvas.
-- Day boundaries are exact under fractional offsets, daylight saving, and viewer zones
-  that differ from the server's - the three cases a rollup-based fold gets wrong.
-- The cell and its drill-down cannot disagree: both come from the same returned interval.
-- An unavailable read cannot blank the tiles above it, and a *refresh* that fails keeps
-  the strip on screen.
+- El panel es operable mediante teclado y lector de pantalla, y sus celdas son elementos reales: las pruebas automatizadas (probes) comprueban los rellenos calculados, el recuento de atributos y el texto renderizado en lugar de leer píxeles de un lienzo.
+- Los límites de los días son exactos ante desfases fraccionarios, horario de verano y zonas horarias del visor que difieren de la del servidor (los tres casos que falla una agrupación basada en consolidaciones).
+- La celda y su vista de detalle no pueden entrar en contradicción: ambas provienen del mismo intervalo devuelto.
+- Una lectura no disponible no puede dejar en blanco los mosaicos superiores, y una *actualización* que falla mantiene la franja visible en pantalla.
 
-### Trade-offs
+### Compensaciones y contrapartidas (Trade-offs)
 
-- **`QueryDailyTokenTotals` scans the detail table over the span.** It does not consult the hourly
-  rollup, which costs more rows than a rollup read would. Two things bound it: the scan is limited to
-  the retention window (400 days by default, which the panel's rolling year fits inside), and the
-  aggregation stays inside SQLite, so at most one row per day crosses into Go. The panel reads it once per visit on a five-minute
-  interval, not on the dashboard's poll cadence.
-- **The rollup split is deliberately not reused.** `QueryUsageAnalytics` divides its
-  window at the hourly checkpoint and reads the two halves from different tables, which is
-  correct for a *bucket* grid. It is not correct for a day: a request that arrives with an
-  earlier timestamp after its hour was folded - CPA event times can arrive out of order -
-  sits on the detail side of the timestamp boundary while its own hour is already inside
-  the rollup, so a hybrid read counts it twice. One source has no boundary to get wrong.
-  The dashboard's own path is unchanged.
-- **The panel is not a chart-runtime mark**, a real divergence from ADR 0004's framing,
-  confined to this panel and stated in `docs/design.md`.
-- **A second endpoint on the dashboard.** The page issues three reads. The strip's is on a
-  five-minute interval and a key-prefix invalidation from the refresh button, so it adds
-  one request per five minutes rather than one per poll.
-- **On a narrow viewport the grid scrolls, opening on today's column**, and its tap target
-  grows vertically only. A year of weeks and a 44px target cannot both fit a phone, and the
-  span is the panel's meaning while the target is a convenience: every cell is reachable by
-  arrow key and opens its own tooltip, so nothing is unreachable. See `docs/design.md` §2 for
-  the measured rule and the horizontal-overlap trap.
-- **Any part of the grid older than the retention horizon reports no stored records.** At the
-  default 400-day horizon the grid's 371 days all fit inside it, so this only arises when
-  `OMCPA_USAGE_RETENTION_DAYS` is overridden shorter than the span. Those cells are drawn as
-  unrecorded with copy that says so. Shortening the grid to follow a shorter horizon was the
-  alternative and it was rejected: a quarter of a year is thirteen columns, which is not the shape
-  the reading comes from.
-- **The ramp is relative to the span.** Two deployments' strips are not comparable by shade
-  alone; the counts in each cell's tooltip and accessible name are what make them comparable.
-  A relative scale was chosen because an absolute one either saturates a busy deployment or
-  flattens a quiet one, and the square root of the day's share was chosen over a linear or
-  logarithmic mapping for the reasons in `docs/design.md` §2.
-- **The default retention horizon was raised to 400 days for this panel**, from ninety. The window
-  is a rolling year, so a ninety-day horizon would show the window's own beginning as carrying
-  nothing for most of the year. The cost is linear: roughly four times the detail and rollup rows
-  compared with a ninety-day horizon.
-- **A day with no stored record does not mean nothing happened.** The response reports the first
-  *stored* record, and a day before it is drawn as unrecorded. Whether the collector was running,
-  and whether it lost anything, is not visible from the record; the copy claims only that nothing is
-  stored.
+- **`QueryDailyTokenTotals` escanea la tabla de detalles en todo el intervalo.** No consulta la consolidación horaria, lo que consume más filas que una lectura basada en consolidaciones. Dos factores lo limitan: el escaneo se limita a la ventana de retención (400 días por defecto, dentro de la cual encaja el año rodante del panel), y la agregación se realiza íntegramente dentro de SQLite, por lo que como máximo una fila por día pasa a Go. El panel realiza esta lectura una vez por visita con un intervalo de cinco minutos, no en la frecuencia de sondeo del panel de control.
+- **La división de consolidación (rollup split) deliberadamente no se reutiliza.** `QueryUsageAnalytics` divide su ventana en el punto de control horario y lee ambas mitades de tablas diferentes, lo cual es correcto para una cuadrícula de *segmentos* (buckets). No es correcto para un día: una solicitud que llega con una marca de tiempo anterior después de que su hora ya ha sido consolidada —los tiempos de eventos de CPA pueden llegar desordenados— se sitúa en el lado de los detalles del límite de la marca de tiempo, mientras que su propia hora ya se encuentra dentro de la consolidación; por lo tanto, una lectura híbrida la cuenta dos veces. Una sola fuente evita tener un límite susceptible de errores. La ruta propia del panel de control permanece inalterada.
+- **El panel no utiliza una marca del entorno de ejecución de gráficos**, lo que representa una divergencia real respecto al planteamiento del ADR 0004, limitada a este panel y documentada en `docs/design.md`.
+- **Un segundo endpoint en el panel de control.** La página realiza tres lecturas. La de la franja se ejecuta en un intervalo de cinco minutos y utiliza una invalidación por prefijo de clave desde el botón de actualización, por lo que añade una solicitud cada cinco minutos en lugar de una por cada sondeo.
+- **En un área de visualización estrecha (viewport), la cuadrícula se desplaza horizontalmente abriéndose en la columna de hoy**, y su área táctil solo se expande verticalmente. Un año de semanas y un objetivo táctil de 44px no caben simultáneamente en un teléfono; el intervalo representa el significado del panel, mientras que el objetivo táctil es una comodidad: cada celda es accesible mediante las teclas de flecha y abre su propio tooltip, por lo que ningún elemento es inaccesible. Consulte `docs/design.md` §2 para ver la regla medida y el problema de superposición horizontal.
+- **Cualquier parte de la cuadrícula anterior al horizonte de retención informa que no hay registros almacenados.** Con el horizonte predeterminado de 400 días, los 371 días de la cuadrícula caben dentro de él, por lo que esta situación solo se presenta cuando `OMCPA_USAGE_RETENTION_DAYS` se configura con un valor menor que el intervalo. Esas celdas se dibujan como no registradas con un texto explicativo. Acortar la cuadrícula para adaptarla a un horizonte menor fue una alternativa que se descartó: un cuarto de año son trece columnas, lo cual no posee la forma a partir de la cual se obtiene la lectura.
+- **La rampa es relativa al intervalo.** Las franjas de dos despliegues no son comparables basándose únicamente en el tono; los recuentos en el tooltip de cada celda y su nombre accesible son lo que las hace comparables. Se eligió una escala relativa porque una absoluta saturaría un despliegue con mucha actividad o aplanaría uno silencioso, y se prefirió la raíz cuadrada de la proporción del día sobre un mapeo lineal o logarítmico por las razones expuestas en `docs/design.md` §2.
+- **El horizonte de retención predeterminado se elevó a 400 días para este panel** (desde los noventa anteriores). La ventana es un año rodante, por lo que un horizonte de noventa días mostraría el inicio de la ventana como carente de datos durante la mayor parte del año. El coste es lineal: aproximadamente cuatro veces la cantidad de filas de detalles y consolidaciones en comparación con un horizonte de noventa días.
+- **Un día sin registro almacenado no significa que no haya ocurrido nada.** La respuesta informa el primer registro *almacenado*, y cualquier día anterior se dibuja como no registrado. Si el colector estaba en ejecución y si perdió algún dato no es visible a partir del registro; el texto solo afirma que no hay nada almacenado.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **A `Heatmap` mark from `@ant-design/charts`.** Rejected because the panel is a calendar
-  rather than a raster: per-cell text, focus and click targets are its function, not
-  decoration, and a canvas would need a parallel DOM layer for all three - that is the DOM
-  implementation, plus a canvas.
-- **Fold the days in Go from the existing bucket path.** `QueryUsageAnalytics` reads its
-  rollup whenever the requested grid is no coarser than the rollup's grain, so a daily grid
-  would be served from hourly rows and inherit exactly the fractional-offset error this
-  decision avoids.
-- **Fold from the hourly rollup on the viewer's calendar.** Cheaper, and wrong for any
-  offset that is not a whole hour, and for every day across a daylight-saving transition.
-- **A single-row timeline of the last ninety days.** It fits the panel width without scrolling, and
-  it was the first implementation. Rejected on reading: a row of squares is a timeline, not a
-  contribution graph, and it cannot show a weekday rhythm at all.
-- **A calendar-year grid** (January to December) instead of a rolling one. The shape is stable for a
-  whole year, which is pleasant, but it spends every January almost empty and says nothing about last
-  December - exactly the comparison a reader wants then. A rolling window always holds a year and
-  always ends on today.
-- **Send a UTC offset instead of a zone name.** Simpler, and wrong for every day on the
-  other side of a transition. The zone database is already present in the runtime image.
-- **Return only the days that carried traffic and let the client fill the gaps.** Rejected:
-  the strip's shape is its span, and a client that reconstructs the gaps is a second
-  implementation of the calendar that can silently disagree with the server's.
+- **Una marca `Heatmap` de `@ant-design/charts`.** Se descartó porque el panel es un calendario y no una trama de píxeles (raster): el texto por celda, el foco y los objetivos de clic son su función y no una decoración, y un lienzo requeriría una capa DOM paralela para los tres elementos; es decir, la implementación basada en DOM más un lienzo.
+- **Agrupar los días en Go a partir de la ruta de segmentos existente.** `QueryUsageAnalytics` lee su consolidación siempre que la cuadrícula solicitada no sea más gruesa que el grano de dicha consolidación, por lo que una cuadrícula diaria se serviría a partir de filas horarias y heredaría exactamente el error de desfase fraccionario que esta decisión evita.
+- **Agrupar a partir de la consolidación horaria en el calendario del visor.** Es una alternativa más económica, pero incorrecta para cualquier desfase que no sea una hora exacta y para cualquier día que atraviese una transición de horario de verano.
+- **Una línea de tiempo de una sola fila de los últimos noventa días.** Se ajusta al ancho del panel sin desplazamiento horizontal y fue la primera implementación. Se descartó tras evaluarla: una fila de cuadrados es una línea de tiempo, no un gráfico de contribuciones, y es incapaz de mostrar un ritmo semanal.
+- **Una cuadrícula de año calendario** (de enero a diciembre) en lugar de una ventana rodante. Su forma es estable durante todo el año, lo cual resulta agradable, pero muestra cada mes de enero casi vacío y no dice nada sobre el mes de diciembre anterior, que es exactamente la comparación que un lector busca en ese momento. Una ventana rodante siempre abarca un año y siempre termina en el día de hoy.
+- **Enviar un desfase UTC en lugar de un nombre de zona.** Es más sencillo, pero incorrecto para cualquier día situado al otro lado de una transición. La base de datos de zonas horarias ya está presente en la imagen del entorno de ejecución.
+- **Devolver únicamente los días que tuvieron tráfico y dejar que el cliente rellene los huecos.** Se descartó: la forma de la franja es su intervalo, y un cliente que reconstruye los huecos constituye una segunda implementación del calendario que puede entrar en desacuerdo silencioso con el servidor.

@@ -1,30 +1,20 @@
-# ADR 0074: Agent attachments are text inside the message
+# ADR 0074: Los archivos adjuntos del Agente son texto dentro del mensaje
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-10-08
-- Builds on [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md):
-  a run still carries one user message as one string.
+- Estado: Aceptado
+- Reemplazado parcialmente en parte: la página del Playground, sus rutas y los ADRs 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agente se mantiene (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Fecha: 2026-10-08
+- Se basa en el [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md):
+  una ejecución sigue transportando un mensaje de usuario como una sola cadena de texto.
 
-## Context
+## Contexto
 
-Operators ask the Agent about things they hold as files: a log excerpt, a config
-fragment, an exported table. Pasting those into the message box works but buries the
-question, and the transcript then shows a wall of file content where a message
-should be.
+Los operadores le consultan al Agente sobre elementos que poseen en forma de archivos: un extracto de registro (log), un fragmento de configuración, una tabla exportada. Pegar estos elementos en el cuadro de mensajes funciona, pero oculta la pregunta, y la transcripción muestra entonces un muro de contenido de archivo donde debería haber un mensaje.
 
-The Agent's server keeps each turn as the messages the model saw and continues a
-turn from that record: a turn that stops for an approval or a question is resumed,
-possibly much later and from another browser, from what was stored. Anything sent
-to the model but not stored would be missing on resume, and the model would be
-continuing a conversation it could no longer see the start of. The Playground can
-send images because its turns are never resumed and its stored turn keeps only a
-placeholder; the Agent cannot borrow that.
+El servidor del Agente mantiene cada turno como los mensajes que el modelo vio y continúa un turno a partir de ese registro: un turno que se detiene para una aprobación o una pregunta se reanuda, posiblemente mucho más tarde y desde otro navegador, a partir de lo que se almacenó. Todo lo enviado al modelo pero no almacenado faltaría al reanudar, y el modelo continuaría una conversación cuyo inicio ya no puede ver. El Playground puede enviar imágenes porque sus turns (turnos) nunca se reanudan y su turno almacenado mantiene únicamente un marcador de posición; el Agente no puede tomar prestado eso.
 
-## Decision
+## Decisión
 
-**A file is text, and it travels inside the message.** The composer takes text
-files - picked, dropped or pasted - and appends each to the operator's words as
+**Un archivo es texto y viaja dentro del mensaje.** El editor (composer) acepta archivos de texto —seleccionados, arrastrados o pegados— y adjunta cada uno a las palabras del operador como
 
 ```text
 <file name="gateway.log">
@@ -32,42 +22,20 @@ files - picked, dropped or pasted - and appends each to the operator's words as
 </file>
 ```
 
-The server sees an ordinary message. Nothing about storage, resumption, the request
-budget or the export changes, because nothing new exists to store.
+El servidor ve un mensaje ordinario. Nada relacionado con el almacenamiento, la reanudación, el presupuesto de peticiones o la exportación cambia, porque no existe nada nuevo que almacenar.
 
-**What decides is the content, not the name.** Any file may be offered; it is
-attached only if its bytes are valid UTF-8 without binary control bytes. A message
-carries at most four files and 40 KiB of them together. A refusal is said in a
-toast. A file's name is stripped of the characters that could close its attribute,
-and a closing tag inside the content is escaped so a file cannot end its own block
-and continue as the operator's words.
+**Lo que decide es el contenido, no el nombre.** Se puede ofrecer cualquier archivo; se adjunta únicamente si sus bytes son UTF-8 válido sin bytes de control binarios. Un mensaje transporta como máximo cuatro archivos y 40 KiB de ellos en conjunto. El rechazo se notifica en un aviso (toast). Al nombre de un archivo se le eliminan los caracteres que podrían cerrar su atributo, y una etiqueta de cierre dentro del contenido se escapa para que un archivo no pueda finalizar su propio bloque y continuar haciéndose pasar por las palabras del operador.
 
-**The message limit grows to fit.** One message may be 48 KiB
-(`agent.MAX_MESSAGE_BYTES`, mirrored by the AG-UI decoder), and the run endpoint
-reads up to 128 KiB so that JSON escaping has room. The request budget still sizes
-every model request to the selected model's context window, so a long file costs
-older turns their place rather than failing the request.
+**El límite del mensaje aumenta para ajustarse a esto.** Un mensaje puede tener 48 KiB (`agent.MAX_MESSAGE_BYTES`, reflejado por el decodificador de AG-UI), y el endpoint de ejecución (run endpoint) lee hasta 128 KiB para que el escape de JSON tenga suficiente espacio. El presupuesto de peticiones sigue dimensionando cada petición de modelo a la ventana de contexto del modelo seleccionado, por lo que un archivo largo hace que los turnos más antiguos pierdan su lugar en lugar de fallar la petición.
 
-**The model is told what a block is.** The prompt's safety section says the content
-of a `<file name>` block is a text file the operator attached: data to read, not
-instructions to follow.
+**Se le indica al modelo qué es un bloque.** La sección de seguridad del prompt indica que el contenido de un bloque `<file name>` es un archivo de texto que el operador adjuntó: datos para leer, no instrucciones a seguir.
 
-**The transcript shows files by name.** A sent message is drawn as its words, with
-each file as a chip of name and size above them. Editing the newest message puts
-the words back in the composer and keeps the files with the edit.
+**La transcripción muestra los archivos por nombre.** Un mensaje enviado se representa mediante sus palabras, con cada archivo como un chip de nombre y tamaño sobre ellas. Editar el mensaje más reciente devuelve las palabras al editor y conserva los archivos junto con la edición.
 
-**Images are not taken.** An image has no form inside a string, so supporting it
-means storing image bytes with the turn, or resuming a turn without them. The first
-changes what the conversation store holds and how large it may grow; the second
-breaks resumption. Neither is worth doing as a side effect of file attachments, so
-image input stays a Playground capability until it is decided on its own.
+**No se admiten imágenes.** Una imagen no tiene forma dentro de una cadena de texto, por lo que darle soporte significaría almacenar los bytes de la imagen con el turno, o reanudar un turno sin ellos. Lo primero altera lo que almacena el almacenamiento de conversaciones y cuánto puede crecer; lo segundo rompe la reanudación. Ninguna de las dos opciones vale la pena como efecto secundario de los archivos adjuntos, por lo que la entrada de imágenes sigue siendo una capacidad del Playground hasta que se decida por separado.
 
-## Consequences
+## Consecuencias
 
-- A file's content is in the stored conversation and in its exports, exactly as
-  pasted text would be. The composer's data notice already covers it.
-- A file larger than the limit has to be cut down by the operator; the Agent's
-  `database_query` and usage capabilities remain the way to read large data.
-- The block syntax is a convention the model is told about, not a protocol: a
-  message typed by hand in the same shape is drawn the same way, which is harmless
-  because it grants nothing.
+- El contenido de un archivo se encuentra en la conversación almacenada y en sus exportaciones, exactamente como lo haría un texto pegado. El aviso de datos del editor ya lo cubre.
+- Un archivo que supere el límite debe ser reducido por el operador; las capacidades de `database_query` y de uso del Agente siguen siendo la forma de leer datos grandes.
+- La sintaxis de bloques es una convención sobre la cual se le informa al modelo, no un protocolo: un mensaje escrito a mano con la misma forma se renderiza de la misma manera, lo cual es inofensivo ya que no otorga ningún privilegio.

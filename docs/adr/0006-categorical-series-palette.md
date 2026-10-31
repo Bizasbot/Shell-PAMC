@@ -1,148 +1,78 @@
-# ADR 0006: A categorical series palette is a scoped exception to semantic-only colour
+# ADR 0006: Una paleta de series categóricas es una excepción delimitada al color exclusivamente semántico
 
-- Status: Accepted
-- Date: 2026-09-15
-- File pointer (2026-09-18): the six slots now live in `MODE_SEMANTICS` in `web/src/theme/palette.ts`,
-  which ADR 0011 moved the palettes into, and `seriesTrack` is the mode's `border` step, assigned by
-  `derivePalette`. **Every reference to
-  `themeConfig.ts` in the Decision and Consequences below is historical** - that file is now only the Ant
-  Design projection. The decision itself is unchanged and this ADR is still the record of it.
-- Companion palette (2026-10-17): the live routing map's lanes are a second categorical use of hue.
-  They take their own cool-only `--route-*` slots rather than the series slots, because a lane has no
-  legend beside it and a status-coloured line would read as a verdict on the connection. The role
-  separation in this ADR still holds: `success`/`warn`/`danger` remain operational, and the node
-  surfaces - not the lines - carry a request's outcome. See `docs/design.md` §2 and ADR 0102.
+- Estado: Aceptado
+- Fecha: 2026-09-15
+- Puntero de archivo (2026-09-18): las seis ranuras ahora residen en `MODE_SEMANTICS` dentro de `web/src/theme/palette.ts`,
+  adonde el ADR 0011 trasladó las paletas, y `seriesTrack` es el paso de `border` del modo, asignado por
+  `derivePalette`. **Cualquier referencia a
+  `themeConfig.ts` en la Decisión y Consecuencias a continuación es histórica**; ese archivo ahora es únicamente la proyección de Ant
+  Design. La decisión en sí no ha cambiado y este ADR sigue siendo su registro.
+- Paleta complementaria (2026-10-17): los carriles del mapa de enrutamiento en vivo constituyen un segundo uso categórico del tono.
+  Utilizan sus propias ranuras `--route-*` exclusivamente frías en lugar de las ranuras de series, porque un carril no tiene
+  leyenda a su lado y una línea con color de estado se interpretaría como un veredicto sobre la conexión. La
+  separación de roles en este ADR se mantiene: `success`/`warn`/`danger` siguen siendo operacionales, y las superficies
+  de los nodos —no las líneas— transmiten el resultado de una solicitud. Véase `docs/design.md` §2 y el ADR 0102.
 
-## Context
+## Contexto
 
-`docs/design.md` §1 states the app's colour rule as **"Semantic color only — green/red/amber mean
-enabled/error/warning, never decoration"**, and every colour token in `themeConfig.ts` and
-`index.css` follows it: `success`, `warn`, `danger` and `accent` all carry a verdict or an
-interactive affordance. `scripts/test-chart-marks.ts` pins the consequence, asserting that each
-`ChartTone` resolves to a distinct palette token and that `neutral` never resolves to the accent.
+La sección §1 de `docs/design.md` establece la regla de color de la aplicación como **"Color exclusivamente semántico: verde/rojo/ámbar significan habilitado/error/advertencia, nunca decoración"**, y cada token de color en `themeConfig.ts` y `index.css` la cumple: `success`, `warn`, `danger` y `accent` transmiten un veredicto o una posibilidad de interacción. El script `scripts/test-chart-marks.ts` consolida esta consecuencia, afirmando que cada `ChartTone` se resuelve en un token de paleta distinto y que `neutral` nunca se resuelve en el acento.
 
-The dashboard's next increment adds two panels above the token activity grid: a **per-model token
-trend** (one line per model over the selected window) and a **model-usage ring** (each model's share
-of the window's tokens, with a ranked list). Read together they answer "which models is this
-deployment actually spending on, and when" — a question the six KPI tiles aggregate away, because
-they sum every model into one number.
+El siguiente incremento del panel de control añade dos gráficos sobre la cuadrícula de actividad de tokens: una **tendencia de tokens por modelo** (una línea por modelo en la ventana seleccionada) y un **anillo de uso de modelos** (la cuota de tokens de la ventana correspondiente a cada modelo, junto con una lista ordenada). Leídos conjuntamente, responden a la pregunta "¿en qué modelos está gastando realmente este despliegue y cuándo?", una pregunta que los seis paneles de KPI ocultan al sumar todos los modelos en un único número.
 
-This breaks the existing colour rule rather than extending it, and the pressure arrives from two
-directions at once:
+Esto infringe la regla de color existente en lugar de ampliarla, y la presión surge de dos direcciones simultáneas:
 
-1. **Model identity is not a verdict.** A model list is whatever the deployment happens to serve —
-   upstream names, dated revisions, per-provider aliases. It is open-ended, and it has no good/bad
-   axis. There is nothing for a semantic hue to *mean*.
-2. **The existing tokens cannot be reused for it.** Cycling
-   `accent/success/warn/danger` across series would put a green line labelled "model B" beside the
-   green pip that means "credential healthy" and the green cache-rate badge that means "high hit
-   rate". One hue would then carry both a category and a state, and both readings would degrade —
-   which is worse than the rule being violated, because it also destroys the semantic colours the
-   rest of the console depends on.
+1. **La identidad de un modelo no es un veredicto.** Una lista de modelos es simplemente aquello que el despliegue sirve en un momento dado: nombres ascendentes, revisiones fechadas, alias por proveedor. Es abierta y carece de un eje bueno/malo. No hay nada a lo que un tono semántico pueda *dar significado*.
+2. **Los tokens existentes no se pueden reutilizar para este propósito.** Alternar `accent`/`success`/`warn`/`danger` entre series situaría una línea verde etiquetada como "modelo B" junto al indicador verde que significa "credencial saludable" y a la insignia verde de tasa de aciertos que significa "alta tasa de aciertos". Un mismo tono transmitiría entonces tanto una categoría como un estado, y ambas lecturas se degradarían —lo cual es peor que infringir la regla, ya que también destruye los colores semánticos de los que depende el resto de la consola.
 
-So the choice was between dropping the multi-series requirement, cycling the status hues, or
-admitting a second, clearly separated colour family that carries identity and never a verdict.
+Por lo tanto, la elección consistía en descartar el requisito de múltiples series, alternar los tonos de estado o admitir una segunda familia de colores claramente separada que transmita identidad y nunca un veredicto.
 
-## Decision
+## Decisión
 
-**Introduce a categorical series palette as a scoped, documented exception — not a relaxation of
-the rule.**
+**Introducir una paleta de series categóricas como una excepción delimitada y documentada —no como una relajación de la regla.**
 
-1. **Six series tokens, `series 1`–`series 6`, in both themes**, defined in
-   `web/src/theme/themeConfig.ts` (`palette[mode].series`) and mirrored as
-   `--series-1`…`--series-6` in `web/src/index.css`. They are consumed only through
-   `seriesColor(mode, index)` in `web/src/charts/chartTheme.ts`.
+1. **Seis tokens de serie, `series 1`–`series 6`, en ambos temas**, definidos en
+   `web/src/theme/themeConfig.ts` (`palette[mode].series`) y reflejados como
+   `--series-1`…`--series-6` en `web/src/index.css`. Se consumen únicamente a través de
+   `seriesColor(mode, index)` en `web/src/charts/chartTheme.ts`.
 
-2. **The slot is the identity, and the *family* survives a theme switch.** `seriesColor(mode, 0)` is
-   the blue family in both themes, `1` the emerald family, and so on; only the lightness step differs,
-   because the bright steps are illegible on a light card (the accent's own bright step reads 2.78:1
-   there, the same measurement that produced the accent ladder). A model therefore keeps its colour
-   when the operator changes theme, which is what makes the two panels' colours comparable across a
-   preference change.
+2. **La ranura representa la identidad, y la *familia* sobrevive a un cambio de tema.** `seriesColor(mode, 0)` es
+   la familia azul en ambos temas, `1` la familia esmeralda, y así sucesivamente; solo difiere el paso de luminosidad,
+   ya que los pasos brillantes son ilegibles sobre una tarjeta clara (el propio paso brillante del acento ofrece una relación de contraste de 2.78:1
+   en ese entorno, la misma medición que produjo la escala de acentos). Por consiguiente, un modelo conserva su color cuando el operador cambia de tema, lo cual permite que los colores de ambos paneles sean comparables ante un cambio de preferencias.
 
-3. **Role separation between categorical data and operational status.** Categorical series colours
-   encode qualitative categories, not boolean health, so the constraint is *not* that a series hue
-   avoids the status hues - an amber line is not a warning when the legend beside it names a model.
-   The constraint is that the two roles never rely on the same signal. `success`/`warn`/`danger` stay
-   exclusively operational, and every panel carrying a category states it in text: the trend's legend
-   names each group and the usage list prints each group's name, volume and share. The sequence
-   alternates warm and cool families - blue, emerald, purple, coral, amber, cyan - so a warm hue
-   reaches an ordinary two- or three-model window instead of appearing only in a long tail.
+3. **Separación de roles entre datos categóricos y estado operacional.** Los colores de series categóricas codifican categorías cualitativas, no estados de salud booleanos; por lo tanto, la restricción **no** consiste en evitar que el tono de una serie coincida con los tonos de estado (una línea ámbar no es una advertencia cuando la leyenda contigua nombra a un modelo).
+   La restricción exige que ambos roles nunca dependan de la misma señal. `success`/`warn`/`danger` se reservan exclusivamente para la operación, y cada panel que muestre una categoría la indica explícitamente en formato de texto: la leyenda de la tendencia nombra a cada grupo y la lista de uso imprime el nombre, volumen y participación de cada grupo. La secuencia alterna familias cálidas y frías (azul, esmeralda, púrpura, coral, ámbar, cian) para que un tono cálido aparezca en una ventana ordinaria de dos o tres modelos en lugar de quedar relegado únicamente a una cola larga.
 
-   The bounds that *are* asserted mechanically by `scripts/test-chart-marks.ts`: every series colour
-   resolves to its own value and clears the WCAG 3:1 graphical-object contrast threshold against the
-   card it is drawn on, adjacent legend entries are at least 25 ΔE apart in CIE Lab so no two
-   neighbours read as one swatch, and the stylesheet's six custom properties match `themeConfig.ts`
-   character for character so the two copies cannot drift.
+   Las restricciones que sí se comprueban mecánicamente mediante `scripts/test-chart-marks.ts` son las siguientes: cada color de serie se resuelve en su propio valor y supera el umbral de contraste para objetos gráficos de WCAG 3:1 frente a la tarjeta sobre la que se dibuja; las entradas de leyenda adyacentes difieren al menos en 25 ΔE en el espacio CIE Lab para evitar que dos vecinas se confundan en una sola muestra; y las seis propiedades personalizadas de la hoja de estilos coinciden carácter por carácter con `themeConfig.ts` para impedir que ambas copias diverjan.
 
-   These are **limits, not accessibility guarantees.** Lab distance and WCAG contrast are ordinary
-   perceptual and luminance measures: they rule out two colours being effectively identical and a
-   colour being too dark to read, and they say nothing about how the palette reads to a person with a
-   colour-vision deficiency. Validating that needs a validated simulation and, better, human review,
-   neither of which this repository has, so no such claim is made here.
+   Estas son **limitaciones, no garantías de accesibilidad.** La distancia Lab y el contraste WCAG son medidas ordinarias de percepción y luminancia: descartan que dos colores sean efectivamente idénticos o que un color sea demasiado oscuro para leerse, pero no indican cómo percibe la paleta una persona con deficiencia en la visión del color. Validar esto requiere una simulación validada y, preferiblemente, una revisión humana, recursos de los que este repositorio carece, por lo que no se formula tal afirmación.
 
-4. **Colour is assigned from one shared ranking, not per panel.** The domain is a *key* per group —
-   `model:<name>` or the folded discriminator — rather than the display label, so a real model whose
-   name equals the remainder's translated label cannot take the remainder's colour. The range is then
-   generated in rank order, which means a group's colour follows its rank: it is stable for as long as
-   the ranking is, and it can change when the ranking does. What the shared ranking buys is that the
-   trend's line and the ring's slice for one group are never two different hues — they are two views
-   of one response — and the legend beside each panel always states which colour belongs to which model.
+4. **El color se asigna a partir de una clasificación compartida, no por panel.** El dominio es una *clave* por grupo —`model:<name>` o el discriminador agrupado— en lugar de la etiqueta de presentación, de modo que un modelo real cuyo nombre coincida con la etiqueta traducida del resto no pueda apropiarse del color del resto. A continuación, el rango se genera en orden de clasificación, lo que significa que el color de un grupo sigue a su rango: se mantiene estable mientras lo haga la clasificación y puede cambiar cuando esta varíe. Lo que aporta esta clasificación compartida es que la línea de tendencia y la porción del anillo correspondientes a un grupo nunca presenten dos tonos diferentes, ya que son dos vistas de una misma respuesta, y la leyenda situada junto a cada panel siempre especifica qué color pertenece a cada modelo.
 
-5. **The exception is scoped to categorical charts.** The token heatmap's continuous ramp, the
-   cache-rate scale, the status pips and every interactive colour are unchanged and remain semantic.
-   `docs/design.md` §2 records both the palette and this boundary.
+5. **La excepción se limita a los gráficos categóricos.** El mapa de calor continuo de tokens, la escala de tasas de acierto, los indicadores de estado y cualquier color interactivo permanecen inalterados y conservan su naturaleza semántica. La sección §2 de `docs/design.md` documenta tanto la paleta como este límite.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- The model panels can distinguish six groups without borrowing a meaning, and the semantic tokens
-  keep meaning exactly one thing everywhere else in the console.
-- The two panels share one ranking and therefore one colour assignment, so a model's line and its
-  ring slice cannot disagree — including across a theme switch, which is the case a per-component
-  colour choice would have broken silently.
-- The bounds that can be measured are measured and asserted (legibility against the card, separation
-  between neighbours, and agreement between the two copies of the tokens), so the sequence can be
-  revised without re-arguing the rule.
-- Both marks are native `@ant-design/charts` components (`Line`, `Pie`) inside the existing lazily
-  loaded `vendor-charts` chunk, so the exception costs no new runtime and the bundle budget is
-  unchanged.
+- Los paneles de modelos pueden distinguir seis grupos sin apropiarse de un significado, y los tokens semánticos conservan exactamente un significado en cualquier otra parte de la consola.
+- Ambos paneles comparten una clasificación y, por lo tanto, una asignación de color idéntica, por lo que la línea de un modelo y su porción en el anillo no pueden contradecirse —ni siquiera tras un cambio de tema, situación que habría roto silenciosamente una selección de color dependiente de cada componente.
+- Los límites mensurables se miden y se comprueban mediante afirmaciones automáticas (legibilidad frente a la tarjeta, separación entre vecinos y concordancia entre las dos copias de los tokens), lo que permite revisar la secuencia sin necesidad de rebatir la regla.
+- Ambas representaciones son componentes nativos de `@ant-design/charts` (`Line`, `Pie`) dentro del fragmento (`chunk`) existente de carga diferida `vendor-charts`, por lo que la excepción no genera un coste de ejecución adicional y el presupuesto del paquete (`bundle`) se mantiene intacto.
 
-### Trade-offs
+### Compensaciones y compromisos
 
-- **`docs/design.md` §1 now has an exception, and an exception is a thing future changes can widen.**
-  The mitigation is that it is written down in one place with its reason, and that the boundary is
-  scoped by role: these tokens belong to categorical marks, and the status, interactive and
-  quantity-ramp roles are unaffected.
-- **Colour is never the only encoding, and both panels are built that way.** A reader who cannot
-  separate two hues reads the legend's names and the usage list's numbers, which is why neither panel
-  is allowed to rely on a swatch alone.
-- **Six slots, and a seventh series would fold back to the first colour.** Nothing currently asks for more
-  — the ranking keeps five named models plus one remainder — and the fold is deliberate, but two
-  models sharing a hue is possible if that limit is ever raised.
-- **The palette is a second set of colour literals to maintain in two themes.** It is two arrays of
-  six values in `themeConfig.ts` plus six custom properties in `index.css`. `test-chart-marks.ts`
-  asserts the properties of `themeConfig.ts` and compares the stylesheet's copies against it, so a
-  token edited in one place and not the other fails the suite.
-- **A categorical hue is relative to nothing.** Unlike the heatmap's ramp, which is scaled to the
-  window, these colours are arbitrary labels — a reader learns the mapping from the legend in the
-  same panel rather than from any property of the colour. That is inherent to a categorical
-  encoding, not a defect of this choice, but it is why the legend is always rendered.
+- **La sección §1 de `docs/design.md` incluye ahora una excepción, y una excepción constituye un precedente que modificaciones futuras podrían ampliar.**
+  La mitigación consiste en que se encuentra documentada en un único lugar junto con su justificación, y en que su ámbito está acotado por roles: estos tokens pertenecen a marcas categóricas, mientras que los roles de estado, interacción y rampa cuantitativa no se ven afectados.
+- **El color nunca es el único mecanismo de codificación, y ambos paneles se han diseñado bajo este principio.** Un lector incapaz de diferenciar dos tonos puede recurrir a los nombres de la leyenda y a los números de la lista de uso, razón por la cual a ningún panel se le permite depender exclusivamente de una muestra de color.
+- **Existen seis ranuras; una séptima serie volvería a utilizar el primer color.** Actualmente ninguna funcionalidad solicita más —la clasificación conserva cinco modelos nombrados más un remanente— y el ciclo es deliberado, pero es posible que dos modelos compartan un tono si dicho límite se incrementa en el futuro.
+- **La paleta representa un segundo conjunto de valores literales de color que deben mantenerse en dos temas.** Consiste en dos arrays de seis valores en `themeConfig.ts` más seis propiedades personalizadas en `index.css`. El script `test-chart-marks.ts` comprueba las propiedades de `themeConfig.ts` y contrasta las copias de la hoja de estilos con este, de modo que modificar un token en un lugar y omitirlo en el otro provoca un fallo en la suite de pruebas.
+- **Un tono categórico no es relativo a ningún valor absoluto.** A diferencia de la rampa del mapa de calor, que se escala en función de la ventana, estos colores son etiquetas arbitrarias: el lector aprende la correspondencia a partir de la leyenda en el propio panel y no de alguna propiedad inherente del color. Esto es intrínseco a una codificación categórica y no un defecto de esta elección, pero explica por qué la leyenda se muestra siempre.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Cycle `accent/success/warn/danger` across the series.** No new tokens and no document change, and
-  rejected because it makes one hue mean both a category and a state. The green pip on the
-  success-rate tile and a green line for "model B" would sit on the same page.
-- **Render every series in the accent at different opacities.** Keeps one hue and the document
-  untouched, but opacity is a *quantity* encoding: two models at similar volumes become
-  indistinguishable, which is exactly the comparison the panels exist to support. It also collides
-  with the heatmap's ramp, which already uses accent lightness for a continuous quantity.
-- **A single-hue sequential ramp keyed to the ranking.** Only distinguishes adjacent ranks, and it
-  makes a model's colour change as its rank changes — the same instability as positional binding.
-- **Let the library use its own default palette.** It is a different visual system (G2's tableau
-  default is cooler and more saturated than this console's neutral graphite), it is not theme-aware, and it
-  would put colour literals outside the two files that are allowed to name one.
-- **Fold every model into one line and one slice.** The smallest change and no palette at all, but it
-  discards the per-model reading that motivated both panels, leaving the KPI tiles' total drawn twice.
+- **Alternar `accent`/`success`/`warn`/`danger` entre las series.** No requiere nuevos tokens ni cambios en la documentación; se desestimó porque provoca que un mismo tono signifique tanto una categoría como un estado. El indicador verde del panel de tasa de éxito y una línea verde para el "modelo B" convivirían en la misma página.
+- **Representar cada serie utilizando el color de acento con diferentes opacidades.** Conserva un único tono y deja la documentación intacta, pero la opacidad constituye una codificación de *cantidad*: dos modelos con volúmenes similares se volverían indistinguibles, que es exactamente la comparación que estos paneles pretenden facilitar. Asimismo, entra en conflicto con la rampa del mapa de calor, la cual ya utiliza la luminosidad del acento para representar una cantidad continua.
+- **Una rampa secuencial de un solo tono vinculada a la clasificación.** Solo permite distinguir rangos adyacentes y provoca que el color de un modelo varíe a medida que cambia su rango, introduciendo la misma inestabilidad que la vinculación posicional.
+- **Permitir que la biblioteca utilice su valor predeterminado de fábrica.** Implica un sistema visual diferente (el valor predeterminado de G2 es más frío y saturado que el grafito neutral de esta consola), carece de adaptación a temas y situaría valores literales de color fuera de los dos archivos autorizados para definirlos.
+- **Agrupar todos los modelos en una única línea y porción.** Representa el cambio más simple y prescinde por completo de la paleta, pero desecha la lectura por modelo que motivó la creación de ambos paneles, dejando el total de los paneles de KPI representado por duplicado.

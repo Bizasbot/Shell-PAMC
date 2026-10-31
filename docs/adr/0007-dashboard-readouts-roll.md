@@ -1,133 +1,134 @@
-# ADR 0007: The KPI readouts roll, a scoped exception to the motion budget
+# ADR 0007: Las lecturas de KPI rotan, una excepción acotada al presupuesto de movimiento
 
-- Status: Accepted
-- Date: 2026-09-17
+- Estado: Aceptado
+- Fecha: 2026-09-17
 
-## Context
+## Contexto
 
-**The dashboard's six KPI numbers are the console's most-read readings, and they change under a poll
-the reader did not ask for.** `/management/dashboard` answers a sliding window and is refetched on a
-tail poll paced to the served resolution — floored at five seconds, capped at two minutes. The
-six tiles are also the only place in the console where a *value* is the whole content of the element
-that carries it: a request total that goes from 1,600 to 1,614 repaints a number of identical width in
-an identical box, and nothing distinguishes "this reading moved" from "this is what it always said".
+**Los seis números de KPI del panel son las lecturas más consultadas de la consola y cambian mediante un sondeo
+(poll) que el lector no solicitó.** `/management/dashboard` responde a una ventana deslizante y se vuelve a cargar mediante
+un sondeo de cola adaptado a la resolución proporcionada —con un mínimo de cinco segundos y un límite máximo de dos minutos—.
+Las seis celdas (tiles) son también el único lugar de la consola donde un *valor* es todo el contenido del elemento
+que lo transporta: un total de peticiones que pasa de 1.600 a 1.614 repinta un número de idéntico ancho en
+una caja idéntica, y nada distingue "esta lectura se movió" de "esto es lo que siempre decía".
 
-`docs/design.md` §7 forbids exactly that kind of motion. Its motion table caps every token at `base`
-(100ms/0.1s) except `fast` and `float`, its rule 5 states that charts do not animate because "a line
-snapping to new data reads as honest", and its "Never hard-swap a view" table states that an
-auto-refresh poll moves nothing. The philosophy behind all three is stated in the same section: "The
-interface is deliberately raw and terminal-like. Motion exists only to make state changes feel
-continuous and **hand-following** — never to impress." `DESIGN.md` states the same budget as a brand
-characteristic: ≤ 100ms, zero spring physics.
+`docs/design.md` §7 prohíbe exactamente ese tipo de movimiento. Su tabla de movimiento limita cada token a `base`
+(100ms/0.1s) excepto `fast` y `float`, su regla 5 establece que los gráficos no se animan porque "una línea
+que salta a nuevos datos se lee como honesta", y su tabla "Nunca hagas un intercambio brusco (hard-swap) de una vista"
+establece que un sondeo de actualización automática no mueve nada. La filosofía detrás de los tres se expone en la
+misma sección: "La interfaz es deliberadamente cruda y similar a una terminal. El movimiento existe solo para hacer que los
+cambios de estado se sientan continuos y **alineados con la mano** —nunca para impresionar." `DESIGN.md` establece el
+mismo presupuesto como una característica de la marca: ≤ 100ms, cero física de resortes (spring physics).
 
-A rolling number is not hand-following: the reader is not the one changing the value, the clock is.
-Taking it therefore needs an explicit, bounded exception rather than a quiet widening of the rule, and
-the exception has to answer four questions the rule exists to protect: does it animate compositor-only
-properties, does it keep the animated area tiny, does it survive `prefers-reduced-motion`, and does it
-leave rule 5 (chart ink does not animate) intact?
+Un número rodante no está alineado con la mano: el lector no es quien cambia el valor, lo hace el reloj.
+Por lo tanto, adoptarlo requiere una excepción explícita y acotada en lugar de una ampliación silenciosa de la regla, y
+la excepción debe responder a cuatro preguntas que la regla existe para proteger: ¿anima únicamente propiedades del
+compositor?, ¿mantiene el área animada diminuta?, ¿sobrevive a `prefers-reduced-motion`? y ¿deja intacta la regla 5
+(la tinta del gráfico no se anima)?
 
-Two smaller questions also had to be settled before the motion could be allowed at all.
+También fue necesario resolver dos cuestiones menores antes de que se pudiera permitir el movimiento.
 
-**Who owns the number's text?** `web/src/types/tokenDisplay.ts` is documented as the one layer every
-user-facing token number goes through, and it supports three unit styles — international compact
-(`300M`, `1.2B`), the Chinese scale (`30万`, `1.2亿`) and a language-neutral grouped form. The Chinese
-scale is not expressible as `Intl.NumberFormat` options, so a number-animation library that formats
-from its own `format` prop (supported options include `notation: 'compact'`) could only reproduce two
-of the three styles. Reformatting the tiles through the library would have been a second formatting
-authority beside the shared one — precisely the defect the layer exists to prevent.
+**¿Quién es el propietario del texto del número?** `web/src/types/tokenDisplay.ts` está documentado como la única capa
+por la que pasa cada número de token visible para el usuario, y admite tres estilos de unidades: compacto internacional
+(`300M`, `1.2B`), la escala china (`30万`, `1.2亿`) y una forma agrupada neutral en cuanto al idioma. La escala
+china no se puede expresar como opciones de `Intl.NumberFormat`, por lo que una biblioteca de animación de números que formatea
+a partir de su propia propiedad `format` (las opciones admitidas incluyen `notation: 'compact'`) solo podría reproducir dos
+de los tres estilos. Reformatear las celdas a través de la biblioteca habría supuesto una segunda autoridad de formato además
+de la compartida, precisamente el defecto que la capa existe para prevenir.
 
-**What happens when the unit changes?** `en-compact` and `zh` both print a different unit word at a
-different magnitude. A readout that swept between them would roll `1.2` into `900` while the unit word
-swapped from `B` to `M` underneath the digits, so the moving digits never described the window at any
-instant except the last.
+**¿Qué pasa cuando cambia la unidad?** Tanto `en-compact` como `zh` imprimen una palabra de unidad diferente en una
+magnitud diferente. Una lectura que oscilara entre ambas convertiría `1.2` en `900` mientras la palabra de unidad cambiaba
+de `B` a `M` debajo de los dígitos, por lo que los dígitos en movimiento nunca describieron la ventana en ningún instante
+excepto en el último.
 
-## Decision
+## Decisión
 
-1. **The exception is granted to the six KPI readouts and nothing else.** No other surface takes
-   `roll`, and §7 rule 8 names the scope. Chart ink, list rows, ledger totals and the model panels are
-   unchanged: rule 5 still holds and the sparkline drawn under a rolling tile still snaps.
+1. **La excepción se concede a las seis lecturas de KPI y a nada más.** Ninguna otra superficie acepta
+   `roll`, y la §7 regla 5 nombra el alcance. La tinta de los gráficos, las filas de las listas, los totales de los libros
+   contables y los paneles de modelos se mantienen sin cambios: la regla 5 sigue vigente y el minigráfico (sparkline)
+   dibujado debajo de una celda rodante sigue saltando.
 
-2. **The sweep is `roll`: 240ms on the console's existing `cubic-bezier(0.2, 0, 0, 1)`.** It is
-   longer than `base` because a 100ms digit move is indistinguishable from a redraw — the reader has
-   to see *which* digit changed for the motion to explain anything — and it stays far below the point
-   where waiting for a footer number becomes work. Glyph presence (a digit entering or leaving the
-   number) stays on the `base` token, so an arriving `,000` does not trail the sweep that explains it.
-   `opacity` and `transform` only, inside a 34px-tall box: rules 1 and 2 are untouched.
+2. **La transición es `roll`: 240ms utilizando la función `cubic-bezier(0.2, 0, 0, 1)` existente en la consola.** Es
+   más larga que `base` porque el movimiento de un dígito en 100ms es indistinguible de un redibujado —el lector tiene
+   que ver *qué* dígito cambió para que el movimiento explique algo— y se mantiene muy por debajo del punto
+   en el que esperar por un número en el pie de página se convierte en una tarea pesada. La presencia de glifos (un dígito
+   que entra o sale del número) se mantiene en el token `base`, por lo que un `,000` que llega no se retrasa respecto al
+   barrido que lo explica. Solo `opacity` y `transform`, dentro de una caja de 34px de altura: las reglas 1 y 2 no se modifican.
 
-3. **The animated text is derived from the formatter that already prints it.** Each readout is split
-   out of the owning formatter's own parts (`Intl.NumberFormat.formatToParts` for the compact, plain
-   and grouped forms; the shared `万`/`亿` step table for the Chinese scale), so the number the library
-   animates and the number the tile prints cannot disagree. A logic suite asserts the equivalence over
-   every style and a spread of magnitudes, including the boundaries where a second rounding rule would
-   diverge.
+3. **El texto animado se deriva del formateador que ya lo imprime.** Cada lectura se divide en las
+   partes propias del formateador propietario (`Intl.NumberFormat.formatToParts` para las formas compacta, plana
+   y agrupada; la tabla de pasos compartida `万`/`亿` para la escala china), de modo que el número que anima la biblioteca
+   y el número que imprime la celda no pueden diferir. Un conjunto de pruebas (logic suite) afirma la equivalencia en
+   todos los estilos y un rango de magnitudes, incluidos los límites en los que divergiría una segunda regla de redondeo.
 
-4. **A change of unit word prints in place.** The readout carries its unit word separately from its
-   number, and the frame where that word changes is not animated. The next same-unit change sweeps
-   normally. This is what keeps a legend-scale change from being drawn as a magnitude change.
+4. **Un cambio en la palabra de unidad se imprime en su lugar.** La lectura transporta su palabra de unidad por separado
+   de su número, y el fotograma en el que cambia dicha palabra no se anima. El siguiente cambio con la misma unidad realiza
+   la transición normalmente. Esto es lo que evita que un cambio en la escala de la leyenda se dibuje como un cambio de magnitud.
 
-5. **`prefers-reduced-motion` reaches the readout.** The library's own respect for the user preference
-   is left enabled, so a reader who asked for reduced motion gets the new value with no travel. §7's
-   override applies to the exception exactly as it applies to everything else.
+5. **`prefers-reduced-motion` afecta a la lectura.** Se mantiene habilitado el respeto propio de la biblioteca por
+   la preferencia del usuario, por lo que un lector que haya solicitado reducir el movimiento obtiene el nuevo valor sin desplazamiento.
+   La anulación de la §7 se aplica a la excepción exactamente igual que a todo lo demás.
 
-6. **A missing reading is still a dash.** A null rate or count prints the console's shared em dash and
-   does not animate from or to a number, because "nothing measured" is not a very small number.
+6. **Una lectura faltante sigue siendo un guion medio (dash).** Una tasa o recuento nulo imprime el guion em compartido
+   de la consola y no se anima desde o hacia un número, porque "nada medido" no es un número muy pequeño.
 
-7. **The readout's exact value stays reachable.** The tile keeps `title` with the exact grouped count,
-   and the readout publishes the formatted value as its accessible name, so an abbreviated digits run
-   is never the only way to read the number.
+7. **El valor exacto de la lectura sigue siendo accesible.** La celda mantiene el atributo `title` con el recuento
+   agrupado exacto, y la lectura publica el valor formateado como su nombre accesible, por lo que una ejecución de dígitos
+   abreviados nunca es la única forma de leer el número.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- A poll that changes a KPI now says so. The dashboard is read at a glance and the tiles are the
-  glance; before this, a refetch that moved the request total by fourteen was invisible.
-- The exception is one 240ms transform of glyphs in six small boxes, so it costs no layout, no
-  repaint of the page and no frames outside the tile it belongs to.
-- Formatting stays in one place. The tiles gained an animation without gaining a second rounding rule,
-  and the equivalence is pinned by a test rather than by review.
-- The reduced-motion contract is enforced on the new surface too, and the browser scenario asserts
-  both halves: the sweep with motion allowed, its absence with motion refused.
+- Un sondeo que cambia un KPI ahora lo indica. El panel se lee de un vistazo y las celdas son ese
+  vistazo; antes de esto, una recarga que movía el total de peticiones en catorce unidades era invisible.
+- La excepción consiste en una única transformación de 240ms de glifos en seis cajas pequeñas, por lo que no conlleva
+- ningún coste de diseño (layout), ni repintado de la página, ni fotogramas fuera de la celda a la que pertenece.
+- El formateo se mantiene en un solo lugar. Las celdas ganaron una animación sin incorporar una segunda regla de redondeo,
+  y la equivalencia está garantizada por una prueba en lugar de por una revisión.
+- El contrato de movimiento reducido se aplica también en la nueva superficie, y el escenario del navegador
+  afirma ambas Mitades: la transición con el movimiento permitido y su ausencia cuando el movimiento es rechazado.
 
-### Trade-offs
+### Desventajas
 
-- **§7's motion budget is no longer absolute.** A reader of the token table now has to notice the
-  `roll` line and its scope, and "≤ 100ms" is a rule with one named hole rather than a rule. That is
-  the price of changing a documented constraint instead of violating it quietly.
-- **The dashboard may move on every poll.** With a five-second tail poll on a sliding window, a busy
-  deployment can roll a tile every five seconds. The mitigation is scoped rather than absolute: 240ms
-  of glyph movement, and nothing else on the page moves.
-- **The tiles' DOM is now a custom element with a shadow root.** `innerText` on a tile value is empty,
-  so anything reading the number back must go through the accessibility tree; the probes and the
-  acceptance scenario do, and the older `innerText` assertions were replaced rather than kept.
-- **A new frontend dependency and a new shadow root in the dashboard route.** It rides in the
-  dashboard's lazily loaded chunk rather than the entry, and the bundle budget still passes.
-- **Divergence between the readout's unit word and a library-chosen one is impossible by construction,
-  but only for the forms the readout can express.** Scientific and engineering notation are outside
-  the readout's type for the same reason the animation runtime cannot draw them.
+- **El presupuesto de movimiento de la §7 deja de ser absoluto.** Un lector de la tabla de tokens ahora tiene que
+  notar la línea `roll` y su alcance, y "≤ 100ms" es una regla con una salvedad nombrada en lugar de una regla estricta.
+  Ese es el precio de cambiar una restricción documentada en lugar de violarla silenciosamente.
+- **El panel puede moverse en cada sondeo.** Con un sondeo de cola de cinco segundos en una ventana deslizante,
+  un despliegue con mucha actividad puede hacer rodar una celda cada cinco segundos. La mitigación está acotada en lugar de
+  ser absoluta: 240ms de movimiento de glifos y nada más se mueve en la página.
+- **El DOM de las celdas es ahora un elemento personalizado con un shadow root.** `innerText` en el valor de una celda
+  está vacío, por lo que cualquier elemento que lea el número debe pasar por el árbol de accesibilidad; las sondas (probes)
+  y el escenario de aceptación lo hacen, y las aserciones anteriores de `innerText` fueron reemplazadas en lugar de conservadas.
+- **Una nueva dependencia de frontend y un nuevo shadow root en la ruta del panel.** Se carga en el fragmento (chunk)
+  de carga diferida (lazy) del panel en lugar de en la entrada, y el presupuesto del bundle sigue cumpliéndose.
+- **La divergencia entre la palabra de unidad de la lectura y una elegida por la biblioteca es imposible por construcción,
+  pero solo para las formas que la lectura puede expresar.** La notación científica y de ingeniería quedan fuera del tipo
+  de lectura por la misma razón que el motor de animación no puede dibujarlas.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Widen the `base` token to cover the sweep.** Rejected on reading: at 100ms the digits are a blur
-  that looks like a repaint, which is the state the motion is meant to distinguish itself from. The
-  budget is a token list, not a single number, so the exception can be named rather than absorbed.
-- **Let the library format the numbers (`format={{ notation: 'compact' }}`) and drop the shared
-  layer's unit words.** Rejected: it would delete the `zh` scale and the `full` style from the
-  console's loudest readout, and would put a second formatting authority next to the one the project
-  documents as authoritative. The readout is derived from the formatter instead.
-- **Animate the whole tile (fade the card, slide the value in).** Rejected by §7 rules 1 and 2:
-  fading a grid cell composites more than the number, and a value that flies in re-enters the
-  entrance-animation aesthetic `DESIGN.md` repudiates.
-- **Count up from zero on first paint.** Rejected: it invents readings that were never measured, and
-  on a window that is already loaded it would animate a number the API never returned.
-- **Roll the model-panel and heatmap readouts too.** Rejected: the panels' numbers sit beside marks
-  that §7 rule 5 holds still, so motion there would separate a value from the chart that explains it.
-- **Roll on user-driven changes only (window preset, manual refresh), never on a poll.** The more
-  conservative reading of §7, and it was the first proposal. Rejected because the poll is exactly when
-  a reader needs the signal: a manual refresh is a reader who is already looking at the number, while a
-  poll is one who is looking away. The bounded scope (six glyph runs, `transform`-only, unit changes
-  frozen, reduced motion honoured) is what makes the wider trigger defensible.
-- **A `@react-spring`-style spring or an odometer we write ourselves.** Rejected: a spring is the
-  bounce `DESIGN.md` forbids, and a hand-written odometer is a digit-layout implementation to maintain
-  for one surface — including the mask, the measurement and the reduced-motion handling the library
-  already ships.
+- **Ampliar el token `base` para cubrir la transición.** Rechazado tras evaluarlo: a 100ms los dígitos son un desenfoque
+  que parece un redibujado, que es precisamente el estado del cual el movimiento pretende distinguirse. El presupuesto es una lista
+  de tokens, no un único número, por lo que la excepción puede nombrarse en lugar de absorberse.
+- **Dejar que la biblioteca formatee los números (`format={{ notation: 'compact' }}`) y eliminar las palabras de unidad
+  de la capa compartida.** Rechazado: eliminaría la escala `zh` y el estilo `full` de la lectura más destacada de la consola,
+  e introduciría una segunda autoridad de formato junto a la que el proyecto documenta como autoritaria. En su lugar,
+  la lectura se deriva del formateador.
+- **Animar toda la celda (fundir la tarjeta, deslizar el valor).** Rechazado por las reglas 1 y 2 de la §7:
+  fundir una celda de la cuadrícula compone más que el número, y un valor que aparece volando reintroduce la estética
+  de animación de entrada que `DESIGN.md` rechaza.
+- **Contar desde cero en el primer renderizado (first paint).** Rechazado: inventa lecturas que nunca se midieron,
+  y en una ventana que ya está cargada animaría un número que la API nunca devolvió.
+- **Hacer rodar también las lecturas del panel de modelos y del mapa de calor (heatmap).** Rechazado: los números
+  de los paneles se sitúan junto a marcas que la regla 5 de la §7 mantiene estáticas, por lo que el movimiento allí separaría
+  un valor del gráfico que lo explica.
+- **Rotar solo en cambios impulsados por el usuario (ajuste preestablecido de ventana, actualización manual), nunca en un sondeo.**
+  Era la lectura más conservadora de la §7 y fue la primera propuesta. Se rechazó porque el sondeo es exactamente el momento
+  en que un lector necesita la señal: una actualización manual corresponde a un lector que ya está mirando el número,
+  mientras que un sondeo corresponde a alguien que está mirando hacia otro lado. El alcance acotado (seis ejecuciones de glifos,
+  solo `transform`, cambios de unidad congelados, respeto por el movimiento reducido) es lo que hace defendible este activador más amplio.
+- **Un resorte (spring) al estilo `@react-spring` o un cuentakilómetros (odometer) escrito por nosotros.** Rechazado:
+  un resorte es el rebote que `DESIGN.md` prohíbe, y un cuentakilómetros escrito a mano implica mantener una implementación
+  de diseño de dígitos para una sola superficie —incluyendo la máscara, la medición y el manejo de movimiento reducido
+  que la biblioteca ya incluye de serie—.

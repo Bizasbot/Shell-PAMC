@@ -1,19 +1,19 @@
-# ADR 0039: Deployment-wide calendar timezone
+# ADR 0039: Zona horaria de calendario a nivel de despliegue
 
-- Status: Accepted
-- Date: 2026-09-29
-- Supersedes: The browser-owned timezone source in ADR 0005; its exact calendar bounds and DOM-grid decisions remain unchanged.
+- Estado: Aceptado
+- Fecha: 2026-09-29
+- Reemplaza a: La fuente de zona horaria controlada por el navegador en la ADR 0005; sus límites de calendario exactos y decisiones sobre la cuadrícula del DOM permanecen sin cambios.
 
-## Context
+## Contexto
 
-Browser-local timestamps, browser-supplied heatmap days and server log timestamps could describe different calendars for the same deployment. Operators need one shared timezone while preserving the identity of historical requests and the interpretability of upstream evidence.
+Las marcas de tiempo locales del navegador, los días del mapa de calor (heatmap) proporcionados por el navegador y las marcas de tiempo de los registros del servidor podían describir calendarios diferentes para un mismo despliegue. Los operadores necesitan una zona horaria compartida mientras preservan la identidad de las solicitudes históricas y la interpretabilidad de la evidencia de los sistemas *upstream*.
 
-## Decision
+## Decisión
 
-Persist an optional IANA timezone in OMC preferences. Its default is the deployment's timezone, including `TZ` for containers. Apply it to console timestamp presentation, natural-day grouping, picker interpretation and OMC service-log timestamps. Send the resolved zone to calendar APIs; API requests without an explicit zone use the same server-side setting. Embed IANA data for offline named-zone loading.
+Persistir una zona horaria IANA opcional en las preferencias de OMC. Su valor predeterminado es la zona horaria del despliegue, incluyendo `TZ` para los contenedores. Aplicarla a la presentación de marcas de tiempo en la consola, la agrupación por días naturales, la interpretación de los selectores y las marcas de tiempo de los registros del servicio OMC. Enviar la zona resuelta a las APIs de calendario; las solicitudes de API sin una zona explícita utilizarán la misma configuración del lado del servidor. Integrar datos IANA para la carga sin conexión de zonas con nombre.
 
-Keep stored epoch timestamps, durations, rolling windows and protocol instants unchanged. Preserve raw upstream logs; interpret CPA's offset-free log timestamps using the shared deployment timezone. The supplied full Compose stack passes the same `TZ` to both products. Pricing tiers retain their explicitly defined UTC time-of-day contract: a presentation preference must not silently change request billing.
+Mantener sin cambios las marcas de tiempo tipo epoch almacenadas, las duraciones, las ventanas deslizantes y los instantes de protocolo. Preservar los registros (*logs*) de *upstream* sin procesar; interpretar las marcas de tiempo sin desfase (*offset*) de los registros de CPA utilizando la zona horaria compartida del despliegue. La pila de Compose completa proporcionada pasa el mismo `TZ` a ambos productos. Los niveles de precios conservan su contrato de hora del día definido explícitamente en UTC: una preferencia de presentación no debe alterar silenciosamente la facturación de las solicitudes.
 
-## Consequences
+## Consecuencias
 
-Different browsers see the same calendar. DST and fractional offsets require instant-specific conversion, not a single fixed offset. Successful preference commits publish an atomic location for running log handlers without mutating process-global time state. Native deployments must have an identifiable local timezone; container operators should set an IANA `TZ`. UI components and capabilities share one validated preference rather than acquiring independent timezone defaults.
+Diferentes navegadores ven el mismo calendario. El horario de verano (DST) y los desfasajes fraccionarios requieren una conversión específica para cada instante, no un único desfase fijo. Las confirmaciones (*commits*) de preferencias exitosas publican una ubicación atómica para los gestores de registros en ejecución sin mutar el estado de tiempo global del proceso. Los despliegues nativos deben tener una zona horaria local identificable; los operadores de contenedores deben configurar un `TZ` IANA. Los componentes y capacidades de la interfaz de usuario comparten una única preferencia validada en lugar de adquirir valores predeterminados de zona horaria independientes.

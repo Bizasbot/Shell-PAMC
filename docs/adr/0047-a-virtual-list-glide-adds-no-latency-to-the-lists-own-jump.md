@@ -1,72 +1,31 @@
-# ADR 0047: A virtual list's glide adds no latency to the list's own jump
+# ADR 0047: El desplazamiento suave (glide) de una lista virtual no añade latencia al salto propio de la lista
 
-- Status: Accepted
-- Date: 2026-10-01
-- Supersedes: how decision 3 of [ADR 0046](0046-wheel-and-keyboard-scrolls-glide-on-every-platform.md) hands a glide to a virtualized list
+- Estado: Aceptado
+- Fecha: 2026-10-01
+- Reemplaza: cómo la decisión 3 del [ADR 0046](0046-wheel-and-keyboard-scrolls-glide-on-every-platform.md) transfiere un desplazamiento suave a una lista virtualizada
 
-## Context
+## Contexto
 
-ADR 0046 drives a virtualized list (the request list, a Select's option popup) by handing it one
-wheel step per animation frame. The glide landed in the right place, but on the request list it
-stuttered and lagged behind the wheel. Frame-by-frame measurements on the request list showed three
-separate causes:
+El ADR 0046 controla una lista virtualizada (la lista de solicitudes, un menú emergente de opciones de Select) proporcionándole un paso de rueda por cada fotograma de animación. El desplazamiento suave ("glide") terminaba en el lugar correcto, pero en la lista de solicitudes se entrecortaba y se retrasaba con respecto a la rueda. Las mediciones fotograma a fotograma en la lista de solicitudes mostraron tres causas independientes:
 
-- **The list loses a frame at every notch.** `@rc-component/virtual-list` defers each wheel delta to
-  its next animation frame, and any wheel it sees cancels that frame before it checks whether the
-  event was claimed. The reader's own notch is such a wheel. The glide's previous step therefore
-  stayed unapplied until the glide's next step was handed over.
-- **The glide's first frame did not move.** Its clock started at input. An input lands partway
-  through a frame, so the next frame evaluated the curve at or near zero.
-- **A glide that had finished could lose the next notch.** The list shows a step two frames after it
-  is handed over. A glide was discarded as soon as its curve ended, so a notch arriving in those two
-  frames started a new glide from the list's lagging offset with a fresh span. When the list then
-  applied the steps it still held, its offset left that span, and the glide read this as a
-  correction and stopped.
+- **La lista pierde un fotograma en cada muesca.** `@rc-component/virtual-list` difiere cada delta de rueda a su siguiente fotograma de animación, y cualquier rueda que detecte cancela ese fotograma antes de comprobar si el evento fue reclamado. La propia muesca del lector es una rueda de este tipo. Por lo tanto, el paso anterior del desplazamiento suave se quedaba sin aplicar hasta que se entregaba el siguiente paso del mismo.
+- **El primer fotograma del desplazamiento suave no se movía.** Su reloj comenzaba en la entrada (input). Una entrada llega a mitad de un fotograma, por lo que el siguiente fotograma evaluaba la curva en cero o cerca de él.
+- **Un desplazamiento suave que había terminado podía perder la siguiente muesca.** La lista muestra un paso dos fotogramas después de que se le entregue. Un desplazamiento suave se descartaba tan pronto como terminaba su curva, de modo que una muesca que llegaba en esos dos fotogramas iniciaba un nuevo desplazamiento suave desde el desfase rezagado de la lista con un intervalo nuevo. Cuando la lista aplicaba entonces los pasos que aún retenía, su desfase salía de ese intervalo, y el desplazamiento suave interpretaba esto como una corrección y se detenía.
 
-Together these caused two frozen frames at every notch followed by a double-sized jump, a first
-movement three frames (about 50ms) after the notch, and sometimes a notch dropped entirely. That is
-a frame later than the list's own unsmoothed jump.
+En conjunto, esto provocaba dos fotogramas congelados en cada muesca seguidos de un salto de doble tamaño, un primer movimiento tres fotogramas (unos 50 ms) después de la muesca y, a veces, una muesca omitida por completo. Esto supone un fotograma más tarde que el propio salto sin suavizar de la lista.
 
-Writing the holder's `scrollTop` would avoid the list's frame, and with it its two-frame pipeline,
-but ADR 0046 decision 3 still holds: the list re-applies its offset from React state. A direct write
-also shows the rows of the previous range, leaving a blank strip above the first row when scrolling
-up. The rows and the offset have to come from the same React render.
+Escribir en el `scrollTop` del contenedor evitaría el fotograma de la lista y, con ello, su canalización de dos fotogramas, pero la decisión 3 del ADR 0046 sigue vigente: la lista vuelve a aplicar su desfase a partir del estado de React. Una escritura directa también muestra las filas del rango anterior, dejando una franja en blanco encima de la primera fila al desplazar hacia arriba. Las filas y el desfase deben provenir del mismo renderizado de React.
 
-## Decision
+## Decisión
 
-1. **A virtual glide starts inside the input event.** Its first step is handed to the list
-   immediately rather than on the glide's first frame. The list applies the step on the frame its
-   own jump would have used, so the glide adds no latency to it.
-2. **A notch that retargets a running glide re-arms the list's frame.** It hands over a zero step,
-   which restarts the frame the reader's notch cancelled; the list keeps the deltas it has
-   collected. It does not hand over a first step of its own, because the list still holds the
-   previous one, and the two together would show as one double step.
-3. **The list's frame runs before the glide's.** After handing a step over from an input event, the
-   glide requests its own frame again. Animation frames run in the order they were requested, so the
-   list applies what it holds before the glide hands it the next step, which would otherwise cancel
-   it.
-4. **Every glide's first frame already moves.** The curve's clock starts on that frame, one frame
-   back: one frame at 60Hz, rather than a measured interval, since the frames around an input are
-   the least regular ones.
-5. **A finished virtual glide is kept while the list catches up.** It is kept until the list reports
-   its destination to within a rounding, or for at most 20 frames. The list's lag is counted in
-   frames, so the wait is counted in frames too. A notch in that time continues the chain from where
-   the glide asked the list to be. The span the list may report narrows to the part of the way the
-   list has left, so a correction that moves it elsewhere (a scrollbar drag, the return to the top)
-   still ends the chain.
+1. **Un desplazamiento suave virtual comienza dentro del evento de entrada.** Su primer paso se entrega a la lista inmediatamente en lugar de en el primer fotograma del desplazamiento suave. La lista aplica el paso en el fotograma que habría utilizado su propio salto, por lo que el desplazamiento suave no le añade latencia.
+2. **Una muesca que reorienta un desplazamiento suave en ejecución rearma el fotograma de la lista.** Entrega un paso de valor cero, lo que reinicia el fotograma que la muesca del lector canceló; la lista conserva los deltas que ha recopilado. No entrega un primer paso propio, porque la lista aún retiene el anterior, y ambos juntos se mostrarían como un paso doble.
+3. **El fotograma de la lista se ejecuta antes que el del desplazamiento suave.** Después de entregar un paso desde un evento de entrada, el desplazamiento suave vuelve a solicitar su propio fotograma. Los fotogramas de animación se ejecutan en el orden en que se solicitaron, por lo que la lista aplica lo que retiene antes de que el desplazamiento suave le entregue el siguiente paso, lo cual de otro modo lo cancelaría.
+4. **El primer fotograma de cada desplazamiento suave ya se mueve.** El reloj de la curva comienza en ese fotograma, un fotograma hacia atrás: un fotograma a 60 Hz, en lugar de un intervalo medido, ya que los fotogramas alrededor de una entrada son los menos regulares.
+5. **Un desplazamiento suave virtual finalizado se mantiene mientras la lista se pone al día.** Se conserva hasta que la lista informa de su destino dentro de un margen de redondeo, o durante un máximo de 20 fotogramas. El retraso de la lista se cuenta en fotogramas, por lo que la espera también se cuenta en fotogramas. Una muesca en ese momento continúa la cadena desde donde el desplazamiento suave le pidió a la lista que estuviera. El intervalo que la lista puede informar se reduce a la parte del camino que le queda a la lista, por lo que una corrección que lo mueva a otra parte (un arrastre de la barra de desplazamiento, el retorno a la parte superior) sigue finalizando la cadena.
 
-## Consequences
+## Consecuencias
 
-- On the request list, a wheel notch now moves the list on the next frame instead of the third, and
-  a wheel that keeps turning moves the list on every frame until it lands. The glide hands over
-  exactly the notches turned. The list may still shift by a few pixels as it re-anchors its offset
-  while it measures rows, as it does for its own jumps.
-- The layer depends on two more details of `@rc-component/virtual-list`: any wheel cancels its
-  pending frame, and a zero-delta wheel schedules that frame again. The `scroll-smoothing` probe
-  asserts both effects on the real list: the list must start moving within two frames of a notch,
-  and a wheel turned two frames per notch must keep it moving from notch to notch. It also adds up
-  the steps the glide hands over, which must equal the notches turned. The previous implementation
-  fails the first two checks.
-- The remaining cost of a glide on the request list is rendering the list once per frame. Rows
-  rendered for the first time make that render heavier on the dev server, so the probe measures
-  stalls over rows the list has already rendered once.
+- En la lista de solicitudes, una muesca de la rueda ahora mueve la lista en el siguiente fotograma en lugar del tercero, y una rueda que sigue girando mueve la lista en cada fotograma hasta que se detiene. El desplazamiento suave entrega exactamente las muescas giradas. La lista aún puede desplazarse unos pocos píxeles a medida que reancla su desfase mientras mide las filas, tal como lo hace para sus propios saltos.
+- La capa depende de otros dos detalles de `@rc-component/virtual-list`: cualquier rueda cancela su fotograma pendiente, y una rueda con delta cero programa ese fotograma nuevamente. La sonda `scroll-smoothing` afirma ambos efectos en la lista real: la lista debe comenzar a moverse dentro de los dos fotogramas siguientes a una muesca, y una rueda girada a razón de dos fotogramas por muesca debe mantenerla en movimiento de muesca a muesca. También suma los pasos que entrega el desplazamiento suave, los cuales deben ser iguales a las muescas giradas. La implementación anterior no supera las dos primeras comprobaciones.
+- El costo restante de un desplazamiento suave en la lista de solicitudes es renderizar la lista una vez por fotograma. Las filas renderizadas por primera vez hacen que ese renderizado sea más pesado en el servidor de desarrollo, por lo que la sonda mide las demoras en filas que la lista ya ha renderizado una vez.

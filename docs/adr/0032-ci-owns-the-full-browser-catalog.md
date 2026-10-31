@@ -1,50 +1,50 @@
-# ADR 0032: CI owns the full browser catalog; local verification is scoped to the change
+# ADR 0032: CI posee el catálogo completo de navegadores; la verificación local se limita al cambio
 
-- Status: Accepted
-- Date: 2026-09-28
+- Estado: Aceptado
+- Fecha: 2026-09-28
 
-## Context
+## Contexto
 
-Before a push, every change had to pass `pnpm verify:full` locally: a production build,
-the whole cross-stack acceptance run, the whole dev-server probe catalog (about five
-minutes, run serially) and the demo acceptance. That took six to seven minutes on a
-4-CPU machine and was repeated after every fix. Pull-request CI, meanwhile, ran only the
-smoke and P0 acceptance subsets and no probes at all, so the full catalog was enforced
-only by local discipline and by master CI after merge.
+Antes de un *push*, cada cambio tenía que pasar `pnpm verify:full` localmente: una compilación de producción,
+toda la ejecución de aceptación *cross-stack*, todo el catálogo de sondeos del servidor de desarrollo (unos cinco
+minutos, ejecutados en serie) y la aceptación de la demo. Eso tomaba de seis a siete minutos en una
+máquina de 4 CPUs y se repetía después de cada corrección. Mientras tanto, la CI de las *pull requests* ejecutaba solo
+los subconjuntos de aceptación de *smoke* y P0, y ningún sondeo, por lo que el catálogo completo se aplicaba
+únicamente mediante la disciplina local y por la CI de *master* después de la fusión.
 
-The UI fast lane did not relieve this. Its planner selected every scenario for any
-change to the shared translation catalog, and new copy is required to go there, so in a
-replay of 410 recent commits 88% of those touching the UI selected the whole catalog.
+El carril rápido de la UI no alivió esto. Su planificador seleccionaba cada escenario para cualquier
+cambio en el catálogo de traducción compartido, y se requiere que las nuevas copias vayan allí, por lo que en una
+repetición de 410 confirmaciones recientes, el 88% de las que afectaban a la UI seleccionaban todo el catálogo.
 
-## Decision
+## Decisión
 
-- **CI is the authority for the full browser catalog.** Every pull request and every
-  master push runs the whole probe catalog as three disjoint, weight-balanced shards on
-  separate runners (`scripts/acceptance/probe-shards.mjs`). One aggregate check,
-  `probes`, passes only when every shard passed and is the name branch protection
-  requires. Pull requests also run the P0 cross-stack acceptance, which now asserts the
-  smoke path's checks too, so the separate smoke step is gone. Master runs the whole
-  cross-stack acceptance.
-- **Local verification before a push is `pnpm verify` plus `pnpm check:ui`.** The
-  static gates and the worktree secret scan still run in full; the browser runs only
-  the scenarios the change can reach. `pnpm verify:full` remains available and
-  unchanged for changes to the build, the harness or the workflow, and for reproducing
-  CI.
-- **The UI planner narrows by evidence, not by guess.** It follows the runtime import
-  graph from TypeScript's transpile output, treats a catalog edit that only adds entries
-  as selecting nothing, and attributes probe-code changes to the scenarios that use
-  them. Every rule that narrows has a self-test with a case where it must not, and the
-  planner widens to the whole catalog whenever it cannot place a change.
+- **La CI es la autoridad para el catálogo completo de navegadores.** Cada *pull request* y cada
+  *push* a *master* ejecuta todo el catálogo de sondeos como tres fragmentos (*shards*) disjuntos y equilibrados en peso en
+  ejecutores separados (`scripts/acceptance/probe-shards.mjs`). Una comprobación agregada,
+  `probes`, pasa únicamente cuando todos los fragmentos pasan y es el nombre que la protección de ramas
+  requiere. Las *pull requests* también ejecutan la aceptación *cross-stack* P0, que ahora también valida las
+  comprobaciones de la ruta de *smoke*, por lo que el paso separado de *smoke* desaparece. *Master* ejecuta toda la
+  aceptación *cross-stack*.
+- **La verificación local antes de un *push* es `pnpm verify` más `pnpm check:ui`.** Las
+  puertas estáticas y el análisis de secretos en el *worktree* se siguen ejecutando por completo; el navegador ejecuta únicamente
+  los escenarios a los que el cambio puede afectar. `pnpm verify:full` sigue estando disponible y
+  sin cambios para modificaciones en la compilación, el *harness* o el flujo de trabajo, y para reproducir
+  la CI.
+- **El planificador de la UI acota por evidencia, no por suposición.** Sigue el gráfico de
+  importación en tiempo de ejecución a partir de la salida de transpilación de TypeScript, trata una edición del catálogo que solo
+  añade entradas como si no seleccionara nada, y atribuye los cambios en el código de sondeo a los escenarios que los
+  utilizan. Cada regla que acota tiene una prueba propia con un caso en el que no debe hacerlo, y el
+  planificador se amplía a todo el catálogo siempre que no pueda ubicar un cambio.
 
-## Consequences
+## Consecuencias
 
-- No gate was removed. The probe catalog now runs before merge instead of after it,
-  which is stronger than before; the local run is narrower but is followed by the full
-  run in CI before anything merges.
-- CI uses more runner minutes: three probe shards per event. The pull request's wall
-  clock is roughly unchanged, since the shards run beside the browser job.
-- Branch protection on `master` requires the `probes` aggregate alongside `static` and `browser`. Without that requirement the shards would run but not block a merge; the ADR's decision depends on it, so it is part of the change rather than a follow-up.
-- A planner bug could under-select locally. CI's full catalog catches it before merge,
-  and the planner's negative-case tests are what keep that rare.
-- Adding a console page requires one planner rule (enforced by
-  `scripts/ui-impact.test.mjs`); adding a probe requires only its registry entry.
+- No se eliminó ninguna puerta. El catálogo de sondeos ahora se ejecuta antes de la fusión en lugar de después,
+- lo cual es más sólido que antes; la ejecución local es más acotada pero va seguida de la ejecución completa
+- en la CI antes de que cualquier cosa se fusione.
+- La CI utiliza más minutos de ejecutor: tres fragmentos de sondeo por evento. El tiempo real (*wall clock*)
+  de la *pull request* se mantiene prácticamente sin cambios, ya que los fragmentos se ejecutan junto al trabajo del navegador.
+- La protección de ramas en `master` requiere el agregado `probes` junto con `static` y `browser`. Sin ese requisito, los fragmentos se ejecutarían pero no bloquearían una fusión; la decisión de este ADR depende de ello, por lo que forma parte del cambio en lugar de ser un seguimiento posterior.
+- Un error en el planificador podría subseleccionar localmente. El catálogo completo de la CI lo detecta antes de la fusión,
+  y las pruebas de casos negativos del planificador son las que evitan que eso ocurra con frecuencia.
+- Añadir una página de consola requiere una regla de planificación (aplicada por
+  `scripts/ui-impact.test.mjs`); añadir un sondeo requiere únicamente su entrada en el registro.

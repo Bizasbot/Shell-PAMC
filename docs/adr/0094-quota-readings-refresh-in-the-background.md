@@ -1,131 +1,41 @@
-# ADR 0094: Quota readings refresh in the background
+# ADR 0094: Actualización de lecturas de cuotas en segundo plano
 
-- Status: Accepted, amended 2026-10-22 (see "A failed read leaves a trace for the console" and "A CPA cooldown ends when the credential can serve again")
-- Date: 2026-10-12
+- Estado: Aceptado, enmendado el 2026-10-22 (ver "Una lectura fallida deja un rastro para la consola" y "Un periodo de enfriamiento (cooldown) de CPA finaliza cuando la credencial puede volver a servir")
+- Fecha: 2026-10-12
 
-## Context
+## Contexto
 
-Every quota reading was operator-initiated: a refresh button in the OAuth management
-workspace, the dashboard's Credential Quota panel, the credential Drawer, or an Agent
-call. Between clicks the stored observation aged, and the case operators wait on most
-aged worst: a credential whose window was exhausted kept reading as exhausted after its
-window had reset, until someone thought to refresh it. The stored reading already
-carried the instant that would change - each window's `reset_at_ms` - so the console
-knew when its own answer had become wrong and did nothing about it.
+Cada lectura de cuota era iniciada por un operador: mediante un botón de actualización en el espacio de trabajo de gestión de OAuth, el panel de cuotas de credenciales del panel de control (dashboard), el cajero (Drawer) de credenciales o una llamada de un Agente. Entre clics, la observación almacenada envejecía, y la peor espera para los operadores era la de una credencial cuya ventana se había agotado y seguía figurando como agotada incluso después de que su ventana se hubiera restablecido, hasta que alguien recordaba actualizarla. La lectura almacenada ya contenía el instante en el que eso cambiaría (`reset_at_ms` de cada ventana), por lo que la consola sabía cuándo su propia respuesta había dejado de ser correcta y no hacía nada al respecto.
 
-A background read is not free. Each one is a request to the provider made with the
-credential itself, relayed by CPA (its `api-call`, or the plugin's quota endpoint for a
-plugin credential), and a deployment can hold many
-credentials. One provider's read has a side effect: Meta's observation exchanges the
-stored DCA token for a key upstream, and that exchange is audited per attempt as an
-operator's action.
+Una lectura en segundo plano no es gratuita. Cada una es una solicitud al proveedor realizada con la propia credencial, retransmitida por CPA (su `api-call`, o el endpoint de cuotas del plugin para una credencial de plugin), y un despliegue puede albergar muchas credenciales. La lectura de un proveedor tiene un efecto secundario: la observación de Meta intercambia el token DCA almacenado por una clave en el servidor de origen (*upstream*), y dicho intercambio se audita por cada intento como una acción del operador.
 
-## Decision
+## Decisión
 
-**A one-minute background loop re-reads credentials that are due, under a stored
-policy with two independent triggers.** `Handler.RunQuotaAutoRefresh`
-(`internal/api/quota_auto_refresh.go`), started by `app.Run`, reads the
-`omc_quota_auto_refresh` preference on every tick, so a change takes effect without a
-restart. The rules are pure functions in `internal/quota/auto_refresh.go`.
+**Un bucle en segundo plano de un minuto re lee las credenciales que están pendientes, bajo una política almacenada con dos activadores independientes.** `Handler.RunQuotaAutoRefresh` (`internal/api/quota_auto_refresh.go`), iniciado por `app.Run`, lee la preferencia `omc_quota_auto_refresh` en cada ciclo (*tick*), de modo que un cambio surta efecto sin necesidad de reiniciar. Las reglas son funciones puras en `internal/quota/auto_refresh.go`.
 
-- **Reset-driven read** (`refresh_on_reset`, on by default): a credential is read once
-  a window its latest stored observation reported has passed its reset by
-  `AUTO_REFRESH_RESET_GRACE` (one minute), on the first tick after that instant. A read
-  that fails is not stored, so it is retried every ten minutes during the hour after the
-  reset and then left for the operator or the schedule; a credential nobody has read has
-  no boundary and is never read by it.
-- **Scheduled read** (`interval_minutes`, 360 - six hours - by default, 5-1440, or 0
-  for off): a credential
-  is read once the newer of its observation and the last attempt is that old,
-  including a credential nobody has read. A thirty-second slack lets the read fire on the
-  tick that ends the interval, because an observation is stamped when its read finishes.
+- **Lectura impulsada por restablecimiento** (`refresh_on_reset`, activado por defecto): una credencial se lee una vez que ha pasado una ventana reportada por su última observación almacenada superando el `AUTO_REFRESH_RESET_GRACE` (un minuto), en el primer ciclo después de ese instante. Una lectura que falla no se almacena, por lo que se vuelve a intentar cada diez minutos durante la hora posterior al restablecimiento y luego se deja para el operador o para la programación; una credencial que nadie ha leído no tiene límite y nunca es leída por este mecanismo.
+- **Lectura programada** (`interval_minutes`, 360 - seis horas - por defecto, de 5 a 1440, o 0 para desactivar): una credencial se lee una vez que el más reciente entre su observación y su último intento tiene esa antigüedad, incluyendo una credencial que nadie ha leído. Un margen de treinta segundos (*slack*) permite que la lectura se ejecute en el ciclo que finaliza el intervalo, ya que una observación se sella cuando termina su lectura.
 
-Both triggers are on by default. A reset-driven read only re-reads a credential an
-operator already read, once per boundary that reading announced. The six-hour schedule
-keeps no reading older than the shortest common window (five hours) is long, so a
-credential nobody has opened still has a recent reading, at four reads per credential a
-day; a deployment holding many credentials or wanting fewer upstream requests can
-lengthen it or turn it off.
+Ambos activadores están habilitados por defecto. Una lectura impulsada por restablecimiento solo vuelve a leer una credencial que un operador ya leyó, una vez por cada límite que dicha lectura anunció. La programación de seis horas garantiza que ninguna lectura sea más antigua que la ventana común más corta (cinco horas), por lo que una credencial que nadie ha abierto aún mantiene una lectura reciente, a razón de cuatro lecturas por credencial al día; un despliegue que albergue muchas credenciales o que desee menos solicitudes al servidor de origen puede alargar este intervalo o desactivarlo.
 
-**Automatic reads reuse the manual path and its persistence rule.** A due credential
-is read by `quota.Service.RefreshCredentialQuota` and stored by the same function a
-manual refresh uses, so a failed or stale read never replaces the last good
-observation. Because a failed read is not stored, the loop remembers its attempts in
-process memory, and both triggers count from the attempt as well as the observation:
-a credential that keeps failing is not re-read every minute. `app.Run` joins the loop
-before returning, because a round in flight writes to the database the caller closes.
+**Las lecturas automáticas reutilizan la ruta manual y su regla de persistencia.** Una credencial pendiente es leída por `quota.Service.RefreshCredentialQuota` y almacenada por la misma función que utiliza la actualización manual, por lo que una lectura fallida o desactualizada nunca reemplaza a la última observación válida. Debido a que una lectura fallida no se almacena, el bucle recuerda sus intentos en la memoria del proceso, y ambos activadores cuentan a partir del intento así como de la observación: una credencial que sigue fallando no se lee cada minuto. `app.Run` se une al bucle antes de retornar, ya que una ronda en curso escribe en la base de datos que el invocador cierra.
 
-**Bounds.** A round reads at most sixteen credentials, four at a time; the rest stay
-due for the next tick. Disabled credentials, providers without a probe, and an
-`auth_index` two credentials claim are never read. Meta is never read automatically,
-because a timer must not mint keys an audit trail records as operator decisions.
+**Límites.** Una ronda lee como máximo dieciséis credenciales, cuatro a la vez; el resto permanece pendiente para el siguiente ciclo. Las credenciales deshabilitadas, los proveedores sin una sonda (*probe*) y un `auth_index` reclamado por dos credenciales nunca se leen. Meta nunca se lee automáticamente, ya que un temporizador no debe acuñar claves que un registro de auditoría (*audit trail*) documenta como decisiones del operador.
 
-**The policy is a validated preference.** The preference API accepts this key only as
-`{"interval_minutes": int, "refresh_on_reset": bool}` within the bounds and answers
-`invalid_quota_auto_refresh` otherwise, because the server acts on it. The loop reads it
-field by field: a field it cannot read takes its default while the other keeps the
-operator's value, so a document a newer build wrote cannot turn reads the operator
-switched off back on. `quota_auto_refresh_get` and
-`quota_auto_refresh_set` expose the same policy to the Agent and MCP.
+**La política es una preferencia validada.** La API de preferencias acepta esta clave únicamente como `{"interval_minutes": int, "refresh_on_reset": bool}` dentro de los límites y responde `invalid_quota_auto_refresh` en caso contrario, debido a que el servidor actúa basándose en ella. El bucle la lee campo por campo: un campo que no pueda leer adopta su valor predeterminado mientras el otro conserva el valor del operador, evitando que un documento escrito por una compilación más nueva vuelva a activar lecturas que el operador desactivó. `quota_auto_refresh_get` y `quota_auto_refresh_set` exponen la misma política al Agente y al MCP.
 
-**A demonstration never starts the loop.** Its gateway is the fixture, and the
-demonstration starts no loop of its own beyond the HTTP server.
+**Una demostración nunca inicia el bucle.** Su pasarela (*gateway*) es el *fixture*, y la demostración no inicia ningún bucle propio más allá del servidor HTTP.
 
-**A failed read leaves a trace for the console, not an observation.** Because a failed or
-stale read is never stored, the stored reading could not say that the console's own
-refreshes had stopped working: the operator saw a toast, and the page went on presenting a
-reading days old as the current answer. Migration 044 adds `quota_refresh_attempts` - one
-row per credential, holding when the last read was attempted, whether it produced a
-reading and the provider's redacted reason, stamped when the read starts so two
-overlapping reads are ordered by start rather than by which response landed last - written
-by the one helper every read path goes through, and served as `last_refresh` beside the
-reading. The status the console
-presents then follows `quota.ApplyReadingHealth`: a failed attempt newer than the reading
-outranks it (auth-like failures as `error` with the reauth recommendation, the rest as
-`stale` with the previous numbers standing, or as `error` when the credential holds no
-observation at all and nothing on screen could be called out of date), an active cooldown
-outranks both, and a healthy or warning reading whose own announced reset has passed unseen
-reads as `stale`.
-Recording an attempt does not change the cadence: the loop's retry backoff stays
-in-process memory, so a restart still re-reads a failing credential once.
+**Una lectura fallida deja un rastro para la consola, no una observación.** Como una lectura fallida o desactualizada nunca se almacena, la lectura almacenada no podía reflejar que las propias actualizaciones de la consola habían dejado de funcionar: el operador veía una notificación emergente (*toast*) y la página seguía presentando una lectura de hace días como la respuesta actual. La migración 044 añade `quota_refresh_attempts` —una fila por credencial, que almacena cuándo se intentó la última lectura, si produjo una lectura y el motivo enmascarado (*redacted*) del proveedor, sellado al iniciar la lectura para que dos lecturas superpuestas se ordenen por inicio en lugar de por qué respuesta llegó al final— escrita por la única función auxiliar (*helper*) por la que pasa cada ruta de lectura, y se sirve como `last_refresh` junto a la lectura. El estado que presenta la consola sigue entonces a `quota.ApplyReadingHealth`: un intento fallido más reciente que la lectura la supera en jerarquía (las fallas similares a la autenticación como `error` con la recomendación de reautenticación, el resto como `stale` manteniendo los números anteriores, o como `error` cuando la credencial no contiene ninguna observación y nada en pantalla puede considerarse obsoleto), un periodo de enfriamiento activo supera a ambos, y una lectura saludable o de advertencia cuyo propio restablecimiento anunciado ha pasado sin ser detectado se lee como `stale`.
+Registrar un intento no cambia la cadencia: el mecanismo de reintentos con retroceso (*backoff*) del bucle permanece en la memoria del proceso, por lo que un reinicio aún vuelve a leer una credencial fallida una vez.
 
-**A CPA cooldown ends when the credential can serve again.** A usage-limit refusal leaves
-`quota_exceeded` evidence in `error_events` with the recovery time CPA announced, and the
-credential stays in cooldown until someone clears it. Two facts now end that cooldown on
-their own, each with the same CPA `routing/cooldown/reset` call and evidence wipe the
-operator's Clear Cooldown performs. First, a read through `Handler.refreshQuotaReading`
-that is fresh, usable and shows room in every published window
-(`quota.HasRestoredCapacity`) releases a credential that still holds evidence, whichever
-surface asked for the read: providers reset quotas before the recovery time they
-announced, and the credential could serve again. Second, each round of the loop releases
-an enabled credential whose every stored recovery and retry time has passed
-(`Repository.BatchExpiredCooldowns`, with no lookback window), including providers the
-loop never reads, because a clear is not a read. A newer cooldown that has not recovered
-yet keeps the credential blocked even when an older one has passed, and a clear that fails
-waits out the ten-minute retry backoff before it is tried again. Each release is
-logged with its `auth_index` and audited as `quota.clear_cooldown.automatic` with the
-reason `capacity_restored` or `recovery_time_passed`; a CPA failure keeps only its HTTP
-status. The second runs only inside the loop, so a deployment with both triggers off
-keeps operator-only clears for expired cooldowns.
+**Un periodo de enfriamiento de CPA finaliza cuando la credencial puede volver a servir.** Un rechazo por límite de uso deja evidencia de `quota_exceeded` en `error_events` con el tiempo de recuperación que CPA anunció, y la credencial permanece en enfriamiento hasta que alguien la borre. Dos hechos finalizan ahora ese periodo de enfriamiento por sí mismos, cada uno con la misma llamada CPA `routing/cooldown/reset` y borrado de evidencia que realiza la acción "Borrar enfriamiento" (*Clear Cooldown*) del operador. Primero, una lectura a través de `Handler.refreshQuotaReading` que sea reciente, utilizable y muestre espacio disponible en cada ventana publicada (`quota.HasRestoredCapacity`) libera una credencial que aún conserva evidencia, sin importar qué interfaz haya solicitado la lectura: los proveedores restablecen las cuotas antes del tiempo de recuperación que anunciaron, y la credencial podría volver a servir. Segundo, cada ronda del bucle libera una credencial habilitada cuya recuperación almacenada y tiempo de reintento ya hayan transcurrido (`Repository.BatchExpiredCooldowns`, sin ventana de retrospectiva), incluidos los proveedores que el bucle nunca lee, ya que un borrado no es una lectura. Un enfriamiento más nuevo que aún no se haya recuperado mantiene la credencial bloqueada incluso cuando uno más antiguo haya expirado, y un borrado que falla espera a que transcurra el retroceso de reintento de diez minutos antes de intentarse nuevamente. Cada liberación se registra con su `auth_index` y se audita como `quota.clear_cooldown.automatic` con el motivo `capacity_restored` o `recovery_time_passed`; un fallo de CPA conserva únicamente su estado HTTP. Lo segundo se ejecuta solo dentro del bucle, por lo que un despliegue con ambos activadores desactivados mantiene limpiezas exclusivas del operador para los enfriamientos expirados.
 
-## Consequences
+## Consecuencias
 
-- An exhausted credential reads as recovered about a minute after its window resets,
-  with no operator action, and the console pages that poll the stored readings - the
-  dashboard panel and the OAuth management workspace, each every minute - show it.
-- A deployment upgraded to this version starts reading its credentials on its own:
-  within its first minutes every enabled credential whose reading is older than six
-  hours, or that nobody has read, is read (sixteen per minute), then each about every
-  six hours and after each reset. Turning both triggers off restores operator-only
-  reads.
-- The attempt memory is lost on restart, so a failing credential that is due may be
-  tried once more after a restart; the round limit still bounds that.
-- The readings remain `quota_snapshots` rows; migration 044 adds only the per-credential
-  attempt record the console reports beside them.
-- A credential whose quota came back early, or whose recovery time has passed, serves
-  again without an operator clearing its cooldown. A read that reports capacity the
-  provider then refuses produces a fresh usage-limit error, so CPA puts the credential
-  back in cooldown until the next read.
-- A failure now outlives its toast: a page opened later still says the last refresh failed
-  and when, and a credential whose reading is older than the boundary it announced no
-  longer reads as healthy.
+- Una credencial agotada se lee como recuperada aproximadamente un minuto después de que se restablezca su ventana, sin intervención del operador, y las páginas de la consola que sondean las lecturas almacenadas (el panel del cuadro de mando y el espacio de trabajo de gestión de OAuth, cada uno cada minuto) lo reflejan.
+- Un despliegue actualizado a esta versión comienza a leer sus credenciales por sí mismo: en sus primeros minutos, cada credencial habilitada cuya lectura sea anterior a seis horas, o que nadie haya leído, es leída (dieciséis por minuto), y luego aproximadamente cada seis horas y después de cada restablecimiento. Desactivar ambos activadores restablece las lecturas exclusivas del operador.
+- La memoria de los intentos se pierde al reiniciar, por lo que una credencial fallida que esté pendiente puede intentarse una vez más después de un reinicio; el límite de rondas sigue acotando esto.
+- Las lecturas siguen siendo filas en `quota_snapshots`; la migración 044 añade únicamente el registro de intentos por credencial que la consola muestra junto a ellas.
+- Una credencial cuya cuota regresó antes de tiempo, o cuyo tiempo de recuperación ha pasado, vuelve a servir sin que un operador limpie su enfriamiento. Una lectura que reporta una capacidad que el proveedor luego rechaza produce un nuevo error por límite de uso, por lo que CPA vuelve a poner la credencial en enfriamiento hasta la próxima lectura.
+- Un fallo ahora perdura más allá de su notificación emergente (*toast*): una página abierta más tarde sigue indicando que la última actualización falló y cuándo, y una credencial cuya lectura es anterior al límite que anunció deja de leerse como saludable.

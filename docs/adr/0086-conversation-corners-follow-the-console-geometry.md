@@ -1,31 +1,22 @@
-# ADR 0086: Conversation corners follow the console geometry
+# ADR 0086: Las esquinas de las conversaciones siguen la geometría de la consola
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-10-08
-- Amends: ADR 0081's radius values. Its fill, framing, typography and motion rules remain unchanged.
-- Amended by: ADR 0103, which moves the console onto a 2 · 6 · 8 · 12 corner scale and the conversation radii with it.
+- Estado: Aceptado
+- Superado en parte: la página del Playground, sus rutas y los ADRs 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agente se mantiene (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Fecha: 2026-10-08
+- Modifica: Los valores de radio del ADR 0081. Sus reglas de relleno, encuadre, tipografía y movimiento permanecen sin cambios.
+- Modificado por: ADR 0103, que traslada la consola a una escala de esquinas de 2 · 6 · 8 · 12 y los radios de las conversaciones con ella.
 
-## Context
+## Contexto
 
-Agent and Playground share a conversation workspace, while the surrounding console uses
-4px controls and cards. The conversation's larger corners make the two surfaces read as
-different visual systems. Conversation objects still need a small shape hierarchy without
-letting geometry outweigh their content.
+El Agente y el Playground comparten un espacio de trabajo de conversación, mientras que la consola circundante utiliza controles y tarjetas de 4px. Las esquinas más grandes de la conversación hacen que ambas superficies se perciban como sistemas visuales diferentes. Los objetos de conversación aún necesitan una jerarquía de formas pequeña sin permitir que la geometría supere a su contenido.
 
-## Decision
+## Decisión
 
-1. Printed output and pressed controls use 4px corners, matching the console.
-2. Field panels and floating lists use 6px corners. Composers, operator bubbles,
-   approval cards, question panels and suggestions use 8px corners.
-3. Keep the existing semantic token names and foreground grouping fills. `THREAD_RADII`
-   in `web/src/theme/palette.ts` owns the values; the theme projection and HTML
-   conversation exports read it. `web/src/index.css` mirrors the first-frame defaults.
-4. Apply the scale to both conversation workspaces and shared approval cards. Other
-   console components retain their existing geometry.
+1. La salida impresa y los controles presionados utilizan esquinas de 4px, coincidiendo con la consola.
+2. Los paneles de campos y las listas flotantes utilizan esquinas de 6px. Los compositores, las burbujas de operador, las tarjetas de aprobación, los paneles de preguntas y las sugerencias utilizan esquinas de 8px.
+3. Mantener los nombres de tokens semánticos existentes y los rellenos de agrupación de primer plano. `THREAD_RADII` en `web/src/theme/palette.ts` posee los valores; la proyección del tema y las exportaciones de conversaciones HTML los leen. `web/src/index.css` refleja los valores predeterminados del primer fotograma.
+4. Aplicar la escala tanto a los espacios de trabajo de conversación como a las tarjetas de aprobación compartidas. Los demás componentes de la consola conservan su geometría existente.
 
-## Consequences
+## Consecuencias
 
-Conversation controls and document frames blend with the console, while larger conversation
-objects retain a modest distinction. Existing CSS consumers need no per-element overrides.
-Palette projection tests pin the values and their pre-hydration defaults.
+Los controles de conversación y los marcos de documentos se integran con la consola, mientras que los objetos de conversación más grandes conservan una distinción modesta. Los consumidores de CSS existentes no necesitan anulaciones por elemento. Las pruebas de proyección de paleta fijan los valores y sus valores predeterminados anteriores a la hidratación.

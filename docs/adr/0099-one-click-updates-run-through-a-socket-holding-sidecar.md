@@ -1,96 +1,38 @@
-# ADR 0099: Console updates run through a socket-holding sidecar
+# ADR 0099: Las actualizaciones de la consola se realizan a través de un sidecar que posee el socket
 
-Status: Accepted
-Date: 2026-10-14
-Supersedes: ADR 0057's consequence that existing containers do not update themselves and
-operators explicitly pull and recreate the selected service. Its default of floating
-`latest` images, its pinning guidance and its publication policy remain in force.
+- Estado: Aceptado
+- Fecha: 2026-10-14
+- Reemplaza: La consecuencia del ADR 0057 de que los contenedores existentes no se actualizan por sí mismos y los operadores descargan y recrean explícitamente el servicio seleccionado. Su valor predeterminado de usar imágenes flotantes `latest`, su guía de fijación (pinning) y su política de publicación siguen vigentes.
 
-## Context
+## Contexto
 
-The console already knows when a newer release of Oh My CPA or CLIProxyAPI exists
-(ADR 0019), but applying one meant a shell on the Docker host. Replacing a container
-needs the Docker Engine API, and the console container is deliberately the opposite of
-something that should hold it: read-only root filesystem, unprivileged user, every
-capability dropped, and a large authenticated HTTP surface.
+La consola ya sabe cuándo existe una versión más reciente de Oh My CPA o CLIProxyAPI (ADR 0019), pero aplicar una implicaba tener una terminal (shell) en el host de Docker. Reemplazar un contenedor requiere la API de Docker Engine, y el contenedor de la consola es deliberadamente lo opuesto a algo que deba poseerla: sistema de archivos raíz de solo lectura, usuario sin privilegios, todas las capacidades eliminadas y una amplia superficie HTTP autenticada.
 
-Deployments that already exist were written by hand from three different Compose
-snippets, plus two release Compose files. A migration that asked each operator to edit
-their file would be the last manual step most of them never took.
+Los despliegues existentes fueron escritos a mano a partir de tres fragmentos diferentes de Compose, más dos archivos Compose de liberación. Una migración que pidiera a cada operador editar su archivo habría sido el último paso manual que la mayoría nunca habría dado.
 
-## Decision
+## Decisión
 
-**A second container holds the socket.** The same image runs as `oh-my-cpa updater
-serve`: `internal/updater`, a small HTTP service with the Docker socket mounted, a
-read-only filesystem, no capabilities and no published port. The console container is
-unchanged. The Engine API is spoken with `net/http` over the unix socket; no Docker SDK
-is added to the module.
+**Un segundo contenedor posee el socket.** La misma imagen se ejecuta como `oh-my-cpa updater serve`: `internal/updater`, un pequeño servicio HTTP con el socket de Docker montado, un sistema de archivos de solo lectura, sin capacidades y sin puertos publicados. El contenedor de la consola no cambia. La API de Engine se comunica mediante `net/http` sobre el socket UNIX; no se añade ningún SDK de Docker al módulo.
 
-**The updater's interface is two requests, neither of which names an image or a
-container.** `GET /v1/status` reports what it found, and `POST /v1/update` takes a
-product, `omc` or `cpa`. The updater resolves the console as the container that shares
-its own image repository (in its own Compose project when it has one), and the gateway
-as the container the console's `OMCPA_CPA_BASE_URL` points at. A gateway that is not a
-container on that host is reported as such and never guessed at.
+**La interfaz del updater consta de dos peticiones, ninguna de las cuales nombra una imagen o un contenedor.** `GET /v1/status` informa lo que encontró, y `POST /v1/update` toma un producto, `omc` o `cpa`. El updater resuelve la consola como el contenedor que comparte su propio repositorio de imágenes (en su propio proyecto de Compose cuando tiene uno), y la pasarela (gateway) como el contenedor al que apunta el `OMCPA_CPA_BASE_URL` de la consola. Una pasarela que no sea un contenedor en ese host se reporta como tal y nunca se adivina.
 
-**Replacement is rename, create, verify, then remove.** The replacement's configuration
-is derived from the running container minus everything its old image supplied, so the
-new image's entrypoint, environment, health check and labels take effect while the
-operator's settings, mounts, networks, aliases and Compose labels carry over. The old
-container is stopped and renamed, not removed, until the replacement is healthy; a
-replacement that exits or reports unhealthy is deleted, the old container gets its name
-back and is started, and the image tag is pointed at the old image again.
+**El reemplazo consiste en renombrar, crear, verificar y luego eliminar.** La configuración del reemplazo se deriva del contenedor en ejecución menos todo lo que suministraba su imagen anterior, por lo que el punto de entrada (entrypoint), el entorno, la verificación de salud y las etiquetas de la nueva imagen surten efecto mientras que la configuración, los montajes, las redes, los alias y las etiquetas de Compose del operador se transfieren. El contenedor viejo se detiene y se renombra, no se elimina, hasta que el reemplazo esté saludable; un reemplazo que sale o informa un estado no saludable se elimina, el contenedor viejo recupera su nombre y se inicia, y la etiqueta de la imagen apunta de nuevo a la imagen vieja.
 
-**A pinned image is never changed.** A version tag or digest in the configured image
-reference means the operator chose that version. Replacing the container anyway would be
-undone by the next `docker compose up`, which would then start the pinned, older binary
-over a database the newer one had already migrated, and migrations are forward-only.
-Only floating tags are updated, and the tag is re-pointed locally so Compose sees no
-drift afterwards.
+**Una imagen fijada (pinned) nunca se cambia.** Una etiqueta de versión o un resumen (digest) en la referencia de imagen configurada significa que el operador eligió esa versión. Reemplazar el contenedor de todos modos se revertiría con el siguiente `docker compose up`, que luego iniciaría el binario fijado y más antiguo sobre una base de datos que el más nuevo ya había migrado, y las migraciones son solo hacia adelante. Solo se actualizan las etiquetas flotantes, y la etiqueta se vuelve a apuntar localmente para que Compose no vea ninguna deriva (drift) después.
 
-**Console releases are verified by signature; gateway releases are not.** Each release
-publishes `release-manifest.json`, naming the image repository and the multi-platform
-digest, and an Ed25519 signature made with a key held in the release job's secret. The
-public key is compiled into the binary. The console downloads both files and forwards
-them unread; the updater verifies the signature, that the manifest names the repository
-the console already runs, and that the version does not go backwards, then pulls by
-digest. The gateway is an upstream project whose releases this project cannot sign, so
-its update pulls the tag its container already uses and trusts the registry, exactly as
-`docker compose pull` does. A build without the public key, which is any build from
-source and any fork, reports that it cannot verify and offers no console update; it does
-not fall back to an unverified one.
+**Las versiones de la consola se verifican mediante firma; las de la pasarela no.** Cada lanzamiento publica `release-manifest.json`, que nombra el repositorio de imágenes y el resumen multiplataforma, y una firma Ed25519 realizada con una clave guardada en el secreto del trabajo de lanzamiento (release job). La clave pública se compila dentro del binario. La consola descarga ambos archivos y los reenvía sin leerlos; el updater verifica la firma, que el manifiesto nombre el repositorio que la consola ya ejecuta y que la versión no retroceda, y luego descarga (pull) por resumen. La pasarela es un proyecto upstream cuyas versiones este proyecto no puede firmar, por lo que su actualización descarga la etiqueta que su contenedor ya usa y confía en el registro, exactamente como lo hace `docker compose pull`. Una compilación sin la clave pública, que es cualquier compilación desde el código fuente y cualquier bifurcación (fork), informa que no puede verificar y no ofrece ninguna actualización de consola; no recurre a una versión no verificada.
 
-**The two containers need no shared setting.** The console looks for the updater at
-`http://oh-my-cpa-updater:8090`. The bearer token is an HMAC of `OMCPA_MASTER_KEY`; the
-console computes it from its own setting and the updater computes it from the console
-container's environment, which it can read through the socket it already holds.
+**Los dos contenedores no necesitan ninguna configuración compartida.** La consola busca el updater en `http://oh-my-cpa-updater:8090`. El token portador (bearer token) es un HMAC de `OMCPA_MASTER_KEY`; la consola lo calcula a partir de su propia configuración y el updater lo calcula a partir del entorno del contenedor de la consola, el cual puede leer a través del socket que ya posee.
 
-**Existing deployments migrate with one command.** `docker run --rm --pull always -u 0
--v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install`
-creates the updater as a container of its own on a network of its own, attaches the
-console to that network, and upgrades the console to the installer's release. It is
-placed outside the deployment's Compose project on purpose: a container Compose does not
-know about, attached to a Compose network, makes `docker compose down` fail. The updater
-re-attaches the console whenever Compose recreates it. New installs declare the updater
-as a service instead.
+**Los despliegues existentes se migran con un solo comando.** `docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock wiziscool/oh-my-cpa:latest updater install` crea el updater como un contenedor propio en una red propia, adjunta la consola a esa red y actualiza la consola a la versión del instalador. Se coloca fuera del proyecto de Compose del despliegue a propósito: un contenedor que Compose desconoce, conectado a una red de Compose, hace que `docker compose down` falle. El updater vuelve a adjuntar la consola cada vez que Compose la recrea. Las nuevas instalaciones declaran el updater como un servicio en su lugar.
 
-**The updater replaces itself after it replaces the console,** so both run the same
-release, and hands the finished job to its successor so the restarted console can still
-read how its own update ended and record it.
+**El updater se reemplaza a sí mismo después de reemplazar la consola,** para que ambos ejecuten la misma versión, y le entrega el trabajo terminado a su sucesor para que la consola reiniciada aún pueda leer cómo terminó su propia actualización y registrarla.
 
-## Consequences
+## Consecuencias
 
-- Whoever controls the updater container controls Docker on that host. This is stated in
-  the install guides and in `SECURITY.md`, the service can be deleted from any Compose
-  file, and `OMCPA_UPDATER_ENABLED=false` makes the console ignore one.
-- A stolen console session can start an update to the signed current release of Oh My
-  CPA or to the gateway's own tag, and nothing else. It cannot choose an image.
-- The release job fails closed without its signing key, and the key pair is one more
-  thing to keep: losing the private key means shipping a release with a new public key
-  that existing installations must reach by hand once.
-- Host maintenance stays outside the Agent capability surface
-  (`docs/agent-capabilities.md`); an update is a console action with its own
-  confirmation and audit events, `system.update.apply` and `system.update.completed`.
-- Native installations are unaffected and keep the manual upgrade in `docs/install.md`.
-- No database migration: a job lives in the updater's memory, and its outcome in the
-  audit log.
+- Quien controle el contenedor del updater controla Docker en ese host. Esto se indica en las guías de instalación y en `SECURITY.md`, el servicio se puede eliminar de cualquier archivo Compose, y `OMCPA_UPDATER_ENABLED=false` hace que la consola ignore uno.
+- Una sesión de consola robada puede iniciar una actualización a la versión actual firmada de Oh My CPA o a la etiqueta propia de la pasarela, y nada más. No puede elegir una imagen.
+- El trabajo de lanzamiento falla de forma segura (fails closed) sin su clave de firma, y el par de claves es una cosa más que mantener: perder la clave privada significa enviar una versión con una nueva clave pública a la que las instalaciones existentes deben acceder manualmente una vez.
+- El mantenimiento del host se mantiene fuera de la superficie de capacidades del Agente (`docs/agent-capabilities.md`); una actualización es una acción de consola con su propia confirmación y eventos de auditoría, `system.update.apply` y `system.update.completed`.
+- Las instalaciones nativas no se ven afectadas y mantienen la actualización manual en `docs/install.md`.
+- Sin migración de base de datos: un trabajo vive en la memoria del updater y su resultado en el registro de auditoría.

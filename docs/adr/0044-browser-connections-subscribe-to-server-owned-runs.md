@@ -1,69 +1,33 @@
-# ADR 0044: Browser connections subscribe to server-owned runs
+# ADR 0044: Las conexiones del navegador se suscriben a ejecuciones gestionadas por el servidor
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-09-30
+- Estado: Aceptado
+- Superado en parte: la página de Playground, sus rutas y los ADRs 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agent se mantiene (`GET /agent/models`, ejecuciones en `/agent/runs/...`).
+- Fecha: 2026-09-30
 
-## Context
+## Contexto
 
-A browser stream is not an execution boundary. A weak connection, an offline tab or a page reload
-can lose the answer while CPA or a capability finishes its work. Treating every lost stream as a
-stopped task is misleading; automatically starting another generation can incur another paid call
-or repeat an external write. Agent state is already server-owned (ADR 0041), while Playground
-persists its latest display session as a preference (ADR 0024).
+Un flujo (stream) del navegador no es un límite de ejecución. Una conexión débil, una pestaña desconectada o una recarga de página pueden hacer que se pierda la respuesta mientras CPA o una capacidad terminan su trabajo. Tratar cada flujo perdido como una tarea detenida es engañoso; iniciar automáticamente otra generación puede incurrir en otra llamada de pago o repetir una escritura externa. El estado del Agent ya pertenece al servidor (ADR 0041), mientras que Playground persiste su última sesión de visualización como una preferencia (ADR 0024).
 
-## Decision
+## Decisión
 
-Console generation requests carry `X-OMC-Run-ID`. The API admits one managed run per workspace
-(`agent` or `playground`), detaches its context from the subscriber and writes the existing protocol
-into a bounded in-memory journal. Existing clients without this header retain direct-stream
-semantics. The same id and byte-identical request attach to the existing run; a changed request
-with that id is a conflict. A competing id cannot replace a running task.
+Las solicitudes de generación de la consola transportan `X-OMC-Run-ID`. La API admite una ejecución gestionada por espacio de trabajo (`agent` o `playground`), desvincula su contexto del suscriptor y escribe el protocolo existente en un búfer en memoria acotado (journal). Los clientes existentes sin esta cabecera conservan la semántica de flujo directo. El mismo ID y una solicitud idéntica a nivel de bytes se adjuntan a la ejecución existente; una solicitud modificada con ese ID constituye un conflicto. Un ID en competencia no puede reemplazar a una tarea en ejecución.
 
-Session-authenticated routes under the configured API base provide:
+Las rutas autenticadas por sesión bajo la base de la API configurada proporcionan:
 
-- `GET /agent/runs/active` and `GET /playground/runs/active`: the latest recoverable descriptor.
-- `GET /agent/runs/{id}` and `GET /playground/runs/{id}`: replay from the beginning, then subscribe.
-- `POST /agent/runs/{id}/cancel` and `POST /playground/runs/{id}/cancel`: explicitly cancel execution.
+- `GET /agent/runs/active` y `GET /playground/runs/active`: el descriptor recuperable más reciente.
+- `GET /agent/runs/{id}` y `GET /playground/runs/{id}`: reproducción desde el principio y, a continuación, suscripción.
+- `POST /agent/runs/{id}/cancel` y `POST /playground/runs/{id}/cancel`: cancelación explícita de la ejecución.
 
-Subscribers wait on change notifications; their sockets receive 15-second SSE heartbeats. The
-browser uses bounded reconnect backoff (500ms through 8s), waits for `online` while offline, and
-reconnects a 45-second stalled header/body read. Replay resets the transient reducer first, so
-neither partial frames nor already displayed tokens are appended twice. The initial generation
-POST is never automatically repeated, even when its acknowledgement was lost. A coded facade refusal, a missing journal
-or expired authentication ends recovery rather than starting another generation. Cancel retries
-only the idempotent cancel command. Leaving a view aborts only its subscription.
+Los suscriptores esperan notificaciones de cambios; sus sockets reciben latidos (heartbeats) SSE de 15 segundos. El navegador utiliza un retroceso exponencial acotado para la reconexión (de 500 ms a 8 s), espera a que se restablezca la conexión (`online`) cuando está desconectado y reconecta una lectura de cabecera o cuerpo estancada durante 45 segundos. La reproducción restablece primero el reductor transitorio, por lo que ni los fotogramas parciales ni los tokens ya mostrados se añaden dos veces. El POST de generación inicial nunca se repite automáticamente, incluso cuando se perdió su confirmación (acknowledgement). El rechazo codificado de una fachada, un journal faltante o una autenticación caducada finalizan la recuperación en lugar de iniciar otra generación. La cancelación reintenta únicamente el comando de cancelación idempotente. Abandonar una vista aborta únicamente su suscripción.
 
-The latest completed journal is available for 15 minutes, until replaced, or until process exit.
-Each journal holds at most 4 MiB of streamed output plus one small terminal overflow error. Overflow
-cancels the task rather than retaining unbounded output. Detached runs have a 30-minute ceiling;
-Playground keeps its tighter existing 10-minute ceiling. Replaced/expired ids are tombstoned for
-24 hours with an admission bound of 1,024 entries; a full history refuses new managed work.
-Detached workers keep the original HTTP panic boundary and emit only non-secret machine errors.
-Application shutdown stops admission, cancels and joins tasks before closing their dependencies.
+El journal completado más reciente está disponible durante 15 minutos, hasta que sea reemplazado o hasta que finalice el proceso. Cada journal almacena como máximo 4 MiB de salida transmitida más un pequeño error de desbordamiento terminal. El desbordamiento cancela la tarea en lugar de retener una salida sin acotar. Las ejecuciones desvinculadas tienen un límite máximo de 30 minutos; Playground mantiene su límite estricto existente de 10 minutos. Los ID reemplazados o caducados se marcan como lápida (tombstoned) durante 24 horas con un límite de admisión de 1.024 entradas; un historial lleno rechaza nuevo trabajo gestionado. Los trabajadores desvinculados conservan el límite de pánico HTTP original y emiten únicamente errores de máquina que no revelan secretos. El apagado de la aplicación detiene la admisión, cancela y une (joins) las tareas antes de cerrar sus dependencias.
 
-Agent still persists its authoritative transcript before the final snapshot. Its console projection
-excludes private model messages, pending calls and database-query result cells. Playground's
-recovery descriptor derives its request and user message from the actual accepted POST, not from a
-client-supplied transcript. Only bounded display metadata (`keyLabel`, `replaces_id`) is taken from
-`recovery_turn`; large inline images are redacted in every retained descriptor copy. On recovery,
-the UI restores the turn's target and settings, replays the journal and persists the settled session
-through the existing preference writer. `last_run_id` records which completed journal that session
-has already acknowledged, including after New conversation; an old journal cannot resurrect a
-cleared conversation. There is no competing backend preference writer.
+El Agent sigue persistiendo su transcripción autoritativa antes de la instantánea final. Su proyección en la consola excluye los mensajes privados del modelo, las llamadas pendientes y las celdas de resultado de consultas a bases de données (database-query). El descriptor de recuperación de Playground deriva su solicitud y el mensaje del usuario del POST aceptado real, no de una transcripción proporcionada por el cliente. Solo se toman metadatos de visualización acotados (`keyLabel`, `replaces_id`) de `recovery_turn`; las imágenes grandes en línea se redactan en cada copia de descriptor retenida. Al recuperar, la interfaz de usuario restaura el destino y la configuración del turno, reproduce el journal y persiste la sesión consolidada a través del escritor de preferencias existente. `last_run_id` registra qué journal completado ya ha reconocido esa sesión, incluso después de "Nueva conversación"; un journal antiguo no puede resucitar una conversación borrada. No existe ningún escritor de preferencias de backend en competencia.
 
-## Consequences
+## Consecuencias
 
-- Browser loss does not cancel inference or a workflow. Stop is now a server command rather than
-  a local HTTP abort; external effects already completed remain completed.
-- This is bounded, process-local recovery, not a durable job queue. Restarting OMC ends in-memory
-  tasks; Agent exposes uncertain/interrupted stored outcomes and never replays an external write.
-  A Playground result not recovered within retention can be lost if its tab never persisted it.
-- A replay may repeat view invalidations, which are harmless cache reads, but never executes a
-  capability. Only the original task owns execution.
-- All recovery routes share console authentication, no-store responses and the existing DTO/privacy
-  boundary. The public demonstration returns no active run and refuses subscriptions/cancellation.
-- Channel-driven Go tests cover admission, replay, cancellation, expiry, output bounds and shutdown.
-  Hermetic transport tests cover lost acknowledgements, partial streams, offline/online, abort and
-  authentication; browser probes cover refresh, single-generation recovery, clear-session behaviour,
-  the light Stop border and tenths-of-a-second elapsed labels.
+- La pérdida del navegador no cancela la inferencia ni un flujo de trabajo. La detención es ahora un comando del servidor en lugar de un aborto HTTP local; los efectos externos ya completados permanecen completados.
+- Se trata de una recuperación acotada y local al proceso, no de una cola de trabajos duradera. Reiniciar OMC finaliza las tareas en memoria; el Agent expone los resultados almacenados inciertos o interrumpidos y nunca vuelve a reproducir una escritura externa. Un resultado de Playground no recuperado dentro del período de retención puede perderse si su pestaña nunca lo persistió.
+- Una reproducción puede repetir invalidaciones de vista, las cuales son lecturas de caché inofensivas, pero nunca ejecuta una capacidad. Solo la tarea original posee la propiedad de ejecución.
+- Todas las rutas de recuperación comparten la autenticación de la consola, respuestas `no-store` y el límite existente de DTO y privacidad. La demostración pública no devuelve ninguna ejecución activa y rechaza las suscripciones y cancelaciones.
+- Las pruebas en Go basadas en canales cubren la admisión, reproducción, cancelación, caducidad, límites de salida y apagado. Las pruebas de transporte herméticas cubren las confirmaciones perdidas, flujos parciales, estado desconectado/conectado, aborto y autenticación; los sondeos del navegador cubren la actualización (refresh), la recuperación de una sola generación, el comportamiento de borrado de sesión, el borde ligero de Stop y las etiquetas de tiempo transcurrido en décimas de segundo.

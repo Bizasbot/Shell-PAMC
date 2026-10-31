@@ -1,40 +1,45 @@
-# ADR 0033: The embedded console is not committed; an unbuilt binary serves a placeholder
+# ADR 0033: La consola embebida no se versiona; un binario sin compilar actúa como marcador de posición
 
-- Status: Accepted
-- Date: 2026-09-28
+- Estado: Aceptado
+- Fecha: 2026-09-28
 
-## Context
+## Contexto
 
-`internal/web` embeds `internal/web/dist`, which `pnpm build` fills. Go's `go:embed`
-refuses a directory with no embeddable file, and the Go tests request the console's
-entry page, so a checkout that had not built the frontend needed something in that
-directory. The repository committed the build's own `internal/web/dist/index.html` for
-that purpose and ignored the rest of `dist/`.
+`internal/web` embebe `internal/web/dist`, el cual es poblado por `pnpm build`. `go:embed`
+de Go rechaza un directorio sin ningún archivo que se pueda embeber, y las pruebas de Go
+solicitan la página de entrada de la consola, por lo que un clon (*checkout*) que no hubiera
+compilado el frontend necesitaba algo en ese directorio. El repositorio versionaba el propio
+`internal/web/dist/index.html` de la compilación para ese propósito e ignoraba el resto de `dist/`.
 
-That file is build output. Its script and preload tags carry content hashes, and the
-entry hash moves whenever any module it reaches changes, lazy pages included. CI builds
-the console and then requires a clean worktree, so almost every frontend pull request
-had to run `pnpm build` and commit the regenerated file, and two branches doing so
-conflicted on it. The committed copy was also never a working page: its assets are
-ignored, so a binary built from a fresh clone served a document whose scripts 404.
+Ese archivo es el resultado de una compilación. Sus etiquetas de script y precarga contienen
+hashes de contenido, y el hash de la entrada cambia siempre que cualquier módulo al que hace
+referencia cambie, incluidas las páginas de carga diferida (*lazy pages*). La CI compila
+la consola y luego exige un árbol de trabajo limpio (*clean worktree*), por lo que casi
+cada solicitud de extracción (*pull request*) del frontend tenía que ejecutar `pnpm build`
+y versionar el archivo regenerado, y dos ramas que lo hacían entraban en conflicto en él.
+Además, la copia versionada nunca fue una página funcional: sus recursos están ignorados,
+por lo que un binario compilado a partir de un clon limpio servía un documento cuyos scripts
+daban un error 404.
 
-## Decision
+## Decisión
 
-- **Nothing the build writes is committed.** `internal/web/dist/` is tracked only through
-  `.gitkeep`, and `internal/web/embed.go` embeds it as `all:dist` so that file satisfies
-  `go:embed`. `scripts/sync-web-dist.mjs` never prunes it.
-- **An unbuilt binary serves a placeholder.** `web.IndexHTML` returns the build's
-  `index.html`, or `internal/web/placeholder.html` when there is none. The placeholder
-  is a real HTML document with a `<head>` and the runtime-configuration slot, so the
-  server's injection and the Go tests behave the same with or without a build, and it
-  tells an operator to run `pnpm build`.
+- **Nada de lo que escribe la compilación se versiona.** `internal/web/dist/` se rastrea
+  únicamente a través de `.gitkeep`, e `internal/web/embed.go` lo embebe como `all:dist` para
+  que ese archivo satisfaga a `go:embed`. `scripts/sync-web-dist.mjs` nunca lo elimina.
+- **Un binario sin compilar sirve un marcador de posición (*placeholder*).** `web.IndexHTML`
+  devuelve el `index.html` de la compilación, o `internal/web/placeholder.html` cuando
+  no existe ninguno. El marcador de posición es un documento HTML real con un `<head>`
+  y el espacio reservado para la configuración en tiempo de ejecución, por lo que la
+  inyección del servidor y las pruebas de Go se comportan igual con o senza una compilación,
+  y le indica al operador que debe ejecutar `pnpm build`.
 
-## Consequences
+## Consecuencias
 
-- A frontend change no longer touches any committed generated file, and CI's
-  clean-worktree checks keep guarding the files that are still generated and committed
-  (the demonstration dataset, for example).
-- The Go tests exercise the placeholder in the static job and the real entry page after
-  a build. They must keep asserting only what both satisfy.
-- `scripts/build-demo.mjs` detects a missing build by the entry document rather than the
-  directory, which now exists in every checkout.
+- Un cambio en el frontend ya no modifica ningún archivo generado versionado, y las
+  comprobaciones de árbol de trabajo limpio de la CI siguen protegiendo los archivos que
+  todavía se generan y versionan (el conjunto de datos de demostración, por ejemplo).
+- Las pruebas de Go ejecutan el marcador de posición en el trabajo estático y la página de
+  entrada real después de una compilación. Deben seguir asegurando únicamente aquello que
+  ambos satisfacen.
+- `scripts/build-demo.mjs` detecta una compilación faltante a través del documento de
+  entrada en lugar del directorio, el cual ahora existe en cada clon (*checkout*).

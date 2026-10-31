@@ -1,56 +1,32 @@
-# ADR 0081: The conversation thread has its own shape and fill scale
+# ADR 0081: El hilo de conversación tiene su propia escala de forma y relleno
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-10-08
-- Amends: design.md §4's single 4px radius, for the conversation workspaces and the approval card
-  only. Colour, type, the zero-shadow rule and §7's motion budget are unchanged.
+- Estado: Aceptado
+- Sustituido en parte: la página Playground, sus rutas y los ADR 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agent se mantiene (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Fecha: 2026-10-08
+- Modifica: el radio único de 4px de la sección §4 de design.md, exclusivamente para los espacios de trabajo de conversación y la tarjeta de aprobación. El color, la tipografía, la regla de sombra cero y el presupuesto de movimiento de la sección §7 permanecen inalterados.
 
-## Context
+## Contexto
 
-The Agent and the Playground were drawn with the console's table-and-form geometry: 4px corners,
-a 1px frame around each object, a rail beside every disclosure and a 2px edge bar on every notice.
-That geometry suits dense records. In a transcript it made an answer read as a stack of boxes: the
-operator's message, a call row, the reasoning, an approval and a failure each carried their own
-frame, so the lines outnumbered the content and nothing told a pressed object from printed output.
+El Agent y el Playground se diseñaron con la geometría de tablas y formularios de la consola: esquinas de 4px, un marco de 1px alrededor de cada objeto, una barra lateral en cada elemento desplegable y una barra de borde de 2px en cada notificación. Esa geometría es adecuada para registros densos. En una transcripción, hacía que una respuesta se leyera como una pila de cajas: el mensaje del operador, una fila de llamada, el razonamiento, una aprobación y un fallo llevaban cada uno su propio marco, por lo que las líneas superaban en número al contenido y nada distinguía un objeto presionado de la salida impresa.
 
-assistant-ui, the library the thread is built on, publishes a design language and a catalogue of
-thread elements (tool rows, approval cards, suggestions, error and thinking states) that answer
-this: shape is chosen by what an element is, groups are fills instead of frames, and lines are
-budgeted. Its components are written with Tailwind utilities and its own neutral palette.
+assistant-ui, la biblioteca sobre la que se construye el hilo, publica un lenguaje de diseño y un catálogo de elementos de hilo (filas de herramientas, tarjetas de aprobación, sugerencias, estados de error y de pensamiento) que responden a esto: la forma se elige según lo que es un elemento, los grupos son rellenos en lugar de marcos, y las líneas se presupuestan. Sus componentes están escritos con utilidades de Tailwind y su propia paleta neutral.
 
-## Decision
+## Decisión
 
-1. **The thread takes that language's registers, not its code.** Shape by kind (printed matter
-   6px, pressed controls 8px, field panels and floating lists 10px, the composer, the operator's
-   bubble, cards and suggestions 16px); grouping by a faint fill of the foreground; one hairline
-   edge at most on an object; rows separated by spacing and a hover fill.
-2. **Every value is a token derived from the palette**, declared once in `web/src/index.css`
-   (`--radius-document`, `--radius-control`, `--radius-surface`, `--radius-thread`,
-   `--thread-field`, `--thread-field-hover`, `--thread-hairline`). The accent stays the palette's
-   accent; state colours stay `--success`, `--warn` and `--danger`.
-3. **The elements are first-party CSS Modules over the assistant-ui primitives.** No Tailwind, no
-   component registry and no second icon set enter the build.
-4. **The scale stops at the workspace's edge.** The console keeps its 4px radius and framed
-   panels; the exported conversation follows the thread, because it is the thread on paper.
-5. **Motion keeps §7's budget.** The source language's 150-300ms transitions are not adopted; a
-   press scales its object slightly over `--motion-fast`.
+1. **El hilo adopta los registros de ese lenguaje, pero no su código.** Forma según el tipo (material impreso de 6px, controles presionados de 8px, paneles de campos y listas flotantes de 10px, el compositor, la burbuja del operador, tarjetas y sugerencias de 16px); agrupación mediante un relleno tenue del primer plano; como máximo un borde fino (*hairline*) en un objeto; filas separadas por espaciado y un relleno al pasar el ratón (*hover*).
+2. **Cada valor es un token derivado de la paleta**, declarado una sola vez en `web/src/index.css` (`--radius-document`, `--radius-control`, `--radius-surface`, `--radius-thread`, `--thread-field`, `--thread-field-hover`, `--thread-hairline`). El acento sigue siendo el acento de la paleta; los colores de estado siguen siendo `--success`, `--warn` y `--danger`.
+3. **Los elementos son módulos CSS propios (*first-party*) sobre los primitivos de assistant-ui.** No entran en la compilación ni Tailwind, ni el registro de componentes, ni un segundo conjunto de iconos.
+4. **La escala se detiene en el borde del espacio de trabajo.** La consola mantiene su radio de 4px y sus paneles con marcos; la conversación exportada sigue al hilo, porque es el hilo en papel.
+5. **El movimiento mantiene el presupuesto de la sección §7.** No se adoptan las transiciones de 150-300ms del lenguaje de origen; una pulsación escala ligeramente su objeto mediante `--motion-fast`.
 
-## Consequences
+## Consecuencias
 
-- An answer carries far fewer lines: no rail beside reasoning or the capability chain, no edge bar
-  on a failure or an approval, no rule above the follow-up questions.
-- Two geometries now exist in one console. The boundary is a whole surface (the conversation),
-  not individual widgets, which is what keeps the difference from reading as inconsistency.
-- A destructive approval is no longer marked by a thick edge; its permission tag, its notice and
-  the danger-coloured Allow carry that, with the hairline tinted `--danger`.
-- New thread elements are drawn from this scale; a 4px frame inside the thread is a defect.
+- Una respuesta contiene muchas menos líneas: sin barra lateral junto al razonamiento o la cadena de capacidades, sin barra de borde en un fallo o una aprobación, sin línea divisoria (*rule*) sobre las preguntas de seguimiento.
+- Ahora existen dos geometrías en una sola consola. El límite es una superficie completa (la conversación), no widgets individuales, que es lo que evita que la diferencia se perciba como una incoherencia.
+- Una aprobación destructiva ya no se marca con un borde grueso; su etiqueta de permiso, su aviso y la opción Allow coloreada con `--danger` transmiten esto, con el borde fino tintado con `--danger`.
+- Los nuevos elementos del hilo se dibujan a partir de esta escala; un marco de 4px dentro del hilo es un defecto.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Install the Tailwind-based elements and map their theme variables to ours.** Rejected: it adds
-  a second styling system and its reset to an offline, size-budgeted bundle, its utilities carry
-  fixed hues (blue for live, emerald for done) that bypass the palette presets, and its durations
-  break the motion gate.
-- **Keep the 4px geometry and only remove lines.** Rejected: at 4px a borderless filled bubble or
-  composer reads as a table cell; the larger radius is what lets a fill replace a frame.
+- **Instalar los elementos basados en Tailwind y mapear sus variables de tema a las nuestras.** Rechazado: añade un segundo sistema de estilos y su reseteo a un paquete sin conexión con presupuesto de tamaño, sus utilidades transportan tonalidades fijas (azul para activo, esmeralda para completado) que eluden los valores preestablecidos de la paleta, y sus duraciones rompen el control de movimiento (*motion gate*).
+- **Mantener la geometría de 4px y eliminar únicamente las líneas.** Rechazado: a 4px una burbuja o compositor con relleno y sin bordes se lee como una celda de tabla; el radio mayor es lo que permite que un relleno sustituya a un marco.

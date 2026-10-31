@@ -1,18 +1,18 @@
-# ADR 0049: Custom icons are durable assets with protected references
+# ADR 0049: Los iconos personalizados son activos duraderos con referencias protegidas
 
-- Status: Accepted
-- Date: 2026-10-02
+- Estado: Aceptado
+- Fecha: 2026-10-02
 
-## Context
+## Contexto
 
-Operators need reusable artwork beyond the embedded catalog. Storing full image Data URLs in the provider preference would duplicate payloads, grow every preference read and prevent meaningful replacement or reference-aware deletion. Files outside SQLite would add a second backup/restore boundary. Arbitrary SVG imports would permit active or remotely loaded content.
+Los operadores necesitan ilustraciones reutilizables más allá del catálogo integrado. Almacenar Data URLs de imágenes completas en la preferencia del proveedor duplicaría las cargas útiles, incrementaría cada lectura de preferencias y evitaría un reemplazo significativo o una eliminación consciente de referencias. Los archivos fuera de SQLite añadirían una segunda frontera de respaldo y restauración. Las importaciones de SVG arbitrarias permitirían contenido activo o cargado remotamente.
 
-## Decision
+## Decisión
 
-Store validated static artwork as SQLite assets with stable IDs and monotonic content revisions. Provider preferences retain small string references alongside their existing catalog IDs. File and Base64 imports share server validation; SVG is rebuilt from an explicit static XML allowlist before preview or storage. Authenticated same-origin content responses preserve offline operation and revision-based private revalidation without sending the whole image library in list responses.
+Almacenar las ilustraciones estáticas validadas como activos de SQLite con IDs estables y revisiones de contenido monótonas. Las preferencias del proveedor conservan pequeñas referencias de cadenas de texto junto con sus IDs de catálogo existentes. Las importaciones de archivos y Base64 comparten la validación del servidor; el SVG se reconstruye a partir de una lista blanca explícita de XML estático antes de la vista previa o el almacenamiento. Las respuestas de contenido autenticado del mismo origen preservan la operación offline y la revalidación privada basada en revisiones sin enviar toda la biblioteca de imágenes en las respuestas de lista.
 
-Renaming or replacing an asset updates every assignment. Deletion is refused while any persisted mapping references it, including a legacy name key. Assignment validation and deletion checks occur within their respective repository transactions on the existing single SQLite connection. Agent/MCP share the same rules, with explicit revision-bound confirmation for deletion. Plugin-owned identity remains authoritative.
+Renombrar o reemplazar un activo actualiza cada asignación. Se rechaza la eliminación mientras cualquier mapeo persistido haga referencia a él, incluyendo una clave de nombre heredada. La validación de asignaciones y las comprobaciones de eliminación ocurren dentro de sus respectivas transacciones de repositorio en la única conexión SQLite existente. El agente y MCP comparten las mismas reglas, con una confirmación explícita vinculada a la revisión para la eliminación. La identidad propiedad del plugin sigue siendo autoritativa.
 
-## Consequences
+## Consecuencias
 
-Database backups include artwork automatically. Unsupported SVG styles/resources must be converted to accepted static artwork by the operator; the console does not rewrite unsafe imports silently. The library and individual assets have bounded sizes. Draft provider edits do not hold persisted references, so an asset deleted elsewhere before assignment is rejected when the preference is saved. The existing capability envelope remains smaller than the browser import limit.
+Las copias de seguridad de la base de datos incluyen ilustraciones automáticamente. Los estilos y recursos de SVG no compatibles deben ser convertidos a ilustraciones estáticas aceptadas por el operador; la consola no reescribe las importaciones inseguras de manera silenciosa. La biblioteca y los activos individuales tienen tamaños acotados. Las ediciones de proveedores en borrador no retienen referencias persistidas, por lo que un activo eliminado en otra parte antes de la asignación es rechazado cuando se guarda la preferencia. El límite de capacidad existente sigue siendo menor que el límite de importación del navegador.

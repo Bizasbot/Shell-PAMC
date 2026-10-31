@@ -1,45 +1,25 @@
-# ADR 0056: Versioned images precede published releases
+# ADR 0056: Las imágenes versionadas preceden a los lanzamientos publicados
 
-- Status: Accepted
-- Date: 2026-10-04
-- Extends: ADR 0019 with distribution and release automation; its comparison, cache,
-  source restriction and release-note policies remain unchanged.
+- Estado: Aceptado
+- Fecha: 2026-10-04
+- Extiende: ADR 0019 con automatización de distribución y lanzamientos; sus políticas de comparación, caché, restricción de fuentes y notas de lanzamiento permanecen sin cambios.
 
-## Context
+## Contexto
 
-OMC's update source is GitHub Releases, but source-built Docker deployments did not
-embed a release identity. A release advertised before its image is available would
-invite an upgrade that cannot be installed. Existing gateways and other management
-panels also make a mandatory all-in-one proxy topology unsafe as an installation default.
+La fuente de actualización de OMC es GitHub Releases, pero los despliegues de Docker construidos desde el código fuente no incorporaban una identidad de lanzamiento. Un lanzamiento anunciado antes de que su imagen esté disponible invitaría a realizar una actualización que no se puede instalar. Las pasarelas existentes y otros paneles de gestión también hacen que una topología de proxy "todo en uno" obligatoria no sea segura como valor predeterminado de instalación.
 
-## Decision
+## Decisión
 
-Distribute stable amd64/arm64 builds from `wiziscool/oh-my-cpa` on Docker Hub. Embed
-the exact validated `vMAJOR.MINOR.PATCH` tag in the Go binary, retaining development
-identity for untagged builds and explicit operator override precedence.
+Distribuir compilaciones estables para amd64/arm64 desde `wiziscool/oh-my-cpa` en Docker Hub. Incrustar la etiqueta exacta validada `vMAJOR.MINOR.PATCH` en el binario de Go, conservando la identidad de desarrollo para las compilaciones sin etiqueta y la precedencia explícita de anulación del operador.
 
-A trusted tag starts verification, then native packaged-image acceptance and
-multi-platform publishing, then creation of a GitHub Release carrying installation
-assets and the image digest. Image upload is a prerequisite for release visibility.
-Serialize publishing and order versions numerically so a backport cannot regress
-Docker or GitHub's latest pointer. Changed content requires a new release identity;
-published tags are not moved to describe different source.
+Una etiqueta de confianza inicia la verificación, seguida de la aceptación nativa de la imagen empaquetada y la publicación multiplataforma, y posteriormente la creación de un GitHub Release que contiene los activos de instalación y el resumen (*digest*) de la imagen. La subida de la imagen es un requisito previo para la visibilidad del lanzamiento. Serializar la publicación y ordenar las versiones numéricamente para que una corrección retrocompatibles (*backport*) no haga retroceder el puntero "latest" de Docker o GitHub. El contenido modificado requiere una nueva identidad de lanzamiento; las etiquetas publicadas no se mueven para describir código fuente diferente.
 
-Compose consumes a pinned image, publishes direct loopback listeners, and offers
-separate new-stack and OMC-only topologies. Existing gateways, panels, network rules,
-keys and collection ownership are preserved by default. HTTPS ingress is operator-owned.
-The bundled Caddy templates and entrypoint are retired; upgrades from that topology
-must arrange access with existing infrastructure rather than assuming Compose provides TLS.
+Compose consume una imagen fijada (*pinned*), publica oyentes de bucle invertido (*loopback*) directos y ofrece topologías separadas de pila nueva y exclusiva para OMC. Las pasarelas, paneles, reglas de red, claves y la propiedad de la colección existentes se conservan por defecto. La entrada HTTPS es responsabilidad del operador. Las plantillas de Caddy empaquetadas y el punto de entrada (*entrypoint*) se retiran; las actualizaciones desde esa topología deben coordinar el acceso con la infraestructura existente en lugar de asumir que Compose proporciona TLS.
 
-## Consequences
+## Consecuencias
 
-- An advertised update corresponds to an uploaded image and a comparable running
-  version. A standalone tag without a GitHub Release remains invisible to the checker.
-- Installing from an image no longer requires a frontend/Go toolchain or source clone.
-- Maintainers must protect version-tag creation and configure a Docker Hub push token
-  in Actions; only the release-publication job needs GitHub write access.
-- The Docker registry and GitHub are separate systems: an image can upload before
-  release creation fails. Recovery retries publication against the same source rather
-  than rewriting the tag; immutable digests let operators identify the uploaded build.
-- Direct loopback access is simple and safe locally, but public HTTPS must be provided
-  by the operator. A fresh minimal CPA configuration must never replace existing state.
+- Una actualización anunciada se corresponde con una imagen subida y una versión en ejecución comparable. Una etiqueta independiente sin un GitHub Release permanece invisible para el comprobante.
+- La instalación desde una imagen ya no requiere una cadena de herramientas de frontend/Go ni la clonación del código fuente.
+- Los mantenedores deben proteger la creación de etiquetas de versión y configurar un token de inserción de Docker Hub en Actions; solo el trabajo de publicación de lanzamiento necesita acceso de escritura a GitHub.
+- El registro de Docker y GitHub son sistemas separados: una imagen puede subirse antes de que falle la creación del lanzamiento. La recuperación reintenta la publicación con la misma fuente en lugar de reescribir la etiqueta; los resúmenes inmutables permiten a los operadores identificar la compilación subida.
+- El acceso directo por bucle invertido (*loopback*) es sencillo y seguro a nivel local, pero el HTTPS público debe ser proporcionado por el operador. Una configuración mínima y nueva de CPA nunca debe reemplazar el estado existente.

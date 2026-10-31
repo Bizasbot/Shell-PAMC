@@ -1,107 +1,110 @@
-# ADR 0073: Charts and tables are canvases, and a command can hold an answer to one
+# ADR 0073: Los gráficos y las tablas son lienzos (canvases), y un comando puede contener la respuesta para uno
 
-- Status: Accepted
-- Date: 2026-10-08
-- Supersedes the `render_chart` and `render_table` tools of
-  [ADR 0042](0042-display-tools-draw-referenced-frozen-data.md), and the `chart` and
-  `table` blocks' counterparts in the tool list of
-  [ADR 0079](0079-panels-are-a-block-vocabulary-with-open-icons.md). Their rule that
-  a display draws referenced, frozen rows stands.
-- Extends [ADR 0072](0072-canvases-run-in-a-sandboxed-frame.md): the canvas gains a
-  drawing kit, a viewport-filling view and an image export.
+- Estado: Aceptado
+- Fecha: 2026-10-08
+- Reemplaza las herramientas `render_chart` y `render_table` de la
+  [ADR 0042](0042-display-tools-draw-referenced-frozen-data.md), y las contrapartes de
+  los bloques `chart` y `table` en la lista de herramientas de la
+  [ADR 0079](0079-panels-are-a-block-vocabulary-with-open-icons.md). Se mantiene su regla de que
+  una visualización dibuja filas congeladas y referenciadas.
+- Extiende la [ADR 0072](0072-canvases-run-in-a-sandboxed-frame.md): el lienzo incorpora
+  un kit de dibujo, una vista que ocupa todo el viewport y exportación de imágenes.
 
-## Context
+## Contexto
 
-The Agent had four display tools. Two of them, `render_chart` and `render_table`,
-drew one fixed figure each from referenced rows; a page the model wrote itself could
-draw the same figures and anything else, but only by hand - a model that wanted a bar
-chart there had to write its own SVG arithmetic and its own number formatting, and
-usually wrote both slightly wrong.
+El Agente contaba con cuatro herramientas de visualización. Dos de ellas, `render_chart` y
+`render_table`, dibujaban una figura fija cada una a partir de filas referenciadas; una página
+escrita por el propio modelo podía dibujar esas mismas figuras y cualquier otra cosa, pero
+únicamente de forma manual: un modelo que quisiera un gráfico de barras allí tenía que escribir
+su propia aritmética SVG y su propio formato de números, y por lo general escribía ambas
+cosas con ligeros errores.
 
-Four tools that overlap cost more than their schemas. The model has to choose
-between them on every answer, the prompt has to explain the choice on every round,
-and each figure kind needs a console renderer, an export renderer and tests. The
-fixed tools were also the ceiling: a chart beside its table, two charts sharing a
-legend, a table with a highlighted row were all one tool too many or a canvas written
-from nothing.
+Cuatro herramientas que se solapan cuestan más que sus esquemas. El modelo tiene que elegir
+entre ellas en cada respuesta, el prompt tiene que explicar la elección en cada ronda, y cada
+tipo de figura necesita un renderizador de consola, un renderizador de exportación y pruebas.
+Las herramientas fijas también suponían un límite: un gráfico al lado de su tabla, dos
+gráficos compartiendo una leyenda o una tabla con una fila resaltada eran, o bien una
+herramienta adicional innecesaria, o bien un lienzo escrito desde cero.
 
-Separately, the composer's `/` list offered canned questions. A canned question is
-text the operator could have typed; it is not something the workspace does. What an
-operator cannot type is a guarantee - "answer this one as a canvas" is a request the
-model may or may not honour when it is only a sentence.
+Por separado, la lista `/` del compositor ofrecía preguntas predefinidas. Una pregunta
+predefinida es texto que el operador podría haber escrito; no es algo que el espacio de
+trabajo ejecute. Lo que un operador no puede escribir es una garantía: "responde a esto
+como un lienzo" es una solicitud que el modelo puede cumplir o no cuando es solo una frase.
 
-## Decision
+## Decisión
 
-**One display tool draws.** `render_ui` takes a title, the markup of the page, and
-optionally the rows it referenced; the console draws it as a sandboxed frame wherever
-the model called it (ADRs 0072, 0082, 0085). `render_chart`, `render_table`,
-`render_view` (ADR 0079) and `render_canvas` are withdrawn: they are no longer
-declared, offered or accepted, and a stored trace that names one is still read as a
-display call that changed nothing.
+**Una única herramienta de visualización realiza el dibujo.** `render_ui` recibe un título,
+el marcado de la página y, opcionalmente, las filas a las que hace referencia; la consola lo
+dibuja como un marco aislado en un entorno seguro (*sandbox*) dondequiera que el modelo lo haya
+invocado (ADRs 0072, 0082, 0085). Se retiran `render_chart`, `render_table`, `render_view`
+(ADR 0079) y `render_canvas`: ya no se declaran, ofrecen ni aceptan, y un registro almacenado
+que mencione alguna de ellas se sigue leyendo como una llamada de visualización que no cambió nada.
 
-**The canvas document carries a kit.** Before the model's markup, the console
-injects a script it owns, exposed as `OMC` inside the frame:
+**El documento del lienzo incluye un kit.** Antes del marcado del modelo, la consola inyecta
+un script propio, expuesto como `OMC` dentro del marco (*frame*):
 
-- `OMC.rows` - the frozen rows the call referenced (`OMC_DATA` remains an alias);
-- `OMC.fmt(value, unit)` - numbers written the way the console writes them, for
-  `tokens`, `usd`, `ms`, `percent`, `bytes`, `time` and `number`, following the
-  operator's token unit style, language and the deployment's time zone;
-- `OMC.chart(target, options)` - line, area, column, bar and pie, optionally split
-  by a series field or stacked, with formatted axes and a legend;
-- `OMC.table(target, options)` - a table with labelled, unit-formatted, sortable
-  columns.
+- `OMC.rows` - las filas congeladas a las que hizo referencia la llamada (`OMC_DATA` se mantiene como un alias);
+- `OMC.fmt(value, unit)` - números escritos tal como los escribe la consola, para
+  `tokens`, `usd`, `ms`, `percent`, `bytes`, `time` y `number`, siguiendo el estilo de
+  unidades de tokens del operador, el idioma y la zona horaria del despliegue;
+- `OMC.chart(target, options)` - de líneas, áreas, columnas, barras y circular (*pie*), opcionalmente dividido
+  por un campo de serie o apilado, con ejes formateados y leyenda;
+- `OMC.table(target, options)` - una tabla con columnas etiquetadas, con formato de unidades y ordenables.
 
-The kit is source text inside the sandboxed document, so it holds no more authority
-than the markup beside it: it reads `OMC.rows` and writes the frame's own DOM. It
-draws with the theme variables the document already carries, so a kit figure follows
-the palette and its light and dark schemes without the model naming a colour.
+El kit es texto fuente dentro del documento aislado, por lo que no posee más autoridad
+que el marcado que lo acompaña: lee `OMC.rows` y escribe en el propio DOM del marco.
+Dibuja utilizando las variables de tema que el documento ya posee, de modo que una figura
+del kit sigue la paleta y sus esquemas claro y oscuro sin que el modelo deba especificar un color.
 
-**A canvas can fill the viewport and be saved as an image.** The figure's own bar
-offers both. The full-screen view is the same frame, drawn over the console and left
-with Escape or the platform's Back gesture. The image is produced by the kit: the
-console posts a capture request into the frame, the kit answers with an SVG of its
-own document, and the console validates the reply's shape and size and rasterises it.
-The frame stays as sandboxed as before - the console never reads the frame's DOM, and
-the reply is treated as untrusted data.
+**Un lienzo puede ocupar todo el viewport y guardarse como imagen.** La barra propia de
+la figura ofrece ambas opciones. La vista a pantalla completa es el mismo marco, dibujado
+sobre la consola y cerrado con Escape o con el gesto de retroceso de la plataforma. La
+imagen es generada por el kit: la consola envía una solicitud de captura al marco, el kit
+responde con un SVG de su propio documento, y la consola valida la forma y el tamaño de la
+respuesta para rasterizarla. El marco permanece tan aislado como antes; la consola nunca lee
+el DOM del marco y la respuesta se trata como datos no confiables.
 
-**Stored conversations keep their traces.** A conversation saved before this change
-may hold `render_chart` or `render_table` calls with their views. Those names stay
-recognised as display calls - so the turn's replaceability and the trace's order are
-judged as they were - but they cannot be a row source for a new call and the console
-draws nothing for their views. The call remains listed in the answer's steps.
+**Las conversaciones almacenadas conservan sus registros (*traces*).** Una conversación guardada
+antes de este cambio puede contener llamadas a `render_chart` o `render_table` con sus respectivas
+vistas. Esos nombres siguen reconociéndose como llamadas de visualización —por lo que la
+reemplazabilidad del turno y el orden del registro se juzgan como antes—, pero no pueden actuar
+como origen de filas para una nueva llamada y la consola no dibuja nada para sus vistas. La
+llamada permanece listada en los pasos de la respuesta.
 
-**A composer command can hold one answer to a presentation.** `/ui` and `/text` set
-how the next message's answer is presented. The choice travels as
-`forwardedProps.present`, is stored on the turn, and is kept by narrowing what the
-turn is offered rather than by asking: a `ui` turn is offered `render_ui` and the
-follow-up note, a text turn the follow-up note only, and a `ui` turn that ends without
-a drawn UI is left as it is. The command offers no guarantee that one is drawn; what
-it removes is the choice to answer in prose alone. `canvas`, the command's earlier
-spelling, is still accepted on the wire and read as `ui`. A retry sends the turn's
-presentation again.
+**Un comando del compositor puede contener una respuesta para una presentación.** `/ui` y
+`/text` configuran cómo se presenta la respuesta del siguiente mensaje. La elección viaja como
+`forwardedProps.present`, se almacena en el turno y se preserva limitando lo que se le ofrece
+al turno en lugar de solicitarlo: a un turno `ui` se le ofrece `render_ui` y la nota de
+seguimiento; a un turno de texto, únicamente la nota de seguimiento; y a un turno `ui` que
+termina sin una interfaz de usuario dibujada se le deja tal como está. El comando no ofrece
+la garantía de que se dibuje una; lo que elimina es la posibilidad de responder únicamente
+en prosa. `canvas`, la denominación anterior del comando, sigue aceptándose en la red y se
+interpreta como `ui`. Un reintento (*retry*) vuelve a enviar la presentación del turno.
 
-**`/` lists commands, not prompts.** Every row either sets the next message's
-presentation or runs a page action - stop, retry, edit, new conversation, export,
-open the capability directory or the connection guide - and a row that cannot run
-now is not listed.
+**`/` lista comandos, no prompts.** Cada fila define la presentación del siguiente mensaje
+o ejecuta una acción de la página —detener, reintentar, editar, nueva conversación, exportar,
+abrir el directorio de capacidades o la guía de conexión— y una fila que no se puede ejecutar en
+ese momento no aparece listada.
 
-## Consequences
+## Consecuencias
 
-- One renderer per figure instead of three. The console's chart and table views,
-  their CSV export, and the conversation export's SVG charts and data tables are
-  removed; a canvas is exported as the sandboxed frame it already was.
-- A chart is now model-written markup calling a kit, which is slightly more for the
-  model to write than a chart specification, and a wrong call draws nothing rather
-  than failing validation. The prompt and the tool description name the kit's calls;
-  the kit ignores what it does not understand and shows an empty state for no rows.
-- The conversation image export still shows a canvas as a titled placeholder; the
-  canvas's own "save as image" is the way to a picture of one figure.
-- Charts and tables in conversations stored before this change are no longer drawn.
-  The single stored conversation is short-lived working state, and re-running the
-  question draws them as canvases; migrating frozen views into generated canvas
-  markup would have kept a second renderer alive for it.
-- The kit is part of every canvas document, including exported ones, at a few
-  kilobytes each.
-- `present` is the first forwarded property that changes what a turn is offered. It
-  is validated against a closed set, accepted only with a new message, and a `ui`
-  request is refused when the console did not declare `render_ui`.
+- Un solo renderizador por figura en lugar de tres. Se eliminan las vistas de gráficos y tablas
+  de la consola, su exportación a CSV, así como los gráficos SVG y las tablas de datos de la
+  exportación de conversaciones; un lienzo se exporta tal como era: el marco aislado.
+- Un gráfico es ahora un marcado escrito por el modelo que invoca a un kit, lo cual requiere
+  un poco más de esfuerzo por parte del modelo que una especificación de gráfico, y una
+  llamada incorrecta dibuja nada en lugar de fallar la validación. El prompt y la descripción
+  de la herramienta nombran las llamadas del kit; el kit ignora lo que no comprende y muestra un
+  estado vacío si no hay filas.
+- La exportación de imágenes de conversaciones sigue mostrando un lienzo como un marcador
+  de posición con título; la opción "guardar como imagen" propia del lienzo es el medio para
+  obtener la imagen de una figura.
+- Los gráficos y tablas en conversaciones almacenadas antes de este cambio ya no se dibujan.
+  La conversación almacenada es un estado de trabajo de corta duración, y volver a ejecutar la
+  pregunta los dibuja como lienzos; migrar vistas congeladas a marcado de lienzo generado
+  habría supuesto mantener un segundo renderizador vivo para tal fin.
+- El kit forma parte de cada documento de lienzo, incluidos los exportados, ocupando unos
+  pocos kilobytes cada uno.
+- `present` es la primera propiedad reenviada que modifica lo que se le ofrece a un turno.
+  Se valida contra un conjunto cerrado, se acepta únicamente con un mensaje nuevo, y se rechaza
+  una solicitud `ui` cuando la consola no ha declarado `render_ui`.

@@ -1,37 +1,33 @@
-# ADR 0027: The Agent discloses where its data goes instead of gating on a consent checkbox
+# ADR 0027: El Agente divulga el destino de sus datos en lugar de condicionarlo a una casilla de verificación de consentimiento
 
-- Status: Accepted
-- Date: 2026-09-27
+- Estado: Aceptado
+- Fecha: 2026-09-27
 
-## Context
+## Contexto
 
-An Agent turn sends the operator's message, and the OMC business data the agent reads to answer
-it, to the CPA model the operator selected and on to that model's upstream provider. The first
-version of the page required a consent checkbox before every send: the box was never restored,
-was cleared whenever the key or model changed, and the run endpoint refused a request without a
-`has_consent` flag.
+Un turno del Agente envía el mensaje del operador, y los datos de negocio de OMC que el agente lee para responder
+a dicho mensaje, al modelo de CPA seleccionado por el operador y de ahí al proveedor upstream de ese modelo. La primera
+versión de la página requería una casilla de verificación de consentimiento antes de cada envío: la casilla nunca se restauraba,
+se desmarcaba cada vez que cambiaba la clave o el modelo, y el endpoint de ejecución rechazaba cualquier solicitud sin el indicador
+`has_consent`.
 
-In use the checkbox did not protect anything the page did not already say. The operator is the
-administrator of this deployment, chose the model, and is looking at the statement of where the data
-goes; the box added a click to every page load and every target change, and a disabled send button
-was the most common first experience of the page. The flag the server checked was set by the same
-browser the operator was already using, so it attested to a click rather than to an understanding.
+En la práctica, la casilla no protegía nada que la página ya no indicara. El operador es el
+administrador de este despliegue, eligió el modelo y está viendo la declaración sobre el destino de los datos;
+la casilla añadía un clic adicional a cada carga de página y a cada cambio de destino, y un botón de envío
+deshabilitado era la primera experiencia más común en la página. El indicador que el servidor comprobaba era establecido por
+el mismo navegador que el operador ya estaba utilizando, por lo que atestiguaba la realización de un clic en lugar de comprensión.
 
-## Decision
+## Decisión
 
-The Agent page states, on the line beneath the composer, that messages and the OMC data the agent
-reads are sent to the selected CPA model and its upstream, and not to enter secrets in chat. Sending
-is the act the statement describes; there is no checkbox. The run input no longer carries
-`has_consent`, and the runtime no longer refuses a run for its absence - the endpoint refuses the
-field as unknown, like any other field it does not model.
+La página del Agente indica, en la línea situada debajo del campo de entrada (*composer*), que los mensajes y los datos de OMC que el agente lee se envían al modelo de CPA seleccionado y a su upstream, y que no se deben introducir secretos en el chat. El envío es la acción que describe la declaración; no hay ninguna casilla de verificación. La entrada de ejecución ya no transporta
+`has_consent`, y el *runtime* ya no rechaza una ejecución por su ausencia —el endpoint rechaza el campo por considerarlo desconocido, al igual que cualquier otro campo que no modele—.
 
-Nothing else about the boundary changes: the model never receives the CPA management key or
-capability internals, secrets are entered only through an operation card's private input, and
-every write still waits for the operator's approval in the browser.
+Ningún otro aspecto de los límites cambia: el modelo nunca recibe la clave de gestión de CPA ni los detalles internos de las capacidades, los secretos se introducen únicamente a través de la entrada privada de una tarjeta de operación, y
+cada operación de escritura sigue requiriendo la aprobación del operador en el navegador.
 
-## Consequences
+## Consecuencias
 
-An operator can ask a question as soon as the page opens. The statement of where data goes is
-always visible rather than shown once beside a control and then forgotten. A deployment that needs
-a recorded, per-session consent would have to add it as a server-side record rather than restore
-the checkbox, because a client-set flag cannot serve that purpose.
+Un operador puede hacer una pregunta tan pronto como se abre la página. La declaración sobre el destino de los datos es
+siempre visible en lugar de mostrarse una vez junto a un control y luego olvidarse. Un despliegue que necesite
+un consentimiento registrado por sesión tendría que implementarlo como un registro en el lado del servidor en lugar de restaurar
+la casilla de verificación, ya que un indicador establecido por el cliente no puede cumplir ese propósito.

@@ -1,61 +1,32 @@
-# ADR 0063: A time-of-day tier is read on its own billing clock
+# ADR 0063: Un nivel de tarifa por hora del día se lee en su propio reloj de facturación
 
-- Status: Accepted
-- Date: 2026-10-06
-- Extends: ADR 0030, whose tier rule is unchanged apart from the clock a window is
-  read on.
+- Estado: Aceptado
+- Fecha: 2026-10-06
+- Extiende: ADR 0030, cuya regla de niveles permanece inalterada aparte del reloj en el que se lee una ventana.
 
-## Context
+## Contexto
 
-ADR 0030 gave a price time-of-day tiers as a half-open UTC window, because that is
-how OpenRouter publishes them. The editor let an operator type the window in the OMC
-Time Zone and converted it to UTC at the zone's offset on the day of the edit.
+ADR 0030 estableció los niveles de precio por hora del día como una ventana UTC semiabierta, debido a que así es como los publica OpenRouter. El editor permitía a un operador escribir la ventana en la zona horaria del OMC y la convertía a UTC según el desfase de la zona en el día de la edición.
 
-Vendors do not bill on one clock. DeepSeek publishes off-peak hours in Beijing time,
-others in US Pacific or Eastern time, and one deployment routes to several of them.
-Neither UTC nor the OMC Time Zone can be right for all of them at once: the OMC Time
-Zone is a display preference for the whole console (ADR 0039), and a window converted
-to UTC once is an hour wrong for half the year wherever the vendor observes daylight
-saving.
+Los proveedores no facturan bajo un mismo reloj. DeepSeek publica sus horas de tarifa valle en hora de Pekín, otros en hora del Pacífico o del Este de EE. UU., y un despliegue enruta solicitudes a varios de ellos. Ni UTC ni la zona horaria del OMC pueden ser correctas para todos al mismo tiempo: la zona horaria del OMC es una preferencia de visualización para toda la consola (ADR 0039), y una ventana convertida a UTC una sola vez se desvía una hora durante medio año en cualquier lugar donde el proveedor observe el horario de verano.
 
-## Decision
+## Decisión
 
-1. **A tier names its clock.** `PriceTier` gains `time_zone`, an IANA name validated
-   by `timezone.Load`. A window is tested against the request's own instant placed on
-   that zone's wall clock; an absent zone is UTC. The zone belongs to the tier, so one
-   price can carry windows on different clocks, and it is independent of the OMC Time
-   Zone.
-2. **The stored spelling of existing tiers does not change.** The window fields keep
-   their `utc_start` / `utc_end` names and `time_zone` is omitted when empty. The
-   version trigger compares the stored tier text, so renaming the fields would mint a
-   price version for every tiered price at the next sync. The editor writes a UTC
-   window without a zone for the same reason.
-3. **Hours are stored as published, never converted.** The editor, the HTTP API and
-   the agent capabilities all take the vendor's hours with the vendor's zone.
-4. **A zone that cannot be read never applies.** Validation refuses it on write; if a
-   stored one ever fails to load, the tier is skipped rather than read as UTC.
-5. **The lock is unchanged.** `pricing.Quote` remains the single implementation, the
-   console mirrors it in `web/src/types/pricingDisplay.ts`, and a recorded request
-   keeps the tier index and price version it locked (ADR 0003).
+1. **Un nivel nombra su propio reloj.** `PriceTier` adquiere el campo `time_zone`, un nombre IANA validado por `timezone.Load`. Una ventana se evalúa frente al instante propio de la solicitud ubicado en el reloj de pared de dicha zona; si la zona está ausente, se asume UTC. La zona pertenece al nivel, por lo que un precio puede contener ventanas en diferentes relojes, y es independiente de la zona horaria del OMC.
+2. **La representación almacenada de los niveles existentes no cambia.** Los campos de la ventana conservan sus nombres `utc_start` / `utc_end` y se omite `time_zone` cuando está vacío. El activador de versiones (`version trigger`) compara el texto del nivel almacenado, por lo que renombrar los campos generaría una nueva versión de precio para cada precio escalonado en la siguiente sincronización. El editor escribe una ventana UTC sin zona por la misma razón.
+3. **Las horas se almacenan tal como se publican, sin conversión alguna.** El editor, la API HTTP y las capacidades del agente aceptan las horas del proveedor junto con la zona del proveedor.
+4. **Una zona que no se pueda leer nunca se aplica.** La validación la rechaza al escribir; si una zona almacenada fallara al cargarse, se omite el nivel en lugar de leerse como UTC.
+5. **El mecanismo de bloqueo (`lock`) no cambia.** `pricing.Quote` sigue siendo la única implementación, la consola la refleja en `web/src/types/pricingDisplay.ts`, y una solicitud registrada conserva el índice del nivel y la versión de precio que bloqueó (ADR 0003).
 
-## Consequences
+## Consecuencias
 
-- `utc_start` and `utc_end` are misnomers on a tier that names a zone. The field
-  descriptions the agent sees and the type comments say so; a rename was judged not
-  worth a version per tiered price and a second wire shape to accept forever.
-- The Go binary already embeds the zone database (`time/tzdata`), so the rule does not
-  depend on the host. Loaded zones are cached, since a tier is selected for every
-  ingested request.
-- Around a daylight-saving change a wall-clock window is an hour shorter or longer in
-  absolute time, which is what the vendor's own meter does.
-- The browser reads zones through `Intl`. A zone the server accepts but an old browser
-  does not know makes the editor's preview skip that tier; the server's amount is
-  authoritative either way.
+- `utc_start` y `utc_end` son nombres incorrectos (`misnomers`) en un nivel que especifica una zona. Las descripciones de los campos que ve el agente y los comentarios de tipos así lo indican; se consideró que un cambio de nombre no justificaba generar una versión por cada precio escalonado ni mantener una segunda estructura de datos (`wire shape`) de manera indefinida.
+- El binario de Go ya incluye la base de datos de zonas horarias (`time/tzdata`), por lo que la regla no depende del sistema host. Las zonas cargadas se almacenan en caché, ya que se selecciona un nivel para cada solicitud ingerida.
+- Alrededor de un cambio de horario de verano, una ventana de reloj de pared es una hora más corta o más larga en tiempo absoluto, que es exactamente el comportamiento del medidor propio del proveedor.
+- El navegador lee las zonas a través de `Intl`. Si el servidor acepta una zona que un navegador antiguo desconoce, la vista previa del editor omite ese nivel; la cantidad calculada por el servidor es autoritativa en cualquier caso.
 
-## Alternatives rejected
+## Alternativas rechazadas
 
-- **A deployment-wide billing zone.** One more global setting that is still wrong for
-  the second vendor.
-- **A fixed UTC offset per tier.** Simple, but wrong across daylight saving, and
-  `Etc/GMT-8` already expresses a fixed offset where one is wanted.
-- **Converting to UTC in the editor.** The behaviour being replaced.
+- **Una zona de facturación a nivel de despliegue.** Una configuración global adicional que de todos modos sería incorrecta para el segundo proveedor.
+- **Un desfase UTC fijo por nivel.** Simple, pero incorrecto ante los cambios de horario de verano, y `Etc/GMT-8` ya expresa un desfase fijo cuando este es deseado.
+- **Convertir a UTC en el editor.** El comportamiento que se está reemplazando.

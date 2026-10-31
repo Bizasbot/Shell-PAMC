@@ -1,62 +1,28 @@
-# ADR 0036: Agents may run read-only SQL over a classified schema
+# ADR 0036: Los agentes pueden ejecutar SQL de solo lectura sobre un esquema clasificado
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-09-28
+- Estado: Aceptado
+- Superado en parte: la página del Playground, sus rutas y los ADR 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agente se mantiene (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Fecha: 2026-09-28
 
-## Context
+## Contexto
 
-The capability registry deliberately exposed no SQL: every read went through a declared,
-aggregating capability, and `docs/agent-capabilities.md` listed SQL among the things an agent must
-not reach. In use, operators asked questions the declared reads were never shaped for - joins
-between requests and pricing versions, a count grouped by a column no capability groups by, the
-history of an ingest gap - and the agent could only say it could not see.
+El registro de capacidades no exponía deliberadamente SQL: cada lectura pasaba por una capacidad declarada y de agregación, y `docs/agent-capabilities.md` enumeraba a SQL entre las cosas que un agente no debe alcanzar. En la práctica, los operadores hacían preguntas para las cuales las lecturas declaradas nunca fueron diseñadas —uniones entre solicitudes y versiones de precios, un conteo agrupado por una columna por la que ninguna capacidad agrupa, el historial de un vacío de ingesta— y el agente solo podía responder que no podía verlas.
 
-The database holds material no answer should include: the CPA management key (encrypted, in
-`cpa_instances`), raw usage payloads that can carry client keys (`usage_inboxes`), the Agent's own
-encrypted sessions and operations (`agent_documents`), operator preferences including the
-Playground's saved conversation (`ui_preferences`), and raw upstream error bodies
-(`error_events.body`).
+La base de datos contiene material que ninguna respuesta debería incluir: la clave de administración de CPA (encriptada, en `cpa_instances`), cargas útiles de uso sin procesar que pueden contener claves de cliente (`usage_inboxes`), las propias sesiones y operaciones encriptadas del Agente (`agent_documents`), preferencias de operador incluyendo la conversación guardada del Playground (`ui_preferences`), y cuerpos de errores de upstream sin procesar (`error_events.body`).
 
-## Decision
+## Decisión
 
-Two read capabilities, `database_schema` and `database_query`, give agents SQL under a policy the
-repository owns (`internal/repository/readonly_query.go`), in four independent layers:
+Dos capacidades de lectura, `database_schema` y `database_query`, proporcionan SQL a los agentes bajo una política que el repositorio posee (`internal/repository/readonly_query.go`), en cuatro capas independientes:
 
-1. **The connection cannot write.** Queries run on a separate pool opened with `mode=ro` and
-   `query_only`, with `SQLITE_LIMIT_ATTACHED` at zero and bounded value, statement, compound and
-   expression sizes.
-2. **The text is one SELECT.** A small tokenizer finds the real statement boundary (quotes and
-   comments included) and accepts exactly one `SELECT` or `WITH` statement.
-3. **The compiled program is checked, not the text.** Before running, the statement's `EXPLAIN`
-   program is read: every b-tree it opens must belong to a table classified readable, every column
-   it reads - through a table or an index - must not be a redacted one, no index it opens may
-   cover a redacted column (a seek on one answers yes or no about the hidden value without reading
-   it), and any write to a stored table, write transaction, virtual table or non-`main` database
-   is refused. Row writes to SQLite's own scratch b-trees, which `ORDER BY ... LIMIT`, `UNION`,
-   `DISTINCT` and recursive CTEs use, are allowed. Checking the program is
-   what makes aliases, views, subqueries and CTEs unable to route around the policy; the price is
-   that table-valued functions (`json_each`, `pragma_*`) are unavailable.
-4. **The result is bounded and masked.** At most 200 rows and 24 KiB, 500 characters per cell and
-   5 seconds per query; text shaped like a credential, a URL's userinfo and email addresses are
-   masked in cells and in error messages. Masking matches shapes, so it is best-effort: a value
-   transformed in SQL (`hex`, `replace`, `substr`) passes unmasked. What must never leave is kept
-   out by layer 3, which is why a column able to carry a secret is redacted rather than masked.
+1. **La conexión no puede escribir.** Las consultas se ejecutan en un grupo (*pool*) separado abierto con `mode=ro` y `query_only`, con `SQLITE_LIMIT_ATTACHED` en cero y tamaños acotados de valores, declaraciones, compuestos y expresiones.
+2. **El texto es un único SELECT.** Un pequeño tokenizador encuentra el límite real de la declaración (incluyendo comillas y comentarios) y acepta exactamente una declaración `SELECT` o `WITH`.
+3. **Se valida el programa compilado, no el texto.** Antes de ejecutarse, se lee el programa `EXPLAIN` de la declaración: cada árbol B (*b-tree*) que abre debe pertenecer a una tabla clasificada como legible, cada columna que lee —a través de una tabla o un índice— no debe ser una columna redactada, ningún índice que abra puede cubrir una columna redactada (una búsqueda en uno responde sí o no sobre el valor oculto sin leerlo), y se rechaza cualquier escritura en una tabla almacenada, transacción de escritura, tabla virtual o base de datos que no sea `main`. Se permiten escrituras de filas en los propios árboles B temporales de SQLite, que utilizan `ORDER BY ... LIMIT`, `UNION`, `DISTINCT` y CTEs recursivas. Validar el programa es lo que hace que los alias, vistas, subconsultas y CTEs no puedan sortear la política; el precio a pagar es que las funciones valor-tabla (`json_each`, `pragma_*`) no están disponibles.
+4. **El resultado está acotado y enmascarado.** Como máximo 200 filas y 24 KiB, 500 caracteres por celda y 5 segundos por consulta; el texto con formato de credencial, información de usuario de una URL y direcciones de correo electrónico se enmascara en las celdas y en los mensajes de error. El enmascaramiento coincide con patrones, por lo que es un esfuerzo óptimo: un valor transformado en SQL (`hex`, `replace`, `substr`) pasa sin enmascarar. Lo que nunca debe salir se mantiene fuera mediante la capa 3, razón por la cual una columna capaz de albergar un secreto se redacta en lugar de enmascararse.
 
-Tables are opt-in. Every table is either readable (with its redacted columns named) or hidden with
-a recorded reason, and a test fails when a migration adds a table that is neither, so a new table
-is never readable by default.
+Las tablas son de inclusión voluntaria (*opt-in*). Cada tabla es legible (con sus columnas redactadas nombradas) o está oculta con una razón registrada, y una prueba falla cuando una migración agrega una tabla que no es ninguna de las dos, por lo que una tabla nueva nunca es legible por defecto.
 
-Both capabilities are offered to the built-in Agent only. An MCP client holds an
-administrator-equivalent key, but it runs outside OMC, on a host and a model the operator did not
-choose on the Agent page, and free-form SQL reaches more of OMC's records in one call than any
-declared read. MCP clients keep the declared reads.
+Ambas capacidades se ofrecen únicamente al Agente integrado. Un cliente MCP posee una clave equivalente a un administrador, pero se ejecuta fuera de OMC, en un host y un modelo que el operador no eligió en la página del Agente, y el SQL de forma libre alcanza más registros de OMC en una sola llamada que cualquier lectura declarada. Los clientes MCP conservan las lecturas declaradas.
 
-## Consequences
+## Consecuencias
 
-An agent can answer ad-hoc questions about OMC's own records without a new capability per
-question, and the declared capabilities remain the preferred path - the system prompt says so,
-because they aggregate on the server and carry the console's semantics. The query results still go
-to the selected model and its upstream, as every capability result does (ADR 0027). Adding a table
-now includes a classification decision, and adding a column that can carry a secret to a readable
-table must add it to that table's redacted list in the same change.
+Un agente puede responder preguntas ad-hoc sobre los propios registros de OMC sin necesidad de una nueva capacidad por cada pregunta, y las capacidades declaradas siguen siendo la ruta preferida —el mensaje del sistema lo indica, debido a que se agregan en el servidor y transportan la semántica de la consola—. Los resultados de las consultas siguen yendo al modelo seleccionado y a su upstream, como ocurre con el resultado de cualquier capacidad (ADR 0027). Agregar una tabla ahora incluye una decisión de clasificación, y agregar una columna capaz de portar un secreto a una tabla legible debe incluirse en la lista de redacción de esa tabla en el mismo cambio.

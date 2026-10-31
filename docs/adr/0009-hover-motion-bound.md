@@ -1,106 +1,119 @@
-# ADR 0009: Hover is bounded by the fast token rather than banned
+# ADR 0009: El *hover* está acotado por el *token* rápido en lugar de prohibido
 
-- Status: Accepted
-- Date: 2026-09-17
-- Amended by: ADR 0103, which keeps the bound and moves the `fast` token to 120ms.
+- Estado: Aceptado
+- Fecha: 2026-09-17
+- Modificado por: ADR 0103, el cual mantiene el límite y mueve el *token* `fast` a 120ms.
 
-## Context
+## Contexto
 
-`docs/design.md` §7 rule 7 read: **"Hover is not an animation. A hover is the interface acknowledging
-the pointer, so it paints on the frame the pointer arrives — never a transition on a hover colour."**
-Its stated trap was concrete: Ant Design hangs menu-item hover, submenu expand and the sider collapse
-off `motionDurationSlow`, whose default is 0.3s, and a nav that drags under the pointer feels broken.
+`docs/design.md` §7 regla 7 decía: **"El *hover* no es una animación. Un *hover* es la interfaz
+reconociendo el puntero, por lo que se pinta en el fotograma en que llega el puntero — nunca una
+transición en un color de *hover*."** Su trampa declarada era concreta: Ant Design cuelga el *hover*
+de elementos de menú, la expansión de submenús y el colapso del panel lateral de `motionDurationSlow`,
+cuyo valor por defecto es 0.3s, y una navegación que se arrastra bajo el puntero se siente rota.
 
-Two things were true at the same time as that rule:
+Dos cosas eran ciertas al mismo tiempo que dicha regla:
 
-**The console's own hovers were already 50ms.** Roughly ten rules across seven files transition a
-colour on hover — theme preset cards, OAuth cards, auth-file cards, quota rows, provider tab labels,
-pricing chips and filter tabs, the leaderboard row, the request page's icon buttons. Most named
-`var(--motion-fast, 50ms)`; a few used `0.15s` or `var(--motion-base)`. At 50ms a colour change is
-three frames: below the threshold where a reader perceives motion, and above the threshold where a
-hard switch reads as a repaint. So the rule's stated goal — "paints on the frame the pointer arrives"
-— was already met by the code, while the code violated the rule as written.
+**Los propios *hovers* de la consola ya eran de 50ms.** Aproximadamente diez reglas en siete archivos
+hacen la transición de un color en el *hover* — tarjetas de temas preestablecidos, tarjetas OAuth,
+tarjetas de archivos de autenticación, filas de cuotas, etiquetas de pestañas de proveedores, *chips*
+de precios y pestañas de filtros, la fila de la tabla de clasificación, los botones de iconos de la
+página de solicitudes. La mayoría nombraban `var(--motion-fast, 50ms)`; unos pocos usaban `0.15s` o
+`var(--motion-base)`. A 50ms, un cambio de color consta de tres fotogramas: por debajo del umbral
+donde un lector percibe movimiento, y por encima del umbral donde un cambio brusco se interpreta como
+un repintado. Así que el objetivo declarado de la regla — "se pinta en el fotograma en que llega el
+puntero" — ya era cumplido por el código, mientras que el código infringía la regla tal como estaba
+escrita.
 
-**Enforcing the rule literally has a wide, invisible cost.** Deleting those transitions changes hover
-behaviour on every page of the console, in all six themes, and buys nothing a reader can perceive. It
-would also have been the first thing this repository did to hover styling in months, in a change whose
-subject was the motion *budget* — the kind of opportunistic rewrite that makes a diff hard to review
-and a regression hard to bisect.
+**Aplicar la regla literalmente tiene un costo amplio e invisible.** Eliminar esas transiciones cambia
+el comportamiento del *hover* en cada página de la consola, en los seis temas, y no aporta nada que un
+lector pueda percibir. También habría sido lo primero que este repositorio le hacía a los estilos de
+*hover* en meses, en un cambio cuyo tema era el *presupuesto* de movimiento — el tipo de refactorización
+oportunista que hace que un *diff* sea difícil de revisar y una regresión difícil de acotar.
 
-The deciding evidence was the disparity between the rule and its target: the rule was written about a
-0.3s nav drag, and the code it governed ran at 50ms. A ban and a three-frame softening are not the
-same behaviour, and the rule was conflating them.
+La evidencia decisiva fue la disparidad entre la regla y su objetivo: la regla fue escrita sobre un
+arrastre de navegación de 0.3s, y el código que gobernaba se ejecutaba a 50ms. Una prohibición y un
+suavizado de tres fotogramas no son el mismo comportamiento, y la regla los estaba confundiendo.
 
-## Decision
+## Decisión
 
-1. **Rule 7 becomes a bound, not a prohibition.** A hover may transition colour, and must land within
-   the `fast` token (50ms). It is rewritten in §7 with the bound stated, the antd trap kept as the
-   reason the bound exists, and a pointer to this ADR.
+1. **La regla 7 se convierte en un límite, no en una prohibición.** Un *hover* puede hacer la transición
+   de un color, y debe aterrizar dentro del *token* `fast` (50ms). Se reescribe en §7 indicando el
+   límite, manteniendo la trampa de antd como la razón por la cual existe el límite, y añadiendo un
+   puntero a este ADR.
 
-2. **The bound is enforced, along with the rest of the budget.** `scripts/check-motion.mjs` fails a
-   hover whose colour part does not name `var(--motion-fast)` exactly — a bare `50ms` is a number no
-   document owns, and a fallback is never applied. `scripts/check-motion.test.mjs` exercises the rule
-   in both directions.
+2. **Se aplica el límite, junto con el resto del presupuesto.** `scripts/check-motion.mjs` falla en un
+   *hover* cuya parte de color no nombra exactamente `var(--motion-fast)` — un `50ms` pelado es un número
+   que ningún documento posee, y nunca se aplica un valor de respaldo (*fallback*).
+   `scripts/check-motion.test.mjs` prueba la regla en ambas direcciones.
 
-3. **Two narrower prohibitions survive unchanged.** A hover may never transition a layout property
-   (that is §7 rule 1, and it is now checked for every hover), and the one element that scales under
-   the pointer may not fade its colour: the heatmap mark's probe still asserts that only `transform`
-   animates there, because a colour fade would smear behind the scale it accompanies. The literal ban
-   was never wrong for that element; it was too broad for the rest.
+3. **Dos prohibiciones más estrictas sobreviven sin cambios.** Un *hover* nunca puede hacer la
+   transición de una propiedad de diseño (*layout*) (esa es la regla 1 de §7, y ahora se comprueba para
+   cada *hover*), y el único elemento que escala bajo el puntero no puede desvanecer su color: la sonda
+   de la marca del mapa de calor (*heatmap mark*) todavía afirma que solo `transform` se anima allí,
+   porque un desvanecimiento de color se difuminaría detrás de la escala que lo acompaña. La
+   prohibición literal nunca estuvo mal para ese elemento; era demasiado amplia para el resto.
 
-4. **The sites that exceeded the bound are corrected rather than grandfathered.** `0.15s` colour
-   hovers on the request page's icon buttons and the leaderboard row become `var(--motion-fast)`, and
-   the OAuth card's `var(--motion-base)` border becomes `fast` — the same three-frame softening every
-   other hover in the console already had.
+4. **Los sitios que excedían el límite se corrigen en lugar de ser eximidos por derechos adquiridos.**
+   Los *hovers* de color de `0.15s` en los botones de iconos de la página de solicitudes y en la fila
+   de la tabla de clasificación pasan a ser `var(--motion-fast)`, y el borde `var(--motion-base)` de la
+   tarjeta OAuth pasa a ser `fast` — el mismo suavizado de tres fotogramas que cualquier otro *hover*
+   en la consola ya tenía.
 
-5. **`transition: all` is rejected outright.** It is not a hover question but it surfaced with them:
-   `all` animates every property a change touches, including the layout properties rule 1 forbids, and
-   it makes the intent of a transition unreadable. Five sites were enumerated into the properties they
-   actually change, and one — a provider icon button whose style is entirely static — had a transition
-   that animated nothing and was removed.
+5. **`transition: all` se rechaza categóricamente.** No es una cuestión de *hover*, pero surgió con
+   ellos: `all` anima cada propiedad que un cambio toca, incluidas las propiedades de diseño que prohíbe
+   la regla 1, y hace que la intención de una transición sea ilegible. Cinco sitios fueron enumerados
+   en las propiedades que realmente cambian, y uno — un botón de icono de proveedor cuyo estilo es
+   enteramente estático — tenía una transición que no animaba nada y fue eliminado.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- The budget now covers what the console actually does. Before this, a reader could not tell whether
-  the 50ms hovers were compliant or unnoticed violations, which is the state in which a rule stops
-  being consulted at all.
-- Hover behaviour is unchanged on every page. The one visible change is that a few hovers became
-  slightly faster, moving toward the bound rather than away from it.
-- The bound is in the checker, so the next hover added is judged by it rather than by memory.
+- El presupuesto ahora cubre lo que la consola hace realmente. Antes de esto, un lector no podía saber
+   si los *hovers* de 50ms cumplían con la norma o si eran violaciones desatendidas, que es el estado
+   en el que una regla deja de consultarse por completo.
+- El comportamiento del *hover* no cambia en ninguna página. El único cambio visible es que unos pocos
+   *hovers* se volvieron ligeramente más rápidos, moviéndose hacia el límite en lugar de alejarse de él.
+- El límite está en el verificador, por lo que el siguiente *hover* que se añada se juzgará en función de
+   él y no de la memoria.
 
-### Trade-offs
+### Compensaciones
 
-- **§7 rule 7 is weaker than it was.** It went from a flat prohibition to a duration bound, and a
-  reader who wants "no hover transitions at all" no longer finds that rule. That is the honest
-  description of the console's behaviour, but it is a relaxation of a documented constraint.
-- **Three frames of colour fading is a judgement, not a measurement.** The claim is that 50ms is
-  imperceptible as motion; nobody sat readers in front of it, and a future decision to ban hover
-  transitions outright would have to be made on taste rather than on this ADR's evidence.
-- **The exceptions table grows.** Layout animations that a disclosure needs are named waivers now, and
-  a budget with waivers is more work to read than a budget without them. The mitigation is that each
-  waiver carries a reason and an unused waiver fails the check.
-- **The checker is textual.** It reads `.css` and inline `transition:` strings, so a duration
-  assembled at runtime is invisible to it, and it cannot associate a rule restated under a different
-  selector with its motion. Both limits are stated in the checker's own header rather than left for a
-  reader to discover.
+- **La regla 7 de la §7 es más débil que antes.** Pasó de ser una prohibición absoluta a un límite de
+   duración, y un lector que quiera "ninguna transición de *hover* en absoluto" ya no encuentra esa
+   regla. Esa es la descripción honesta del comportamiento de la consola, pero es una relajación de
+   una restricción documentada.
+- **Tres fotogramas de desvanecimiento de color son un juicio, no una medición.** La afirmación es
+   que 50ms es imperceptible como movimiento; nadie sentó a lectores frente a él, y una decisión futura
+   de prohibir las transiciones de *hover* por completo tendría que tomarse basándose en el gusto y
+   no en la evidencia de este ADR.
+- **La tabla de excepciones crece.** Las animaciones de diseño que una revelación (*disclosure*) necesita
+   son ahora excepciones nombradas, y un presupuesto con excepciones es más difícil de leer que uno sin
+   ellas. La mitigación es que cada excepción conlleva una razón y una excepción no utilizada hace que
+   la comprobación falle.
+- **El verificador es textual.** Lee cadenas `.css` y `transition:` en línea, por lo que una duración
+   ensamblada en tiempo de ejecución es invisible para él, y no puede asociar una regla reescrita bajo
+   un selector diferente con su movimiento. Ambas limitaciones se indican en la propia cabecera del
+   verificador en lugar de dejarse para que las descubra un lector.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Enforce rule 7 literally and delete the hover transitions.** The most faithful reading, and it was
-  the first proposal. Rejected: it rewrites hover behaviour across every page and all six themes to
-  remove an animation three frames long, in a change about the budget — a cost with no measurable
-  benefit, and a large diff that hides the corrections that do matter.
-- **Keep the rule and leave the code as it is.** Rejected: that is the state the drift audit found, and
-  the reason the audit exists. A rule the code ignores is worse than a rule that is wrong, because it
-  teaches readers to skip the section.
-- **Amend only the docs and add no checker.** Rejected: §7 had already drifted twice (the stylesheet's
-  tokens, and this), and both times the drift was invisible because nothing read the rule. A bound that
-  is not enforced is a bound that will be exceeded.
-- **Bound hover to `base` (100ms) instead.** Rejected: at 100ms a colour fade starts to read as
-  movement under the pointer, which is the drag the rule was written about.
-- **Require `prefers-reduced-motion` to kill hover transitions too.** Rejected as over-reach at this
-  duration: three frames of colour is not the motion the preference is about, and the console already
-  kills the hovers that move (the heatmap mark's scale) rather than the ones that tint. The checker
-  enforces that split for keyframe animations, which are the real intrusions.
+- **Aplicar la regla 7 literalmente y eliminar las transiciones de *hover*.** La lectura más fiel, y fue
+  la primera propuesta. Rechazada: reescribe el comportamiento del *hover* en cada página y en los seis
+  temas para eliminar una animación de tres fotogramas de duración, en un cambio sobre el presupuesto —
+  un costo sin beneficio medible, y un *diff* grande que oculta las correcciones que sí importan.
+- **Mantener la regla y dejar el código como está.** Rechazada: ese es el estado que encontró la
+  auditoría de desviaciones, y la razón por la cual existe la auditoría. Una regla que el código ignora
+  es peor que una regla que está mal, porque enseña a los lectores a saltarse la sección.
+- **Modificar solo la documentación y no añadir ningún verificador.** Rechazada: §7 ya se había desviado
+  dos veces (los *tokens* de la hoja de estilos, y esto), y en ambas ocasiones la desviación fue
+  invisible porque nada leía la regla. Un límite que no se hace cumplir es un límite que se superará.
+- **Acotar el *hover* a `base` (100ms) en su lugar.** Rechazada: a 100ms un desvanecimiento de color
+  comienza a interpretarse como movimiento bajo el puntero, que es el arrastre sobre el que se escribió
+  la regla.
+- **Requerir `prefers-reduced-motion` para eliminar también las transiciones de *hover*.** Rechazada
+  por ser una medida excesiva para esta duración: tres fotogramas de color no son el movimiento al que
+  se refiere la preferencia, y la consola ya elimina los *hovers* que se mueven (la escala de la marca
+  del mapa de calor) en lugar de aquellos que se tiñen. El verificador aplica esa división para las
+  animaciones de fotogramas clave (*keyframe animations*), que son las verdaderas intrusiones.

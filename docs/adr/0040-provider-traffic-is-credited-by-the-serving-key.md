@@ -1,147 +1,146 @@
-# ADR 0040: Provider traffic is credited by the key that served it
+# ADR 0040: El tráfico del proveedor se acredita mediante la clave que lo atendió
 
-- Status: Accepted
-- Date: 2026-09-29
+- Estado: Aceptado
+- Fecha: 2026-09-29
 
-## Context
+## Contexto
 
-The dashboard's provider panel and the provider list both report traffic per provider,
-and both were reporting it to the wrong one.
+El panel de proveedores del dashboard y la lista de proveedores informan sobre el tráfico por proveedor,
+y ambos lo estaban reportando al incorrecto.
 
-**CPA's provider label cannot identify a configured provider.** For a request served by
-an API key, CPA writes the *family* into the usage record's `provider` field — `codex`
-for every Codex key, `claude` for every Claude key — and it writes the same word for a
-request served by that family's OAuth credential. One label therefore covers several
-distinct things at once: every configured key family of that name, and the OAuth
-channel beside them. The label answers "which upstream family", which is not the
-question a provider list asks.
+**La etiqueta de proveedor de CPA no puede identificar a un proveedor configurado.** Para una solicitud atendida por
+una clave de API, CPA escribe la *familia* en el campo `provider` del registro de uso — `codex`
+para cada clave de Codex, `claude` para cada clave de Claude —, y escribe la misma palabra para una
+solicitud atendida por la credencial OAuth de esa familia. Por lo tanto, una etiqueta cubre varias
+cosas distintas a la vez: cada familia de claves configurada con ese nombre y el canal OAuth
+junto a ellas. La etiqueta responde "¿qué familia upstream?", lo cual no es la
+pregunta que hace una lista de proveedores.
 
-**Two consequences followed from matching on it.** A provider the operator had just
-created, with no traffic of its own, claimed the family's OAuth traffic and displayed
-it as its own — announcing requests nobody had sent to it. And because the first row to
-claim a label consumed it, a second provider of the same family showed "no requests"
-while the first showed all of them, even when both were serving traffic.
+**De la coincidencia con dicha etiqueta se derivaron dos consecuencias.** Un proveedor que el operador acababa
+de crear, sin tráfico propio, reclamaba el tráfico OAuth de la familia y lo mostraba
+como suyo, anunciando solicitudes que nadie le había enviado. Y debido a que la primera fila en
+reclamar una etiqueta la consumía, un segundo proveedor de la misma familia mostraba "sin solicitudes"
+mientras que el primero mostraba todas, incluso cuando ambos estaban atendiendo tráfico.
 
-**Rows were also merged by name.** The aggregation skipped a configured provider whose
-display name, id or upstream name an earlier row had already claimed. Two providers left
-at CPA's default name ("Codex / Responses") therefore collapsed into one: the dashboard's
-provider panel listed the first and dropped the second, and the provider page - which
-draws a row per configured provider and joins traffic onto it by id - showed the second
-as a dash, the same mark it uses for a window it could not read. A provider that was
-serving traffic read as one whose traffic could not be determined.
+**Las filas también se fusionaban por nombre.** La agregación omitía a un proveedor configurado cuyo
+nombre para mostrar, id o nombre upstream ya había sido reclamado por una fila anterior. Dos proveedores dejados
+con el nombre predeterminado de CPA ("Codex / Responses") colapsaban por lo tanto en uno: el panel de proveedores
+del dashboard listaba al primero y descartaba al segundo, y la página de proveedores —que
+dibuja una fila por proveedor configurado y asocia el tráfico por id— mostraba al segundo
+como un guion, la misma marca que utiliza para una ventana que no pudo leer. Un proveedor que estaba
+atendiendo tráfico aparecía como uno cuyo tráfico no se pudo determinar.
 
-**Family ids double as channel ids.** The console's OAuth channel table is keyed by the
-same short ids (`codex`, `claude`, `xai`, `meta`) that name CPA's API-key families, and a
-configured API-key provider was being classified as an OAuth channel through that
-overlap. It then took the channel's credential count — the number of OAuth files — and
-the channel's traffic, so an API-key provider reported credentials it does not hold.
+**Los ids de familia duplican a los ids de canal.** La tabla de canales OAuth de la consola utiliza como clave
+los mismos ids cortos (`codex`, `claude`, `xai`, `meta`) que nombran a las familias de claves de API de CPA, y un
+proveedor de claves de API configurado estaba siendo clasificado como un canal OAuth a través de esa
+superposición. Tomaba entonces el recuento de credenciales del canal —el número de archivos OAuth— y
+el tráfico del canal, por lo que un proveedor de claves de API informaba credenciales que no posee.
 
-**The fact that does identify the key already exists in the record.** Each usage record
-carries the credential's runtime `auth_index` when an API key served it, and CPA reports
-the same index on each configured key of a provider through the management API. The
-label is unusable; the index is an identity.
+**El dato que sí identifica a la clave ya existe en el registro.** Cada registro de uso
+lleva el `auth_index` de tiempo de ejecución de la credencial cuando una clave de API lo atendió, y CPA informa
+el mismo índice en cada clave configurada de un proveedor a través de la API de gestión. La
+etiqueta es inutilizable; el índice es una identidad.
 
-## Decision
+## Decisión
 
-1. **A configured API-key provider's traffic is what its own keys served.** The window's
-   totals are split server-side: records with `auth_type = 'apikey'` are grouped by their
-   runtime auth index and returned as `credentials[]`; every other record is grouped by
-   its provider label as before. A provider's traffic is the sum of the indexes its own
-   keys report, joined exactly, one index claimed by one provider.
-2. **An OpenAI-compatible provider also counts the label CPA reserves for it.** CPA
-   labels a compatibility provider's requests `openai-compatible-<name>`, lowercasing the
-   provider's own name, and those records carry no key index. That exact label is added
-   to the provider's own keys' traffic, for the provider whose `upstream_name` produces
-   it.
-3. **Nothing is credited by family or by display name.** Family labels belong to the OAuth
-   channel that shares the name; a family match credits a provider with another surface's
-   traffic. A configured provider of one of CPA's API-key families is an API-key provider by
-   construction, and takes the channel's identity only through the name CPA carries for it —
-   the name its own requests are labelled with — never through the name the console displays
-   it under, which an operator can override in the browser. A channel row keeps the label
-   match it has always used, including its containment fallback for a channel whose label is
-   spelled differently.
-4. **Every configured provider is its own row.** Two providers left with CPA's default
-   name, and two keys of one family, are distinct providers with distinct traffic and
-   distinct credentials; neither is merged into the other, and neither is skipped.
-5. **A provider's credential count is its own.** The count comes from the number of key
-   entries the provider holds, not from the gateway's tally of auth files for a type that
-   happens to share an id.
-6. **`auth_indexes` is not a secret and travels in the sanitized projection.** The runtime
-   index is an opaque identifier CPA assigns to a credential at runtime; it is not key
-   material, and ADR 0017 already returns it per request record. The provider DTO carries
-   the indexes of the provider's keys so the browser can join without reading any key.
-7. **A record that names no index is credited to nobody.** A record stored before the index
-   was captured has none, and one whose credential CPA no longer holds keeps the index it was
-   served under while no configured provider publishes it — it stays in `credentials[]` under
-   that index and is credited to no row. Neither can be claimed by inference: a provider that
-   has one key is not evidence that it served a record with no index. These records remain in
-   the window's own totals and in the request list; only the provider rows omit them.
-8. **An index two configured providers both publish is credited to neither.** CPA derives a
-   credential's runtime index from the credential itself, so one key entered twice under one
-   name resolves to one index. Crediting whichever row comes first would make the number
-   depend on the order of the provider list.
+1. **El tráfico de un proveedor de claves de API configurado es lo que sus propias claves atendieron.** Los totales
+   de la ventana se dividen del lado del servidor: los registros con `auth_type = 'apikey'` se agrupan por su
+   índice de autenticación de tiempo de ejecución y se devuelven como `credentials[]`; cualquier otro registro se agrupa por
+   su etiqueta de proveedor como antes. El tráfico de un proveedor es la suma de los índices que informan sus propias
+   claves, asociados de forma exacta, un índice reclamado por un proveedor.
+2. **Un proveedor compatible con OpenAI también cuenta la etiqueta que CPA reserva para él.** CPA
+   etiqueta las solicitudes de un proveedor de compatibilidad como `openai-compatible-<name>`, convirtiendo a minúsculas
+   el nombre propio del proveedor, y dichos registros no llevan ningún índice de clave. Esa etiqueta exacta se agrega
+   al tráfico de las propias claves del proveedor, para el proveedor cuyo `upstream_name` la produce.
+3. **Nada se acredita por familia o por nombre para mostrar.** Las etiquetas de familia pertenecen al canal OAuth
+   que comparte el nombre; una coincidencia de familia acredita a un proveedor con el tráfico de otra superficie. Un
+   proveedor configurado de una de las familias de claves de API de CPA es un proveedor de claves de API por
+   construcción, y toma la identidad del canal únicamente a través del nombre que CPA lleva para él —
+   el nombre con el que se etiquetan sus propias solicitudes —, nunca a través del nombre con el que la consola lo muestra,
+   el cual un operador puede sobrescribir en el navegador. Una fila de canal mantiene la coincidencia de etiqueta
+   que siempre ha usado, incluyendo su respaldo de contención para un canal cuyo nombre de etiqueta
+   tiene una ortografía diferente.
+4. **Cada proveedor configurado es su propia fila.** Dos proveedores dejados con el nombre
+   predeterminado de CPA, y dos claves de una familia, son proveedores distintos con tráfico distinto y
+   credenciales distintas; ninguno se fusiona en el otro, y ninguno se omite.
+5. **El recuento de credenciales de un proveedor es propio.** El recuento proviene del número de entradas de claves
+   que posee el proveedor, no del recuento de archivos de autenticación del gateway para un tipo que
+   casualmente comparte un id.
+6. **`auth_indexes` no es un secreto y viaja en la proyección sanitizada.** El índice de
+   tiempo de ejecución es un identificador opaco que CPA asigna a una credencial en tiempo de ejecución; no es material
+   de clave, y el ADR 0017 ya lo devuelve por registro de solicitud. El DTO del proveedor transporta
+   los índices de las claves del proveedor para que el navegador pueda realizar la asociación sin leer ninguna clave.
+7. **Un registro que no nombra ningún índice no se acredita a nadie.** Un registro almacenado antes de que se capturara el índice
+   no tiene ninguno, y uno cuya credencial CPA ya no posee conserva el índice bajo el cual fue
+   atendido mientras ningún proveedor configurado lo publica; permanece en `credentials[]` bajo
+   ese índice y no se acredita a ninguna fila. Ninguno de los dos puede reclamarse por inferencia: un proveedor que
+   tiene una clave no es evidencia de que haya atendido un registro sin índice. Estos registros permanecen en
+   los totales propios de la ventana y en la lista de solicitudes; solo las filas de proveedores los omiten.
+8. **Un índice que dos proveedores configurados publican ambos no se acredita a ninguno.** CPA deriva el
+   índice de tiempo de ejecución de una credencial a partir de la propia credencial, por lo que una clave ingresada dos veces bajo
+   un mismo nombre se resuelve en un solo índice. Acreditar a la fila que aparezca primero haría que el número
+   dependiera del orden de la lista de proveedores.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- A provider created a minute ago reports zero requests instead of another surface's
-  traffic, and two providers of the same family each report their own.
-- An OAuth channel's traffic stops including the requests API keys served, so the
-  dashboard's channel numbers and the request records agree.
-- Colliding display names no longer hide a provider: every configured provider has a row
-  and an accurate count.
-- The join is exact and testable without a database: it is a map lookup on an identifier
-  CPA already publishes on both sides, with no heuristics to tune.
+- Un proveedor creado hace un minuto informa cero solicitudes en lugar del tráfico de otra superficie,
+- y dos proveedores de la misma familia informan cada uno su propio tráfico.
+- El tráfico de un canal OAuth deja de incluir las solicitudes atendidas por las claves de API, de modo que
+- los números de canales del dashboard y los registros de solicitudes coinciden.
+- Los nombres para mostrar en colisión ya no ocultan a un proveedor: cada proveedor configurado tiene una fila
+- y un recuento preciso.
+- La asociación es exacta y comprobable sin base de datos: es una búsqueda de mapa sobre un identificador
+- que CPA ya publica en ambos lados, sin heurísticas que ajustar.
 
-### Trade-offs
+### Compensaciones (Trade-offs)
 
-- **History without an index is not attributable.** Records written before the index was
-  captured, and records whose credential has been removed from CPA, count toward no
-  configured provider. They stay visible in totals and in the request list. The
-  alternative — guessing from the family label, the display name, or a provider's only
-  key — is systematically wrong in the two cases this decision exists to fix, and a
-  number that is confidently wrong is worse than a zero that is honestly narrow.
-- **The panel's first paint is unpartitioned.** While the windowed read is absent — the frame
-  before it arrives, or a partial failure — rows fall back to the overview's label totals, which
-  are not split by serving key, and a channel row then carries its family's mixed total. The
-  windowed read replaces them on arrival; the alternative would be to withhold the only figures
-  available in that state.
-- **The dashboard response grew a second list.** `credentials[]` is one entry per key
-  that served traffic in the window rather than per provider, so the payload scales with
-  both providers and their keys. Each entry is three small fields.
-- **The two halves are only meaningful together.** `credentials[]` is the part of the label
-  rows that the server split out by serving key, so a reader that takes the key rows without
-  the label rows counts the same requests twice; the console reads them from one response and
-  credits keys only when that response's label list is there.
-- **An entry CPA holds without a name is credited to nobody.** Its records carry the shared
-  `openai-compatibility` label, which no single provider can claim, and CPA must name an entry
-  to derive a per-entry label at all. Such a provider's keys still report whatever they served.
-- **The console now depends on a per-key fact, not a per-provider one.** A key that CPA
-  reports without an index cannot be credited, and the provider shows only its other
-  keys' traffic — the same honest omission as above, at a smaller scale.
+- **El historial sin índice no es atribuible.** Los registros escritos antes de que se capturara el índice,
+  y los registros cuya credencial se ha eliminado de CPA, no cuentan para ningún
+  proveedor configurado. Siguen siendo visibles en los totales y en la lista de solicitudes. La
+  alternativa —adivinar a partir de la etiqueta de familia, el nombre para mostrar o la única
+  clave de un proveedor— es sistemáticamente errónea en los dos casos que este decisión existe para corregir, y un
+  número que es erróneamente seguro es peor que un cero honestamente acotado.
+- **El primer renderizado del panel no está particionado.** Mientras la lectura con ventanas está ausente —el fotograma
+  antes de que llegue, o un fallo parcial—, las filas recurren a los totales de etiquetas generales, que
+  no están divididos por clave de atención, y una fila de canal lleva entonces el total mixto de su familia. La
+  lectura con ventanas las reemplaza al llegar; la alternativa habría sido retener las únicas cifras
+  disponibles en ese estado.
+- **La respuesta del dashboard incorporó una segunda lista.** `credentials[]` es una entrada por cada clave
+  que atendió tráfico en la ventana en lugar de por proveedor, por lo que la carga útil escala con
+  ambos, proveedores y claves. Cada entrada consta de tres pequeños campos.
+- **Las dos mitades solo tienen sentido juntas.** `credentials[]` es la parte de las filas de etiquetas
+  que el servidor separó por clave de atención, por lo que un lector que tome las filas de claves sin
+  las filas de etiquetas cuenta las mismas solicitudes dos veces; la consola las lee de una sola respuesta y
+  acredita las claves solo cuando la lista de etiquetas de esa respuesta está presente.
+- **Una entrada que CPA posee sin nombre no se acredita a nadie.** Sus registros llevan la etiqueta compartida
+  `openai-compatibility`, que ningún proveedor individual puede reclamar, y CPA debe nombrar una entrada
+  para derivar una etiqueta por entrada en absoluto. Las claves de dicho proveedor siguen informando lo que hayan atendido.
+- **La consola ahora depende de un dato por clave, no por proveedor.** Una clave que CPA
+  informa sin un índice no puede ser acreditada, y el proveedor muestra únicamente el tráfico de sus otras
+  claves —la misma omisión honesta que arriba, a menor escala—.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Match on the family label and split by position.** Rejected: a label that covers both
-  the OAuth channel and every key of a family has no position to split by, and the
-  ordering CPA reports keys in is not a claim about which one served a past request.
-- **Credit each family's traffic to the provider that holds the most keys, or the first
-  one.** Rejected: it invents a distribution rather than reading one, and the invented
-  number is displayed as measured traffic.
-- **Keep the first row's claim on a label and show the rest as zero.** Rejected: this is
-  the defect being fixed. Two providers of one family serving traffic with only one of
-  them reporting it is a wrong answer to the panel's only question.
-- **Attribute the OpenAPI-compatible label by substring.** Rejected: `deepseek` matching
-  `deepseek-pro` would credit one provider with another's requests. Only the exact label
-  CPA derives from the provider's own `upstream_name` counts.
-- **Resolve the join in the browser from the raw label list.** Rejected: the index-based
-  split has to happen where the records are read, because the label alone cannot be split
-  into keys and channels. Shipping both halves to the browser and joining there would put
-  the same rule in a second place with less information.
+- **Coincidir con la etiqueta de familia y dividir por posición.** Rechazado: una etiqueta que cubre tanto
+  al canal OAuth como a cada clave de una familia no tiene una posición por la cual dividirse, y el
+  orden en que CPA informa las claves no es una afirmación sobre cuál de ellas atendió una solicitud pasada.
+- **Acreditar el tráfico de cada familia al proveedor que posee la mayor cantidad de claves, o al primero.**
+  Rechazado: inventa una distribución en lugar de leer una, y el número inventado
+  se muestra como tráfico medido.
+- **Mantener la reclamación de la primera fila sobre una etiqueta y mostrar el resto como cero.** Rechazado: este es
+  el defecto que se está corrigiendo. Dos proveedores de una familia que atienden tráfico con solo uno
+  de ellos informándolo es una respuesta incorrecta a la única pregunta del panel.
+- **Atribuir la etiqueta compatible con OpenAPI por subcadena.** Rechazado: que `deepseek` coincida con
+  `deepseek-pro` acreditaría a un proveedor con las solicitudes de otro. Solo cuenta la etiqueta exacta
+  que CPA deriva del propio `upstream_name` del proveedor.
+- **Resolver la asociación en el navegador a partir de la lista de etiquetas en bruto.** Rechazado: la división basada en índices
+  tiene que ocurrir donde se leen los registros, porque la etiqueta por sí sola no se puede dividir
+  en claves y canales. Enviar ambas mitad al navegador y asociarlas allí pondría
+  la misma regla en un segundo lugar con menos información.
 
-## References
+## Referencias
 
-- ADR 0017: a request record names the provider key that answered it, resolved at read
-  time. This ADR applies the same identity (`auth_index`) to aggregate traffic.
+- ADR 0017: un registro de solicitud nombra la clave de proveedor que lo respondió, resuelta en el momento
+  de la lectura. Este ADR aplica la misma identidad (`auth_index`) para agregar tráfico.

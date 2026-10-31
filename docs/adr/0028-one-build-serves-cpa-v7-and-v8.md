@@ -1,61 +1,60 @@
-# ADR 0028: One build serves CPA v7 and v8, placing settings by the file's layout
+# ADR 0028: Una sola compilación da servicio a CPA v7 y v8, ubicando la configuración según la estructura del archivo
 
-- Status: Superseded by ADR 0034
-- Date: 2026-09-27
+- Estado: Reemplazado por ADR 0034
+- Fecha: 2026-09-27
 
-## Context
+## Contexto
 
-CPA v8 moved most configuration settings into new sections and gave the root
-`api-keys` key a new meaning (upstream provider groups instead of client keys). It
-still reads a v7 file unchanged, keeps the whole `/v0/management` API, and adds a
-`/v8/management` tree. A v8 configuration write migrates and rewrites the whole file.
+CPA v8 trasladó la mayoría de los parámetros de configuración a nuevas secciones y otorgó a la
+clave raíz `api-keys` un nuevo significado (grupos de proveedores *upstream* en lugar de claves de clientes).
+Aún lee un archivo v7 sin modificaciones, mantiene toda la API `/v0/management` y añade un
+árbol `/v8/management`. Una operación de escritura de configuración en v8 migra y reescribe el archivo completo.
 
-Against a migrated file, OMC's configuration editor and Keys page wrote v7 paths
-through `PUT /v0/management/config.yaml`. CPA accepted the save, answered success, kept
-the v8 value and deleted the edit. Writing the client-key list at the root also deleted
-every upstream provider credential. Nothing in the response revealed either loss.
+Frente a un archivo migrado, el editor de configuración y la página de Claves de OMC escribían rutas v7
+a través de `PUT /v0/management/config.yaml`. CPA aceptaba el guardado, respondía con éxito, conservaba
+el valor de v8 y borraba la edición. Escribir la lista de claves de cliente en la raíz también borraba
+todas las credenciales de los proveedores *upstream*. Nada en la respuesta revelaba alguna de las dos pérdidas.
 
-Deployments will run both generations for some time, and one OMC build has to serve
-both without an operator switch.
+Los despliegues ejecutarán ambas generaciones durante algún tiempo, y una sola compilación de OMC tiene que dar
+servicio a ambas sin necesidad de un interruptor para el operador.
 
-## Decision
+## Decisión
 
-1. **Detect, never compare versions.** The API generation is decided by reading
-   `/v8/management/config/config-version` and requiring the value `8`. The file's
-   layout (`legacy`, `v8`, `mixed`) is decided from the document itself. Both facts are
-   exposed to the console, and the API generation is also a capability key
+1. **Detectar, nunca comparar versiones.** La generación de la API se determina leyendo
+   `/v8/management/config/config-version` y exigiendo el valor `8`. La estructura del archivo
+   (`legacy`, `v8`, `mixed`) se determina a partir del propio documento. Ambos hechos se
+   exponen a la consola, y la generación de la API es también una clave de capacidad
    (`management-v8`).
-2. **Placement follows the document, not the gateway.** A legacy file is edited at v7
-   paths on either gateway; a v8 or mixed file at v8 paths, with the legacy spelling read
-   as a fallback and removed on write. OMC never performs a v8 configuration write, so it
-   never triggers the migration on the operator's behalf.
-3. **One relocation table, CPA's own.** The table is taken from CPA's source
-   (`internal/cpa/configyaml/layout_rules.go`) and sent to the console with the
-   configuration, so the editor and the server-side guard read the same rows.
-4. **Refuse what CPA would silently drop.** Unless the gateway is known to lack the v8
-   API, a whole-document save that contains a legacy spelling beside its v8 twin, or that
-   replaces stored provider groups, is refused before it reaches CPA.
-5. **Operations prefer v8 routes only where v8 reuses the v0 handler**, and fall back
-   to v0 when the v8 route is missing. Everything else stays on v0.
+2. **La ubicación sigue al documento, no a la pasarela.** Un archivo heredado (*legacy*) se edita en rutas v7
+   en cualquiera de las pasarelas; un archivo v8 o mixto, en rutas v8, leyendo la nomenclatura heredada
+   como alternativa (*fallback*) y eliminándola al escribir. OMC nunca realiza una escritura de configuración v8,
+   por lo que nunca desencadena la migración en nombre del operador.
+3. **Una única tabla de reubicación, la propia de CPA.** La tabla se toma del código fuente de CPA
+   (`internal/cpa/configyaml/layout_rules.go`) y se envía a la consola junto con la
+   configuración, de modo que el editor y el mecanismo de protección (*guard*) del lado del servidor lean las mismas filas.
+4. **Rechazar lo que CPA descartaría silenciosamente.** A menos que se sepa que la pasarela carece de la API v8,
+   se rechaza antes de llegar a CPA cualquier guardado de documento completo que contenga una nomenclatura heredada
+   junto a su homóloga en v8, o que reemplace los grupos de proveedores almacenados.
+5. **Las operaciones prefieren las rutas v8 solo donde v8 reutiliza el *handler* de v0**, y recurren
+   a v0 cuando falta la ruta v8. Todo lo demás permanece en v0.
 
-## Consequences
+## Consecuencias
 
-- A v7 gateway sees exactly the requests it saw before, apart from one cached probe.
-- The table is a snapshot of one CPA release and must be re-derived when the pinned
-  release changes (`docs/cpa-v8-compat.md` §10). A setting CPA moves in a later release
-  is not placed by the editor, nor checked by the guard, until then.
-- The guard can refuse a document a human wrote on purpose with both spellings. The
-  refusal names each pair, and removing one spelling resolves it.
-- Operations on the fallback path cost one extra request when a v8 route answers 404
-  for its own reasons (an unknown id).
+- Una pasarela v7 ve exactamente las mismas solicitudes que veía antes, aparte de una sonda en caché.
+- La tabla es una instantánea de una versión de CPA y debe volverse a derivar cuando cambie la versión
+  fijada (`docs/cpa-v8-compat.md` §10). Un parámetro que CPA mueva en una versión posterior no será ubicado
+  por el editor, ni verificado por el mecanismo de protección, hasta entonces.
+- El mecanismo de protección puede rechazar un documento que un humano haya escrito a propósito con ambas nomenclaturas.
+- El rechazo nombra cada par, y eliminar una de las nomenclaturas lo resuelve.
+- Las operaciones en la ruta alternativa (*fallback*) cuestan una solicitud adicional cuando una ruta v8 responde con 404
+  por motivos propios (un id desconocido).
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Migrate the file through `/v8/management/config`.** Rejected: it rewrites the
-  operator's whole file (formatting, unknown sections turned into comments) as a side
-  effect of editing one setting, which contradicts the adoption invariant that OMC never
-  mutates configuration it does not own.
-- **Write every setting through path-addressed v8 endpoints.** Rejected for the same
-  reason: any successful v8 write migrates the file.
-- **Choose placement by gateway version.** Rejected: a v8 gateway serving a legacy file
-  would have its file migrated piecemeal into a mixed layout.
+- **Migrar el archivo a través de `/v8/management/config`.** Rechazado: reescribe todo el archivo del
+  operador (formato, secciones desconocidas convertidas en comentarios) como efecto secundario de editar un solo
+  parámetro, lo cual contradice el invariante de adopción de que OMC nunca muta la configuración que no posee.
+- **Escribir cada parámetro a través de endpoints v8 direccionados por ruta.** Rechazado por la misma razón:
+  cualquier escritura exitosa en v8 migra el archivo.
+- **Elegir la ubicación según la versión de la pasarela.** Rechazado: una pasarela v8 que sirviera un archivo
+  heredado vería su archivo migrado por partes a una estructura mixta.

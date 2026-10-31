@@ -1,46 +1,46 @@
-# ADR 0083: Agent runs retain the work the task needs
+# ADR 0083: Las ejecuciones del Agente conservan el trabajo que la tarea necesita
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-10-08
-- Amends: the Agent request/session sizing policies in ADRs 0042, 0072, 0074, 0075 and 0078,
-  and the Agent journal-size and run-duration policies in ADR 0044. Playground keeps its own
-  limits and persistence contract.
+- Estado: Aceptado
+- Sustituido en parte: la página del Playground, sus rutas y los ADR 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agente permanece (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Fecha: 2026-10-08
+- Modifica: las políticas de dimensionamiento de solicitudes/sesiones del Agente en los ADR 0042, 0072, 0074, 0075 y 0078,
+  y las políticas de tamaño de diario y duración de ejecución del Agente en el ADR 0044. El Playground mantiene sus propios
+  límites y contrato de persistencia.
 
-## Context
+## Contexto
 
-An investigation can require more rounds, output or retained evidence than an application-wide
-estimate allows. The adopted Agent contract lets the task and operator determine when work ends,
-while the upstream provider determines whether a request fits its actual context window. A local
-byte-to-token estimate cannot establish that boundary reliably.
+Una investigación puede requerir más rondas, resultados o evidencia retenida de lo que permite una
+estimación a nivel de aplicación. El contrato del Agente adoptado permite que la tarea y el operador determinen cuándo termina el trabajo,
+mientras que el proveedor externo determina si una solicitud cabe en su ventana de contexto real. Una estimación local
+de bytes a tokens no puede establecer ese límite de forma fiable.
 
-## Decision
+## Decisión
 
-The Agent has no application-level token, model-round, tool-call, display-count or run-duration
-ceiling. Model requests include the active turn's exchanges in full. Earlier settled turns
-contribute conclusions and bounded provenance metadata through `buildCompletedTurnMessages`;
-the stored transcript remains authoritative and is not trimmed to fit a session-size budget.
-Session documents are exempt from the repository's per-document byte bound.
+El Agente no tiene un límite máximo a nivel de aplicación de tokens, rondas del modelo, llamadas a herramientas, conteo de visualización o duración de ejecución.
+Las solicitudes al modelo incluyen los intercambios del turno activo en su totalidad. Los turnos anteriores ya consolidados
+aportan conclusiones y metadatos de procedencia acotados a través de `buildCompletedTurnMessages`;
+la transcripción almacenada sigue siendo la autoridad y no se recorta para ajustarse a un presupuesto de tamaño de sesión.
+Los documentos de sesión están exentos del límite de bytes por documento del repositorio.
 
-Agent browser-run journals grow with the run instead of cancelling it at a byte ceiling. They
-remain process-local, retain the latest completed run for 15 minutes, and are replaced by later
-runs. Stop and application shutdown still cancel execution; disconnecting a browser subscription
-does not. Direct-stream callers retain request-context cancellation.
+Los diarios de ejecución del navegador del Agente crecen con la ejecución en lugar de cancelarla al alcanzar un límite de bytes.
+Permanecen locales al proceso, retienen la última ejecución completada durante 15 minutos y son reemplazados por ejecuciones posteriores.
+La detención y el cierre de la aplicación aún cancelan la ejecución; la desconexión de una suscripción del navegador
+no lo hace. Los llamadores de transmisión directa (*direct-stream*) conservan la cancelación por contexto de solicitud.
 
-Payload validation, authorization, revision-bound approvals and the sandbox are unchanged.
-Message/image limits, newest-eight image inclusion, capability result bounds, display payload
-validation, 1 MiB SSE lines and the gateway's 120-second header/stream-idle timeouts still apply.
-The prompt and catalogue compactness checks are regression assertions, not runtime task budgets.
+La validación de cargas útiles, la autorización, las aprobaciones vinculadas a revisiones y el sandbox no cambian.
+Los límites de mensajes/imágenes, la inclusión de las ocho imágenes más recientes, los límites de resultados de capacidades, la validación de cargas útiles de visualización,
+las líneas SSE de 1 MiB y los tiempos de espera de inactividad de encabezados/transmisión de 120 segundos de la pasarela (*gateway*) siguen aplicándose.
+Las comprobaciones de compacidad del prompt y del catálogo son aserciones de regresión, no presupuestos de tareas en tiempo de ejecución.
 
-## Consequences
+## Consecuencias
 
-Long conversations increase database and backup size, serialization cost, memory, model-request
-size and upstream charges. A provider can refuse an oversized context; OMC does not silently
-remove the active investigation to make it fit. Operators monitor resources, stop active work
-when appropriate and start a new conversation to release retained history and images.
+Las conversaciones largas aumentan el tamaño de la base de datos y de las copias de seguridad, el costo de serialización, la memoria, el tamaño de las solicitudes al modelo
+y los costos del proveedor. Un proveedor puede rechazar un contexto sobredimensionado; OMC no elimina silenciosamente
+la investigación activa para hacer que encaje. Los operadores supervisan los recursos, detienen el trabajo activo
+cuando es apropiado e iniciam una nueva conversación para liberar el historial y las imágenes retenidas.
 
-This trades a fixed application resource envelope for preserving work. It does not provide
-durable background execution: a process restart loses journals and interrupts active runs.
-Capability effects already performed are never repeated by replay. Operational guidance belongs
-in `docs/operations.md`; ordinary Go and browser recovery tests continue to enforce cancellation,
-permission boundaries and the distinct Agent/Playground journal behavior.
+Esto cambia un límite fijo de recursos de la aplicación por la preservación del trabajo. No proporciona
+una ejecución en segundo plano duradera: un reinicio del proceso pierde los diarios e interrumpe las ejecuciones activas.
+Los efectos de las capacidades ya realizados nunca se repiten mediante reproducción. La guía operativa pertenece
+a `docs/operations.md`; las pruebas ordinarias de Go y de recuperación del navegador continúan aplicando la cancelación,
+los límites de permisos y el comportamiento diferenciado de los diarios del Agente y del Playground.

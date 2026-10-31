@@ -1,84 +1,39 @@
-# ADR 0075: Agent messages take images, kept beside the conversation
+# ADR 0075: Los mensajes del Agente aceptan imágenes, guardadas junto a la conversación
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- Date: 2026-10-08
-- Supersedes the "Images are not taken" decision of
-  [ADR 0074](0074-agent-attachments-are-text-inside-the-message.md). Text files still
-  travel inside the message as that ADR describes.
-- Extends [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md): a
-  run's one user message may be multi-part.
+- Estado: Aceptado
+- Superado en parte: la página de Playground, sus rutas y los ADRs 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agente se mantiene (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Fecha: 2026-10-08
+- Supera la decisión "Images are not taken" de
+  [ADR 0074](0074-agent-attachments-are-text-inside-the-message.md). Los archivos de texto siguen
+  viajando dentro del mensaje tal como describe ese ADR.
+- Extiende el [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md): el
+  único mensaje de usuario de una ejecución puede constar de múltiples partes.
 
-## Context
+## Contexto
 
-Operators hold what they want to ask about as pictures as often as text: a
-screenshot of an upstream's error page, a dashboard from another tool, a chart from
-a report. ADR 0074 left images out because the Agent resumes a turn from what the
-server stored, and an image either has to be stored or the resumed model no longer
-sees what it was asked about.
+Los operadores sostienen aquello sobre lo que quieren preguntar en forma de imágenes con la misma frecuencia que de texto: una captura de pantalla de la página de error de un servicio upstream, un panel de control (*dashboard*) de otra herramienta, un gráfico de un informe. El ADR 0074 omitió las imágenes porque el Agente reanuda un turno a partir de lo que almacenó el servidor, y una imagen o debe almacenarse o el modelo reanudado ya no ve aquello sobre lo que se le preguntó.
 
-The cost of storing was the argument against it. The conversation is one encrypted
-document rewritten on every round of every turn, capped at 900 KiB; a single
-screenshot is larger than that. But the Agent is the console's primary surface, the
-models it drives read images natively, and "paste it into the Playground instead"
-gives up capabilities, history and approvals for one picture.
+El costo de almacenamiento era el argumento en contra. La conversación es un único documento cifrado que se reescribe en cada ronda de cada turno, con un límite de 900 KiB; una sola captura de pantalla es más grande que eso. Pero el Agente es la superficie principal de la consola, los modelos que impulsa leen imágenes de forma nativa, y "pegarlo en el Playground en su lugar" sacrifica capacidades, historial y aprobaciones por una sola imagen.
 
-## Decision
+## Decisión
 
-**An image travels beside the message, as bytes.** A run's user message is either a
-string, as before, or AG-UI parts: at most one `text` part and up to four `binary`
-parts carrying `mimeType` and base64 `data`. A part that names a `url` is refused -
-the server never fetches on a message's behalf. Each source image is at most 5 MiB decoded,
-must be PNG, JPEG or WebP, and its leading bytes must match its declared type. Before storage, the browser
-normalizes Agent images to WebP, at most 2048 pixels on the long edge and 512 KiB, so repeated context
-remains compact without changing the original file validation contract. A
-message may be images alone.
+**Una imagen viaja junto al mensaje, en forma de bytes.** El mensaje de usuario de una ejecución es una cadena de texto, como antes, o partes de AG-UI: como máximo una parte de tipo `text` y hasta cuatro partes de tipo `binary` que transportan `mimeType` y `data` en base64. Se rechaza cualquier parte que nombre una `url` —el servidor nunca realiza peticiones (*fetches*) en nombre de un mensaje—. Cada imagen de origen tiene como máximo 5 MiB decodificados, debe ser PNG, JPEG o WebP, y sus bytes iniciales deben coincidir con su tipo declarado. Antes del almacenamiento, el navegador normaliza las imágenes del Agente a WebP, con un máximo de 2048 píxeles en su borde largo y 512 KiB, de modo que el contexto repetido permanezca compacto sin alterar el contrato de validación del archivo original. Un mensaje puede constar únicamente de imágenes.
 
-**The server stores each image as its own document.** Images are `agent_documents`
-of kind `image` (migration 036), encrypted like every other Agent document and one
-row each. The conversation holds a reference per image - identifier, media type and
-size - on the turn that carries it, so the conversation document stays as small as
-it was and is still rewritten whole on every round.
+**El servidor almacena cada imagen como su propio documento.** Las imágenes son `agent_documents` del tipo `image` (migración 036), cifradas como cualquier otro documento del Agente y ocupando una fila cada una. La conversación guarda una referencia por imagen —identificador, tipo de medio y tamaño— en el turno que la transporta, por lo que el documento de conversación se mantiene tan pequeño como antes y sigue reescribiéndose por completo en cada ronda.
 
-**An image lives exactly as long as its turn.** It is deleted when the turn is
-evicted from the conversation's window or the conversation is reset. A retry or an
-edit of the newest turn keeps that turn's images: the replacing message inherits the
-references, and the documents are not rewritten.
+**Una imagen vive exactamente el mismo tiempo que su turno.** Se elimina cuando el turno es expulsado de la ventana de la conversación o cuando la conversación se reinicia. Un reintento o una edición del turno más reciente conservan las imágenes de ese turno: el mensaje de reemplazo hereda las referencias y los documentos no se reescriben.
 
-**The model sees the newest images on every round.** Each request loads the image
-documents its messages reference and sends them as `image_url` parts with data URLs.
-Only the newest eight images in the conversation are loaded; an older one is
-replaced by a short text note that an image was attached and is no longer shown, so
-a long conversation's request does not grow without bound and the model is told what
-it cannot see. Image bytes are not counted against the request's text ceiling; the
-ceiling exists to bound what capability results add to a request, and images are
-bounded by count and size instead.
+**El modelo ve las imágenes más recientes en cada ronda.** Cada solicitud carga los documentos de imagen a los que hacen referencia sus mensajes y los envía como partes de tipo `image_url` con URLs de datos (*data URLs*). Solo se cargan las ocho imágenes más análogas y recientes de la conversación; una más antigua se reemplaza por una nota de texto breve que indica que se adjuntó una imagen y ya no se muestra, de modo que la solicitud de una conversación larga no crezca sin límite y se le informe al modelo lo que no puede ver. Los bytes de las imágenes no se contabilizan para el límite de texto de la solicitud; dicho límite existe para acotar lo que los resultados de las capacidades añaden a una solicitud, mientras que las imágenes se limitan por conteo y tamaño en su lugar.
 
-**The console reads an image from one endpoint.** `GET /api/v1/agent/images/{id}`
-serves an image only while the current conversation references that identifier,
-under the session authentication every console request uses, with `nosniff`, a
-sandboxing content security policy and a private immutable cache lifetime. The
-public demonstration refuses the route.
+**La consola lee una imagen desde un único endpoint.** `GET /api/v1/agent/images/{id}` sirve una imagen únicamente mientras la conversación actual haga referencia a ese identificador, bajo la autenticación de sesión que utiliza cada solicitud de la consola, con la directiva `nosniff`, una política de seguridad de contenidos de aislamiento (*sandboxing*) y un tiempo de vida de caché privada e inmutable. La demostración pública rechaza esta ruta.
 
-**The composer takes both kinds of attachment through one control.** A file whose
-declared type is an image is checked as an image and previewed as a thumbnail; any
-other file is checked as text (ADR 0074). Images can be picked, dropped or pasted.
+**El componente de redacción (*composer*) acepta ambos tipos de archivo adjunto a través de un único control.** Un archivo cuyo tipo declarado sea una imagen se verifica como imagen y se previsualiza como miniatura; cualquier otro archivo se verifica como texto (ADR 0074). Las imágenes se pueden seleccionar, arrastrar y soltar, o pegar.
 
-## Consequences
+## Consecuencias
 
-- The Agent database grows by up to four images of 5 MiB per message for as long as
-  their turns stay in the conversation window. `repository.MAX_AGENT_DOCUMENT_BYTES`
-  rises to 8 MiB to hold one base64-encoded image; the conversation's own 900 KiB cap
-  is unchanged.
-- A run request body may now be tens of megabytes. The run endpoint's body limit is
-  raised for it; every other limit on a message's text stands.
-- Whether the selected model reads images is not checked before sending. A model
-  that does not is the upstream's error to report, shown as any failed run is; the
-  reference catalog's modality data is advisory and would wrongly block models it
-  does not know.
-- Requests that carry images cost upstream tokens on every round of the turn and of
-  the turns after it, until the image falls outside the newest eight.
-- An exported conversation embeds the images the console could read at export time,
-  so the file stands alone; the JSON export carries the references only.
-- External agents over MCP are unaffected: images are part of the built-in Agent's
-  run protocol, not of any capability.
+- La base de datos del Agente crece hasta en cuatro imágenes de 5 MiB por mensaje mientras sus turnos permanezcan en la ventana de conversación. `repository.MAX_AGENT_DOCUMENT_BYTES` aumenta a 8 MiB para albergar una imagen codificada en base64; el propio límite de 900 KiB de la conversación permanece inalterado.
+- El cuerpo de una solicitud de ejecución puede ahora alcanzar decenas de megabytes. El límite de tamaño del cuerpo del endpoint de ejecución se incrementa para ello; cualquier otro límite sobre el texto de un mensaje se mantiene intacto.
+- No se verifica antes del envío si el modelo seleccionado lee imágenes. Que un modelo no lo haga es un error del upstream que debe reportarse, mostrado como cualquier ejecución fallida; los datos de modalidades del catálogo de referencia son informativos y bloquearían erróneamente a modelos que este desconoce.
+- Las solicitudes que transportan imágenes consumen tokens del upstream en cada ronda del turno y de los turnos posteriores a este, hasta que la imagen quede fuera de las ocho más recientes.
+- Una conversación exportada incrusta las imágenes que la consola pudo leer en el momento de la exportación, de modo que el archivo sea independiente; la exportación en JSON solo transporta las referencias.
+- Los agentes externos a través de MCP no se ven afectados: las imágenes forman parte del protocolo de ejecución del Agente integrado, no de ninguna capacidad.

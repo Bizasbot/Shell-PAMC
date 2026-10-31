@@ -1,93 +1,93 @@
-# ADR 0088: A conversation chooses its inference endpoint in the composer
+# ADR 0088: Una conversación elige su endpoint de inferencia en el compositor
 
-- Status: Accepted
-- Superseded in part: the Playground page, its routes and ADRs 0022-0024 were removed; mentions of the Playground below are historical. The Agent remains (model list `GET /agent/models`, runs `/agent/runs/...`).
-- The links to ADR 0022 below are dead: that ADR was deleted with the Playground.
-- Date: 2026-10-09
-- Extends ADR 0022 (deleted) and
-  [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md): the Playground and the
-  Agent still reach CPA only through the gateway client and fixed paths; there are now three.
-- Completes what [ADR 0076](0076-the-agent-has-its-own-shell-and-names-its-model-in-the-composer.md)
-  left open: `TargetChip` now serves the Playground, and `TargetPicker` is removed.
+- Estado: Aceptado
+- Superado en parte: la página Playground, sus rutas y los ADR 0022-0024 fueron eliminados; las menciones al Playground a continuación son históricas. El Agente se mantiene (lista de modelos `GET /agent/models`, ejecuciones `/agent/runs/...`).
+- Los enlaces al ADR 0022 a continuación están rotos: dicho ADR se eliminó junto con el Playground.
+- Fecha: 2026-10-09
+- Extiende el ADR 0022 (eliminado) y el
+  [ADR 0041](0041-agent-runs-speak-ag-ui-and-render-with-assistant-ui.md): el Playground y el
+  Agente todavía se comunican con CPA únicamente a través del cliente de pasarela y rutas fijas; ahora son tres.
+- Completa lo que [ADR 0076](0076-the-agent-has-its-own-shell-and-names-its-model-in-the-composer.md)
+  dejó abierto: `TargetChip` ahora da servicio al Playground y se elimina `TargetPicker`.
 
-## Context
+## Contexto
 
-CPA serves a client key on three inference endpoints: Chat Completions
-(`/v1/chat/completions`), Responses (`/v1/responses`) and Messages (`/v1/messages`). Each
-is what a different family of clients speaks, and CPA translates each to whichever provider
-routes the model. The Playground and the Agent sent every conversation to Chat Completions, so
-an operator debugging a client that speaks Responses or Messages could not reproduce that
-client's path through CPA - the translation they needed to test was never exercised - and a
-model that behaves better on its native endpoint could not be driven through it.
+CPA ofrece una clave de cliente en tres endpoints de inferencia: Chat Completions
+(`/v1/chat/completions`), Responses (`/v1/responses`) y Messages (`/v1/messages`). Cada
+uno corresponde a lo que utiliza una familia diferente de clientes, y CPA traduce cada uno al proveedor que
+enrute el modelo. El Playground y el Agente enviaban todas las conversaciones a Chat Completions, por lo
+que un operador que depuraba un cliente que utiliza Responses o Messages no podía reproducir la
+ruta de ese cliente a través de CPA —la traducción que necesitaba probar nunca se ejecutaba— y un
+modelo que se comporta mejor en su endpoint nativo no podía ser dirigido a través del mismo.
 
-Separately, the Playground chose its key and model in two selects in the page head and its
-reasoning effort in a free-text field of the side panel, while the Agent chose all three on
-chips in the composer. Two pages asked the same question - what is the next message sent
-with - in two places and two idioms.
+Por otro lado, el Playground elegía su clave y modelo mediante dos selectores en la cabecera de la página y su
+esfuerzo de razonamiento en un campo de texto libre en el panel lateral, mientras que el Agente elegía los tres
+mediante chips en el compositor. Dos páginas hacían la misma pregunta —con qué se envía el siguiente mensaje—
+en dos lugares y dos idiomáticas diferentes.
 
-## Decision
+## Decisión
 
-**A conversation is sent to one of CPA's three endpoints, chosen by name.**
-A Playground request and an Agent run each carry `endpoint`: `chat` (the default, and what an absent field means),
-`responses` or `messages`. It is a name from a closed set, never a path or a URL; the
-gateway client maps it to a fixed path, so the rule against arbitrary targets holds.
+**Una conversación se envía a uno de los tres endpoints de CPA, elegido por su nombre.**
+Una solicitud del Playground y una ejecución del Agente llevan cada una el campo `endpoint`: `chat` (el predeterminado, y lo que significa un campo ausente),
+`responses` o `messages`. Es un nombre de un conjunto cerrado, nunca una ruta o una URL; el
+cliente de pasarela lo mapea a una ruta fija, por lo que se mantiene la regla en contra de destinos arbitrarios.
 
-**The console's request and its events stay one shape.** The operator's conversation is
-written once, in the console's own message form. `internal/cpa/gateway` converts it into the
-endpoint's body - `input` and `instructions` for Responses, `messages`, `system` and a
-required `max_tokens` for Messages - and decodes that endpoint's stream back into the same
-`delta`, `thought`, `usage` and `done` events. Nothing downstream of the gateway knows which
-endpoint answered: turns, diagnostics, timing, usage and recovery are unchanged.
+**La solicitud de la consola y sus eventos mantienen un único formato.** La conversación del operador se
+escribe una sola vez, en el formulario de mensajes propio de la consola. `internal/cpa/gateway` la convierte en el
+cuerpo del endpoint —`input` e `instructions` para Responses, `messages`, `system` y un
+`max_tokens` obligatorio para Messages— y decodifica el flujo (stream) de ese endpoint de vuelta en los mismos eventos
+`delta`, `thought`, `usage` y `done`. Nada aguas abajo de la pasarela sabe qué
+endpoint respondió: los turnos, los diagnósticos, el tiempo, el uso y la recuperación no cambian.
 
-**Reasoning effort is translated, not forwarded.** Chat Completions takes
-`reasoning_effort`. Responses takes `reasoning.effort`, sent with `summary: "auto"` because
-without a summary the stream carries no reasoning text. Messages has no single effort field:
-`none` sends `thinking.type: "disabled"`, any other level sends `thinking.type: "adaptive"`
-with `output_config.effort`. An operator who needs a different spelling writes it in the
-custom request body, which still wins every collision.
+**El esfuerzo de razonamiento se traduce, no se reenvía.** Chat Completions acepta
+`reasoning_effort`. Responses acepta `reasoning.effort`, enviado con `summary: "auto"` porque
+sin un resumen el flujo no transporta texto de razonamiento. Messages no tiene un único campo de esfuerzo:
+`none` envía `thinking.type: "disabled"`, cualquier otro nivel envía `thinking.type: "adaptive"`
+con `output_config.effort`. Un operador que necesite una sintaxis diferente la escribe en el
+cuerpo de solicitud personalizado, el cual sigue ganando ante cualquier colisión.
 
-**On Responses and Messages the custom request body may not replace the conversation.**
-The image checks - inline data URLs only, bounded size and dimensions - run on the console's
-messages before they are converted. For Chat Completions the merged body is the console's own
-schema and is validated whole, so an override of `messages` is checked too. The other two
-schemas are ones the console only writes; rather than model them a second time for
-validation, an override of `input` (Responses) or `messages` (Messages) is refused by name.
-Every other field passes through untouched.
+**En Responses y Messages, el cuerpo de solicitud personalizado no puede reemplazar la conversación.**
+Las comprobaciones de imágenes —solo URLs de datos en línea, tamaño y dimensiones acotados— se ejecutan en los mensajes
+de la consola antes de ser convertidos. Para Chat Completions, el cuerpo combinado es el esquema propio de la consola
+y se valida por completo, por lo que una sobreescritura de `messages` también se comprueba. Los otros dos
+esquemas son los que la consola solo escribe; en lugar de modelarlos por segunda vez para
+su validación, se rechaza por nombre una sobreescritura de `input` (Responses) o `messages` (Messages).
+Cualquier otro campo pasa intacto.
 
-**The Agent loop runs on any of the three.** A round's tools, calls and results are written
-in the endpoint's schema - `function_call` and `function_call_output` items for Responses,
-`tool_use` and `tool_result` blocks for Messages, every result of one reply returned in a
-single user message - and each stream's calls are assembled whole before any is executed. A
-Messages reply's signed reasoning blocks are kept on the assistant message and sent back
-ahead of its calls, which that schema requires once thinking is on; the other two endpoints
-never see them. A Messages round states a 16384-token limit. The endpoint is fixed for a
-turn: a run resumed after an approval continues on the endpoint the turn started with,
-because its calls are replayed in the schema they were made in.
+**El bucle del Agente se ejecuta en cualquiera de los tres.** Las herramientas, llamadas y resultados de una ronda se escriben
+en el esquema del endpoint —ítems `function_call` y `function_call_output` para Responses,
+bloques `tool_use` y `tool_result` para Messages, cada resultado de una respuesta devuelto en un
+solo mensaje de usuario— y las llamadas de cada flujo se ensamblan por completo antes de ejecutar ninguna. Los bloques de razonamiento
+firmados de una respuesta de Messages se conservan en el mensaje del asistente y se envían de vuelta
+antes de sus llamadas, lo cual exige dicho esquema una vez que el pensamiento está activado; los otros dos endpoints
+nunca los ven. Una ronda de Messages establece un límite de 16384 tokens. El endpoint es fijo durante
+un turno: una ejecución que se reanuda tras una aprobación continúa en el endpoint con el que comenzó el turno,
+debido a que sus llamadas se reproducen en el esquema en el que se realizaron.
 
-**What a message is sent with is chosen in the composer, on both pages.** The composer foot
-carries three chips: the endpoint leading it, then reasoning effort and the model beside
-send. The Playground's model chip is the Agent's `TargetChip`, with the client key at the
-foot of its list; its head keeps the title and the page actions. The endpoint chip carries a
-neutral mark and the endpoint's short name; its list gives the full name and the path. The
-Playground stores the endpoint with the key and model in `playground_session` and on each
-turn's request snapshot, so a retry replays the endpoint it used; the Agent stores it in the
-`agent_target` preference and on the conversation.
+**El contenido con el que se envía un mensaje se elige en el compositor, en ambas páginas.** El pie
+del compositor lleva tres chips: el endpoint que lo encabeza, luego el esfuerzo de razonamiento y el modelo junto
+al botón de enviar. El chip de modelo del Playground es el `TargetChip` del Agente, con la clave de cliente al
+pie de su lista; su cabecera conserva el título y las acciones de página. El chip de endpoint lleva una
+marca neutral y el nombre corto del endpoint; su lista muestra el nombre completo y la ruta. El
+Playground almacena el endpoint junto con la clave y el modelo en `playground_session` y en cada
+instantánea de solicitud de cada turno, por lo que un reintento vuelve a utilizar el endpoint que se empleó; el Agente lo almacena en la
+preferencia `agent_target` y en la conversación.
 
-## Consequences
+## Consecuencias
 
-- The gateway client carries three request shapes and three stream decoders for each of the
-  two surfaces, each with its own tests. A change CPA makes to one endpoint's stream is a change to one decoder.
-- A Messages request always states a token limit: 4096 when the operator set none, because
-  the schema cannot express "the model's default".
-- The mapping for Messages effort follows the current schema (`adaptive` thinking with an
-  output effort). A model or CPA build that predates it rejects the pair; the operator's
-  recourse is the custom request body or leaving effort at the default.
-- Effort is no longer free text. A stored level outside the named ones stays selectable, and
-  a provider-specific level is otherwise set through the custom request body.
-- The panel's Reset no longer clears reasoning effort, which it no longer shows.
-- The Playground's head has no refresh action; refreshing the key and model lists is on the
-  model chip's list, as on the Agent page.
-- On a phone the Playground's composer has a foot row where it had none, so it is one row
-  taller; on a narrow foot the model's name is what shortens.
-- An Agent conversation stores signed reasoning for the length of a Messages turn's tool loop.
-- A model whose output limit is under 16384 tokens rejects an Agent round on Messages.
+- El cliente de pasarela transporta tres formas de solicitud y tres decodificadores de flujos para cada una de las
+  dos interfaces, cada uno con sus propias pruebas. Un cambio que CPA realice en el flujo de un endpoint es un cambio en un único decodificador.
+- Una solicitud de Messages siempre especifica un límite de tokens: 4096 cuando el operador no estableció ninguno, debido
+  a que el esquema no puede expresar "el valor predeterminado del modelo".
+- El mapeo para el esfuerzo de Messages sigue el esquema actual (`adaptive` thinking con un
+  esfuerzo de salida). Un modelo o compilación de CPA anterior a esto rechaza el par; el recurso
+  del operador es el cuerpo de solicitud personalizado o dejar el esfuerzo en su valor predeterminado.
+- El esfuerzo deja de ser texto libre. Un nivel almacenado que esté fuera de los nombrados sigue siendo seleccionable, y
+  un nivel específico del proveedor se configura de otro modo a través del cuerpo de solicitud personalizado.
+- El botón de restablecer (Reset) del panel ya no borra el esfuerzo de razonamiento, ya que este ya no se muestra.
+- La cabecera del Playground no tiene acción de actualización; actualizar las listas de claves y modelos se encuentra en la
+  lista del chip de modelo, al igual que en la página del Agente.
+- En un teléfono, el compositor del Playground tiene una fila inferior donde antes no tenía ninguna, por lo que es una fila
+  más alto; en un pie estrecho, lo que se acorta es el nombre del modelo.
+- Una conversación del Agente almacena razonamiento firmado durante la duración del bucle de herramientas de un turno de Messages.
+- Un modelo cuyo límite de salida sea inferior a 16384 tokens rechaza una ronda del Agente en Messages.

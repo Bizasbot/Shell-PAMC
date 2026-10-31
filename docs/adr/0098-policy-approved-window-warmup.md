@@ -1,26 +1,11 @@
-# ADR 0098: Policy-approved credential window warmup
+# ADR 0098: Calentamiento de ventana de credenciales aprobado por políticas
 
-Status: Accepted
-Date: 2026-10-13
-Supersedes: ADR 0097's prior-manual-activation admission rule; its transport, billing,
-confirmation, scheduling and uncertainty boundaries remain in force.
+Estado: Aceptado
+Fecha: 13-10-2026
+Reemplaza a: La regla de admisión previa de activación manual del ADR 0097; sus límites de transporte, facturación, confirmación, programación y de incertidumbre permanecen vigentes.
 
-An operator's confirmed enabled policy authorizes bounded automatic warmup for the selected
-credential and model when current quota and billing evidence permit it. Requiring a prior
-observed manual activation leaves newly configured credentials waiting for a second action
-and makes activation history obscure real active-window or billing reasons.
+Una política habilitada y confirmada por el operador autoriza el calentamiento automático acotado para la credencial y el modelo seleccionados cuando la cuota actual y la evidencia de facturación lo permiten. Exigir una activación manual previa observada deja a las credenciales recién configuradas esperando una segunda acción y hace que el historial de activación oscurezca las razones reales de la ventana activa o de la facturación.
 
-Activation observation is therefore an outcome, not a prerequisite. The first reset-driven
-or daily automatic request follows the same selected-model availability, exact credential,
-affirmatively disabled paid-fallback, quota and durable deduplication checks as later requests.
-Defaults remain off. Manual warmup remains optional and explicitly confirmed. A successful
-HTTP response is still pending until fresh quota evidence establishes activation; unknown
-outcomes are not automatically replayed. An observed unsupported response pauses that model's
-automatic requests, while an explicit manual recheck or an approved model change can proceed
-when unresolved-outcome and duplicate-request guards allow it.
+Por lo tanto, la observación de la activación es un resultado, no un requisito. La primera solicitud automática diaria o impulsada por reinicio sigue las mismas comprobaciones de disponibilidad del modelo seleccionado, credencial exacta, respaldo de pago (paid-fallback) deshabilitado afirmativamente, cuota y deduplicación duradera que las solicitudes posteriores. Los valores predeterminados permanecen desactivados. El calentamiento manual sigue siendo opcional y explícitamente confirmado. Una respuesta HTTP exitosa sigue pendiente hasta que la evidencia de cuota fresca establezca la activación; los resultados desconocidos no se reintentan automáticamente. Una respuesta no admitida observada pausa las solicitudes automáticas de ese modelo, mientras que una revisión manual explícita o un cambio de modelo aprobado pueden proceder cuando las protecciones contra resultados no resueltos y solicitudes duplicadas lo permitan.
 
-The existing secret-free state schema and wire fields remain compatible: `protocol_verified`
-and `verified_model` retain historical observed activation, without controlling automatic
-admission. Previously enabled policies participate on the next eligible scheduler round even
-without that history. This broadens admission under existing policy consent, not destination,
-billing or credential authority. No new schema migration or upstream endpoint is needed.
+El esquema de estado sin secretos existente y los campos de red permanecen compatibles: `protocol_verified` y `verified_model` conservan la activación observada histórica, sin controlar la admisión automática. Las políticas habilitadas anteriormente participan en la siguiente ronda de programación elegible incluso sin ese historial. Esto amplía la admisión bajo el consentimiento de la política existente, no la autoridad de destino, facturación o credenciales. No se necesita ninguna nueva migración de esquema ni ningún endpoint ascendente.

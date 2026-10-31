@@ -1,177 +1,173 @@
-# ADR 0020: Console-issued database maintenance runs behind a driver-level write gate
+# ADR 0020: Las ejecuciones de mantenimiento de bases de datos iniciadas desde la consola se realizan detrás de una compuerta de escritura a nivel de controlador
 
-- Status: Accepted
-- Date: 2026-09-22
+- Estado: Aceptado
+- Fecha: 2026-09-22
 
-## Context
+## Contexto
 
-The System Information page offers two operators' actions against the SQLite file: a
-WAL-truncating checkpoint and a rebuild (`VACUUM`). Both are database-wide, and the
-second rewrites every page.
+La página de información del sistema ofrece dos acciones para los operadores sobre el archivo SQLite:
+un punto de control que trunca WAL y una reconstrucción (`VACUUM`). Ambas afectan a toda la base de
+datos, y la segunda reescribe cada página.
 
-The obstacle is not performance. `internal/usage/ingest`'s flush records an ingest gap
-and returns an error, and `app.Run` treats a stopped pipeline as fatal on purpose
-("treat it as fatal rather than serving silently stale numbers"). So a writer that
-loses a race against a rebuild does not produce a slow request: it terminates the
-process. Offering these buttons without a coordination mechanism would be shipping a
-crash trigger.
+El obstáculo no es el rendimiento. El vaciado (flush) de `internal/usage/ingest` registra una brecha de
+ingesta y devuelve un error, y `app.Run` trata deliberadamente a una canalización detenida como un error fatal
+("tratarlo como fatal en lugar de servir números obsoletos silenciosamente"). Por lo tanto, un escritor
+que pierde una condición de carrera (race condition) contra una reconstrucción no produce una solicitud
+lenta: termina el proceso. Ofrecer estos botones sin un mecanismo de coordinación equivaldría a desplegar un
+activador de fallos (crash trigger).
 
-Three facts ruled out the obvious mechanisms:
+Tres hechos descartaron los mecanismos obvios:
 
-- **SQLite's own locking cannot express it.** Under WAL a reader never blocks a writer
-  and a writer never blocks a reader, so the usual "the database will serialise them"
-  does not apply to a statement that needs the file to itself.
-- **`busy_timeout` is not the mechanism.** It makes a blocked SQLite call retry; it does
-  not stop a writer from starting, and it cannot make a VACUUM wait for anything.
-- **Context deadlines are not protection either.** With one pooled connection a queued
-  caller waits in Go's pool, which `busy_timeout` does not govern, and its request
-  context can expire while it waits — producing exactly the error that is fatal.
+- **El propio bloqueo de SQLite no puede expresarlo.** Bajo WAL, un lector nunca bloquea a un escritor y
+  un escritor nunca bloquea a un lector, por lo que el enfoque habitual de "la base de datos los serializará"
+  no se aplica a una sentencia que necesita el archivo exclusivamente para ella.
+- **`busy_timeout` no es el mecanismo.** Hace que una llamada bloqueada a SQLite se reintente; no impide
+  que un escritor comience y no puede hacer que un VACUUM espere nada.
+- **Los plazos (deadlines) del contexto tampoco son una protección.** Con una sola conexión en pool, un llamador
+  en cola espera en el pool de Go, que `busy_timeout` no rige, y el contexto de su solicitud puede expirar
+  mientras espera, produciendo exactamente el error que es fatal.
 
-## Decision
+## Decisión
 
-**A write gate at the driver boundary, defaulting to "this is a write".**
-`internal/repository` wraps its SQLite driver. A statement whose leading keyword is not
-unambiguously a read (`SELECT`, `WITH`, `VALUES`, `EXPLAIN`) passes a gate that
-maintenance holds exclusively. Every `PRAGMA` is gated whatever its argument, because
-the family mixes reads and writes (`journal_mode` reads, `journal_mode=WAL` writes,
-`wal_checkpoint(TRUNCATE)` writes while reporting a result row). The asymmetry is
-deliberate: gating a read only makes it wait, while letting a write through can end the
-process, so the classifier is written to fail in the safe direction.
+**Una compuerta de escritura en el límite del controlador (driver), cuyo valor predeterminado es "esto es una escritura".**
+`internal/repository` envuelve su controlador de SQLite. Una sentencia cuya palabra clave inicial no sea
+inequívocamente una lectura (`SELECT`, `WITH`, `VALUES`, `EXPLAIN`) pasa por una compuerta que el mantenimiento
+mantiene en exclusiva. Cada `PRAGMA` pasa por la compuerta sin importar su argumento, ya que la familia
+mezcla lecturas y escrituras (`journal_mode` lee, `journal_mode=WAL` escribe, `wal_checkpoint(TRUNCATE)`
+escribe mientras informa una fila de resultado). La asimetría es deliberada: bloquear una lectura solo hace
+que espere, mientras que dejar pasar una escritura puede terminar el proceso, por lo que el clasificador
+está escrito para fallar en la dirección segura.
 
-**Writers wait, and a queued writer can leave.** A writer that returned an error here
-would be treated as a fatal pipeline failure, so writers block. The wait is
-cancellable, which `sync.RWMutex` cannot offer: `VACUUM` runs for minutes, and a writer
-that cannot abandon the wait would pin an HTTP handler past the server's own write
-timeout. The gate is therefore purpose-built, FIFO, and context-aware on both sides.
+**Los escritores esperan, y un escritor en cola puede retirarse.** Un escritor que devolviera un error aquí
+se trataría como un fallo fatal en la canalización, por lo que los escritores se bloquean. La espera es
+cancelable, algo que `sync.RWMutex` no puede ofrecer: `VACUUM` se ejecuta durante minutos, y un escritor que
+no pueda abandonar la espera mantendría ocupado un controlador HTTP más allá del propio tiempo de espera
+de escritura del servidor. Por lo tanto, la compuerta se ha diseñado específicamente para este propósito, es
+FIFO y es consciente del contexto en ambos lados.
 
-**A transaction holds the gate until it ends.** SQLite's write lock outlives the
-statements inside a transaction, so a gate released per statement would let a rebuild
-in while the file was still write-locked.
+**Una transacción mantiene la compuerta hasta que termina.** El bloqueo de escritura de SQLite perdura más
+que las sentencias dentro de una transacción, por lo que una compuerta liberada por sentencia permitiría que
+una reconstrucción entrara mientras el archivo todavía estaba bloqueado para escritura.
 
-**Maintenance runs on its own connection, and its own statements bypass the gate.**
-Two distinct reasons. The bypass exists because there is otherwise a self-deadlock: a
-maintenance statement passing the gate it already holds would queue behind itself. The
-separate connection exists because of a deadlock that was actually observed — a writer
-takes the gate inside its driver call, by which point `database/sql` has already handed
-it a connection, so a writer waiting for the gate is *holding* a connection while it
-waits. With one shared connection, maintenance needs that connection and the writer
-needs the gate. Giving maintenance its own connection breaks the cycle: a waiting
-writer's connection is idle as far as SQLite is concerned, because its statement has
-not run and no transaction is open on it. `TestMaintenanceDoesNotDeadlockAgainstAWriterHoldingAConnection`
-reproduces the scenario.
+**El mantenimiento se ejecuta en su propia conexión y sus propias sentencias omiten la compuerta.**
+Dos razones distintas. La omisión (bypass) existe porque de lo contrario se produciría un auto-interbloqueo
+(self-deadlock): una sentencia de mantenimiento que pasara por la compuerta que ya posee se pondría en cola
+detrás de sí misma. La conexión separada existe debido a un interbloqueo que se observó realmente: un escritor
+toma la compuerta dentro de la llamada a su controlador, momento en el cual `database/sql` ya le ha entregado
+una conexión, por lo que un escritor que espera por la compuerta está *reteniendo* una conexión mientras espera.
+Con una conexión compartida, el mantenimiento necesita esa conexión y el escritor necesita la compuerta.
+Darle al mantenimiento su propia conexión rompe el ciclo: la conexión de un escritor en espera está inactiva
+para SQLite, porque su sentencia no se ha ejecutado y no hay ninguna transacción abierta en ella.
+`TestMaintenanceDoesNotDeadlockAgainstAWriterHoldingAConnection` reproduce el escenario.
 
-**A reservation is named, and only its holder may act on it.** `Reserve` returns a handle that
-`Launch` and `Release` require. An unnamed release was a real hazard rather than a tidiness
-concern: it is called when an admission audit fails, and an unconditional clear could erase a
-*newer* reservation a later request had just made - so a job the operator had been told was accepted
-would never start, while the page showed it as running. A release naming a superseded reservation is
-a no-op, and a second launch of the same handle is refused.
+**Una reserva tiene un nombre, y solo su titular puede actuar sobre ella.** `Reserve` devuelve un identificador
+(handle) que `Launch` y `Release` requieren. Una liberación sin nombre era un peligro real en lugar de una
+cuestión de pulcritud: se llama cuando una auditoría de admisión falla, y un borrado incondicional podría
+borrar una reserva *más nueva* que una solicitud posterior acababa de hacer; por lo tanto, un trabajo que al
+operador se le había dicho que fue aceptado nunca comenzaría, mientras que la página lo mostraba como en
+ejecución. Una liberación que nombra una reserva superpuesta (superseded) no hace nada, y se rechaza un
+segundo lanzamiento del mismo identificador.
 
-**No request performs database work after admitting a job.** The starting request
-measures admission, records *that admission* in the audit trail, starts the job, and
-returns the status the start returned. It performs no further database read or write,
-because any of those would queue for the gate the job now holds and the operator's `202`
-would not arrive until the rebuild had finished.
+**Ninguna solicitud realiza trabajo en la base de datos después de admitir un trabajo.** La solicitud inicial
+mide la admisión, registra *dicha admisión* en la pista de auditoría, inicia el trabajo y devuelve el estado
+que devolvió el inicio. No realiza más lecturas ni escrituras en la base de datos, porque cualquiera de ellas
+se pondría en cola para la compuerta que el trabajo ahora posee y el código `202` del operador no llegaría hasta
+que la reconstrucción hubiera terminado.
 
-**The gate is released before a job's outcome is announced.** The service publishes its
-terminal state only after it has left the exclusive section. This ordering was learned
-the hard way: an observer of a finished job writes to the database — the audit trail does
-— and a write waits for the gate the job holds, so publishing from inside the exclusive
-section deadlocked the job against its own observer. The symptoms were a checkpoint
-whose audit record failed with a cancelled context and an HTTP response that never
-arrived, while the status endpoint showed the job still running.
-`TestCompletionObserverMayWriteToTheDatabase` performs exactly that write and fails if
-the ordering regresses.
+**La compuerta se libera antes de que se anuncie el resultado de un trabajo.** El servicio publica su estado
+terminal solo después de haber abandonado la sección exclusiva. Este orden se aprendió de la manera difícil:
+un observador de un trabajo terminado escribe en la base de datos —la pista de auditoría lo hace— y una
+escritura espera por la compuerta que el trabajo posee, por lo que publicar desde el interior de la sección
+exclusiva provocaba un interbloqueo del trabajo contra su propio observador. Los síntomas eran un punto de
+control cuyo registro de auditoría fallaba con un contexto cancelado y una respuesta HTTP que nunca llegaba,
+mientras que el endpoint de estado mostraba el trabajo todavía en ejecución.
+`TestCompletionObserverMayWriteToTheDatabase` realiza exactamente esa escritura y falla si el orden se degrada.
 
-**Completion is recorded by the job, not by the request that started it.** A `202`
-describes admission, not success, so admission and completion are two audit events with
-different results, the second carrying the measured outcome and any redacted error.
+**La finalización la registra el trabajo, no la solicitud que lo inició.** Un `202` describe la admisión, no el
+éxito, por lo que la admisión y la finalización son dos eventos de auditoría con resultados diferentes; el segundo
+lleva el resultado medido y cualquier error redactado.
 
-**Status lives in memory.** A status endpoint that read the database could not answer
-while a job held the connection — exactly when an operator asks. The price is that the
-status does not survive a restart, which is stated in the UI and is true anyway: a job
-cannot outlive the process running it.
+**El estado reside en la memoria.** Un endpoint de estado que leyera la base de datos no podría responder
+mientras un trabajo mantuviera la conexión, exactamente cuando un operador lo solicita. El precio a pagar es
+que el estado no sobrevive a un reinicio, lo cual se indica en la interfaz de usuario y es cierto de todos modos:
+un trabajo no puede sobrevivir al proceso que lo ejecuta.
 
-**The rebuild is a plain `VACUUM`, not `VACUUM INTO` plus a file swap.** The pool holds
-an open handle to the file, so replacing it underneath would require closing every
-connection and rebuilding the pool while other goroutines still hold references to it —
-trading a maintenance action for a window in which ordinary writers see a closed
-database. SQLite documents that a plain `VACUUM` copies into a temporary file and
-overwrites the original inside an ordinary transaction, so an interrupted rebuild
-leaves the original intact. That property is pinned by a test that cancels a rebuild
-and then checks both the surviving rows and `PRAGMA integrity_check`.
+**La reconstrucción es un `VACUUM` plano, no un `VACUUM INTO` más un intercambio de archivos.** El pool
+mantiene un identificador abierto al archivo, por lo que reemplazarlo por debajo requeriría cerrar cada
+conexión y reconstruir el pool mientras otras goroutines aún mantienen referencias a él, cambiando una acción
+de mantenimiento por una ventana en la que los escritores ordinarios ven una base de datos cerrada. SQLite
+documenta que un `VACUUM` plano se copia en un archivo temporal y sobrescribe el original dentro de una
+transacción ordinaria, por lo que una reconstrucción interrumpida deja el original intacto. Esa propiedad
+está garantizada por una prueba que cancela una reconstrucción y luego verifica tanto las filas supervivientes
+como `PRAGMA integrity_check`.
 
-**Admission is measured and shown before the action.** A rebuild needs up to twice the
-database file in free space; the confirmation states the measured requirement against
-the measured availability and refuses when it cannot be met. This is a pre-check, not a
-guarantee, and it is presented as one.
+**La admisión se mide y se muestra antes de la acción.** Una reconstrucción necesita hasta el doble del tamaño
+del archivo de base de datos en espacio libre; la confirmación muestra el requisito medido frente a la
+disponibilidad medida y se rechaza cuando no se puede cumplir. Esto es una comprobación previa, no una
+garantía, y se presenta como tal.
 
-**A checkpoint that did not complete is reported as incomplete, not as success.**
-`PRAGMA wal_checkpoint(TRUNCATE)` returns a row of three integers and raises no error
-when it is blocked by a concurrent reader, so the counters are read and the outcome is
-derived from them.
+**Un punto de control que no se completó se informa como incompleto, no como exitoso.**
+`PRAGMA wal_checkpoint(TRUNCATE)` devuelve una fila de tres enteros y no genera ningún error cuando está
+bloqueado por un lector concurrente, por lo que se leen los contadores y el resultado se deriva de ellos.
 
-Incomplete is a third outcome and is presented as one: a partial result carries a warning,
-not the success mark with a caveat underneath. The distinction matters because the two
-claims differ - "the log was truncated" and "the log was not truncated" - and a console
-that draws the success mark has told the operator the first while meaning the second. The
-same rule governs which snapshot the page believes: the polled job state is authoritative
-only while polling, because afterwards it is the *previous* job, and letting it win would
-pin the panel to a job the operator has moved past.
+Incompleto es un tercer resultado y se presenta como tal: un resultado parcial conlleva una advertencia,
+no una marca de éxito con una salvedad debajo. La distinción importa porque las dos afirmaciones difieren
+—"el registro fue truncado" y "el registro no fue truncado"— y una consola que dibuja la marca de éxito le
+ha dicho al operador la primera mientras quería decir la segunda. La misma regla rige qué instantánea cree
+la página: el estado del trabajo consultado (polled) es autoritativo solo mientras se consulta, porque
+después es el trabajo *anterior*, y dejar que prevalezca fijaría el panel en un trabajo que el operador ya
+ha superado.
 
-**Both actions are audited, and both are refused in demo mode** by the route
-classification in `internal/api/demo_policy.go`, since a visitor must not be able to
-change what the next visitor sees.
+**Ambas acciones son auditadas, y ambas se rechazan en modo de demostración** por la clasificación de rutas
+en `internal/api/demo_policy.go`, ya que un visitante no debe poder cambiar lo que ve el siguiente visitante.
 
-**A job is bounded by the application's lifetime.** The service owns a context derived
-from the process's, so a rebuild cannot outlive the process, and `Close` cancels and joins
-an in-flight job before releasing its connection. A job detached from its starting request
-but bound to nothing would otherwise be running while the pool it uses is torn down.
+**Un trabajo está acotado por el ciclo de vida de la aplicación.** El servicio posee un contexto derivado
+del proceso, por lo que una reconstrucción no puede sobrevivir al proceso, y `Close` cancela y se une (joins)
+a un trabajo en curso antes de liberar su conexión. De lo contrario, un trabajo desconectado de su solicitud
+inicial pero sin atar a nada estaría ejecutándose mientras se desmantela el pool que utiliza.
 
-## Consequences
+## Consecuencias
 
-- Every statement in the process now pays a classification on a static SQL literal, and
-  every write acquires a mutex-protected gate. Both are negligible next to a database
-  call.
-- The gate is process-wide and shared by every pool in the process. That is sound for
-  this application specifically — ADR 0001 makes it a single-replica modular monolith
-  with one SQLite file — and overserialising is the only way it can be wrong.
-- A rebuild makes writers wait for its duration, bounded by a ten-minute ceiling. A
-  checkpoint is cheap and can be run often.
-- Maintenance writes are the only console path that can block ordinary writes, and the
-  page states that a job does not survive a restart.
-- The gate's row wrappers forward the driver's optional column-metadata interfaces
-  (`RowsColumnTypeDatabaseTypeName`, `...Length`, `...Nullable`, `...PrecisionScale`,
-  `...ScanType`) and assert at compile time that they do. A wrapper satisfying only
-  `driver.Rows` compiles and passes every query test while silently discarding what the
-  driver reports about each column's type; the assertion is what keeps a mistyped method
-  signature - which is how this was found - from removing the metadata quietly.
-- The gate is per database, not per process. Every pool over one file - the application
-  pool and the maintenance service's own connection - shares that file's gate, so they
-  exclude each other without one database's rebuild stalling writes to another.
-- The classifier is a classification of this repository's own static SQL, not a SQL
-  parser, and it is deliberately narrow in the safe direction: only `SELECT`, `VALUES` and
-  `EXPLAIN` count as reads. `PRAGMA` is gated whatever its argument; `WITH` is gated even
-  when the statement selects, because a CTE can introduce a write; and a string holding a
-  second statement is gated however it starts. The cost is one wait for the one `WITH` in
-  this repository during a rebuild, against a guarantee that needs no re-checking when
-  new SQL is added.
-- `driver.TxOptions.ReadOnly` does not exempt a transaction. It is a hint that
-  modernc.org/sqlite uses only to choose the `BEGIN` mode string, so such a transaction
-  can still write; trusting the flag would leave a hole shaped exactly like the path the
-  gate protects.
+- Cada sentencia en el proceso ahora paga el coste de una clasificación sobre un literal SQL estático, y
+  cada escritura adquiere una compuerta protegida por mutex. Ambos son insignificantes en comparación con
+  una llamada a la base de datos.
+- La compuerta es a nivel de proceso y es compartida por todos los pools del proceso. Esto es sólido para
+  esta aplicación específicamente —el ADR 0001 lo convierte en un monolito modular de una sola réplica con
+  un único archivo SQLite— y la sobre-serialización es la única forma en que podría ser incorrecto.
+- Una reconstrucción hace que los escritores esperen durante su duración, limitada por un techo de diez minutos.
+  Un punto de control es económico y se puede ejecutar con frecuencia.
+- Las escrituras de mantenimiento son la única ruta de la consola que puede bloquear las escrituras ordinarias,
+  y la página indica que un trabajo no sobrevive a un reinicio.
+- Los contenedores de filas (row wrappers) de la compuerta reenvían las interfaces opcionales de metadatos de
+  columnas del controlador (`RowsColumnTypeDatabaseTypeName`, `...Length`, `...Nullable`, `...PrecisionScale`,
+  `...ScanType`) y afirman en tiempo de compilación que lo hacen. Un contenedor que solo satisfaga `driver.Rows`
+  se compila y pasa todas las pruebas de consulta mientras descarta silenciosamente lo que el controlador
+  informa sobre el tipo de cada columna; la aserción es lo que evita que una firma de método mal escrita
+  —que es como se descubrió esto— elimine los metadatos silenciosamente.
+- La compuerta es por base de datos, no por proceso. Cada pool sobre un archivo —el pool de la aplicación y
+  la propia conexión del servicio de mantenimiento— comparte la compuerta de ese archivo, por lo que se
+  excluyen mutuamente sin que la reconstrucción de una base de datos paralice las escrituras en otra.
+- El clasificador es una clasificación del SQL estático de este repositorio, no un analizador sintáctico SQL
+  (parser), y es deliberadamente restrictivo en la dirección segura: solo `SELECT`, `VALUES` y `EXPLAIN`
+  cuentan como lecturas. `PRAGMA` pasa por la compuerta sin importar su argumento; `WITH` pasa por la compuerta
+  incluso cuando la sentencia selecciona, ya que una CTE (Common Table Expression) puede introducir una
+  escritura; y una cadena que contenga una segunda sentencia pasa por la compuerta sin importar cómo comience.
+  El coste es una espera para el único `WITH` en este repositorio durante una reconstrucción, a cambio de
+  una garantía que no necesita volver a comprobarse cuando se añade nuevo SQL.
+- `driver.TxOptions.ReadOnly` no exime a una transacción. Es una pista que modernc.org/sqlite utiliza únicamente
+  para elegir la cadena de modo `BEGIN`, por lo que dicha transacción aún puede escribir; confiar en este indicador
+  dejaría un agujero con la misma forma exacta que la ruta que protege la compuerta.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Raising `busy_timeout` and letting SQLite sort it out.** Rejected: it converts a
-  coordination problem into a longer wait, still ends in the fatal error when the
-  rebuild takes longer than the timeout, and degrades unrelated lock contention
-  silently.
-- **Pausing the collector during maintenance.** Rejected: it needs a pause/resume state
-  machine that races the gate it would be ordering against, and a paused collector still
-  holds its batch in memory.
-- **Refusing to offer maintenance unless ingestion is disabled.** Rejected as useless for
-  the deployments that most need it.
-- **Wrapping the 45 write call sites instead of the driver.** Rejected: the coverage would
-  then depend on nobody ever adding an ungated write, and the failure mode of a missed
-  site is a terminated process. A driver boundary covers future writes automatically.
+- **Elevar `busy_timeout` y dejar que SQLite lo resuelva.** Rechazado: convierte un problema de coordinación
+  en una espera más larga, sigue terminando en el error fatal cuando la reconstrucción toma más tiempo que
+  el tiempo de espera, y degrada silenciosamente la contención de bloqueos no relacionados.
+- **Pausar el recolector durante el mantenimiento.** Rechazado: necesita una máquina de estados de pausa/reanudación
+  que compite con la compuerta contra la cual se ordenaría, y un recolector pausado aún mantiene su lote en memoria.
+- **Negarse a ofrecer mantenimiento a menos que la ingesta esté deshabilitada.** Rechazado por considerarse
+  inútil para los despliegues que más lo necesitan.
+- **Envolver las 45 ubicaciones de llamadas de escritura en lugar del controlador.** Rechazado: la cobertura
+  dependería entonces de que nadie añadiera nunca una escritura sin compuerta, y el modo de fallo de una
+  ubicación omitida es la terminación del proceso. Un límite de controlador cubre las futuras escrituras
+  automáticamente.

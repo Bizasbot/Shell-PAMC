@@ -1,60 +1,38 @@
-# ADR 0045: Feedback surfaces are chosen by what the message describes
+# ADR 0045: Las superficies de retroalimentación se eligen según lo que describe el mensaje
 
-- Status: Accepted
-- Date: 2026-09-30
+- Estado: Aceptado
+- Fecha: 2026-09-30
 
-## Context
+## Contexto
 
-The console reported outcomes and failures through four unrelated mechanisms: antd's `message`
-API for most action results, raw antd `Alert` banners placed ad hoc inside pages, information-only
-`modal.warning` / `modal.info` dialogs for batch failures, and an in-page operation report on the
-credential workspace for a quota refresh that had failing targets. Which one a page used depended
-on who wrote it, not on what was being said. The effects were visible:
+La consola informaba sobre resultados y fallos a través de cuatro mecanismos sin relación entre sí: la API `message` de antd para la mayoría de los resultados de acciones, banners `Alert` planos de antd colocados ad hoc dentro de las páginas, diálogos de información `modal.warning` / `modal.info` para fallos por lotes, y un informe de operaciones dentro de la página en el espacio de trabajo de credenciales para una actualización de cuotas que tenía objetivos fallidos. Cuál de ellos usaba una página dependía de quién la había escrito, no de lo que se estaba comunicando. Los efectos eran visibles:
 
-- The same outcome could appear twice. A refused configuration save raised a message and also left
-  an error banner above the editor.
-- An action's result that landed as an in-page banner pushed the content it described down the page
-  and stayed there after the operator had read it; the quota report is the clearest case.
-- A failed read of one panel was a banner without a way to retry, so repairing one chart meant
-  reloading the page.
-- Batch failures interrupted with a modal the operator had to dismiss before doing anything else.
-- `message` holds one line, so a per-target reason (the only useful part of a batch report) could
-  not be carried by it, which is why the in-page report existed at all.
+- El mismo resultado podía aparecer dos veces. Un guardado de configuración rechazado generaba un mensaje y además dejaba un banner de error encima del editor.
+- El resultado de una acción que terminaba como un banner dentro de la página empujaba el contenido que describía hacia abajo y se quedaba allí después de que el operador lo hubiera leído; el informe de cuotas es el caso más claro.
+- La lectura fallida de un panel era un banner sin forma de reintentar, por lo que reparar un gráfico significaba recargar la página.
+- Los fallos por lotes interrumpían con un modal que el operador tenía que descartar antes de hacer cualquier otra cosa.
+- `message` admite una sola línea, por lo que un motivo por objetivo (la única parte útil de un informe por lotes) no podía ser transportado por este, razón por la cual existía el informe dentro de la página.
 
-## Decision
+## Decisión
 
-The surface is chosen by what the message describes, not by how serious it is, and every surface
-lives in `web/src/components/feedback/`:
+La superficie se elige según lo que describe el mensaje, no según su gravedad, y cada superficie reside en `web/src/components/feedback/`:
 
-| The message describes | Surface |
+| Lo que describe el mensaje | Superficie |
 | --- | --- |
-| The outcome of something the operator just did | a toast, `useToast()` |
-| A region that could not be read | `LoadFailure` in that region's place, with Retry |
-| A condition that holds while the region is on screen | `Notice`, where it applies |
-| A refusal of the input in front of the operator | `Notice` (or the form's field error), beside that input |
+| El resultado de algo que el operador acaba de hacer | un toast, `useToast()` |
+| Una región que no se pudo leer | `LoadFailure` en el lugar de esa región, con Reintentar |
+| Una condición que se mantiene mientras la región está en pantalla | `Notice`, donde corresponda |
+| Un rechazo de la entrada frente al operador | `Notice` (o el error de campo del formulario), junto a esa entrada |
 
-- The toast is built on antd's `notification`, not `message`, because a notification can carry a
-  second line, a list and actions. A batch outcome with per-target reasons is a *report toast*: the
-  reasons are listed under group headings and the toast stays until it is closed. This replaces the
-  in-page quota report and the information-only failure dialogs.
-- One outcome reaches one surface. `modal.confirm` still asks before an action; nothing opens a
-  dialog to report after one.
-- Toast content never changes height after it opens. antd positions notifications from heights it
-  measures on arrival, so an expandable group would slide under the toast below it; a long group of
-  context is summarised one line per reason instead.
-- `pnpm check:feedback` refuses antd `Alert`, `message`, `notification` and information-only
-  `modal.*` dialogs anywhere in `web/src` outside the feedback module.
+- El toast se basa en `notification` de antd, no en `message`, porque una notificación puede llevar una segunda línea, una lista y acciones. El resultado de un lote con motivos por objetivo es un *toast de informe*: los motivos se enumeran bajo los encabezados de grupo y el toast permanece visible hasta que se cierra. Esto reemplaza al informe de cuotas dentro de la página y a los diálogos de fallo de solo información.
+- Un resultado llega a una sola superficie. `modal.confirm` sigue pidiendo confirmación antes de una acción; nada abre un diálogo para informar después de ella.
+- El contenido del toast nunca cambia de altura después de abrirse. antd posiciona las notificaciones a partir de las alturas que mide al llegar, por lo que un grupo expansible se deslizaría debajo del toast inferior; en su lugar, un grupo largo de contexto se resume a una línea por motivo.
+- `pnpm check:feedback` rechaza los componentes `Alert`, `message`, `notification` de antd y los diálogos `modal.*` de solo información en cualquier parte de `web/src` fuera del módulo de retroalimentación.
 
-## Consequences
+## Consecuencias
 
-- A quota refresh no longer moves the credential list: every outcome, including one with failing
-  targets, is a toast. A report the operator has not closed is replaced, not stacked, by the next
-  refresh because it reuses one notification key.
-- Every failed read in the console offers Retry for that region alone.
-- Acceptance probes assert on `.omc-toast` rather than antd's message classes, and a probe that
-  continues after a report toast must close it, because it stays.
-- A new page cannot reintroduce a raw banner or a second notification API without the static gate
-  failing; the one sanctioned place to extend feedback is `components/feedback`.
-- A report toast is limited to what fits a floating panel (its list scrolls within a capped height).
-  A result that needs sorting, filtering or export would need its own page region, and would be a new
-  decision.
+- Una actualización de cuotas ya no mueve la lista de credenciales: cada resultado, incluidos aquellos con objetivos fallidos, es un toast. Un informe que el operador no ha cerrado es reemplazado, no apilado, por la siguiente actualización porque reutiliza una clave de notificación.
+- Cada lectura fallida en la consola ofrece Reintentar solo para esa región.
+- Las pruebas de aceptación verifican `.omc-toast` en lugar de las clases de mensajes de antd, y una prueba que continúe después de un toast de informe debe cerrarlo, ya que este permanece visible.
+- Una página nueva no puede reintroducir un banner plano o una segunda API de notificación sin que la validación estática falle; el único lugar autorizado para ampliar la retroalimentación es `components/feedback`.
+- Un toast de informe se limita a lo que cabe en un panel flotante (su lista se desplaza dentro de una altura máxima). Un resultado que requiera ordenamiento, filtrado o exportación necesitaría su propia región de página, y constituiría una nueva decisión.

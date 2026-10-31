@@ -1,143 +1,72 @@
-# ADR 0008: Chart marks sweep between revisions, reversing §7 rule 5
+# ADR 0008: Transición gradual de marcas en gráficos entre revisiones, revirtiendo la regla 5 de la §7
 
-- Status: Accepted
-- Date: 2026-09-17
+- Estado: Aceptado
+- Fecha: 2026-09-17
 
-## Context
+## Contexto
 
-`docs/design.md` §7 rule 5 read **"Charts do not animate. Sparkline geometry swaps on the data revision
-with no transition or entrance animation; a line snapping to new data reads as honest, not janky."**
-Three components enforced it by passing `animate: false` to the library, and the surrounding prose
-explained the intent as a preference for honesty over flourish - the same instinct as `DESIGN.md`'s
-"raw and terminal-like" character and its rejection of artificial entrance animations.
+La regla 5 de la sección §7 de `docs/design.md` establecía: **"Los gráficos no se animan. La geometría de los minigráficos (sparklines) se intercambia en la revisión de datos sin transición ni animación de entrada; una línea que salta a los nuevos datos se lee como honesta, no como artificial."**
+Tres componentes la cumplían pasando `animate: false` a la biblioteca, y el texto explicativo justificaba la intención como una preferencia por la honestidad frente al adorno, el mismo instinto que el carácter "crudo y similar a una terminal" de `DESIGN.md` y su rechazo a las animaciones de entrada artificiales.
 
-Two things then changed, and only one of them was a taste change.
+Dos cosas cambiaron después, y solo una de ellas fue un cambio de criterio estético.
 
-**The tiles above the marks now roll.** ADR 0007 granted the six dashboard KPI numbers a 240ms sweep,
-which satisfies §7's own test for motion - a state change that has to feel continuous - but it left the
-dashboard inconsistent with itself: the number said "this reading moved" while the plot drawn from that
-same number hard-cut, so one revision read as two different events, one of them a
-replacement.
+**Los azulejos (tiles) sobre las marcas ahora se desplazan (roll).** El ADR 0007 otorgó a los seis números de KPI del panel una transición de 240ms, lo cual satisface la propia prueba de movimiento de la §7 —un cambio de estado que debe sentirse continuo—, pero dejó al panel inconsistente consigo mismo: el número indicaba "esta lectura se ha movido" mientras que el gráfico dibujado a partir de ese mismo número realizaba un corte seco, de modo que una sola revisión se interpretaba como dos eventos diferentes, uno de los cuales era un reemplazo.
 
-**Measured, the library's behaviour is not what "animate" implies.** `@ant-design/plots`' React wrapper
-does not destroy and rebuild a chart when its props change: `useChart` builds the options object, then
-calls `Plot.update()` followed by `Plot.render()` on the *same* G2 runtime - it never calls `changeData`
-and never remounts. So an enabled `update` animation interpolates the mark the reader is already looking
-at. It is a morph, not a redraw, and a drawing-in entrance is not what turning it on would cost. That
-distinction is the whole decision, because "a repaint dressed as new data" was the thing rule 5 was
-protecting against.
+**Medido, el comportamiento de la biblioteca no es lo que implica "animate".** El contenedor de React de `@ant-design/plots` no destruye ni reconstruye un gráfico cuando cambian sus propiedades: `useChart` construye el objeto de opciones y luego llama a `Plot.update()` seguido de `Plot.render()` en la *misma* instancia de ejecución de G2; nunca llama a `changeData` ni vuelve a montar el componente. Por lo tanto, una animación de `update` habilitada interpola la marca que el lector ya está viendo. Es una metamorfosis (morph), no un redibujado, y una entrada mediante dibujo (draw-in) no es lo que costaría activarla. Esa distinción es toda la decisión, porque "un repintado disfrazado de datos nuevos" era exactamente lo que la regla 5 protegía.
 
-The measurement, on the requests sparkline with one bucket moved and both settings otherwise identical:
+La medición en el minigráfico de peticiones, con un contenedor desplazado y el resto de configuraciones idénticas:
 
-| `animate` | Frames painted across a revision | Shape |
+| `animate` | Fotogramas pintados durante una revisión | Forma |
 | --- | --- | --- |
-| `false` (rule 5 as written) | 2 | the old reading, then the new one |
-| `update: { type: 'morphing' }` on the roll token | 11-12, including intermediates | a sweep between them |
+| `false` (regla 5 tal como estaba escrita) | 2 | la lectura anterior, luego la nueva |
+| `update: { type: 'morphing' }` en el token de desplazamiento | 11-12, incluyendo intermedios | una transición gradual entre ambas |
 
-Two facts about this data had to be established before the change was worth making, because both were
-surprises that a plausible-looking demo would have hidden:
+Había que establecer dos hechos sobre estos datos antes de que valiera la pena realizar el cambio, ya que ambas eran sorpresas que una demo de aspecto convincente habría ocultado:
 
-- **A uniform level change is invisible with or without animation.** The sparkline has no axis and its
-  y domain is normalized to the window's own maximum (`scale.y.nice: false`, `domainMin: 0`), so scaling
-  every bucket by the same factor repaints the canvas *pixel for pixel* - measured, not inferred. These
-  are shape charts: the animation is visible on a change of composition, and a quiet window that simply
-  gets busier moves nothing.
-- **Neither `@antv/g2` nor `@ant-design/plots` reads `prefers-reduced-motion` anywhere**, and the
-  library's default update animation is a 900ms spring. A chart that enabled animation without its own
-  reduced-motion switch would move hardest for the reader who asked for none.
+- **Un cambio de nivel uniforme es invisible con o sin animación.** El minigráfico no tiene eje y su dominio en el eje y está normalizado al máximo de la propia ventana (`scale.y.nice: false`, `domainMin: 0`), por lo que escalar cada contenedor por el mismo factor repinta el lienzo *píxel por píxel* (medido, no inferido). Estos son gráficos de formas: la animación es visible ante un cambio de composición, y una ventana tranquila que simplemente se vuelve más activa no mueve nada.
+- **Ni `@antv/g2` ni `@ant-design/plots` leen `prefers-reduced-motion` en ninguna parte**, y la animación de actualización predeterminada de la biblioteca es un resorte (spring) de 900ms. Un gráfico que habilitara la animación sin su propio interruptor de movimiento reducido se movería con mayor intensidad precisamente para el lector que solicitó no tener movimiento.
 
-## Decision
+## Decisión
 
-1. **Rule 5 is rewritten rather than deleted.** A mark morphs to its new geometry over `roll`, and fades
-   rather than grows when a series enters or leaves (content appears; it does not fly, and a mark growing
-   in from an axis claims a direction the data does not have). The entering/exiting case is a fade for
-   exactly the reason `DESIGN.md` rejects entrance flourishes.
+1. **Se reescribe la regla 5 en lugar de eliminarla.** Una marca se transforma (morph) hacia su nueva geometría durante el `roll`, y se desvanece en lugar de crecer cuando una serie entra o sale (el contenido aparece; no vuela, y una marca que crece desde un eje reclama una dirección que los datos no poseen). El caso de entrada/salida es un desvanecimiento exactamente por la razón por la que `DESIGN.md` rechaza los adornos de entrada.
 
-2. **All three marks take the same spec:** the six KPI sparklines, the model token trend and the model
-   usage ring. One shared definition (`web/src/charts/chartMotion.ts`) and one token
-   (`MOTION_ROLL`), so a tile's digits and the mark under them move at one tempo and cannot drift apart
-   in review.
+2. **Las tres marcas adoptan la misma especificación:** los seis minigráficos de KPI, la tendencia del token del modelo y el anillo de uso del modelo. Una definición compartida (`web/src/charts/chartMotion.ts`) y un token (`MOTION_ROLL`), de modo que los dígitos de un azulejo y la marca debajo de ellos se muevan al mismo ritmo y no puedan desincronizarse en la revisión.
 
-3. **The reduced-motion switch is app-owned and mandatory.** `web/src/hooks/usePrefersReducedMotion.ts`
-   reads the media query and re-reads it on change, because a preference that only took effect on reload
-   would break the promise mid-session. `resolveChartAnimation` returns `false` - not an empty object and
-   not `undefined` - since the library reads a missing spec as "use your own defaults", which is the
-   900ms spring.
+3. **El interruptor de movimiento reducido es gestionado por la aplicación y es obligatorio.** `web/src/hooks/usePrefersReducedMotion.ts` lee la consulta de medios (media query) y la vuelve a leer cuando cambia, porque una preferencia que solo surtiera efecto al recargar rompería la promesa a mitad de sesión. `resolveChartAnimation` devuelve `false` (ni un objeto vacío ni `undefined`), ya que la biblioteca interpreta una especificación faltante como "usa tus propios valores predeterminados", que es el resorte de 900ms.
 
-4. **The morph is bounded by the instance reuse that makes it a morph.** If a chart is ever remounted on
-   a revision (a `key` change, an imperative ref owning the lifecycle, a `changeData` rewrite), the
-   animation silently becomes a draw-in and this decision no longer holds. `dashboard-chart-motion`
-   asserts intermediates exist; a draw-in on remount would still pass it, so the constraint is recorded
-   here and in the component's own comment.
+4. **La metamorfosis está limitada por la reutilización de la instancia que la convierte en tal.** Si un gráfico se vuelve a montar en una revisión (un cambio de `key`, una referencia imperativa que controle el ciclo de vida, una reescritura mediante `changeData`), la animación se convierte silenciosamente en un dibujo de entrada (draw-in) y esta decisión deja de tener validez. `dashboard-chart-motion` asegura que existan estados intermedios; un dibujo de entrada al volver a montar el componente aun así superaría esa prueba, por lo que la restricción se registra aquí y en el comentario propio del componente.
 
-5. **The cost is accepted explicitly.** A canvas mark is redrawn frame by frame; it is not a
-   compositor-only `transform`, so §7 rule 1 is not satisfied by these eight marks. The exception is
-   bounded to 240ms on eight small canvases, and rule 1 continues to bind everywhere else - including
-   the digits, which are real transforms.
+5. **El coste se acepta de forma explícita.** Una marca en lienzo se redibuja fotograma a fotograma; no es una propiedad de `transform` gestionada exclusivamente por el compositor, por lo que la regla 1 de la §7 no se cumple en estas ocho marcas. La excepción se limita a 240ms en ocho pequeños lienzos, y la regla 1 sigue aplicándose en todo lo demás, incluidos los dígitos, que son transformaciones reales.
 
-6. **The poll may move a reading and the mark behind it, and nothing else.** §7's auto-refresh row is
-   updated in the same change: the view still must not remount, reset pagination or relabel data.
+6. **El sondeo (poll) puede mover una lectura y la marca detrás de ella, y nada más.** La fila de actualización automática de la §7 se actualiza en el mismo cambio: la vista aún no debe volver a montarse, restablecer la paginación ni reetiquetar los datos.
 
-7. **Assertions moved to where the claim is observable.** A logic test pins the spec and its
-   reduced-motion branch; the browser scenario `dashboard-chart-motion` drives a revision with motion
-   allowed and again after switching the preference in place, and asserts painted intermediates in the
-   first case and none in the second. Both probe lanes that already existed keep running with reduced
-   motion, so their pixel assertions stay deterministic - which is a second reason the gate is
-   app-owned rather than optional.
+7. **Las aserciones se trasladan al lugar donde la afirmación es observable.** Una prueba lógica fija la especificación y su rama de movimiento reducido; el escenario del navegador `dashboard-chart-motion` ejecuta una revisión con el movimiento permitido y nuevamente después de cambiar la preferencia sobre la marcha, y valida que existan fotogramas intermedios en el primer caso y ninguno en el segundo. Ambas rutas de prueba que ya existían siguen ejecutándose con movimiento reducido, por lo que sus aserciones de píxeles se mantendrán deterministas, lo cual es una segunda razón por la cual el control es gestionado por la aplicación en lugar de ser opcional.
 
-## Consequences
+## Consecuencias
 
-### Positive
+### Positivas
 
-- A revision the reader did not ask for now reads as movement in the whole card, not as a replacement of
-  half of it: the number rolls and the plot it describes sweeps beside it.
-- The animation is a morph because the library reuses the instance, and that mechanism is now documented
-  where a future change could break it.
-- The reduced-motion gap is closed by us and covered by a probe, rather than assumed to be the library's
-  job. That assumption would have been wrong, and invisibly so.
-- Chart geometry and paint assertions elsewhere in the suite are unaffected: they run under reduced
-  motion, where the marks are still painted in one frame.
+- Una revisión que el lector no solicitó ahora se interpreta como un movimiento en toda la tarjeta, y no como el reemplazo de la mitad de ella: el número se desplaza y el gráfico que describe se desliza a su lado.
+- La animación es una metamorfosis porque la biblioteca reutiliza la instancia, y ese mecanismo ahora está documentado en el lugar donde un cambio futuro podría romperlo.
+- La brecha de movimiento reducido es cubierta por nosotros y respaldada por una prueba, en lugar de asumir que es tarea de la biblioteca. Esa suposición habría sido incorrecta, y de manera invisible.
+- La geometría del gráfico y las aserciones de renderizado en el resto de la suite no se ven afectadas: se ejecutan bajo movimiento reducido, donde las marcas siguen pintándose en un solo fotograma.
 
-### Trade-offs
+### Compensaciones (Trade-offs)
 
-- **A canvas redraw is not compositor-only.** §7 rule 1 binds for everything else in the console and now
-  has eight named exceptions that a reader of the token table must notice.
-- **§7 rule 5 is no longer absolute.** It went from a flat prohibition to a scoped claim with two
-  conditions attached; that is a heavier rule to hold in review than "charts do not animate".
-- **The reduced-motion switch is ours to maintain.** A regression in it would be invisible in the
-  default configuration, which is why the probe measures both states on one page.
-- **The marks can look static when the level changes.** Not a defect of this decision, but its most
-  likely misreading: the sparklines are normalized shape charts, so a revision that scales everything
-  uniformly paints the same picture. Reading it as "the animation is broken" would be easy.
-- **ADR 0007's scope note is superseded on one point.** It recorded that "rule 5 is untouched"; this ADR
-  is the newer decision, and 0007 is not rewritten - it remains an accurate record of what was decided
-  then.
-- **ADR 0004's fourth mitigation is superseded.** That ADR, adopting the charting runtime, required
-  "disable chart library animations explicitly (`animate: false`)" as a visual invariant. Rule 5 above
-  replaces that instruction; the other three mitigations in the same list - the dedicated
-  `vendor-charts` chunk, the lazy import, and the enforced bundle budget - stand unchanged, and the
-  budget was re-verified under this change.
+- **Un redibujado de lienzo no es exclusivo del compositor.** La regla 1 de la §7 se aplica a todo lo demás en la consola y ahora tiene ocho excepciones nombradas que el lector de la tabla de tokens debe tener en cuenta.
+- **La regla 5 de la §7 deja de ser absoluta.** Pasó de ser una prohibición categórica a una afirmación acotada con dos condiciones asociadas; esa es una regla más compleja de retener durante una revisión que "los gráficos no se animan".
+- **El interruptor de movimiento reducido es nuestro deber mantenerlo.** Una regresión en este aspecto sería invisible en la configuración predeterminada, razón por la cual la prueba mide ambos estados en una sola página.
+- **Las marcas pueden parecer estáticas cuando el nivel cambia.** No es un defecto de esta decisión, sino su lectura errónea más probable: los minigráficos son gráficos de formas normalizadas, por lo que una revisión que escala todo de manera uniforme dibuja exactamente la misma imagen. Interpretarlo como "la animación está rota" sería fácil.
+- **La nota de alcance del ADR 0007 queda reemplazada en un punto.** Registraba que "la regla 5 no se toca"; este ADR es la decisión más reciente, y el 0007 no se reescribe: sigue siendo un registro preciso de lo que se decidió en su momento.
+- **La cuarta mitigación del ADR 0004 queda reemplazada.** Dicho ADR, al adoptar el entorno de ejecución de gráficos, exigía "deshabilitar explícitamente las animaciones de la biblioteca de gráficos (`animate: false`)" como un invariante visual. La regla 5 anterior reemplaza esa instrucción; las otras tres mitigaciones de la misma lista —el fragmento dedicado `vendor-charts`, la importación diferida (lazy import) y el presupuesto de empaquetado (bundle budget) aplicado— se mantienen sin cambios, y el presupuesto se ha vuelto a verificar con este cambio.
 
-## Alternatives considered
+## Alternativas consideradas
 
-- **Keep rule 5 and remove ADR 0007's tile sweep, so the dashboard is uniformly still.** The most
-  internally consistent option, and it was rejected on the reading it produces: a poll that moves a
-  number is precisely where motion earns its place, and reverting the tiles to snap would trade a real
-  signal for consistency with a rule the measurement had already shown to be over-broad.
-- **Animate only the ring.** The arcs are the most legible morph, and it was rejected because the six
-  sparklines are the loudest marks on the page; leaving them hard-cutting beside a morphing ring is a
-  worse inconsistency than the one being fixed.
-- **Use `Plot.changeData` or an imperative chart ref.** Rejected: the wrapper already reuses the runtime,
-  so nothing is gained, and owning the chart lifecycle in React would mean re-implementing the update
-  path (and its `isEqual` gate) to get exactly the behaviour already present.
-- **Let the library decide the timing.** Its default update animation is a 900ms spring - three to four
-  times §7's budget and the one curve `DESIGN.md` forbids by name.
-- **Gate motion with CSS (`@media (prefers-reduced-motion: reduce)`).** Impossible: the animation is
-  canvas frames, not CSS transitions, and the library reads no media feature at all.
-- **A per-chart reduced-motion check.** Rejected: three components would each own the preference, and a
-  fourth chart added later would silently animate for everyone. One hook, one resolver, one assertion.
-- **Enable `enter` with a grow or a path-in.** Rejected: it is the entrance flourish `DESIGN.md`
-  repudiates, and it implies a direction the data does not have.
-- **Leave the reduced-motion question to the probe harness.** The harness could have forced
-  `animate: false` in tests and left the product ungated, which would have made the suite deterministic
-  while shipping the defect the suite exists to catch.
+- **Mantener la regla 5 y eliminar el desplazamiento de azulejos del ADR 0007, para que el panel permanezca uniformemente estático.** La opción más internamente consistente, la cual fue rechazada por la lectura que produce: un sondeo que mueve un número es precisamente donde el movimiento justifica su presencia, y revertir los azulejos para que salten cambiaría una señal real por la consistencia con una regla que la medición ya había demostrado ser demasiado amplia.
+- **Animar solo el anillo.** Los arcos son la metamorfosis más legible, pero se rechazó porque los seis minigráficos son las marcas más llamativas de la página; dejar que realicen un corte seco junto a un anillo en transición genera una inconsistencia peor que la que se intenta solucionar.
+- **Usar `Plot.changeData` o una referencia de gráfico imperativa.** Rechazado: el contenedor ya reutiliza el tiempo de ejecución, por lo que no se gana nada, y controlar el ciclo de vida del gráfico en React significaría reimplementar la ruta de actualización (y su validación `isEqual`) para obtener exactamente el comportamiento que ya está presente.
+- **Dejar que la biblioteca decida la temporización.** Su animación de actualización predeterminada es un resorte de 900ms, de tres a cuatro veces el presupuesto de la §7 y la única curva que `DESIGN.md` prohíbe explícitamente por su nombre.
+- **Controlar el movimiento mediante CSS (`@media (prefers-reduced-motion: reduce)`).** Imposible: la animación ocurre en fotogramas del lienzo, no en transiciones CSS, y la biblioteca no lee ninguna característica multimedia (media feature).
+- **Una comprobación de movimiento reducido por gráfico.** Rechazado: tres componentes gestionarían cada uno su propia preferencia, y un cuarto gráfico añadido posteriormente se animaría silenciosamente para todos. Un solo gancho (hook), un solo evaluador (resolver), una sola aserción.
+- **Habilitar `enter` con un crecimiento o un trazado inicial.** Rechazado: es el adorno de entrada que `DESIGN.md` rechaza, e implica una dirección que los datos no tienen.
+- **Dejar la cuestión del movimiento reducido en manos del arnés de pruebas.** El arnés podría haber forzado `animate: false` en las pruebas y dejado el producto sin control, lo que habría hecho que la suite fuera determinista al tiempo que enviaba a producción el defecto que la suite existe para detectar.
