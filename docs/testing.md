@@ -1,807 +1,944 @@
-# Testing a change
+# Probar un cambio
 
-This is the working guide for writing and running tests in this repository. It says
-where a new test belongs, what to run while developing, and what a change must pass
-before it is pushed. `docs/architecture.md` §12 explains why the layers are split the
-way they are; `docs/adr/0032-ci-owns-the-full-browser-catalog.md` records the decision
-behind the verification moments.
+Esta es la guía de trabajo para escribir y ejecutar pruebas en este repositorio. Indica
+dónde corresponde una prueba nueva, qué ejecutar durante el desarrollo y qué debe pasar un
+cambio antes de publicarse. `docs/architecture.md` §12 explica por qué las capas se
+dividen como se dividen; `docs/adr/0032-ci-owns-the-full-browser-catalog.md` registra la
+decisión detrás de los momentos de verificación.
 
-The goal is short feedback with the same or stronger failure detection. A new test that
-is slow, sleeps, or duplicates a claim another layer already makes is a cost every later
-change pays. Prefer the existing layers and runners; adding a new one is a deliberate
-decision with a reason, not a default.
+El objetivo es una retroalimentación corta con la misma o mayor capacidad de detectar
+fallos. Una prueba nueva que es lenta, usa esperas o duplica una afirmación que otra capa
+ya hace es un costo que paga cada cambio posterior. Prefiera las capas y los ejecutores
+existentes; añadir uno nuevo es una decisión deliberada con una razón, no una opción por
+defecto.
 
-**How to use this document.** Sections 1–4 are the rules: where a test belongs, how it
-is registered, what to run when, and what to do when CI fails. The sections after §4 are
-a map, not a mandate — they record which layer owns which claim today and why it was
-placed there. When a better owner exists, move the claim and update the map in the same
-change; keep the claim's strength, not its address. Nothing in the map is frozen.
+**Cómo usar este documento.** Las secciones 1–4 son las reglas: dónde corresponde una
+prueba, cómo se registra, qué ejecutar y cuándo, y qué hacer cuando falla la CI. Las
+secciones posteriores al §4 son un mapa, no un mandato: registran qué capa es dueña de cada
+afirmación hoy y por qué se colocó allí. Cuando exista un dueño mejor, mueva la
+afirmación y actualice el mapa en el mismo cambio; conserve la fuerza de la afirmación, no
+su ubicación. Nada del mapa está congelado.
 
-## 1. Where a new test belongs
+## 1. Dónde corresponde una prueba nueva
 
-Put each claim in the **lowest layer that can make it fail for the reason its name
-gives**. Move a claim up a layer only when the lower one cannot observe it.
+Coloque cada afirmación en la **capa más baja que pueda hacerla fallar por la razón que
+indica su nombre**. Suba una afirmación de capa solo cuando la inferior no pueda observarla.
 
-| The claim is about | Layer | Where | Runs in |
+| La afirmación trata de | Capa | Dónde | Se ejecuta en |
 | --- | --- | --- | --- |
-| Server behaviour: handlers, DTO allowlists, redaction, auth, repository queries, migrations, write serialisation, background loops | Go test | `*_test.go` beside the package | `go test ./...` |
-| A frontend decision that is a pure function: URL/state derivation, formatting, poll and debounce policy, sorting, validation | Logic suite (Node test runner + tsx) | `scripts/test-<topic>.ts`, importing from `web/src` | `pnpm test:logic` |
-| Rendered React wiring: QueryClient subscriptions, optimistic shared state, hook async ownership and provider-to-component integration | Component integration (Vitest + jsdom + RTL) | `web/tests/**/*.component.test.tsx`, with `web/vitest.config.ts` | `pnpm test:components`, affected `test:fast`, full static/CI |
-| Typed frontend transport versus a handler-certified wire corpus: methods, paths, JSON/null/error/auth semantics | API contract (Vitest Node + Go + fixture self-test) | `web/tests/**/*.contract.test.ts`, matching `internal/api/*_test.go` and `scripts/acceptance/contracts/` | `pnpm test:components`, `go test ./...`, `pnpm test:self`; full static/CI |
-| Something only a real browser engine shows: geometry, stacking, hit-testing, scroll, focus, Back, touch, paint, page-level request ordering/navigation and dev-server integration | Probe scenario | a module under `scripts/acceptance/probes/` plus an entry in `scripts/acceptance/scenarios.mjs` | `pnpm check:ui`, CI `probes` |
-| The built binary, embedded SPA, fake CPA and seeded SQLite together: sign-in, route rendering, secret boundaries, cross-stack writes | Cross-stack acceptance | the domain module under `scripts/acceptance/` | `pnpm verify:browser` (full suite on pull requests and master) |
-| The public demonstration | Demo acceptance | route table in `scripts/demo-readiness.mjs` | `pnpm verify:demo` |
-| The Go binary's own demonstration mode: isolated settings, read-only refusals, permitted non-durable edits | Go demo smoke | `scripts/demo-smoke.mjs` | `pnpm verify:demo:go` (opt-in; not part of CI or `verify:full`) |
-| A repository script or gate itself | Script self-test (`node:test` + tsx) | `scripts/<name>.test.ts` (existing `.test.mjs` remains discoverable) or `deploy/cloudflare/*.test.mjs` | `pnpm test:self` |
+| Comportamiento del servidor: handlers, listas permitidas de DTO, redacción, autenticación, consultas del repositorio, migraciones, serialización de escrituras, bucles en segundo plano | Prueba de Go | `*_test.go` junto al paquete | `go test ./...` |
+| Una decisión del frontend que es una función pura: derivación de URL/estado, formateo, política de sondeo y debounce, ordenamiento, validación | Suite de lógica (ejecutor de pruebas de Node + tsx) | `scripts/test-<topic>.ts`, importando desde `web/src` | `pnpm test:logic` |
+| Cableado de React renderizado: suscripciones de QueryClient, estado compartido optimista, propiedad asíncrona de hooks e integración de provider a componente | Integración de componentes (Vitest + jsdom + RTL) | `web/tests/**/*.component.test.tsx`, con `web/vitest.config.ts` | `pnpm test:components`, `test:fast` afectado, estática completa/CI |
+| Transporte tipado del frontend frente a un corpus de red certificado por handlers: métodos, rutas, semántica de JSON/null/error/autenticación | Contrato de API (Vitest Node + Go + autoprueba de fixtures) | `web/tests/**/*.contract.test.ts`, junto con `internal/api/*_test.go` y `scripts/acceptance/contracts/` | `pnpm test:components`, `go test ./...`, `pnpm test:self`; estática completa/CI |
+| Algo que solo muestra un motor de navegador real: geometría, apilamiento, hit-testing, scroll, foco, Atrás, toque, pintado, orden de solicitudes y navegación a nivel de página e integración con el servidor de desarrollo | Escenario de sonda | un módulo bajo `scripts/acceptance/probes/` más una entrada en `scripts/acceptance/scenarios.mjs` | `pnpm check:ui`, `probes` de CI |
+| El binario compilado, la SPA embebida, un CPA falso y SQLite con datos de ejemplo en conjunto: inicio de sesión, renderizado de rutas, límites de secretos, escrituras de pila completa | Aceptación de pila completa | el módulo de dominio bajo `scripts/acceptance/` | `pnpm verify:browser` (suite completa en pull requests y master) |
+| La demostración pública | Aceptación de la demo | tabla de rutas en `scripts/demo-readiness.mjs` | `pnpm verify:demo` |
+| El modo de demostración propio del binario de Go: ajustes aislados, rechazos de solo lectura, ediciones permitidas no duraderas | Smoke de la demo de Go | `scripts/demo-smoke.mjs` | `pnpm verify:demo:go` (opcional; no forma parte de la CI ni de `verify:full`) |
+| Un script o compuerta del repositorio en sí mismo | Autoprueba de scripts (`node:test` + tsx) | `scripts/<name>.test.ts` (el `.test.mjs` existente sigue siendo detectable) o `deploy/cloudflare/*.test.mjs` | `pnpm test:self` |
 
-Service-tier evidence is covered by `internal/pricing/service_tier_test.go`
-(provider/executor identity, outbound precedence, explicit auto and legacy fallback),
-`internal/repository/usage_service_tier_test.go` (both ingestion paths, immutable
-selections, migrations 045/046 preserving historical explanations, filters and facets),
-`internal/repository/usage_outbound_migration_test.go` (all historical columns,
-indexes, immutability triggers, foreign keys and retained-id sequence across 046),
-and `internal/api/usage_service_tier_test.go` (raw versus resolved wire fields and
-filter semantics). `scripts/test-usage-event-view.ts` and
-`scripts/test-request-export.ts` cover the shared Fast marker, source-specific
-hints and masked exports. Rendered request-row coverage lives in
-`web/tests/request-service-tier.component.test.tsx`; the request-list interaction
-probe wires a Codex priority request with a default response into the browser and
-selects its resolved-tier facet, checks the translated active chip, and removes
-the chip and its URL filter.
+La evidencia de service tier la cubren `internal/pricing/service_tier_test.go`
+(identidad de proveedor/ejecutor, precedencia saliente, auto explícito y fallback heredado),
+`internal/repository/usage_service_tier_test.go` (ambas rutas de ingesta, selecciones
+inmutables, migraciones 045/046 que preservan explicaciones históricas, filtros y facetas),
+`internal/repository/usage_outbound_migration_test.go` (todas las columnas históricas,
+índices, triggers de inmutabilidad, claves foráneas y secuencia de ids retenidos a través de
+046), y `internal/api/usage_service_tier_test.go` (campos de red sin procesar frente a
+resueltos y semántica de filtros). `scripts/test-usage-event-view.ts` y
+`scripts/test-request-export.ts` cubren el marcador Fast compartido, las pistas específicas
+de cada origen y las exportaciones enmascaradas. La cobertura de las filas de solicitudes
+renderizadas está en `web/tests/request-service-tier.component.test.tsx`; la sonda de
+interacción de la lista de solicitudes conecta en el navegador una solicitud de prioridad de
+Codex con una respuesta predeterminada y selecciona su faceta de tier resuelto, comprueba el
+chip activo traducido y elimina el chip y su filtro de URL.
 
-Rules that keep the suite fast and honest:
+Reglas que mantienen la suite rápida y honesta:
 
-- **Default to Go or a logic suite.** Most feature logic is a function of its inputs.
-  Extract it from the component and test it directly; the browser then needs one
-  representative check that the page wires it up, not one per permutation.
-- **One owner per claim.** Before adding a browser check, search for an existing one
-  that already asserts it. Extend that scenario instead of adding a near-duplicate.
-- **No fixed waits.** Wait on something observable: a response (`page.waitForResponse`,
-  a route you hold and release), an element state, `until(...)` from
-  `scripts/acceptance/harness.mjs`, a Go channel, or an injected interval or clock.
-  `scripts/fixed-waits.test.mjs` fails when a fixed wait is added.
-  After changing the viewport, wait for responsive controls to adopt their target state
-  and call `settleLayout(page)` before measuring geometry. A viewport acknowledgement
-  can precede React's breakpoint update and ResizeObserver-driven layout.
-  Third-party widgets can schedule further work: a visible popup may still be in its
-  alignment prepare step, and matching editor/shell widths may both belong to the old
-  desktop layout. Wait for the widget's preparation state or its render surface to
-  adopt the current viewport before reading the final geometry assertion.
-  Composer model-popup wheel checks wait for search focus from the completed-open
-  callback, then require the list centre to win hit-testing before sending input.
-  An option count and two animation frames alone do not establish popup alignment,
-  especially when a destroyed popup is reopened. Wheel-distance assertions belong
-  after that readiness boundary, not before it.
-- **Make time injectable in Go.** A duration a test has to wait out belongs in the
-  component's config with a production default, as `ingest.Config.ReadinessGrace` is,
-  so the test can set it to milliseconds.
-- **Every new check must fail against a broken implementation.** Break the code on
-  purpose, watch the test fail, then restore it. A check that cannot fail is removed,
-  not kept for coverage.
-- **Test behaviour, not spelling.** Do not assert that a source file contains a
-  string. Inject the side effects and assert the decision, as
-  `scripts/install-chromium.test.mjs` does.
-- **Keep the fixtures hermetic.** Browser fixtures build their environment with
-  `scripts/acceptance/environment.mjs`; never read the operator's `.env`, network or
-  data directory. The shared seeded database in `internal/demo/demo_test.go` uses the
-  same fixed UTC reference clock as the demo export; wall time changes the generated
-  daily workload and must not change the sample behind model-concentration assertions.
-  Capture-status reads in those tests use that same seed clock.
-  Calendar fixtures must use the console's configured timezone rather
-  than the host timezone; the dashboard heatmap fixtures use the default UTC calendar,
-  with a script self-test spanning hosts on opposite sides of a UTC date boundary.
+- **Use por defecto Go o una suite de lógica.** La mayoría de la lógica de una funcionalidad
+  es una función de sus entradas. Extráigala del componente y pruébela directamente; el
+  navegador solo necesita entonces una comprobación representativa de que la página la
+  conecta, no una por permutación.
+- **Un dueño por afirmación.** Antes de añadir una comprobación de navegador, busque una
+  existente que ya la afirme. Ample ese escenario en lugar de añadir un casi duplicado.
+- **Sin esperas fijas.** Espere algo observable: una respuesta (`page.waitForResponse`, una
+  ruta que usted retiene y libera), un estado de elemento, `until(...)` de
+  `scripts/acceptance/harness.mjs`, un canal de Go o un intervalo o reloj inyectado.
+  `scripts/fixed-waits.test.mjs` falla cuando se añade una espera fija.
+  Tras cambiar el viewport, espere a que los controles responsivos adopten su estado de
+  destino y llame a `settleLayout(page)` antes de medir la geometría. Una confirmación del
+  viewport puede preceder a la actualización de breakpoint de React y al layout dirigido por
+  ResizeObserver.
+  Los widgets de terceros pueden programar más trabajo: un popup visible puede seguir en su
+  paso de preparación de alineación, y los anchos coincidentes del editor y del shell pueden
+  pertenecer ambos al layout de escritorio anterior. Espere el estado de preparación del
+  widget o a que su superficie de renderizado adopte el viewport actual antes de leer la
+  aserción final de geometría.
+  Las comprobaciones de rueda del popup de modelos del compositor esperan el foco de búsqueda
+  desde el callback de apertura completada, y luego exigen que el centro de la lista gane el
+  hit-testing antes de enviar la entrada. Un conteo de opciones y dos animation frames por sí
+  solos no establecen la alineación del popup, especialmente cuando se reabre un popup
+  destruido. Las aserciones de distancia de la rueda van después de ese límite de
+  disponibilidad, no antes.
+- **Haga que el tiempo sea inyectable en Go.** Una duración que una prueba tiene que esperar
+  pertenece a la configuración del componente con un valor de producción por defecto, como
+  lo es `ingest.Config.ReadinessGrace`, para que la prueba pueda fijarla en milisegundos.
+- **Toda comprobación nueva debe fallar contra una implementación rota.** Rompa el código a
+  propósito, vea fallar la prueba y luego restáurelo. Una comprobación que no puede fallar se
+  elimina, no se conserva por cobertura.
+- **Pruebe el comportamiento, no la redacción.** No afirme que un archivo fuente contiene una
+  cadena. Inyecte los efectos secundarios y afirme la decisión, como hace
+  `scripts/install-chromium.test.mjs`.
+- **Mantenga los fixtures herméticos.** Los fixtures de navegador construyen su entorno con
+  `scripts/acceptance/environment.mjs`; nunca lea el `.env`, la red ni el directorio de datos
+  del operador. La base de datos con datos de ejemplo compartida en
+  `internal/demo/demo_test.go` usa el mismo reloj de referencia UTC fijo que la exportación de
+  la demo; el tiempo real cambia la carga diaria generada y no debe cambiar la muestra detrás
+  de las aserciones de concentración de modelos. Las lecturas del estado de captura en esas
+  pruebas usan ese mismo reloj de semilla.
+  Los fixtures de calendario deben usar la zona horaria configurada de la consola y no la del
+  host; los fixtures del mapa de calor del dashboard usan el calendario UTC por defecto, con
+  una autoprueba de script que abarca hosts a lados opuestos de un límite de fecha UTC.
 
-### Provider multi-key saves
+### Guardados de proveedores con múltiples claves
 
-`internal/api/management_provider_multikey_test.go` owns new and same-family edited
-multi-key saves across every registered config API-key family: complete credential
-and per-key proxy/weight round trips, one CPA write, shared and unmodelled setting
-preservation, returned ids, metadata propagation and stable neighbouring positions.
-It also owns blank-row handling and empty/duplicate/colliding credential refusals
-before any CPA write. `web/tests/provider-multikey.component.test.tsx` mounts the real
-editor, hook and API client to assert complete multi-key payloads, the split-row hint
-and icon writes for every returned row on both create and edit.
+`internal/api/management_provider_multikey_test.go` es dueño de los guardados multi-clave
+nuevos y editados de la misma familia en cada familia de claves de API de configuración
+registrada: ciclos completos de credencial y de proxy/peso por clave, una escritura a CPA,
+preservación de ajustes compartidos y no modelados, ids devueltos, propagación de metadatos y
+posiciones vecinas estables. También es dueño del manejo de filas en blanco y de los rechazos
+de credenciales vacías/duplicadas/en colisión antes de cualquier escritura a CPA.
+`web/tests/provider-multikey.component.test.tsx` monta el editor, el hook y el cliente de API
+reales para afirmar payloads multi-clave completos, la pista de fila dividida y las
+escrituras de iconos para cada fila devuelta tanto al crear como al editar.
 
-### Provider protocol changes
+### Cambios de protocolo de proveedores
 
-`internal/api/management_provider_family_move_test.go` owns the complete protocol-pair
-matrix, credential and common-setting preservation, multi-key splitting, positional
-metadata movement and invalid/stale-save refusals. It also pins shared settings remaining
-editable after migration and key-specific runtime policy overriding edited shared policy
-when a multi-key provider splits into separate rows. The management client's
-`provider_family_move_test.go` owns preservation of unrelated stored groups and
-runtime-hidden keys, a single two-family PATCH, exact pre-write backups and `If-Match`
-conflict handling. `web/tests/provider-protocol.component.test.tsx` mounts the real editor,
-hook and API client to own protocol selection, adapted save payloads and icon-cache
-reconciliation before subsequent preference writes. Existing provider browser scenarios
-retain drawer, picker, layout and page-level integration claims.
+`internal/api/management_provider_family_move_test.go` es dueño de la matriz completa de
+pares de protocolos, la preservación de credenciales y ajustes comunes, la división multi-clave,
+el movimiento posicional de metadatos y los rechazos de guardados inválidos u obsoletos.
+También fija que los ajustes compartidos sigan siendo editables tras la migración y que la
+política de runtime específica de una clave prevalezca sobre la política compartida editada
+cuando un proveedor multi-clave se divide en filas separadas. El `provider_family_move_test.go`
+del cliente de gestión es dueño de la preservación de grupos almacenados no relacionados y de
+claves ocultas en runtime, un único PATCH de dos familias, respaldos exactos previos a la
+escritura y el manejo de conflictos con `If-Match`.
+`web/tests/provider-protocol.component.test.tsx` monta el editor, el hook y el cliente de API
+reales para ser dueño de la selección de protocolo, los payloads de guardado adaptados y la
+reconciliación de la caché de iconos antes de escrituras de preferencias posteriores. Los
+escenarios de navegador de proveedores existentes conservan las afirmaciones del drawer, del
+selector, del layout y de integración a nivel de página.
 
-`web/tests/provider-opencode-session.component.test.tsx` mounts the same editor for the
-OpenCode endpoint guidance: the suggestion follows the base URL typed into the draft rather
-than the provider the drawer was opened from, one click reveals the collapsed Custom Headers
-group with the literal `x-opencode-session: $CPA-SESSION-ID`, abandoning the edit writes
-nothing and reopening restores the stored draft, and Save submits that pair. A draft holding
-two different ids is reported with a review action instead of being resolved, and a blank
-duplicate is filled with the configured id so the save cannot carry a blank value. The
-exact-host detection and that merge beneath it belong to `scripts/test-provider-console.ts`.
+`web/tests/provider-opencode-session.component.test.tsx` monta el mismo editor para la guía del
+endpoint de OpenCode: la sugerencia sigue la URL base escrita en el borrador y no el proveedor
+desde el que se abrió el drawer, un clic revela el grupo colapsado Custom Headers con el literal
+`x-opencode-session: $CPA-SESSION-ID`, abandonar la edición no escribe nada y reabrir restaura
+el borrador almacenado, y Save envía ese par. Un borrador con dos ids distintos se reporta con
+una acción de revisión en lugar de resolverse, y un duplicado en blanco se rellena con el id
+configurado para que el guardado no pueda llevar un valor en blanco. La detección exacta del
+host y esa fusión subyacente pertenecen a `scripts/test-provider-console.ts`.
 
-### Rendered component integration
+### Integración de componentes renderizados
 
-`pnpm test:components` runs the complete, automatically discovered frontend integration layer: rendered `*.component.test.tsx` suites and Node-environment `*.contract.test.ts` suites.
-It uses development-only Vitest, jsdom and React Testing Library, not Chromium, a
-product Vite HTTP listener, Go or fake CPA. The separate config performs in-process
-Vite/JSX transforms without loading the product build/proxy/asset plugins. Isolated
-files and one worker bound resources; the runner reuses the existing process-group
-cancellation and diagnostic retention. Unknown/dependency changes still widen fast
-checks; all frontend changes run this small layer until measurements justify a
-conservative component impact selector. Static/CI discovery is always complete. Contract files declare `@vitest-environment node`; shared setup imports RTL only in a DOM environment. Tests and setup live under `web/tests`, outside the product runtime graph, and are included in frontend type checking. The same transform/worker/process ownership is reused instead of adding another runner or a DOM dependency to transport claims.
+`pnpm test:components` ejecuta la capa completa de integración del frontend, detectada
+automáticamente: suites `*.component.test.tsx` renderizadas y suites `*.contract.test.ts` en
+entorno Node.
+Usa Vitest, jsdom y React Testing Library solo de desarrollo, no Chromium, ni un listener HTTP
+de Vite del producto, ni Go, ni un CPA falso. La configuración separada realiza transformaciones
+Vite/JSX en proceso sin cargar los plugins de build/proxy/assets del producto. Los archivos
+aislados y un solo worker acotan los recursos; el ejecutor reutiliza la cancelación de grupo de
+procesos y la retención de diagnósticos existentes. Los cambios desconocidos o de dependencias
+siguen ampliando las comprobaciones rápidas; todos los cambios de frontend ejecutan esta pequeña
+capa hasta que las mediciones justifiquen un selector de impacto de componentes conservador. La
+detección en estática/CI siempre es completa. Los archivos de contrato declaran
+`@vitest-environment node`; la configuración compartida importa RTL solo en un entorno DOM. Las
+pruebas y la configuración viven bajo `web/tests`, fuera del grafo de runtime del producto, y se
+incluyen en la verificación de tipos del frontend. Se reutiliza la misma propiedad de
+transformación/worker/proceso en lugar de añadir otro ejecutor o una dependencia de DOM a las
+afirmaciones de transporte.
 
-The preference pilot in `web/tests/preferences.component.test.tsx` mounts the
-real hook, QueryClient, API client, feedback surface, token-display provider and
-context readout. It holds responses to prove shared optimistic state, key-local
-write ordering, last-intent rollback, failure recovery, fallback readiness,
-reference stability after an observed cache-triggered render and an admitted write
-surviving component unmount. Test-local
-queues are drained even after failures before globals/cache/unmounted trees are
-released. Do not mock the hook/cache/transport under test or suppress console errors.
+El piloto de preferencias en `web/tests/preferences.component.test.tsx` monta el hook,
+QueryClient, cliente de API, superficie de retroalimentación, provider de visualización de tokens
+y lectura de contexto reales. Retiene respuestas para demostrar el estado optimista compartido,
+el orden de escritura local por clave, la reversión a la última intención, la recuperación tras
+fallos, la disponibilidad del fallback, la estabilidad de referencias tras un renderizado
+observado provocado por la caché y que una escritura admitida sobreviva al desmontaje del
+componente. Las colas locales de la prueba se vacían incluso tras fallos antes de liberar los
+globales, la caché y los árboles desmontados. No haga mock del hook, la caché ni el transporte
+bajo prueba, ni suprima los errores de consola.
 
-`web/tests/credential-quota.component.test.tsx` applies the same layer to the dashboard's
-credential-quota panel. It pins the board's urgency order and recovery arithmetic as plain
-functions, then the rendered panel's state machine - a first load that claims nothing, an unread
-credential list reported as unknown with a retry rather than as an empty fleet, and a failed
-refresh that keeps the rows with an additive warning - plus the row's two readings, the single
-footer link resolving under the deployment basename, rows that are not interactive and the
-refresh control with the credentials it may be asked about. Chromium still owns what
-only it can measure: the panel's geometry against the grid, the grid's own scrolling and the real
-refetch lifecycle.
+`web/tests/credential-quota.component.test.tsx` aplica la misma capa al panel de cuota de
+credenciales del dashboard. Fija como funciones simples el orden de urgencia del tablero y la
+aritmética de recuperación, y luego la máquina de estados del panel renderizado - una primera
+carga que no afirma nada, una lista de credenciales no leída reportada como desconocida con un
+reintento y no como una flota vacía, y un refresco fallido que conserva las filas con una
+advertencia adicional - más las dos lecturas de la fila, el único enlace del pie que resuelve bajo
+el basename del despliegue, las filas que no son interactivas y el control de refresco con las
+credenciales sobre las que se le puede preguntar. Chromium sigue siendo dueño de lo que solo él
+puede medir: la geometría del panel frente a la cuadrícula, el propio scroll de la cuadrícula y el
+ciclo de vida real del refetch.
 
-`web/tests/list-view-preferences.component.test.tsx` owns OAuth view parsing,
-saved filter/sort/page-size restoration with a fresh QueryClient, explicit-link
-precedence, persisted reset, refused-write rollback and usable URL-only controls
-after a failed preference read without overwriting unread preferences. It also covers request
-record grouping, auto-refresh and advanced-filter restoration from bare and
-explicit entry routes. The OAuth management and request interaction probes retain
-the real control wiring, reload and rendered collection-order claims.
+`web/tests/list-view-preferences.component.test.tsx` es dueño del análisis de la vista OAuth, de
+la restauración de filtro/orden/tamaño de página guardados con un QueryClient nuevo, de la
+precedencia de enlaces explícitos, del reinicio persistido, de la reversión de escrituras
+rechazadas y de controles utilizables solo por URL tras una lectura fallida de preferencias, sin
+sobrescribir preferencias no leídas. También cubre la agrupación de registros de solicitudes, el
+auto-refresco y la restauración de filtros avanzados desde rutas de entrada simples y explícitas.
+Las sondas de gestión OAuth y de interacción de solicitudes conservan las afirmaciones del
+cableado real de controles, la recarga y el orden de colección renderizado.
 
-This layer owns rendered state, not engine facts. The Shell-PAMC settings probe still owns
-its actual radio wiring, reload and phone geometry; context readout geometry and
-real navigation/keepalive remain browser claims. No assertion is removed merely
-because a component test passes. ADR 0089 and the phase-two ledger in
-`docs/plans/architecture-governance.md` record the decision and negative evidence.
+Esta capa es dueña del estado renderizado, no de los hechos del motor. La sonda de ajustes de
+Shell-PAMC sigue siendo dueña de su cableado real de radios, la recarga y la geometría en
+teléfono; la geometría de la lectura de contexto y la navegación/keepalive reales siguen siendo
+afirmaciones del navegador. No se elimina ninguna aserción solo porque pase una prueba de
+componente. El ADR 0089 y el registro de la fase dos en `docs/plans/architecture-governance.md`
+registran la decisión y la evidencia negativa.
 
-### Handler-certified API contracts
+### Contratos de API certificados por handlers
 
-The preference pilot uses `scripts/acceptance/contracts/preferences.json` as a
-small, reviewed wire corpus, not a schema generated from either implementation.
-`TestPreferencesSharedWireContract` runs its ordered requests through the real
-router, authentication middleware, handlers and isolated SQLite repository. It
-compares exact statuses and semantic JSON, verifies the complete public key
-allowlist, content type and authenticated no-store policy, and independently checks
-a non-UTC deployment. Ordinary DTO and permission boundaries remain unchanged.
+El piloto de preferencias usa `scripts/acceptance/contracts/preferences.json` como un corpus de
+red pequeño y revisado, no como un esquema generado desde ninguna de las dos implementaciones.
+`TestPreferencesSharedWireContract` ejecuta sus solicitudes ordenadas a través del router,
+el middleware de autenticación, los handlers y el repositorio SQLite aislado reales. Compara
+estados exactos y JSON semántico, verifica la lista permitida completa de claves públicas, el
+content type y la política no-store autenticada, y comprueba de forma independiente un
+despliegue no UTC. Los límites ordinarios de DTO y de permisos no cambian.
 
-`web/tests/preferences.contract.test.ts` imports the actual typed client and
-checks method/path/body/credentials/headers, success decoding, ApiError data,
-unauthorized notification, nested deployment prefixes and UTF-8 keepalive admission.
-The Browser Mock uses the per-context fixture in
-`scripts/acceptance/preferences-fixture.mjs`; its self-test executes the actual
-`installRoutes` dispatcher as well as the corpus. Corpus/fixture changes select Go,
-frontend integration and repository checks together; complete CI still discovers
-all owners independently.
+`web/tests/preferences.contract.test.ts` importa el cliente tipado real y comprueba
+método/ruta/cuerpo/credenciales/cabeceras, la decodificación de éxito, los datos de ApiError, la
+notificación de no autorizado, los prefijos de despliegue anidados y la admisión de keepalive
+UTF-8. El Browser Mock usa el fixture por contexto en
+`scripts/acceptance/preferences-fixture.mjs`; su autoprueba ejecuta el despachador
+`installRoutes` real además del corpus. Los cambios en el corpus o el fixture seleccionan juntas
+las comprobaciones de Go, de integración del frontend y del repositorio; la CI completa sigue
+detectando a todos los dueños de forma independiente.
 
-A contract is bounded evidence, not a second implementation of the repository.
-Custom-icon reference validation, body limits, same-origin write protection,
-database failures and complete timezone aliases remain real Go test concerns;
-streaming, cancellation and actual navigation remain browser/cross-stack concerns.
-An unsupported mock method still records a harness fault (501), rather than
-pretending to reproduce the router's 405. Add an independent handler case before
-claiming a new mock semantic. Keep new corpora small and beside the shared fixtures;
-no full OpenAPI conversion or runtime validator is required for this pilot.
+Un contrato es evidencia acotada, no una segunda implementación del repositorio. La validación de
+referencias de iconos personalizados, los límites de cuerpo, la protección de escrituras de mismo
+origen, los fallos de base de datos y los alias completos de zona horaria siguen siendo asuntos
+de pruebas reales de Go; el streaming, la cancelación y la navegación real siguen siendo asuntos
+del navegador o de pila completa. Un método de mock no soportado aún registra un fallo del
+arnés (501), en lugar de fingir que reproduce el 405 del router. Añada un caso de handler
+independiente antes de afirmar una nueva semántica del mock. Mantenga los corpus nuevos
+pequeños y junto a los fixtures compartidos; no se requiere una conversión completa a OpenAPI ni
+un validador en runtime para este piloto.
 
-Focused parity: `go test ./internal/api -run TestPreferencesSharedWireContract -count=1`,
-`pnpm test:components`, and `node --test scripts/preferences-contract.test.mjs`.
-The assertion/fault ledger is in `docs/plans/architecture-governance.md`.
+Paridad enfocada: `go test ./internal/api -run TestPreferencesSharedWireContract -count=1`,
+`pnpm test:components` y `node --test scripts/preferences-contract.test.mjs`.
+El registro de aserciones y fallos está en `docs/plans/architecture-governance.md`.
 
-### Shared conversation claims
+### Afirmaciones compartidas de conversación
 
-`scripts/test-conversation-primitives.ts` owns ID fallback, inline-thinking and
-model-override permutations plus image admission before browser decoding. Existing
-ID and thinking assertions live in that suite. Browser probes
-retain real FileReader/Image/canvas admission, normalized uploads, streaming,
-reasoning layout, attachments, export, scroll and focus claims. The automatically
-discovered `scripts/conversation-boundaries.test.mjs` checks the emitted runtime
-import graph, with eager/lazy negative fixtures and a nonempty real graph; type-only
-adapters do not create a runtime dependency. See the claim/evidence ledger in
-`docs/plans/architecture-governance.md`.
+`scripts/test-conversation-primitives.ts` es dueño del fallback de ID, de las permutaciones de
+inline-thinking y de sobrescritura de modelo, y de la admisión de imágenes antes de la
+decodificación del navegador. Las aserciones existentes de ID y de thinking viven en esa suite.
+Las sondas de navegador conservan las afirmaciones de admisión real de FileReader/Image/canvas,
+cargas normalizadas, streaming, layout de razonamiento, adjuntos, exportación, scroll y foco.
+El archivo `scripts/conversation-boundaries.test.mjs`, detectado automáticamente, comprueba el
+grafo de imports de runtime emitido, con fixtures negativos eager/lazy y un grafo real no vacío;
+los adaptadores solo de tipos no crean una dependencia de runtime. Consulte el registro de
+afirmaciones y evidencia en `docs/plans/architecture-governance.md`.
 
-### Container and release acceptance
+### Aceptación de contenedores y de lanzamientos
 
-`scripts/release-plan.test.mjs` tests tag/package validation, image identity, numeric
-latest selection, backports, immutable action revisions, checkout credential isolation
-and browser provisioning before the full release gates, plus parsed release-job
-ordering, including negative
-mutations. `scripts/deployment.test.mjs` parses the shipped Compose topology and tests
-`latest` image defaults, loopback bindings, image-only installs, collection/proxy settings and gateway bootstrap
-configuration. Both are automatically discovered repository self-tests.
+`scripts/release-plan.test.mjs` prueba la validación de tags/paquetes, la identidad de imágenes,
+la selección numérica de latest, los backports, las revisiones inmutables de acciones, el
+aislamiento de credenciales del checkout y el aprovisionamiento del navegador antes de las
+compuertas completas de lanzamiento, además del orden analizado de los jobs de lanzamiento,
+incluidas mutaciones negativas. `scripts/deployment.test.mjs` analiza la topología de Compose
+entregada y prueba los valores por defecto de la imagen `latest`, los bindings a loopback, las
+instalaciones solo con imagen, los ajustes de recolección/proxy y la configuración de arranque
+del gateway. Ambos son autopruebas del repositorio detectadas automáticamente.
 
-`internal/config/config_test.go` pins embedded build-version fallback and operator
-precedence. Existing `internal/release` tests own version ordering, GitHub-feed/cache/
-rate-limit behavior and failed-check retention; packaged version assertions do not
-replace those tests.
+`internal/config/config_test.go` fija el fallback de versión de compilación embebida y la
+precedencia del operador. Las pruebas existentes de `internal/release` son dueñas del orden de
+versiones, del feed de GitHub, la caché y el límite de tasa, y de la retención de
+comprobaciones fallidas; las aserciones de versión empaquetada no reemplazan esas pruebas.
 
-`scripts/docker-smoke.mjs` is opt-in locally and required before image publication in
-`.github/workflows/release.yml`. It needs Docker and a built native image, creates only
-isolated containers/volumes, waits on health-status events, and tests the actual image's
-non-root/read-only runtime, SQLite writes, normalized base paths, sign-in, embedded SPA
-and running-version endpoints. It also runs the image as the updater: the image's own
-health probe must report that role healthy, and `updater install` must create a hardened
-updater beside a running console, leave the console in place, and let the console read
-the updater's status with no setting on either side. That check replaces a container
-named `shell-pamc-updater`, so it refuses to start on a host that already has one. It is
-not part of `test:fast` or ordinary static gates.
-Release identity is resolved first, then static, full built-browser/demo and three probe shards run on the exact revision in parallel. The `verify` aggregate requires every result to succeed before native packaging or container publication. The browser lanes provision and launch-probe Chromium with
-`scripts/install-chromium.mjs`; local parity is `pnpm verify:full`. Dependency installation alone does not install the browser binary.
+`scripts/docker-smoke.mjs` es opcional en local y obligatorio antes de publicar la imagen en
+`.github/workflows/release.yml`. Necesita Docker y una imagen nativa compilada, crea solo
+contenedores/volúmenes aislados, espera eventos de estado de salud y prueba el runtime real de
+la imagen sin root y de solo lectura, las escrituras en SQLite, las rutas base normalizadas, el
+inicio de sesión, la SPA embebida y los endpoints de versión en ejecución. También ejecuta la
+imagen como updater: la propia sonda de salud de la imagen debe reportar ese rol como sano, y
+`updater install` debe crear un updater endurecido junto a una consola en ejecución, dejar la
+consola en su lugar y permitir que la consola lea el estado del updater sin ningún ajuste en
+ninguno de los dos lados. Esa comprobación reemplaza un contenedor llamado
+`shell-pamc-updater`, por lo que se niega a iniciar en un host que ya tenga uno. No forma parte
+de `test:fast` ni de las compuertas estáticas ordinarias.
+Primero se resuelve la identidad del lanzamiento y luego se ejecutan en paralelo, sobre la
+revisión exacta, la estática, el navegador compilado/demo completo y tres shards de sondas. El
+agregado `verify` exige que todos los resultados tengan éxito antes del empaquetado nativo o de
+la publicación de contenedores. Los carriles de navegador aprovisionan y prueban el arranque de
+Chromium con `scripts/install-chromium.mjs`; la paridad local es `pnpm verify:full`. La sola
+instalación de dependencias no instala el binario del navegador.
 
-Native release planning, archive payloads, manifest integrity and workflow ordering
-are repository self-tests in `scripts/native-release.test.mjs` and
-`scripts/release-plan.test.mjs`, discovered automatically. They do not build Go or
-launch browsers. Archive payload self-tests use GNU tar, zip and unzip, matching
-the Linux packaging runner, and fail by name when a required tool is absent. The
-builder and archive payload self-tests force local GNU tar paths, so a Windows
-drive-letter colon never requests a remote shell;
-injected-command regressions retain the deterministic archive settings. Extracted executable permission
-checks run on Unix hosts, which can represent those permission bits; payload and checksum
-assertions run on every host. The tag workflow's **native** job runs `scripts/native-release.mjs`
-to build all eight CGO-free targets after embedding the SPA, then
-`scripts/native-release-smoke.mjs` to extract/run the host Linux archive and assert
-HTTP readiness, SQLite, login, prefix handling, local JavaScript and injected version.
-It uses fresh temporary directories and OS-assigned ports, and condition-based waits.
-This package smoke is separate from the container smoke and full browser gates;
-foreign cross-compilation does not prove foreign runtime behaviour. The release job
-rechecks completeness and SHA-256 integrity after the pinned artifact transfer;
-workflow regressions reject shared pnpm/Go caches and direct cache steps in the native publication job;
-new releases remain drafts until all attachments upload and latest policy is rechecked.
+La planificación de lanzamientos nativos, los payloads de archivos, la integridad del manifiesto
+y el orden del workflow son autopruebas del repositorio en `scripts/native-release.test.mjs` y
+`scripts/release-plan.test.mjs`, detectadas automáticamente. No compilan Go ni lanzan
+navegadores. Las autopruebas de payloads de archivos usan GNU tar, zip y unzip, igual que el
+ejecutor de empaquetado de Linux, y fallan por nombre cuando falta una herramienta requerida.
+Las autopruebas del constructor y de los payloads fuerzan rutas locales de GNU tar, de modo que
+los dos puntos de una letra de unidad de Windows nunca soliciten un shell remoto; las
+regresiones de comandos inyectados conservan los ajustes deterministas del archivo. Las
+comprobaciones de permisos de ejecutables extraídos se ejecutan en hosts Unix, que pueden
+representar esos bits de permiso; las aserciones de payload y de checksum se ejecutan en todos
+los hosts. El job **native** del workflow de tags ejecuta `scripts/native-release.mjs` para
+compilar los ocho destinos sin CGO tras embeber la SPA, y luego `scripts/native-release-smoke.mjs`
+para extraer y ejecutar el archivo Linux del host y comprobar disponibilidad HTTP, SQLite, inicio
+de sesión, manejo de prefijos, JavaScript local y versión inyectada. Usa directorios
+temporales nuevos, puertos asignados por el SO y esperas basadas en condiciones. Este smoke de
+paquete es independiente del smoke de contenedor y de las compuertas completas de navegador; la
+compilación cruzada a otra plataforma no prueba el comportamiento de runtime en esa plataforma.
+El job de lanzamiento vuelve a comprobar la completitud y la integridad SHA-256 tras la
+transferencia del artefacto fijado; las regresiones del workflow rechazan cachés compartidas de
+pnpm/Go y pasos de caché directos en el job de publicación nativa; los lanzamientos nuevos
+permanecen como borradores hasta que se suben todos los adjuntos y se vuelve a comprobar la
+política de latest.
 
-External reusable workflow job references, like action steps, must use immutable
-commit SHAs; same-checkout reusable workflow paths use the verified local revision.
-Timing-evidence uploads cannot soften failure with `continue-on-error`. Negative
-workflow mutations pin both boundaries.
+Las referencias a jobs de workflows reutilizables externos, como los pasos de acciones, deben
+usar SHA de commit inmutables; las rutas de workflows reutilizables del mismo checkout usan la
+revisión local verificada. Las cargas de evidencia de tiempos no pueden suavizar un fallo con
+`continue-on-error`. Las mutaciones negativas del workflow fijan ambos límites.
 
-### Browser harness fault detection and ownership
+### Detección de fallos del arnés de navegador y su propiedad
 
-`scripts/acceptance/browser-guard.mjs` records page exceptions, console errors,
-transport failures and denied network origins for every page in a context. Probe
-success requires an empty unexpected-problem ledger as well as passing assertions.
-Unmatched API paths and wrong methods return 501 and record a fixture fault;
-URL-only fixture matchers describe GET reads. Write fixtures declare their method.
-Explicit failed responses use `fulfillFixture` or `abortFixture`, authorizing only
-the exact resource URL and a bounded error count. Injected render failures declare
-their own marker and React error-boundary diagnostics locally. Navigation cancellation
-(`net::ERR_ABORTED`) is not an unavailable-resource verdict.
+`scripts/acceptance/browser-guard.mjs` registra excepciones de página, errores de consola,
+fallos de transporte y orígenes de red denegados de cada página en un contexto. El éxito de una
+sonda exige un registro vacío de problemas inesperados además de aserciones que pasen. Las
+rutas de API sin coincidencia y los métodos incorrectos devuelven 501 y registran un fallo de
+fixture; los matchers de fixture solo por URL describen lecturas GET. Los fixtures de escritura
+declaran su método. Las respuestas fallidas explícitas usan `fulfillFixture` o `abortFixture`,
+autorizando solo la URL exacta del recurso y una cantidad acotada de errores. Los fallos de
+renderizado inyectados declaran localmente su propio marcador y los diagnósticos del error
+boundary de React. La cancelación de navegación (`net::ERR_ABORTED`) no es un veredicto de
+recurso no disponible.
 
-Allowed origins include scheme, host and port. HTTP and WebSocket interception
-covers popups, and service workers are blocked. Later fixture routes must fulfill or
-fallback, never continue past the guard. `pnpm verify:browser:harness` executes real
-negative scenarios through the actual Playwright Test process: unrelated passing assertions must not erase
-runtime, method, unknown-route, outbound HTTP or socket faults. It is a built-browser
-CI and full-local gate, not a script self-test; Chromium never enters `test:fast`.
+Los orígenes permitidos incluyen esquema, host y puerto. La intercepción de HTTP y WebSocket
+cubre los popups, y los service workers están bloqueados. Las rutas de fixture posteriores deben
+cumplir o hacer fallback, nunca continuar más allá del guard. `pnpm verify:browser:harness`
+ejecuta escenarios negativos reales mediante el proceso real de Playwright Test: las aserciones
+ajenas que pasan no deben borrar fallos de runtime, de método, de ruta desconocida, de HTTP
+saliente o de socket. Es una compuerta de CI de navegador compilado y local completa, no una
+autoprueba de script; Chromium nunca entra en `test:fast`.
 
-Playwright Test owns the Vite process group and waits for a nonce emitted by that
-child after a strict port bind and the selected critical module graph has been
-transformed through Vite's API. No page is executed in a browser as part of that preparation. A different worktree's HTTP response cannot establish
-readiness; startup failure and cancellation use the runner's native process cleanup.
-Each scenario owns a fresh context, fixtures and fault ledger. Test budgets remain
-120 seconds with one 480-second deadline per partition, shared across its native invocations. Shared scenarios use at most
-two workers; frame claims run afterwards with one uncontended worker (ADR 0095).
-The fault-injection gate verifies storage, cookie, preference and verdict isolation
-with one and two workers. Cross-stack acceptance retains its bounded BrowserServer
-lifecycle helpers; the probe path uses native runner lifecycle management.
-Parallel local
-checks spool output under `tmp/check-output`, print verdicts on completion, record
-structured timings under `tmp/check-timings`, and terminate their owned process
-groups on cancellation. At each run start, recognized output/timing files older than
-30 days are pruned only if their owning PID is inactive; recent success and failure
-evidence, live owners and unrelated files are preserved.
-`scripts/parallel-checks.test.mjs` pins this retention boundary.
+Playwright Test es dueño del grupo de procesos de Vite y espera un nonce emitido por ese hijo
+tras un bind estricto de puerto y tras transformar, a través de la API de Vite, el grafo de
+módulos críticos seleccionado. Ninguna página se ejecuta en un navegador como parte de esa
+preparación. La respuesta HTTP de un worktree distinto no puede establecer la disponibilidad; el
+fallo de arranque y la cancelación usan la limpieza de procesos nativa del ejecutor. Cada
+escenario es dueño de un contexto, fixtures y registro de fallos nuevos. Los presupuestos de
+prueba se mantienen en 120 segundos con un plazo de 480 segundos por partición, compartido entre
+sus invocaciones nativas. Los escenarios compartidos usan como máximo dos workers; las
+afirmaciones de frames se ejecutan después con un solo worker sin contención (ADR 0095). La
+compuerta de inyección de fallos verifica el aislamiento de almacenamiento, cookies,
+preferencias y veredictos con uno y dos workers. La aceptación de pila completa conserva sus
+helpers acotados del ciclo de vida de BrowserServer; la ruta de sondas usa la gestión nativa del
+ciclo de vida del ejecutor.
+Las comprobaciones locales en paralelo almacenan la salida bajo `tmp/check-output`, imprimen los
+veredictos al terminar, registran tiempos estructurados bajo `tmp/check-timings` y terminan sus
+grupos de procesos propios al cancelar. Al inicio de cada ejecución, los archivos reconocidos de
+salida/tiempos con más de 30 días se eliminan solo si su PID propietario está inactivo; se
+preservan la evidencia reciente de éxitos y fallos, los propietarios activos y los archivos no
+relacionados. `scripts/parallel-checks.test.mjs` fija este límite de retención.
 
-### Maintenance verification
+### Verificación de mantenimiento
 
-`.github/workflows/maintenance.yml` runs weekly and on manual dispatch with read-only
-permissions. These diagnostic lanes do not replace or delay the hermetic PR gates:
+`.github/workflows/maintenance.yml` se ejecuta semanalmente y por despacho manual con permisos de
+solo lectura. Estos carriles de diagnóstico no reemplazan ni retrasan las compuertas herméticas
+de los PR:
 
-- `pnpm verify:race`: full usage/CPA/Agent/MCP bridge packages with bounded package
-  concurrency; repository/API concurrency, gate, deadline, cancellation, browser-run
-  and shutdown contracts selected explicitly. Full ordinary Go tests remain mandatory.
-  The extra full repository/API race sweep exceeded the three-minute package budget
-  on the development host; the focused lane has self-tests pinning critical ownership.
-- `pnpm verify:fuzz`: three independent 10-second, two-worker budgets for URL
-  redaction, JSON secret redaction and pricing parity. Seed tests still run normally.
-- `pnpm verify:advisories`: pnpm audit and pinned govulncheck, preserving both exit
-  verdicts and logs. `scripts/advisory-triage.json` records exact identifiers, owners,
-  rationale and review deadlines; these records never suppress audit failures.
-  An expired or unreadable triage document adds its own failed verdict/log while
-  both scanners still run and preserve their independent diagnostics.
-  Fix reachable findings promptly; unrecognized findings and expired reviews require
-  maintainer investigation. Registry/database availability is not a hermetic-test input.
-- macOS and Windows host-native smoke builds the SPA before a CGO-free binary and
-  checks SQLite, nested paths, embedded assets and authentication with
-  `scripts/native-runtime-smoke.mjs`. Foreign cross-compilation alone proves none of
-  those runtime claims. Native publication still refuses shared caches.
+- `pnpm verify:race`: paquetes completos de usage/CPA/Agent/MCP bridge con concurrencia de
+  paquetes acotada; los contratos de concurrencia, compuerta, plazo, cancelación, ejecución de
+  navegador y apagado de repository/API se seleccionan explícitamente. Las pruebas ordinarias
+  completas de Go siguen siendo obligatorias. El barrido race completo adicional de
+  repository/API superó el presupuesto de tres minutos por paquete en el host de desarrollo; el
+  carril enfocado tiene autopruebas que fijan la propiedad crítica.
+- `pnpm verify:fuzz`: tres presupuestos independientes de 10 segundos y dos workers para la
+  redacción de URL, la redacción de secretos JSON y la paridad de precios. Las pruebas semilla
+  siguen ejecutándose normalmente.
+- `pnpm verify:advisories`: pnpm audit y govulncheck fijado, preservando ambos veredictos de
+  salida y los logs. `scripts/advisory-triage.json` registra identificadores exactos, dueños,
+  justificación y plazos de revisión; estos registros nunca suprimen fallos de auditoría. Un
+  documento de triaje vencido o ilegible añade su propio veredicto/log fallido mientras ambos
+  escáneres siguen ejecutándose y preservan sus diagnósticos independientes. Corrija los
+  hallazgos alcanzables sin demora; los hallazgos no reconocidos y las revisiones vencidas
+  requieren investigación del mantenedor. La disponibilidad del registro o de la base de datos
+  no es una entrada de prueba hermética.
+- El smoke nativo de macOS y Windows en el host compila la SPA antes de un binario sin CGO y
+  comprueba SQLite, rutas anidadas, assets embebidos y autenticación con
+  `scripts/native-runtime-smoke.mjs`. La compilación cruzada a otra plataforma por sí sola no
+  prueba ninguna de esas afirmaciones de runtime. La publicación nativa sigue rechazando
+  cachés compartidas.
 
-Maintenance logs are retained for 30 days. A failing lane belongs to the repository
-maintainer: distinguish an assertion/race, scanner infrastructure failure and a
-reported advisory, preserve the evidence, then rerun only that lane after remediation.
+Los logs de mantenimiento se retienen 30 días. Un carril que falla pertenece al mantenedor del
+repositorio: distinga una aserción/race, un fallo de infraestructura del escáner y una
+advertencia reportada, preserve la evidencia y vuelva a ejecutar solo ese carril tras la
+remediación.
 
-### Read-only database path compatibility
+### Compatibilidad de la ruta de base de datos de solo lectura
 
-`internal/repository/readonly_query_test.go` owns absolute file URI construction for
-Unix and Windows drive paths, including spaces, Unicode and URI-reserved characters.
-Its real SQLite test reads a marker inserted through the writable pool from an escaped
-filename, then asserts both write refusal after disabling `query_only` (the independent
-`mode=ro` boundary) and attachment refusal. The existing query suites retain compiled
-program admission, hidden-table/column refusals, bounded results and masking coverage.
-These tests run in `go test ./...`, without Chromium or a new runner. Drive-letter URI
-cases run on every host; actual Windows filesystem behavior still needs a Windows run.
+`internal/repository/readonly_query_test.go` es dueño de la construcción de URI de archivo
+absolutas para rutas de Unix y de unidades de Windows, incluidos espacios, Unicode y caracteres
+reservados de URI. Su prueba real de SQLite lee un marcador insertado mediante el pool
+escribible desde un nombre de archivo escapado, y luego afirma tanto el rechazo de escritura tras
+desactivar `query_only` (el límite independiente `mode=ro`) como el rechazo de attach. Las
+suites de consultas existentes conservan la cobertura de admisión de programas compilados,
+rechazos de tablas/columnas ocultas, resultados acotados y enmascaramiento. Estas pruebas se
+ejecutan en `go test ./...`, sin Chromium ni un ejecutor nuevo. Los casos de URI con letra de
+unidad se ejecutan en todos los hosts; el comportamiento real del sistema de archivos de Windows
+sigue requiriendo una ejecución en Windows.
 
-## 2. Registering a new test
+## 2. Registrar una prueba nueva
 
-Discovery is automatic wherever it can be, so a test cannot be written and then never
-run:
+La detección es automática siempre que es posible, de modo que una prueba no pueda escribirse y
+luego no ejecutarse nunca:
 
-| Test | Registration |
+| Prueba | Registro |
 | --- | --- |
-| Go test | none |
-| Logic suite `scripts/test-*.ts` | none: `scripts/testing/logic.ts` discovers the files |
-| Frontend integration `web/tests/**/*.component.test.tsx` / `web/tests/**/*.contract.test.ts` | none: recursive discovery in `scripts/test-components.mjs` and the standalone Vitest config; empty discovery fails |
-| Script self-test `*.test.ts` / `*.test.mjs` | none: `scripts/testing/repository.ts` discovers them |
-| Probe scenario | an entry in `scripts/acceptance/scenarios.mjs` (unique `id`). Optionally its measured seconds in `scripts/acceptance/probe-weights.json`, which only affects shard balance |
-| New console page | a rule in `SCENARIO_PATHS` in `scripts/acceptance/check-ui-plan.mjs` naming the scenarios that load its route, or `scenarios: []` if none does. `scripts/ui-impact.test.mjs` fails until the rule exists |
-| Lucide package version change | `pnpm icons:generate`, commit `web/src/generated/lucideIcons.json`; `scripts/generate-lucide-icons.test.mjs` fails until the file matches the installed package |
-| New console read or response shape | `pnpm demo:generate` (pins `TZ=UTC` for deterministic deployment metadata), review the diff, commit the dataset (see `docs/ops/cloudflare-demo.md`) |
+| Prueba de Go | ninguno |
+| Suite de lógica `scripts/test-*.ts` | ninguno: `scripts/testing/logic.ts` detecta los archivos |
+| Integración del frontend `web/tests/**/*.component.test.tsx` / `web/tests/**/*.contract.test.ts` | ninguno: detección recursiva en `scripts/test-components.mjs` y en la configuración independiente de Vitest; una detección vacía falla |
+| Autoprueba de script `*.test.ts` / `*.test.mjs` | ninguno: `scripts/testing/repository.ts` las detecta |
+| Escenario de sonda | una entrada en `scripts/acceptance/scenarios.mjs` (`id` único). Opcionalmente sus segundos medidos en `scripts/acceptance/probe-weights.json`, que solo afecta al balance de los shards |
+| Página nueva de la consola | una regla en `SCENARIO_PATHS` de `scripts/acceptance/check-ui-plan.mjs` que nombre los escenarios que cargan su ruta, o `scenarios: []` si ninguno lo hace. `scripts/ui-impact.test.mjs` falla hasta que exista la regla |
+| Cambio de versión del paquete Lucide | `pnpm icons:generate`, haga commit de `web/src/generated/lucideIcons.json`; `scripts/generate-lucide-icons.test.mjs` falla hasta que el archivo coincida con el paquete instalado |
+| Cambio en una lectura de la consola o en la forma de una respuesta | `pnpm demo:generate` (fija `TZ=UTC` para metadatos de despliegue deterministas), revise el diff y haga commit del conjunto de datos (vea `docs/ops/cloudflare-demo.md`) |
 
-## 3. What to run, and when
+## 3. Qué ejecutar y cuándo
 
-The UI runtime graph distinguishes literal dynamic imports from eager imports. Mapped
-pages loaded lazily by `web/src/routePages.ts` end their reachability chain at that
-registry, just as direct routed pages end at App. The graph discovers page identity
-from imported JSX components in App's `createBrowserRouter` route elements, following
-the registry's exported `React.lazy` bindings to literal `createPageLoader` imports.
-It does not maintain another page list or infer page identity from a directory rule.
-A different loader/router recipe requires evidence and negative cases in the same
-change; unrecognized syntax widens rather than being guessed. The registry itself,
-page-directory helpers, other imports of the same resolved module, mixed eager/lazy
-edges, unmapped pages, unreadable sources and missing route/edge evidence still widen
-to all scenarios. `scripts/ui-impact.test.mjs` independently requires the App-to-registry
-runtime edge and a nonempty proven registry-page set, then checks every page's scenario
-rule. Negative fixtures ensure directly imported App pages cannot hide a disconnected
-or empty registry, and a mapped directory cannot certify a helper as a route page.
-The plugin host maps to the existing plugin browser scenarios; built native credential,
-frame and write contracts remain in cross-stack acceptance.
+El grafo de runtime de la UI distingue los imports dinámicos literales de los imports eager. Las
+páginas mapeadas que `web/src/routePages.ts` carga de forma diferida terminan su cadena de
+alcance en ese registro, igual que las páginas enrutadas directamente terminan en App. El grafo
+descubre la identidad de las páginas a partir de los componentes JSX importados en los elementos
+de ruta de `createBrowserRouter` de App, siguiendo los bindings `React.lazy` exportados por el
+registro hasta los imports literales de `createPageLoader`. No mantiene otra lista de páginas ni
+deduce la identidad de una página a partir de una regla de directorio. Una receta distinta de
+loader/router exige evidencia y casos negativos en el mismo cambio; la sintaxis no reconocida
+amplía la selección en lugar de adivinarse. El propio registro, los helpers de directorios de
+páginas, otros imports del mismo módulo resuelto, las aristas mixtas eager/lazy, las páginas sin
+mapear, las fuentes ilegibles y la falta de evidencia de ruta o arista siguen ampliando la
+selección a todos los escenarios. `scripts/ui-impact.test.mjs` exige de forma independiente la
+arista de runtime App-registro y un conjunto no vacío de páginas del registro demostradas, y luego
+comprueba la regla de escenarios de cada página. Los fixtures negativos garantizan que las páginas
+de App importadas directamente no puedan ocultar un registro desconectado o vacío, y que un
+directorio mapeado no pueda certificar un helper como página de ruta. El host de plugins se
+asigna a los escenarios de navegador de plugins existentes; los contratos nativos compilados de
+credenciales, frames y escrituras permanecen en la aceptación de pila completa.
 
-The local fast lane passes changed files to `scripts/logic-plan.mjs`, which follows
-relative runtime imports into automatically discovered suites. Unknown/unowned
-changes and infrastructure/dependency changes widen to the full suite. Suites with
-computed imports, unresolved aliases or filesystem discovery are always included;
-there is no hand-maintained suite registration map. `pnpm test:logic --plan --files
-'["web/src/utils/maskKey.ts"]'` inspects a selection. The default command and every
-final/CI static run still execute all suites.
+El carril rápido local pasa los archivos modificados a `scripts/logic-plan.mjs`, que sigue los
+imports de runtime relativos hacia las suites detectadas automáticamente. Los cambios
+desconocidos o sin dueño y los cambios de infraestructura o dependencias amplían la selección a la
+suite completa. Las suites con imports calculados, alias sin resolver o detección por sistema de
+archivos siempre se incluyen; no hay un mapa de registro de suites mantenido a mano. `pnpm test:logic --plan --files
+'["web/src/utils/maskKey.ts"]'` inspecciona una selección. El comando por defecto y toda ejecución
+estática final o de CI siguen ejecutando todas las suites.
 
-Native runner teardown drains contexts and reclaims owned processes on completion,
-startup failure and cancellation. Project fixtures check the fault ledger after context
-closure so late events cannot be erased by a passing test body. Malformed timing JSON
-is preserved as an invalid artifact, fails the reporter's final verdict and does not
-stop subsequent scenarios recording evidence. Missing/duplicate IDs fail the catalog
-adapter independently.
+El desmontaje del ejecutor nativo drena los contextos y recupera los procesos propios al
+terminar, ante fallos de arranque y al cancelar. Los fixtures del proyecto comprueban el registro
+de fallos tras cerrar el contexto, de modo que los eventos tardíos no puedan ser borrados por el
+cuerpo de una prueba que pasa. El JSON de tiempos mal formado se conserva como artefacto inválido,
+hace fallar el veredicto final del reportero y no impide que los escenarios posteriores registren
+evidencia. Los IDs faltantes o duplicados hacen fallar el adaptador del catálogo de forma
+independiente.
 
-Probe samples under `tmp/probe-timings/<port>.json` include scenario ID, verdict, elapsed time
-and named steps. Failure evidence is isolated under `tmp/probe-failure/<port>/`; the negative browser harness has its own `tmp/browser-harness-failure/` and `tmp/browser-harness-report.json` namespaces. CI uploads probe samples even after failure. `pnpm report:probe-timings`
-calculates candidate median/p95 weights from compatible successful samples; it does
-not edit the snapshot. Review sample coverage and platform compatibility before
-updating `scripts/acceptance/probe-weights.json`. Provisional split scenarios are
-explicitly marked; missing weights affect balance, never discovery or coverage.
+Las muestras de sondas bajo `tmp/probe-timings/<port>.json` incluyen el ID del escenario, el
+veredicto, el tiempo transcurrido y los pasos con nombre. La evidencia de fallos queda aislada bajo
+`tmp/probe-failure/<port>/`; el arnés de navegador negativo tiene sus propios espacios
+`tmp/browser-harness-failure/` y `tmp/browser-harness-report.json`. La CI sube las muestras de
+sondas incluso tras un fallo. `pnpm report:probe-timings` calcula pesos candidatos de mediana/p95 a
+partir de muestras exitosas compatibles; no edita la instantánea. Revise la cobertura de muestras
+y la compatibilidad de plataforma antes de actualizar `scripts/acceptance/probe-weights.json`. Los
+escenarios divididos provisionales se marcan explícitamente; la falta de pesos afecta al balance,
+nunca a la detección ni a la cobertura.
 
 
-Local full verification completes `pnpm build` before starting any Go static lane.
-Go embedding enumerates paths, so pruning stale distribution assets concurrently
-with compilation can invalidate already-discovered files. Independent CI jobs have
-separate checkouts; this local ownership rule does not serialize those jobs. The
-local runner also executes harness, built browser, probes and demo consecutively,
-retaining every verdict after a failure. Their frame/readiness assertions must not
-compete with another Chromium lane on the same host; static checks stay parallel.
+La verificación completa local termina `pnpm build` antes de iniciar cualquier carril estático de
+Go. El embebido de Go enumera rutas, de modo que podar assets de distribución obsoletos al mismo
+tiempo que la compilación puede invalidar archivos ya descubiertos. Los jobs de CI independientes
+tienen checkouts separados; esta regla local de propiedad no serializa esos jobs. El ejecutor
+local también ejecuta de forma consecutiva el arnés, el navegador compilado, las sondas y la demo,
+conservando cada veredicto tras un fallo. Sus aserciones de frames y de disponibilidad no deben
+competir con otro carril de Chromium en el mismo host; las comprobaciones estáticas siguen en
+paralelo.
 
-Built live-tail acceptance seeds its dedicated arrival inside the server's window.
-`scripts/acceptance/usage-events/arrival-fixture.mjs` withholds only that exact request
-from real list responses before Hold, fetching an extra real row to preserve the
-baseline page. Once the reader's window is stable it releases subsequent reads
-unchanged. The real API still owns ordering and ID-based arrival counts; the fixture
-controls availability rather than relying on elapsed startup time. Node tests pin
-exact endpoint scope, row/count preservation and release. Built acceptance requires
-the released request ID, not merely a newest-first timestamp, at the first rendered row. No second database writer
-or application clock override is involved.
+La aceptación compilada de live-tail siembra su llegada dedicada dentro de la ventana del
+servidor. `scripts/acceptance/usage-events/arrival-fixture.mjs` retiene solo esa solicitud exacta
+de las respuestas reales de lista antes de Hold, obteniendo una fila real adicional para preservar
+la página base. Una vez que la ventana del lector es estable, libera sin cambios las lecturas
+siguientes. La API real sigue siendo dueña del orden y de los conteos de llegada basados en ID; el
+fixture controla la disponibilidad en lugar de depender del tiempo de arranque transcurrido. Las
+pruebas de Node fijan el alcance exacto del endpoint, la preservación de filas y conteos y la
+liberación. La aceptación compilada exige el ID de la solicitud liberada, no solo una marca de
+tiempo más reciente primero, en la primera fila renderizada. No interviene un segundo escritor de
+base de datos ni una sobrescritura del reloj de la aplicación.
 
-Independent worktrees can explicitly select a free port with `pnpm verify:probes --port 5183`
-or `pnpm verify:full --probe-port 5183`. Defaults remain 5180 for the catalog and 5181
-for affected UI checks. The runner never silently selects another port or trusts an
-existing listener; changing the explicit port does not alter coverage or verdicts.
+Los worktrees independientes pueden seleccionar explícitamente un puerto libre con
+`pnpm verify:probes --port 5183` o `pnpm verify:full --probe-port 5183`. Los valores por defecto
+siguen siendo 5180 para el catálogo y 5181 para las comprobaciones de UI afectadas. El ejecutor
+nunca selecciona en silencio otro puerto ni confía en un listener existente; cambiar el puerto
+explícito no altera la cobertura ni los veredictos.
 
-Demo packaging self-tests call `stageDemo` from `scripts/build-demo.mjs` with private
-temporary source/stage directories. They exercise HTML/module/font rewrites, runtime
-configuration, missing-input failures and concurrent staging without deleting the
-runtime demo assets or skipping when no product build exists. `verify:demo` retains
-built-console deep-route coverage.
+Las autopruebas del empaquetado de la demo llaman a `stageDemo` de `scripts/build-demo.mjs` con
+directorios temporales privados de origen y de staging. Ejercitan las reescrituras de
+HTML/módulos/fuentes, la configuración de runtime, los fallos por entradas faltantes y el staging
+concurrente sin borrar los assets de runtime de la demo ni omitirse cuando no existe un build del
+producto. `verify:demo` conserva la cobertura de rutas profundas de la consola compilada.
 
-`pnpm benchmark:native` is an opt-in local compilation experiment, outside all gates.
-It compares serial and bounded two-worker execution of the same eight CGO-free native
-targets, checking binary build metadata. `--linux-only` narrows the experiment (not
-release coverage), and `--warm` primes every measured target before timing both cases. Default cases use
-fresh per-case build caches with existing module downloads. Reports under
-`tmp/build-benchmarks/` record source revision, dirty state, platform, CPU count,
-toolchain, cache conditions, priming and individual target verdicts. Both cases build
-from the same immutable snapshot of `cmd/`, `internal/`, `migrations/`, `go.mod` and
-`go.sum`, including embedded SPA assets. Snapshot consistency is checked before
-compilation, and failures retain their report and per-target diagnostics. Cancellation
-stops target admission, joins owned build process groups and records interrupted
-results before removing the private snapshot. Compare equivalent cache
-conditions before interpreting timings; these binaries are not publication inputs.
+`pnpm benchmark:native` es un experimento de compilación local opcional, fuera de todas las
+compuertas. Compara la ejecución en serie y la acotada de dos workers de los mismos ocho destinos
+nativos sin CGO, comprobando los metadatos de compilación del binario. `--linux-only` acota el
+experimento (no la cobertura de lanzamiento), y `--warm` precalienta cada destino medido antes de
+medir ambos casos. Los casos por defecto usan cachés de compilación nuevas por caso con descargas
+de módulos existentes. Los reportes bajo `tmp/build-benchmarks/` registran la revisión de origen,
+el estado sucio, la plataforma, el número de CPU, la toolchain, las condiciones de caché, el
+precalentamiento y los veredictos de cada destino. Ambos casos compilan desde la misma instantánea
+inmutable de `cmd/`, `internal/`, `migrations/`, `go.mod` y `go.sum`, incluidos los assets de SPA
+embebidos. La consistencia de la instantánea se comprueba antes de compilar, y los fallos conservan
+su reporte y los diagnósticos por destino. La cancelación detiene la admisión de destinos, une los
+grupos de procesos de compilación propios y registra los resultados interrumpidos antes de eliminar
+la instantánea privada. Compare condiciones de caché equivalentes antes de interpretar los tiempos;
+estos binarios no son entradas de publicación.
 
-| Moment | Command | What it does |
+| Momento | Comando | Qué hace |
 | --- | --- | --- |
-| While editing | `pnpm test:fast` | Only the static checks the changed files need; the frontend type check is incremental. `--plan` prints the selection, `--base <ref>` includes committed changes |
-| While editing UI | `pnpm check:ui` | Only the probe scenarios the change can reach, on the dev server. `--plan` explains the selection; `--scenario <id>` runs one |
-| A feature is complete, and before pushing | `pnpm verify` and `pnpm check:ui` | The full static gates, the worktree secret scan and the affected browser scenarios |
-| Pull request (CI) | automatic | Isolated Go/frontend/repository static lanes behind the required `static` aggregate, secret scans, build, loading boundaries and bundle reports, the full cross-stack acceptance, the **whole** probe catalog in three shards, and the demo acceptance |
-| Optional locally | `pnpm verify:full` | Everything CI runs, in one local command. Use it for changes to the build, the browser harness or the workflow, or to reproduce a CI failure |
-| Opt-in | `pnpm verify:demo:go` | The Go binary's own demo mode: a browser against a locally started binary with its own route assertions. It generates the dataset, so it is not part of CI |
+| Al editar | `pnpm test:fast` | Solo las comprobaciones estáticas que necesitan los archivos modificados; la verificación de tipos del frontend es incremental. `--plan` imprime la selección, `--base <ref>` incluye los cambios confirmados |
+| Al editar la UI | `pnpm check:ui` | Solo los escenarios de sonda que el cambio puede alcanzar, en el servidor de desarrollo. `--plan` explica la selección; `--scenario <id>` ejecuta uno |
+| Una funcionalidad está completa, y antes de publicar | `pnpm verify` y `pnpm check:ui` | Las compuertas estáticas completas, el escaneo de secretos del worktree y los escenarios de navegador afectados |
+| Pull request (CI) | automático | Carriles estáticos aislados de Go/frontend/repositorio tras el agregado `static` requerido, escaneos de secretos, build, límites de carga y reportes de bundle, la aceptación de pila completa, **todo** el catálogo de sondas en tres shards y la aceptación de la demo |
+| Opcional en local | `pnpm verify:full` | Todo lo que ejecuta la CI, en un solo comando local. Úselo para cambios en el build, el arnés de navegador o el workflow, o para reproducir un fallo de CI |
+| Opcional (opt-in) | `pnpm verify:demo:go` | El modo demo propio del binario de Go: un navegador contra un binario iniciado localmente con sus propias aserciones de rutas. Genera el conjunto de datos, por lo que no forma parte de la CI |
 
-How `check:ui` chooses scenarios (`scripts/acceptance/check-ui-plan.mjs`):
+Cómo elige escenarios `check:ui` (`scripts/acceptance/check-ui-plan.mjs`):
 
-- A path rule names the scenarios for a page or component directory.
-- Any other `web/src` file is followed through the **runtime** import graph
-  (`scripts/acceptance/ui-impact.mjs`) to the pages that import it. Imports used only
-  as types are not edges, so a pure type change selects nothing and is covered by the
-  type check.
-- Reaching the shared layer (`web/index.html`, `App.tsx`'s shell, `components/common/`,
-  the theme, the API client, the global stylesheet) selects every scenario, as does a
-  routed page with no rule, an unresolved import, a dependency or Vite change, or an
-  asset the graph cannot see.
-- A translation catalog edit that only adds entries selects nothing; changing or
-  removing existing copy selects every scenario.
-- A probe module or registry edit selects the scenarios that use it
-  (`scripts/acceptance/probe-impact.mjs`); an edit to the probe runner, or to any module the runner imports, selects all. Every
-  path under `scripts/acceptance/` is attributed this way rather than from a list of
-  names, so a new helper cannot select nothing.
+- Una regla de ruta nombra los escenarios de una página o directorio de componentes.
+- Cualquier otro archivo de `web/src` se sigue a través del grafo de imports de **runtime**
+  (`scripts/acceptance/ui-impact.mjs`) hasta las páginas que lo importan. Los imports usados solo
+  como tipos no son aristas, por lo que un cambio puro de tipos no selecciona nada y lo cubre la
+  verificación de tipos.
+- Alcanzar la capa compartida (`web/index.html`, el shell de `App.tsx`, `components/common/`, el
+  tema, el cliente de API, la hoja de estilos global) selecciona todos los escenarios, igual que
+  una página enrutada sin regla, un import sin resolver, un cambio de dependencia o de Vite, o un
+  asset que el grafo no puede ver.
+- Un cambio en el catálogo de traducciones que solo añade entradas no selecciona nada; cambiar o
+  eliminar textos existentes selecciona todos los escenarios.
+- Un cambio en un módulo o en el registro de sondas selecciona los escenarios que lo usan
+  (`scripts/acceptance/probe-impact.mjs`); un cambio en el ejecutor de sondas, o en cualquier módulo que el ejecutor importe, selecciona todos. Cada
+  ruta bajo `scripts/acceptance/` se atribuye así y no a partir de una lista de nombres, de modo
+  que un helper nuevo no pueda seleccionar nada.
 
-The probe catalog runs through Playwright Test, configured in
-`scripts/testing/probe-config.ts`. `scripts/testing/probes.ts` applies the same reviewed
-shard partition to CI and delegates execution to the native runner; `check:ui` supplies
-only its affected IDs. Complete local catalogs use the same three CI partitions
-sequentially. Each partition has one 480-second deadline shared by its native phases;
-each phase retains its own artifact directory.
-Shared scenarios run with at most two workers, each with a fresh
-context and context-local fixtures. Frame-by-frame scenarios marked `shouldRunAlone`
-run in a subsequent single-worker invocation even if shared tests failed. Retries are
-zero and focused-only tests are forbidden. Native collection is checked against the
-registry in `scripts/probe-runner.test.ts`; missing or duplicate timing evidence fails
-independently of the runner's exit code.
+El catálogo de sondas se ejecuta mediante Playwright Test, configurado en
+`scripts/testing/probe-config.ts`. `scripts/testing/probes.ts` aplica la misma partición de shards
+revisada a la CI y delega la ejecución en el ejecutor nativo; `check:ui` solo aporta sus IDs
+afectados. Los catálogos locales completos usan las mismas tres particiones de la CI de forma
+secuencial. Cada partición tiene un plazo de 480 segundos compartido por sus fases nativas; cada
+fase conserva su propio directorio de artefactos.
+Los escenarios compartidos se ejecutan con como máximo dos workers, cada uno con un contexto nuevo
+y fixtures locales al contexto. Los escenarios fotograma a fotograma marcados `shouldRunAlone` se
+ejecutan en una invocación posterior de un solo worker aunque las pruebas compartidas hayan
+fallado. Los reintentos son cero y las pruebas con solo-enfoque están prohibidas. La recolección
+nativa se comprueba contra el registro en `scripts/probe-runner.test.ts`; la evidencia de tiempos
+faltante o duplicada falla de forma independiente del código de salida del ejecutor.
 
-Playwright owns test budgets, scheduling, context/browser cleanup, steps and result
-reporting. Project fixtures own API allowlists, bounded expected faults, seeded state,
-and the post-close fault ledger. Failures keep native error reports, final DOM and PNG
-attachments under `tmp/probe-failure/`. Continuous tracing is disabled so instrumentation
-of the source-heavy dev server does not distort route/frame measurements.
-`pnpm verify:browser:harness` injects real runtime, fixture, outbound, assertion and setup
-faults and checks the actual runner's nonzero exit and positive controls with one and two
-workers. The native runner's scheduler is not reimplemented or unit-tested here.
+Playwright es dueño de los presupuestos de prueba, la programación, la limpieza de
+contextos/navegador, los pasos y el reporte de resultados. Los fixtures del proyecto son dueños de
+las listas permitidas de API, los fallos esperados acotados, el estado sembrado y el registro de
+fallos posterior al cierre. Los fallos conservan reportes de error nativos y adjuntos finales de DOM
+y PNG bajo `tmp/probe-failure/`. El trazado continuo está desactivado para que la instrumentación del
+servidor de desarrollo, con mucho código fuente, no distorsione las mediciones de rutas y frames.
+`pnpm verify:browser:harness` inyecta fallos reales de runtime, fixture, saliente, aserción y
+configuración, y comprueba la salida distinta de cero del ejecutor real y los controles positivos
+con uno y dos workers. El programador del ejecutor nativo no se reimplementa ni se prueba
+unitariamente aquí.
 
-New orchestration and self-tests use TypeScript. `pnpm type-check:tooling` checks migrated
-entrypoints, fixtures, configuration, reporters and self-tests with strict NodeNext typing;
-it runs in both static verification and incremental `test:fast` type checking. `tsx`
-executes TypeScript and resolves imports but does not replace that type check. The existing
-logic suites run as isolated Node test files, with native bounded scheduling and automatic
-discovery. Existing JavaScript domain fixtures and remaining gates can be migrated in
-bounded changes; adding another ad-hoc loader or test scheduler is not the migration path.
+La nueva orquestación y las autopruebas usan TypeScript. `pnpm type-check:tooling` comprueba los
+puntos de entrada migrados, fixtures, configuración, reporteros y autopruebas con tipado estricto
+NodeNext; se ejecuta tanto en la verificación estática como en la verificación de tipos incremental
+de `test:fast`. `tsx` ejecuta TypeScript y resuelve imports, pero no reemplaza esa verificación de
+tipos. Las suites de lógica existentes se ejecutan como archivos de prueba de Node aislados, con
+programación nativa acotada y detección automática. Los fixtures de dominio en JavaScript
+existentes y las compuertas restantes pueden migrarse en cambios acotados; añadir otro cargador o
+programador de pruebas ad hoc no es el camino de migración.
 
-Demo negative controls copy their complete declared inputs into per-test temporary trees.
-They never rewrite the live dataset, route table, recording or gate. Freshness and the
-self-test pool may therefore remain concurrent without relying on timing or restoration
-retries. `scripts/check-demo.test.ts` includes concurrent positive/negative controls and
-byte-preservation checks against the live input set.
+Los controles negativos de la demo copian sus entradas declaradas completas en árboles temporales
+por prueba. Nunca reescriben el conjunto de datos vivo, la tabla de rutas, la grabación ni la
+compuerta. Por tanto, la comprobación de frescura y el pool de autopruebas pueden seguir siendo
+concurrentes sin depender de tiempos ni de reintentos de restauración.
+`scripts/check-demo.test.ts` incluye controles positivos y negativos concurrentes y comprobaciones
+de preservación de bytes contra el conjunto de entradas vivo.
 
-Never add a skip switch or narrow a planner rule to make a slow run go away. If the
-selection is wider than the change warrants, add a path rule or a scenario mapping,
-with a test in `scripts/ui-impact.test.mjs` or `scripts/check-ui-plan.test.mjs`.
+Nunca añada un interruptor de omisión ni estreche una regla del planificador para que desaparezca
+una ejecución lenta. Si la selección es más amplia de lo que justifica el cambio, añada una regla
+de ruta o un mapeo de escenarios, con una prueba en `scripts/ui-impact.test.mjs` o
+`scripts/check-ui-plan.test.mjs`.
 
-Agent data-reference and context-efficiency assertions belong in Go tests beside
-`internal/agent`: `data_sources_test.go` covers stable, conversation-scoped handles, SQL positional
-and empty rows, metadata bounds, value-free source descriptions, actionable schema errors and
-repair feedback. A fixture-model integration verifies that metadata stays out of console events,
-completed turns stop replaying raw results, and a later Canvas resolves the original dataset
-without another read. Operation refusals, uncertain outcomes, image references, source priorities
-and omission notices survive bounded summaries; stored history remains unchanged.
-`prompt_test.go` pins domain/window/cost-evidence guidance, configured alias semantics and the
-prompt budget including escaped identity metadata. These need neither Chromium nor live model
-calls and are automatically discovered by the existing Go test lane.
+Las aserciones de referencias de datos y de eficiencia de contexto del Agent pertenecen a pruebas
+de Go junto a `internal/agent`: `data_sources_test.go` cubre handles estables y acotados a la
+conversación, filas posicionales y vacías de SQL, límites de metadatos, descripciones de fuentes
+sin valores, errores de esquema accionables y retroalimentación de reparación. Una integración con
+modelo fixture verifica que los metadatos se mantienen fuera de los eventos de la consola, que los
+turnos completados dejan de reproducir resultados sin procesar y que un Canvas posterior resuelve el
+conjunto de datos original sin otra lectura. Los rechazos de operaciones, los resultados inciertos,
+las referencias de imágenes, las prioridades de fuentes y los avisos de omisión sobreviven a los
+resúmenes acotados; el historial almacenado no cambia. `prompt_test.go` fija la guía de
+dominio/ventana/evidencia de costos, la semántica de alias configurados y el presupuesto del prompt,
+incluidos los metadatos de identidad escapados. Estas no necesitan Chromium ni llamadas a modelos
+reales y el carril de pruebas de Go existente las detecta automáticamente.
 
-Agent recovery assertions belong at the lowest boundary that owns the behaviour:
-channel-driven facade tests for execution lifetime and replay, injectable transport logic tests
-for connection failures, and the existing `agent-live` probe for actual browser
-reload and rendering. Live elapsed labels are independent external-store consumers: their clock
-and hidden-tab suspension are logic tests, while the Agent probe checks visible tenths and the
-light Stop border. Stream-coalescing probes exclude only elapsed-label mutations, not answer
-mutations, because the clock does not publish through the transcript's run hook.
+Las aserciones de recuperación del Agent pertenecen al límite más bajo que es dueño del
+comportamiento: pruebas de facade dirigidas por canales para la vida de la ejecución y la
+reproducción, pruebas de lógica con transporte inyectable para los fallos de conexión, y la sonda
+`agent-live` existente para la recarga y el renderizado reales del navegador. Las etiquetas de
+tiempo transcurrido en vivo son consumidores independientes de un almacenamiento externo: su reloj
+y la suspensión en pestaña oculta son pruebas de lógica, mientras que la sonda del Agent comprueba
+las décimas visibles y el borde claro de Stop. Las sondas de coalescencia de streaming excluyen
+solo las mutaciones de la etiqueta de tiempo transcurrido, no las de la respuesta, porque el reloj
+no publica a través del hook de ejecución de la transcripción.
 
-Image-admission fault injection in `internal/agent/runtime_test.go` covers a later image's
-validation/storage failure and the initial session INSERT/UPDATE failing. It checks that only
-newly admitted images are removed and that a failed replacement retains the previous turn's
-images. Reset fault injection also covers pending-operation refusal and a failed reset
-session save: the original conversation and its referenced images must remain readable.
-`internal/api/browser_runs_test.go` admits a validated image request larger than the former
-text-only envelope with `X-OMC-Run-ID`, checking that the wrapper preserves the body for the
-handler; a separate case refuses bodies above the shared limit. These persistence and admission assertions belong in Go, not in browser upload probes.
+La inyección de fallos de admisión de imágenes en `internal/agent/runtime_test.go` cubre el fallo de
+validación/almacenamiento de una imagen posterior y el fallo del INSERT/UPDATE inicial de la sesión.
+Comprueba que solo se eliminan las imágenes recién admitidas y que un reemplazo fallido conserva las
+imágenes del turno anterior. La inyección de fallos de reinicio también cubre el rechazo por
+operación pendiente y un guardado fallido de la sesión reiniciada: la conversación original y sus
+imágenes referenciadas deben seguir siendo legibles. `internal/api/browser_runs_test.go` admite una
+solicitud de imagen validada mayor que el antiguo sobre solo de texto con `X-OMC-Run-ID`, comprobando
+que el wrapper preserva el cuerpo para el handler; un caso aparte rechaza cuerpos por encima del
+límite compartido. Estas aserciones de persistencia y admisión pertenecen a Go, no a las sondas de
+carga del navegador.
 
-### Inline displays and rolling reasoning
+### Displays en línea y razonamiento progresivo
 
-`internal/agent/display_test.go` validates the optional `render_ui.frame`, absent-field card
-compatibility, frozen `none`, and readable refusal of invalid values. The Agent workspace logic
-suite verifies that a frameless canvas changes only its ground while retaining the same sandbox
-policy; the theme logic suite pins the thread radius and foreground-fill projections.
-The existing `agent-views` probe owns multiple figures interleaved with answer text, removal from
-the capability chain, and the frameless figure's ground, border, title treatment and accessible
-name, plus focus restoration after closing full screen. The existing `agent-stream` probe observes
-reasoning before adding a capability call to the same part group, checks that the timeline preserves the page, and verifies that the reasoning
-caret follows its disclosure state. It also holds a valid AG-UI response stream at observable boundaries to assert short-text readability, one live
-thinking label, phase/elapsed-only activity, and separate title/body/activity geometry. It checks
-the 900ms glyph-only highlight and reduced-motion fallback, incremental Markdown and delayed
-content-layout following, phone reflow, manual scrollback (including a same-frame layout commit
-before its scroll event), resumption at the bottom, live disclosure remounts after scrollback,
-folding on completion and reopening settled text. Reasoning start/end fixtures carry the same
-required message IDs as the protocol. No fixed delay or additional runner is needed.
-The attachment probe asserts the normalized WebP wire payload rather than the original upload's
-encoding. Conversation exports preserve inline display order and working timelines; ADR 0093 extends the export boundary recorded in ADR 0082.
+`internal/agent/display_test.go` valida el `render_ui.frame` opcional, la compatibilidad de tarjetas
+con el campo ausente, `none` congelado y el rechazo legible de valores inválidos. La suite de lógica
+del workspace del Agent verifica que un canvas sin marco cambie solo su fondo conservando la misma
+política de sandbox; la suite de lógica del tema fija el radio del hilo y las proyecciones del relleno
+del primer plano.
+La sonda `agent-views` existente es dueña de varias figuras intercaladas con el texto de la respuesta,
+de su eliminación de la cadena de capacidades, y del fondo, borde, tratamiento del título y nombre
+accesible de la figura sin marco, además de la restauración del foco tras cerrar la pantalla completa.
+La sonda `agent-stream` existente observa el razonamiento antes de añadir una llamada de capacidad al
+mismo grupo de partes, comprueba que la línea de tiempo preserva la página y verifica que el caret del
+razonamiento sigue el estado de su despliegue. También mantiene una respuesta AG-UI válida en streaming
+en límites observables para afirmar la legibilidad del texto corto, una sola etiqueta de pensamiento en
+vivo, actividad solo de fase/tiempo transcurrido y geometría separada de título/cuerpo/actividad.
+Comprueba el resaltado de solo glifos de 900ms y el fallback de movimiento reducido, el seguimiento
+incremental de Markdown y del layout de contenido diferido, el reflujo en teléfono, el scroll manual hacia
+atrás (incluido un commit de layout en el mismo frame antes de su evento de scroll), la reanudación al
+final, los remontajes de despliegues en vivo tras el scroll hacia atrás, el plegado al completarse y la
+reapertura del texto ya asentado. Los fixtures de inicio/fin de razonamiento llevan los mismos IDs de
+mensaje requeridos que el protocolo. No se necesita una espera fija ni un ejecutor adicional.
+La sonda de adjuntos afirma el payload WebP normalizado de red y no la codificación de la carga
+original. Las exportaciones de conversaciones preservan el orden de los displays en línea y las líneas
+de tiempo de trabajo; el ADR 0093 extiende el límite de exportación registrado en el ADR 0082.
 
-### Console readout and disclosure regressions
+### Regresiones de la lectura de la consola y de los despliegues
 
-The existing `agent` probe checks composer pickers' keyboard navigation, confirmation and focus
-restoration, the compact reasoning menu, primary parameter names with secondary localized
-descriptions, the regular-weight trigger and the selected-row fill.
-The automatically discovered composer-picker logic suite owns navigation indexing.
+La sonda `agent` existente comprueba la navegación por teclado de los selectores del compositor, la
+confirmación y la restauración del foco, el menú compacto de razonamiento, los nombres de parámetros
+primarios con descripciones localizadas secundarias, el disparador de peso regular y el relleno de la
+fila seleccionada.
+La suite de lógica de los selectores del compositor, detectada automáticamente, es dueña de la indexación
+de navegación.
 
-The phone header breakpoint sweep observes layout completion after each viewport resize before counting rendered controls, including the 640/641px boundary. The check still requires the exact two-tool phone and five-tool desktop shapes.
+El barrido de breakpoints del encabezado en teléfono observa la finalización del layout tras cada cambio
+de tamaño del viewport antes de contar los controles renderizados, incluido el límite de 640/641px. La
+comprobación sigue exigiendo las formas exactas de dos herramientas en teléfono y cinco en escritorio.
 
-The existing `dashboard-charts` and `dashboard-model-panels` probes measure compact tooltip gutters, row centers, marker/name columns and numeric edges, including the donut's shared readout, while logic tests cover escaped full names, exact values and localized units. `scroll-smoothing` exercises native Agent model popups with the list library's shared holder structure, repeated/reversed notches, filtering and reopening, alongside the virtual time-zone popup and request list. `provider-model-picker` verifies newly added custom models remain collapsed until explicit disclosure; `oauth-management` and the automatically discovered quota-cooldown logic suite distinguish recognized quota conditions from unexpected reasons, use the generic explanation for blank cooldown tooltips and preserve full Drawer diagnostics.
+Las sondas `dashboard-charts` y `dashboard-model-panels` existentes miden los márgenes compactos de los
+tooltips, los centros de las filas, las columnas de marcador/nombre y los bordes numéricos, incluida la
+lectura compartida de la dona, mientras que las pruebas de lógica cubren los nombres completos
+escapados, los valores exactos y las unidades localizadas. `scroll-smoothing` ejercita los popups de
+modelos nativos del Agent con la estructura de holder compartida de la biblioteca de listas, muescas
+repetidas/invertidas, filtrado y reapertura, junto con el popup virtual de zona horaria y la lista de
+solicitudes. `provider-model-picker` verifica que los modelos personalizados recién añadidos permanezcan
+colapsados hasta un despliegue explícito; `oauth-management` y la suite de lógica de enfriamiento de
+cuota, detectada automáticamente, distinguen las condiciones de cuota reconocidas de los motivos
+inesperados, usan la explicación genérica para los tooltips de enfriamiento en blanco y preservan los
+diagnósticos completos del Drawer.
 
-`dashboard-model-panels` also narrows and re-widens the ring's frame without a window resize and requires the ring to refill it on the readout's centre, the case G2's own window-only refit missed when the console font arrived after the first paint.
+`dashboard-model-panels` también estrecha y vuelve a ensanchar el marco del anillo sin cambiar el tamaño
+de la ventana y exige que el anillo lo rellene de nuevo en el centro de la lectura, el caso que el
+reajuste de G2 solo por ventana no cubría cuando la fuente de la consola llegaba después del primer
+pintado.
 
-### Dashboard model-view regressions
+### Regresiones de la vista de modelos del Dashboard
 
-The existing `dashboard-model-panels-states` probe owns window selection, manual refresh,
-model grouping persistence, optimistic selection and rejected-write rollback. Grouping assertions
-read the native radios' checked state, not antd's animation-owned selected CSS class: a moving
-thumb temporarily removes that class without changing the selected value. The refusal fixture
-holds only the model-view PUT until the optimistic radio is observed, then explicitly releases
-its 500 response and waits for rollback. It does not depend on animation completion or a fixed delay.
+La sonda `dashboard-model-panels-states` existente es dueña de la selección de ventana, el refresco
+manual, la persistencia de la agrupación de modelos, la selección optimista y la reversión de
+escrituras rechazadas. Las aserciones de agrupación leen el estado checked de los radios nativos, no la
+clase CSS de selección de antd gobernada por la animación: un thumb en movimiento quita
+temporalmente esa clase sin cambiar el valor seleccionado. El fixture de rechazo retiene solo el PUT de
+la vista de modelos hasta observar el radio optimista, luego libera explícitamente su respuesta 500 y
+espera la reversión. No depende de la finalización de una animación ni de una espera fija.
 
-### Plugin row regressions
+### Regresiones de filas de plugins
 
-The existing `plugin-management` probe owns the installed row's matching action geometry,
-auth-provider capability wording, overflow links and uninstall handoff. It verifies that
-opening or dismissing confirmation sends no delete, cancel/Escape return focus to the
-row action, and confirming removes only the chosen plugin. `plugin-management-narrow` checks the row, overflow and confirmation at
-320px as well as the existing phone tab sweep. Portal geometry is measured after layout
-settles, not after a fixed delay.
+La sonda `plugin-management` existente es dueña de la geometría coincidente de las acciones de la fila
+instalada, la redacción de capacidades del proveedor de autenticación, los enlaces de desbordamiento y
+el traspaso de desinstalación. Verifica que abrir o descartar la confirmación no envíe ningún delete,
+que cancelar/Escape devuelvan el foco a la acción de la fila y que confirmar elimine solo el plugin
+elegido. `plugin-management-narrow` comprueba la fila, el desbordamiento y la confirmación a 320px, además
+del barrido existente de pestañas en teléfono. La geometría del portal se mide después de que el layout
+se asienta, no tras una espera fija.
 
-### Plugin connection regressions
+### Regresiones de conexión de plugins
 
-`scripts/test-oauth-providers.ts` owns the distinction between auth-provider capability
-and login method, registered-page precedence, disabled/built-in deduplication, and flow
-resolution from successful CPA responses (including absent or unknown labels, device-code
-precedence, both session-token fields, and incomplete responses that stay plugin-managed).
-The existing `oauth-management` probe owns the connection wiring: an API-key plugin
-opens its hosted page without an OAuth start request, and pageless interactive plugins
-switch to device or callback controls only after explicit Start. Credential membership
-and identity remain covered by the workspace and plugin-logo logic suites.
+`scripts/test-oauth-providers.ts` es dueño de la distinción entre capacidad de proveedor de
+autenticación y método de inicio de sesión, la precedencia de páginas registradas, la deduplicación de
+deshabilitados/integrados y la resolución del flujo a partir de respuestas exitosas de CPA (incluidas
+etiquetas ausentes o desconocidas, la precedencia del device-code, ambos campos de session-token y las
+respuestas incompletas que siguen gestionadas por el plugin). La sonda `oauth-management` existente es
+dueña del cableado de la conexión: un plugin de clave de API abre su página alojada sin una solicitud de
+inicio de OAuth, y los plugins interactivos sin página cambian a controles de device o de callback solo
+tras un Start explícito. La pertenencia de credenciales y la identidad siguen cubiertas por las suites de
+lógica de workspace y de logos de plugins.
 
-### Feedback regressions
+### Regresiones de retroalimentación
 
-- `scripts/test-feedback-surfaces.ts` pins short acknowledgement lifetimes, the second-line and
-  shortcut reading budgets, persistent-report precedence and explicit duration overrides. These
-  policy decisions belong in the logic suite rather than browser tests that wait for real time.
-- `web/tests/notice.component.test.tsx` owns the inline notice's rendered contract: the tone named as a
-  status code, a lone description promoted to the headline, the close control present only with `onClose`,
-  and `LoadFailure` carrying its reason and Retry.
-- `web/tests/switch.component.test.tsx` owns the shared `Switch` contract: the controlled value and its
-  `onChange`, activation through a wrapping label, refusal while disabled or pending, a caller-owned
-  `aria-busy` that stays clickable, and `Form.Item valuePropName="checked"` binding. Its drawn
-  geometry belongs to the browser.
-- `web/tests/shared-primitives.component.test.tsx` owns the contracts of `SearchInput` (accessible
-  name, placeholder fallback, text-valued `onChange`, clearing), `EmptyState` (the mark per size, the
-  optional second line and action), `SectionHeading` (outline element, count, description and
-  `extra` per weight), `AppDrawer` (named close, two-slot footer, no footer without content, the
-  width step), `Tag` and `ToggleTag` (tone and size classes, hidden glyph, pressed state),
-  `ConfirmAction` (fixed cancel label, named and coloured confirmation), `SelectionBar` (live count,
-  note, trailing actions), `Toolbar` (the trailing slot and the ruled variant), `Panel` (header
-  from `title`, no inline inset), `Meter` (share, clamping, semantics with and without a label) and
-  `Pager` (absent on one page, no page-size menu, the stepped variant). Their drawn geometry belongs to the browser.
-- `scripts/check-feedback.test.mjs` also pins the `raw-switch`, `raw-empty`, `raw-tag`, `raw-drawer`, `raw-popconfirm`, `raw-card`, `raw-descriptions`, `raw-pagination` and `raw-progress` rules in both directions, including the per-rule file exemptions for the components that own a raw antd primitive. It checks Ant Design feedback bindings and aliases (named and namespace
-  imports, `App.useApp()` results and modal hooks), scope shadowing, false positives in comments,
-  strings and type-only imports, legal confirmations, diagnostic locations and the
-  feedback module exemption. It is automatically discovered by the repository self-test runner.
-- `scripts/check-style-tokens.test.mjs` pins the type and radius scale rules in both directions:
-  scale-sized and fractional font sizes, display sizes that stay literal, custom properties that only
-  end in `font-size`, small radii in shorthand and longhand, undefined and fallback-carrying token
-  references, commented-out declarations, and an empty tree. It is automatically discovered by the
-  repository self-test runner.
-- `scripts/font-shards.test.mjs` pins the font sharding (ADR 0094): `cmap` formats 4 and 12,
-  WOFF2 and sfnt table directories, `unicode-range` formatting, and the shard plan's order
-  (core, frequency tiers, remainder) with each code point in exactly one shard. It also holds
-  the committed outputs together: `core.css` and `shardUrls.ts` equal what the manifest renders, the shard files
-  are exactly the manifest's, every shard draws every character it declares, ranges never
-  overlap, and every character in `web/src` (colour emoji aside) is in some shard. It is
-  automatically discovered by the repository self-test runner. The logic suite
-  `scripts/test-font-shards.ts` pins which shards an export embeds for its text.
-- The `oauth-management` browser scenario checks that ordinary copy acknowledgements cannot evict
-  a persistent quota report, another refresh replaces it, and its close action removes it. It also
-  checks one credential-aware authorization toast for a unique new credential, an ambiguous result
-  and a failed credential-list refresh, including the action that reveals the provider collection.
-  Cross-stack OAuth acceptance dismisses the completion toast before exercising drawer reopening,
-  so the notification cannot cover the close action or consume the bounded success-state window.
-- The `agent-failure` scenario retries a failed capability-directory read without losing the
-  composer draft, then checks the refused-message retry and the accepted-run failure surfaces.
+- `scripts/test-feedback-surfaces.ts` fija las duraciones de los acuses breves, los presupuestos de
+  lectura de segunda línea y de atajos, la precedencia del reporte persistente y las sobrescrituras
+  explícitas de duración. Estas decisiones de política pertenecen a la suite de lógica y no a pruebas
+  de navegador que esperan tiempo real.
+- `web/tests/notice.component.test.tsx` es dueño del contrato renderizado del aviso en línea: el tono
+  nombrado como código de estado, una descripción única promovida a titular, el control de cierre presente
+  solo con `onClose`, y `LoadFailure` con su motivo y Retry.
+- `web/tests/switch.component.test.tsx` es dueño del contrato compartido de `Switch`: el valor controlado
+  y su `onChange`, la activación mediante una etiqueta envolvente, el rechazo mientras está deshabilitado
+  o pendiente, un `aria-busy` propiedad del llamador que sigue siendo clicable, y el binding de
+  `Form.Item valuePropName="checked"`. Su geometría dibujada pertenece al navegador.
+- `web/tests/shared-primitives.component.test.tsx` es dueño de los contratos de `SearchInput` (nombre
+  accesible, fallback del placeholder, `onChange` con valor de texto, limpieza), `EmptyState` (la marca
+  por tamaño, la segunda línea opcional y la acción), `SectionHeading` (elemento de esquema, conteo,
+  descripción y `extra` por peso), `AppDrawer` (cierre con nombre, pie de dos ranuras, sin pie si no hay
+  contenido, el escalón de ancho), `Tag` y `ToggleTag` (clases de tono y tamaño, glifo oculto, estado
+  pulsado), `ConfirmAction` (etiqueta de cancelar fija, confirmación con nombre y color), `SelectionBar`
+  (conteo en vivo, nota, acciones finales), `Toolbar` (la ranura final y la variante con regla), `Panel`
+  (encabezado desde `title`, sin inset en línea), `Meter` (proporción, acotado, semántica con y sin
+  etiqueta) y `Pager` (ausente con una sola página, sin menú de tamaño de página, la variante por
+  pasos). Su geometría dibujada pertenece al navegador.
+- `scripts/check-feedback.test.mjs` también fija las reglas `raw-switch`, `raw-empty`, `raw-tag`, `raw-drawer`, `raw-popconfirm`, `raw-card`, `raw-descriptions`, `raw-pagination` y `raw-progress` en ambas direcciones, incluidas las exenciones de archivo por regla para los componentes que son dueños de una primitiva antd sin envolver. Comprueba los bindings y alias de retroalimentación de Ant Design (imports con nombre y de espacio de nombres,
+  resultados de `App.useApp()` y hooks de modal), el sombreado de ámbito, falsos positivos en comentarios,
+  cadenas e imports solo de tipos, confirmaciones legítimas, ubicaciones de diagnóstico y la
+  exención del módulo de retroalimentación. El ejecutor de autopruebas del repositorio lo detecta
+  automáticamente.
+- `scripts/check-style-tokens.test.mjs` fija las reglas de escala tipográfica y de radios en ambas
+  direcciones: tamaños de fuente de la escala y fraccionarios, tamaños de display que se mantienen
+  literales, propiedades personalizadas que solo terminan en `font-size`, radios pequeños en forma
+  abreviada y extendida, referencias a tokens indefinidos y con fallback, declaraciones comentadas y un
+  árbol vacío. El ejecutor de autopruebas del repositorio lo detecta automáticamente.
+- `scripts/font-shards.test.mjs` fija el sharding de fuentes (ADR 0094): formatos `cmap` 4 y 12,
+  directorios de tablas WOFF2 y sfnt, formato de `unicode-range` y el orden del plan de shards (núcleo,
+  niveles de frecuencia, resto) con cada punto de código en exactamente un shard. También mantiene
+  unidas las salidas confirmadas: `core.css` y `shardUrls.ts` igualan lo que renderiza el manifiesto, los
+  archivos de shard son exactamente los del manifiesto, cada shard dibuja todos los caracteres que
+  declara, los rangos nunca se solapan y cada carácter de `web/src` (salvo el emoji a color) está en
+  algún shard. El ejecutor de autopruebas del repositorio lo detecta automáticamente. La suite de
+  lógica `scripts/test-font-shards.ts` fija qué shards incrusta una exportación para su texto.
+- El escenario de navegador `oauth-management` comprueba que los acuses ordinarios de copia no pueden
+  desalojar un reporte persistente de cuota, que otro refresco lo reemplaza y que su acción de cierre
+  lo elimina. También comprueba un toast de autorización consciente de credenciales para una credencial
+  nueva única, un resultado ambiguo y un refresco fallido de la lista de credenciales, incluida la acción
+  que revela la colección de proveedores. La aceptación de pila completa de OAuth descarta el toast de
+  finalización antes de ejercitar la reapertura del drawer, de modo que la notificación no pueda cubrir
+  la acción de cierre ni consumir la ventana acotada del estado de éxito.
+- El escenario `agent-failure` reintenta una lectura fallida del directorio de capacidades sin perder
+  el borrador del compositor, y luego comprueba el reintento del mensaje rechazado y las superficies de
+  fallo de la ejecución aceptada.
 
-## 4. When CI fails
+## 4. Cuando falla la CI
 
-- Probe shards upload `tmp/probe-failure/`: for every failed scenario, whether a check
-  failed or it threw, a screenshot, the DOM, the URL, page errors, and the page's console
-  warnings and navigations. A scenario that threw also prints the last of those in the job
-  log. Reproduce with `pnpm check:ui --scenario <id>`.
-- Cross-stack acceptance uploads `tmp/browser-acceptance-failure/`. Reproduce with
-  `pnpm build` and `pnpm verify:browser`.
-- Rerun only the failed command. A failure that passes on rerun is a flake to fix at
-  its assertion, never a reason to add a retry or lengthen a wait.
+- Los shards de sondas suben `tmp/probe-failure/`: por cada escenario fallido, ya sea que una
+  comprobación fallara o lanzara una excepción, una captura de pantalla, el DOM, la URL, los errores de
+  página y las advertencias de consola y navegaciones de la página. Un escenario que lanzó una
+  excepción también imprime lo último de eso en el log del job. Reproduzca con
+  `pnpm check:ui --scenario <id>`.
+- La aceptación de pila completa sube `tmp/browser-acceptance-failure/`. Reproduzca con `pnpm build` y
+  `pnpm verify:browser`.
+- Vuelva a ejecutar solo el comando fallido. Un fallo que pasa al repetir es un flake que se arregla en
+  su aserción, nunca una razón para añadir un reintento o alargar una espera.
 
-### Responsiveness regressions
+### Regresiones de capacidad de respuesta
 
-- `scripts/test-date-time-format.ts` checks formatter reuse, locale/zone isolation,
-  civil dates on hosts with skipped midnights, Agent clock parity, and exactly two
-  timezone conversions per heatmap observation regardless of cell count.
-- `scripts/test-route-loader.ts` checks no eager imports, in-flight/success reuse,
-  and recovery after a failed speculative import.
-- The `route-preloading` browser scenario observes module requests from actual menu
-  hover, focus and touch events, verifies that sign-in loads no page modules and intent
-  triggers no business reads or YAML editor load, then navigates to the preloaded page.
-- `internal/api/compression_test.go` checks gzip negotiation, decoded-response parity,
-  preserved status/cache headers, identity variation, GET/HEAD representation parity,
-  bounded concurrent asset caching, unlocked compression work, publication rechecks for
-  overlapping cold misses, sub-path routing and immediate SSE flush delivery.
+- `scripts/test-date-time-format.ts` comprueba la reutilización de formateadores, el aislamiento de
+  configuración regional y zona, las fechas civiles en hosts con medianoches omitidas, la paridad del
+  reloj del Agent y exactamente dos conversiones de zona horaria por observación del mapa de calor,
+  sin importar el número de celdas.
+- `scripts/test-route-loader.ts` comprueba que no hay imports eager, la reutilización de importaciones
+  en curso o exitosas y la recuperación tras un import especulativo fallido.
+- El escenario de navegador `route-preloading` observa las solicitudes de módulos a partir de eventos
+  reales de hover, foco y toque en el menú, verifica que el inicio de sesión no carga módulos de
+  página y que la intención no dispara lecturas de negocio ni la carga del editor YAML, y luego navega
+  a la página precargada.
+- `internal/api/compression_test.go` comprueba la negociación gzip, la paridad de la respuesta
+  decodificada, las cabeceras de estado/caché preservadas, la variación de identity, la paridad de
+  representación GET/HEAD, la caché concurrente acotada de assets, el trabajo de compresión sin
+  bloqueo, las nuevas comprobaciones antes de publicar en fallos fríos superpuestos, el enrutamiento de
+  subpath y la entrega inmediata del flush de SSE.
 
-- `scripts/test-chart-mount-queue.ts` injects task scheduling to check one FIFO mount per
-  task, cancellation, StrictMode cleanup/setup and recovery after a failed mount.
-- The existing `dashboard-charts` probe observes distinct browser frames for KPI canvas
-  creation, waits for all six marks to paint, and counts chart-container measurements
-  during an identical refresh. The `dashboard-chart-motion` and model-panel probes
-  continue to own update morphs, reduced motion, hover and exact readouts.
-- `internal/repository/usage_facets_test.go` compares the combined SQL read with independent
-  grouped queries across windows, instances, empty/whitespace values, binary ordering,
-  per-dimension caps and normalized masks, and checks canceled/uninitialized reads. Its
-  strategy benchmarks compare populated and high-cardinality windows without duplicating
-  benchmark fixture creation inside the timed portion.
+- `scripts/test-chart-mount-queue.ts` inyecta la programación de tareas para comprobar un solo montaje
+  FIFO por tarea, la cancelación, la limpieza/configuración de StrictMode y la recuperación tras un
+  montaje fallido.
+- La sonda `dashboard-charts` existente observa frames distintos del navegador para la creación del
+  canvas de KPI, espera a que se pinten todas las seis marcas y cuenta las mediciones del contenedor
+  de gráficos durante un refresco idéntico. Las sondas `dashboard-chart-motion` y de paneles de modelo
+  siguen siendo dueñas de las morfosis de actualización, el movimiento reducido, el hover y las
+  lecturas exactas.
+- `internal/repository/usage_facets_test.go` compara la lectura SQL combinada con consultas agrupadas
+  independientes en diferentes ventanas, instancias, valores vacíos o con solo espacios, ordenamiento
+  binario, límites por dimensión y máscaras normalizadas, y comprueba las lecturas canceladas o no
+  inicializadas. Sus benchmarks de estrategia comparan ventanas pobladas y de alta cardinalidad sin
+  duplicar la creación del fixture del benchmark dentro de la porción cronometrada.
 
-- The existing `dashboard-heatmap` probe owns active popup anchor geometry, one-popup
-  ownership, its cell's ARIA description, pointer/keyboard dismissal, focus restoration,
-  rapid switching, active-cell data refresh and route cleanup. It also measures the activity row
-  the grid shares: the grid and the credential-quota panel as equal halves on desktop,
-  stacked in that order on a phone, with the newest weeks reaching the panel's edge. The failure
-  scenario owns the quota panel's states beside a grid that could not be read - unknown with a
-  retry when the credential list was never read, the rows kept with a warning when a refresh
-  fails, and the warning cleared by a successful retry. After rapid switching it waits for
-  the final cell's active state and its own visible ARIA-linked popup, not an outgoing tooltip;
-  anchor, popup-count and DOM-identity assertions still run afterward. It instruments scroll extent getters before navigation
-  to detect synchronous mount measurements; these portal, focus and layout claims require
-  Chromium rather than a pure logic test. The phone scenario continues to own initial
-  today visibility, swiping and scroll preservation through a refresh.
+- La sonda `dashboard-heatmap` existente es dueña de la geometría del ancla del popup activo, la
+  propiedad de un solo popup, la descripción ARIA de su celda, el cierre por puntero/teclado, la
+  restauración del foco, el cambio rápido, el refresco de datos de la celda activa y la limpieza de
+  rutas. También mide la fila de actividad que comparte la cuadrícula: la cuadrícula y el panel de
+  cuota de credenciales como mitades iguales en escritorio, apilados en ese orden en teléfono, con las
+  semanas más recientes alcanzando el borde del panel. El escenario de fallo es dueño de los estados
+  del panel de cuota junto a una cuadrícula que no pudo leerse: desconocido con un reintento cuando la
+  lista de credenciales nunca se leyó, las filas conservadas con una advertencia cuando falla un
+  refresco, y la advertencia limpiada por un reintento exitoso. Tras un cambio rápido, espera el
+  estado activo de la última celda y su propio popup vinculado a ARIA visible, no un tooltip saliente;
+  las aserciones de ancla, conteo de popups y de identidad del DOM siguen ejecutándose después.
+  Instrumenta los getters de extensión de scroll antes de navegar para detectar mediciones síncronas
+  de montaje; estas afirmaciones de portal, foco y layout requieren Chromium y no una prueba de lógica
+  pura. El escenario en teléfono sigue siendo dueño de la visibilidad inicial del día de hoy, el
+  deslizamiento y la preservación del scroll durante un refresco.
 
-- `route-preloading` also checks shell scroll-reset calls: top-of-page navigation must
-  issue none, while leaving a genuinely scrolled Dashboard resets the content column
-  once. Its Dashboard reads use the shared chart/heatmap fixtures, keeping the scenario
-  hermetic while exercising real overflowing content.
+- `route-preloading` también comprueba las llamadas de reinicio de scroll del shell: la navegación al
+  principio de una página no debe emitir ninguna, mientras que abandonar un Dashboard genuinamente
+  desplazado reinicia la columna de contenido una vez. Sus lecturas del Dashboard usan los fixtures
+  compartidos de gráficos y mapa de calor, manteniendo el escenario hermético mientras ejerce
+  contenido real que se desborda.
 
-- `scripts/test-request-timestamp.ts` pins the row's two labels against the existing
-  dayjs interpretation across fractional offsets, date rollovers, milliseconds and both
-  DST boundaries, and asserts that formatting a row constructs no zoned date. The `column-alignment` probe
-  changes the shared timezone while a request row stays mounted, detecting a stale memo
-  without replacing the DOM node. That subscription claim requires the browser.
-- `scripts/test-theme-presets.ts` pins the Listy estimate to the request row's CSS
-  minimum across every built-in palette using antd's computed font height.
-  `request-list-interactions` observes the initial peak of mounted rows against the holder's
-  geometry, then checks the first and final records under source/client grouping before
-  returning to chronological rows. Its bottom-of-list, resize and drawer assertions and
-  the existing smoothing/touch scenarios continue to validate measured heights.
+- `scripts/test-request-timestamp.ts` fija las dos etiquetas de la fila contra la interpretación
+  existente de dayjs en desplazamientos fraccionarios, cambios de fecha, milisegundos y ambos
+  límites de horario de verano, y afirma que formatear una fila no construye ninguna fecha con zona.
+  La sonda `column-alignment` cambia la zona horaria compartida mientras una fila de solicitudes sigue
+  montada, detectando un memo obsoleto sin reemplazar el nodo del DOM. Esa afirmación de suscripción
+  requiere el navegador.
+- `scripts/test-theme-presets.ts` fija la estimación de Listy al mínimo CSS de la fila de solicitudes
+  en cada paleta integrada usando la altura de fuente calculada de antd. `request-list-interactions`
+  observa el pico inicial de filas montadas contra la geometría del contenedor, luego comprueba los
+  primeros y últimos registros bajo la agrupación por origen y cliente antes de volver a las filas
+  cronológicas. Sus aserciones de fondo de lista, redimensionado y drawer y los escenarios existentes
+  de suavizado y toque siguen validando las alturas medidas.
 
-- The request probes also own the shared tooltip's exact timestamp/cache hints, one-popup
-  ownership, stationary anchor geometry, cell DOM and ARIA preservation, hover transfer
-  to its text, Escape dismissal with price-button focus retained, active label revisions,
-  virtual-list scrolling and route cleanup. `column-alignment` keeps the popup open while
-  the shared timezone changes, asserting both the short label and full tooltip on the
-  same mounted cell. The cross-page cleanup check uses the shared System fixtures and
-  waits for its rendered card before navigating back, so module-cache timing cannot hide
-  an incomplete response fixture. These event, portal and virtualizer claims belong in Chromium.
+- Las sondas de solicitudes también son dueñas de las pistas exactas de marca de tiempo/caché del
+  tooltip compartido, la propiedad de un solo popup, la geometría del ancla estacionaria, la
+  preservación del DOM y de ARIA de la celda, la transferencia del hover a su texto, el cierre por
+  Escape con el foco en el botón de precio conservado, las revisiones de etiqueta activas, el scroll
+  de la lista virtual y la limpieza de rutas. `column-alignment` mantiene el popup abierto mientras
+  cambia la zona horaria compartida, afirmando tanto la etiqueta corta como el tooltip completo en la
+  misma celda montada. La comprobación de limpieza entre páginas usa los fixtures compartidos de
+  System y espera a que se renderice su tarjeta antes de navegar de vuelta, de modo que los tiempos de
+  caché del módulo no puedan ocultar un fixture de respuesta incompleto. Estas afirmaciones de evento,
+  portal y virtualizador pertenecen a Chromium.
 
-### Custom icon regression coverage
+### Cobertura de regresiones de iconos personalizados
 
-Image parsing, bounds, MIME consistency, static-format detection and SVG security belong in `internal/iconasset/image_test.go`. Repository tests cover persistence, quota, legacy mapping counts, atomic reference clearing with unrelated assets/preferences preserved, stale/missing deletion guards, deletion-failure rollback and concurrent assignment/deletion; handler tests cover authenticated CRUD, private ETag revalidation, bounded input and metadata projection. Operations tests exercise Agent/MCP declarations and deletion confirmation. The automatically discovered custom-icon logic suite checks reference parsing, search, immutable assignment cleanup, save eligibility and failed-selection policy.
+El análisis de imágenes, los límites, la consistencia de MIME, la detección de formato estático y la
+seguridad de SVG pertenecen a `internal/iconasset/image_test.go`. Las pruebas del repositorio cubren la
+persistencia, la cuota, los conteos del mapeo heredado, el borrado atómico de referencias con assets y
+preferencias no relacionados preservados, los guards de eliminación de obsoletos o faltantes, la
+resersión del fallo de eliminación y la asignación/eliminación concurrente; las pruebas de handler
+cubren CRUD autenticado, revalidación de ETag privado, entrada acotada y proyección de metadatos. Las
+pruebas de operaciones ejercitan las declaraciones de Agent/MCP y la confirmación de eliminación. La
+suite de lógica de iconos personalizados, detectada automáticamente, comprueba el análisis de
+referencias, la búsqueda, la limpieza de asignaciones inmutables, la elegibilidad para guardar y la
+política de selección fallida.
 
-The `custom-icon-library` probe owns file selection, validated preview, Base64 replacement, immediate repaint of a mounted provider, selection failure, invalid-replacement save prevention, retained inputs after save/delete failure, reload persistence, referenced deletion with default restoration, cancellation, reload persistence of resets, full-width empty states, focus restoration the narrow editor/confirmation overlay above the provider drawer and automatic reset of its unsaved icon selection. Provider-console planner rules include it alongside the existing picker scenarios, with pinned union and negative cases. Assertions wait on observable state rather than fixed delays.
+La sonda `custom-icon-library` es dueña de la selección de archivos, la vista previa validada, el
+reemplazo en Base64, el repintado inmediato de un proveedor montado, el fallo de selección, la
+prevención de guardado de reemplazos inválidos, la conservación de entradas tras un fallo de guardado o
+de eliminación, la persistencia tras recarga, la eliminación de referencias con restauración del
+valor por defecto, la cancelación, la persistencia de reinicios tras recarga, los estados vacíos de
+ancho completo, la restauración del foco en la superposición estrecha de edición/confirmación sobre el
+drawer del proveedor y el reinicio automático de su selección de icono no guardada. Las reglas del
+planificador de la consola de proveedores lo incluyen junto a los escenarios del selector existentes,
+con casos unidos y negativos fijados. Las aserciones esperan en estado observable y no en esperas fijas.
 
-Default restoration compares the provider mark with its original monochrome CSS mask, both
-immediately after deletion and after reload; a remaining custom image, missing mark or neutral
-fallback cannot satisfy it. The selected custom image is an explicit negative case for that
-restoration predicate.
+La restauración del valor por defecto compara la marca del proveedor con su máscara CSS monocromática
+original, tanto inmediatamente después de la eliminación como tras recargar; una imagen personalizada
+restante, una marca faltante o un fallback neutro no pueden satisfacerla. La imagen personalizada
+seleccionada es un caso negativo explícito para ese predicado de restauración.
 
-### Configuration path regression coverage
+### Cobertura de regresiones de ruta de configuración
 
-`scripts/test-config-patch.ts` owns canonical and historical field reads/writes,
-canonical false/null precedence, baseline restoration with comments, omitted
-settings, source-path relocations followed by visual edits, and carrying later
-edits onto CPA's relocated readback. The fake CPA
-starts with canonical `client.codex` and `upstream.codex` values; its root writes
-normalize the two historical aliases before merging. `scripts/fake-cpa.test.mjs`
-checks the resulting JSON and YAML readback independently. The existing
-configuration cross-stack acceptance saves both switches on and off at their
-canonical paths and reloads the page after each save. The API's revision guard,
-backup and secret restoration remain covered by their existing Go tests.
+`scripts/test-config-patch.ts` es dueño de las lecturas y escrituras de campos canónicos e históricos,
+la precedencia de false/null canónico, la restauración de la línea base con comentarios, los ajustes
+omitidos, las reubicaciones de ruta de origen seguidas de ediciones visuales y llevar las ediciones
+posteriores al readback reubicado de CPA. El CPA falso comienza con valores canónicos de
+`client.codex` y `upstream.codex`; sus escrituras raíz normalizan los dos alias históricos antes de
+fusionar. `scripts/fake-cpa.test.mjs` comprueba de forma independiente el JSON y el readback YAML
+resultantes. La aceptación de pila completa de configuración existente guarda ambos interruptores
+activados y desactivados en sus rutas canónicas y recarga la página tras cada guardado. El guard de
+revisión, el respaldo y la restauración de secretos de la API siguen cubiertos por sus pruebas de Go
+existentes.
 
-The same suite owns the one setting whose absence is a default and whose zero is a
-setting: `upstream.claude.session-date-pin-days` reads CPA's 7 days when omitted, so
-an untouched gateway is never written, while an explicit `0` is saved at its own
-path and read back as `0` rather than as the default, and clearing the number box
-restores the omitted key instead of storing a zero. The field arrived after the
-Claude section's relocation, so the suite also pins that the pre-relocation
-spelling is never written. The cross-stack acceptance saves that `0` and reloads,
-which is the only check that catches a readback falling back to the default.
+La misma suite es dueña del único ajuste cuya ausencia es un valor por defecto y cuyo cero es un
+ajuste: `upstream.claude.session-date-pin-days` lee los 7 días de CPA cuando se omite, de modo que
+una gateway no modificada nunca se escribe, mientras que un `0` explícito se guarda en su propia ruta
+y se lee de vuelta como `0` y no como el valor por defecto, y vaciar el cuadro numérico
+restaura la clave omitida en lugar de almacenar un cero. El campo llegó después de la reubicación
+de la sección de Claude, por lo que la suite también fija que la ortografía previa a la
+reubicación nunca se escribe. La aceptación de pila completa guarda ese `0` y recarga, que es la
+única comprobación que detecta un readback que cae de vuelta al valor por defecto.
 
-### Configuration backup regression coverage
+### Cobertura de regresiones de respaldo de configuración
 
-`internal/repository/config_backups_test.go` owns encryption at rest, deduplication against the newest copy, the separate pre-v8 retention, the operator's retention and its immediate pruning, and deletion. `internal/cpa/management/client_config_test.go` owns the pre-write hook: a copy before every write, the reason each write names (an outer operation's name winning), and refusal when a copy cannot be kept. `internal/api/management_config_backups_test.go` owns the routes: the server-side restore and its whole-document write, the pre-v8 `409`, the manual copy's `created` flag, retention bounds and deletion. The `config-backups` probe owns the dialog: reason labels, the withheld pre-v8 restore, the retention write, the restore confirmation stacking above the dialog, the restore request and the editor reload after it. The configuration page and `web/src/components/config/` planner rules select it, with a negative case for the schema.
+`internal/repository/config_backups_test.go` es dueño del cifrado en reposo, la deduplicación frente
+a la copia más reciente, la retención separada previa a v8, la retención del operador y su poda
+inmediata, y la eliminación. `internal/cpa/management/client_config_test.go` es dueño del hook
+previo a la escritura: una copia antes de cada escritura, la razón que nombra cada escritura (el
+nombre de la operación exterior gana) y el rechazo cuando no se puede conservar una copia.
+`internal/api/management_config_backups_test.go` es dueño de las rutas: la restauración del lado del
+servidor y su escritura de documento completo, el `409` previo a v8, el indicador `created` de la
+copia manual, los límites de retención y la eliminación. La sonda `config-backups` es dueña del
+diálogo: las etiquetas de razón, la restauración previa a v8 retenida, la escritura de retención, el
+apilamiento de la confirmación de restauración sobre el diálogo, la solicitud de restauración y la
+recarga del editor tras ella. La página de configuración y las reglas del planificador de
+`web/src/components/config/` la seleccionan, con un caso negativo para el esquema.
 
-### Managed plugin source reconciliation coverage
+### Cobertura de reconciliación de fuentes de plugins gestionados
 
-`internal/api/management_plugin_source_test.go` owns Shell-PAMC's registry as a store
-source (ADR 0104): a store read adds the address, both configuration save paths restore
-it, the plugin settings save keeps it out of the editable list, an install adds it again
-before CPA is called, the switch removes it, and a demonstration filters its entries
-without writing its fixture. It also owns the repair's Tier-1 obligations - a
-`plugin_settings` backup before the write and a `plugin.source` audit record - plus the
-two preference edges: a stored JSON `null` reads as the default (on), and a save that
-leaves the plugins section unreadable says the configuration landed rather than reading
-as a plain refusal. `internal/cpa/configyaml/plugins_test.go` owns the order-preserving
-list edit and `internal/pluginregistry/registry_test.go` owns the published document's
-shape and the address-to-source-id pin. `internal/demo/demo_test.go` owns the fixture's
-half of the same chain: every store entry names the URL of the registry it came from -
-the field the projection reads to mark, pin and withhold the managed entries - and the
-fixture's catalogue carries one. The configuration path and backup suites keep their
-claims about the operator's own save: their fixture starts in the managed steady state,
-so that save is the only write those tests observe.
+`internal/api/management_plugin_source_test.go` es dueño del registro de Shell-PAMC como fuente de
+almacenamiento (ADR 0104): una lectura del almacenamiento añade la dirección, ambas rutas de guardado
+de configuración la restauran, el guardado de ajustes del plugin la mantiene fuera de la lista
+editable, una instalación la añade de nuevo antes de llamar a CPA, el interruptor la elimina y una
+demostración filtra sus entradas sin escribir su fixture. También es dueño de las obligaciones de
+Tier-1 de la reparación: un respaldo de `plugin_settings` antes de la escritura y un registro de
+auditoría de `plugin.source`, además de los dos bordes de preferencia: un `null` JSON almacenado se
+lee como el valor por defecto (activo), y un guardado que deja la sección de plugins ilegible indica
+que la configuración se aterrizó en lugar de leerse como un rechazo simple.
+`internal/cpa/configyaml/plugins_test.go` es dueño de la edición de la lista con preservación del
+orden e `internal/pluginregistry/registry_test.go` es dueño de
+la forma y el fijado de dirección a ID de fuente. `internal/demo/demo_test.go` es dueño de la mitad
+del fixture de la misma cadena: cada entrada del almacenamiento nombra la URL del registro del que
+provió, el campo que la proyección lee para marcar, fijar y retener las entradas gestionadas, y el
+catalogo del fixture lleva una. Las suites de ruta de configuración y de respaldo conservan sus
+afirmaciones sobre el guardado propio del operador: su fixture comienza en el estado estable
+gestionado, de modo que ese guardado es la única escritura que esas pruebas observan.
 
-### Configuration defaults and Payload disclosures
+### Valores por defecto de configuración y desgloses de Payload
 
-`scripts/test-dirty.ts` covers omitted retry defaults, explicit example values,
-and lossless reversion for both omitted and explicit YAML baselines.
-`web/tests/payload-rules.component.test.tsx` renders the real Payload editor under
-StrictMode: empty and populated categories start collapsed, external YAML updates
-preserve disclosure choices, and save validation opens an invalid category without
-mutating the document. Both suites are automatically discovered; browser scenarios
-retain layout and rule-editing coverage.
+`scripts/test-dirty.ts` cubre los valores por defecto de reintento omitidos, los valores de ejemplo
+explícitos y la reversión sin pérdida tanto para las líneas base YAML omitidas como para las
+explícitas. `web/tests/payload-rules.component.test.tsx` renderiza el editor real de Payload bajo
+StrictMode: las categorías vacías y pobladas comienzan colapsadas, las actualizaciones externas de
+YAML preservan las opciones de despliegue y la validación del guardado abre una categoría inválida
+sin mutar el documento. Ambas suites se detectan automáticamente; los escenarios de navegador
+conservan la cobertura de layout y de edición de reglas.
 
-### Quota and TURN secret regression coverage
+### Cobertura de regresiones de cuota y de secreto TURN
 
-`internal/quota/plugin_test.go` owns exact plugin resolution and refusal to send
-an unmatched credential's auth index to an unrelated plugin, even when it is the
-only candidate. `internal/api/management_quota_test.go` owns the redemption wire
-contract: a failed cooldown clear still returns HTTP 200 with a successful
-redemption and the fixed `cooldown_clear_failed` code, without the raw CPA body.
-`web/tests/ice-servers-editor.component.test.tsx` owns the rendered secret state:
-Replace and an emptied replacement retain the sentinel; typed nonempty text
-replaces it, and only explicit Clear emits an empty value. Existing configuration
-browser probes retain layout and save-flow coverage.
+`internal/quota/plugin_test.go` es dueño de la resolución exacta de plugins y del rechazo de enviar
+el índice de autenticación de una credencial sin coincidencia a un plugin no relacionado, incluso
+cuando es el único candidato. `internal/api/management_quota_test.go` es dueño del contrato de red
+de la redención: un borrado de enfriamiento fallido sigue devolviendo HTTP 200 con una redención
+exitosa y el código fijo `cooldown_clear_failed`, sin el cuerpo bruto de CPA.
+`web/tests/ice-servers-editor.component.test.tsx` es dueño del estado renderizado del secreto:
+Replace y un reemplazo vaciado conservan el centinela; el texto no vacío escrito lo reemplaza, y
+solo Clear explícito emite un valor vacío. Las sondas de navegador de configuración existentes
+conservan la cobertura de layout y del flujo de guardado.
 
 ### Route error recovery regression coverage
 
@@ -818,169 +955,184 @@ shell becomes available. They assert the
 root route's brand, localized title and diagnostic copy in all four languages, light/dark
 rendering, phone overflow and touch-sized controls, heading focus, stack
 expansion, redacted clipboard output, and keyboard-driven full-document reload
-and dashboard navigation under the deployment sub-path. Recovery is observed
-after replacing the failed module with a healthy fixture; no production
-fault-injection route is introduced. These router, focus and document-lifetime
-claims require Chromium. Built-artifact theme/brand acceptance waits for the
-rendered shell content (and the desktop wordmark) as well as theme hydration
-before measuring geometry and SVG fills, because the shell download can complete after theme hydration.
+y la navegación al dashboard por teclado bajo el subpath del despliegue. La recuperación se observa
+tras reemplazar el módulo fallido con un fixture sano; no se introduce ninguna ruta de inyección de
+fallos en producción. Estas afirmaciones de router, foco y duración del documento requieren Chromium.
+La aceptación de tema/marca del artefacto compilado espera el contenido del shell renderizado (y el
+logotipo de escritorio) así como la hidratación del tema antes de medir la geometría y los rellenos
+SVG, porque la descarga del shell puede completarse después de la hidratación del tema.
 
-### Installable web app coverage
+### Cobertura de la aplicación web instalable
 
-`internal/api/pwa_test.go` owns the served contract: the manifest's members (relative
-`start_url` and `scope`, no `id`, standalone display, the declared icon sizes), each icon
-decoding at the size it declares, `application/manifest+json` with `Cache-Control:
-no-cache`, HEAD parity, a missing icon answering 404 instead of the SPA shell, the same
-routes at the root, `/shell-pamc` and a nested base, and the demonstration's allow/refuse
-boundary around them. `scripts/acceptance/pwa.mjs` owns what only Chromium can
-establish: `Page.getAppManifest` parses the manifest deployed by the built binary with
-no errors, `Page.getInstallabilityErrors` is empty in a browser context that blocks service
-workers, so installation does not depend on one; the browser's processed identity is the mount's `start_url` (so the root
-and a nested mount cannot present themselves as one app), every icon the manifest names
-loads, and a deep link resolves the same manifest through the injected base element.
+`internal/api/pwa_test.go` es dueño del contrato servido: los miembros del manifiesto (URL relativa
+`start_url` y `scope`, sin `id`, display standalone, los tamaños de icono declarados), cada icono
+decodificado al tamaño que declara, `application/manifest+json` con `Cache-Control: no-cache`, la
+paridad de HEAD, un icono faltante respondiendo 404 en lugar del shell de la SPA, las mismas rutas
+en la raíz, `/shell-pamc` y una base anidada, y el límite permitir/rechazar de la demostración
+alrededor de ellas. `scripts/acceptance/pwa.mjs` es dueño de lo que solo Chromium puede establecer:
+`Page.getAppManifest` analiza el manifiesto desplegado por el binario compilado sin errores,
+`Page.getInstallabilityErrors` está vacío en un contexto de navegador que bloquea los service
+workers, de modo que la instalación no depende de uno; la identidad procesada del navegador es el
+`start_url` del montaje (de modo que la raíz y un montaje anidado no pueden presentarse como una sola
+app), todos los iconos nombrados en el manifiesto cargan y un enlace profundo resuelve el mismo
+manifiesto mediante el elemento base inyectado.
 
-### Loading feedback regression coverage
+### Cobertura de regresiones de retroalimentación de carga
 
-`scripts/test-load-progress.ts` owns task accounting and rough estimation (ADRs 0052 and 0054):
-batch opening/completion, full settled credit, capped pending credit, late/restarted tasks, the
-200ms show delay, frame-rate-independent monotonic smoothing, the final-pending-task boundary,
-and registry/source merging. `scripts/test-progress-controller.ts` injects the clock, render and
-scheduler to own invisible fast batches, frequent notifications without clock resets, late work
-holding progress, one-base-beat completion, new episodes during completion/fading, event-only
-reduced motion, live preference switches, hidden/resumed documents and disposal. No test waits
-on wall-clock time.
+`scripts/test-load-progress.ts` es dueño del conteo de tareas y la estimación aproximada (ADRs 0052
+y 0054): apertura/finalización de lotes, crédito completo asentado, crédito pendiente acotado, tareas
+tardías/reiniciadas, el retraso de aparición de 200ms, el suavizado monótono independiente del
+fotograma, el límite de la última tarea pendiente y la fusión de registros/fuentes.
+`scripts/test-progress-controller.ts` inyecta el reloj, el renderizado y el programador para ser
+dueño de los lotes rápidos invisibles, las notificaciones frecuentes sin reinicios del reloj, el
+trabajo tardío que retiene el progreso, la finalización en un tiempo base, los episodios nuevos
+durante la finalización/desvanecimiento, el movimiento reducido solo de eventos, los cambios de
+preferencia en vivo, los documentos ocultos/reanudados y la eliminación. Ninguna prueba espera
+tiempo de reloj real.
 
-The existing `route-lazy-error` probe owns real browser wiring. Its helper in
-`scripts/acceptance/probes/loadingProgress.mjs` holds genuine tasks and samples the real CSS
-activity animation with a controlled animation clock: movement during a held fill, invisible
-wrap, clipping at the rough frontier, 2px/64px/16%/16px geometry, theme color and opacity,
-root/animation identity, layout stability and omitted numeric accessibility claims. It exercises
-shell, sign-in and console bars at desktop and phone widths, and the sign-in theme control selects
-light and dark. A held real dashboard refresh checks query-driven activity and retention of data. The probe retains held-module failure/recovery, live reduced-motion batch preservation
-and freezing of both placeholder and activity animation, plus cancellation of a completed
-sign-in bar's actual opacity fade. Assertions observe state or animation frames, never fixed waits.
-Existing page scenarios retain their coverage of silent polls and placeholder geometry.
+La sonda `route-lazy-error` existente es dueña del cableado real del navegador. Su helper en
+`scripts/acceptance/probes/loadingProgress.mjs` retiene tareas reales y muestrea la animación CSS de
+actividad real con un reloj de animación controlado: movimiento durante un relleno retenido, envoltura
+invisible, recorte en la frontera aproximada, geometría 2px/64px/16%/16px, color y opacidad del tema,
+identidad de raíz/animación, estabilidad del layout y afirmaciones de accesibilidad numérica omitidas.
+Ejercita las barras de shell, inicio de sesión y consola a anchos de escritorio y teléfono, y el control
+de tema del inicio de sesión selecciona claro y oscuro. Un refresco real retenido del dashboard
+comprueba la actividad dirigida por consultas y la retención de datos. La sonda conserva el
+fallo/recuperación de módulo retenido, la preservación de lotes de movimiento reducido en vivo y el
+congelamiento de la animación tanto del marcador de posición como de la actividad, además de la
+cancelación del desvanecimiento de opacidad real de la barra de inicio de sesión completada. Las
+aserciones observan el estado o los frames de animación, nunca esperas fijas. Los escenarios de
+página existentes conservan su cobertura de sondeos silenciosos y geometría del marcador de posición.
 
-The motion checker self-test pins the local waiting-activity duration exception in both
-directions, including its reduced-motion requirement and rejection of unrelated raw durations. It also
-pins the routing map's `reduced` waiver: the named selector passes without a counterpart, another
-animation in the same file still fails, and an unused waiver fails.
-Placeholder breathing's existing exception remains independently pinned.
+La autoprueba del verificador de movimiento fija la excepción de duración de actividad de espera
+local en ambas direcciones, incluido su requisito de movimiento reducido y el rechazo de duraciones
+bruta no relacionadas. También fija la exención `reduced` del mapa de rutas: el selector nombrado pasa
+sin contraparte, otra animación en el mismo archivo sigue fallando y una exención no usada falla.
+La excepción existente del respirado del marcador de posición se fija de forma independiente.
 
-## Production loading boundaries and bundle reports
+## Límites de carga en producción y reportes de bundle
 
-`pnpm build` writes a Rollup ownership/import graph to `tmp/bundle/graph.json`,
-not to the served or embedded distribution. `pnpm check:bundle` checks its chunk
-hashes and dependency edges, then walks the HTML entry/modulepreloads and static
-imports. Pages, authenticated shell, charts, Markdown and Monaco must stay outside
-startup. The configuration page must defer its YAML editor until requested.
+`pnpm build` escribe un grafo de propiedad/imports de Rollup en `tmp/bundle/graph.json`, no en la
+distribución servida o embebida. `pnpm check:bundle` comprueba sus hashes de chunk y aristas de
+dependencia, y luego recorre la entrada/modulepreloads HTML y los imports estáticos. Las páginas, el
+shell autenticado, los gráficos, Markdown y Monaco deben mantenerse fuera del arranque. La página de
+configuración debe diferir su editor YAML hasta que se solicite.
 
-The hard size checks are broad anomaly ceilings, not per-chunk feature quotas:
-startup JS 3 MiB raw / 1 MiB gzip; startup CSS 256 / 96 KiB; largest JS 4 MiB raw;
-all JS 16 MiB raw; distribution 32 MiB raw (ADR 0094); Lobe SVGs 2 MiB raw. Gzip values are
-level-6 per-file estimates, including binary files in aggregate estimates, not
-actual served bytes or browser-performance measurements. Growth greater than both
-10% and 16 KiB for entry/startup metrics, or 128 KiB for other metrics, is advisory.
+Las comprobaciones de tamaño estrictas son topes amplios de anomalías, no cuotas de funcionalidades
+por chunk: JS de arranque 3 MiB raw / 1 MiB gzip; CSS de arranque 256 / 96 KiB; JS más grande 4 MiB
+raw; todo el JS 16 MiB raw; distribución 32 MiB raw (ADR 0094); SVGs de Lobe 2 MiB raw. Los valores
+gzip son estimaciones por archivo a nivel 6, incluidos archivos binarios en estimaciones agregadas, no
+bytes servidos reales ni mediciones de rendimiento del navegador. Un crecimiento mayor que el 10% y
+16 KiB a la vez para métricas de entrada/arranque, o 128 KiB para otras métricas, es orientativo.
 
-CI selects the exact PR base or preceding push revision's successful push report,
-with `scripts/bundle-reference.json` as a one-commit bootstrap. Missing/expired
-artifacts are reported as unavailable, not replaced by a different revision.
-Locally, an omitted `BUNDLE_BASE_SHA` defaults to `origin/master`; an explicit empty
-value disables comparison, as release verification does until it resolves a previous
-release baseline. The candidate itself is not a valid comparison base.
+La CI selecciona el reporte del push exitoso exacto de la revisión base del PR o del push precedente,
+con `scripts/bundle-reference.json` como arranque de un commit. Los artefactos faltantes o vencidos se
+reportan como no disponibles, no se reemplazan por otra revisión. En local, un `BUNDLE_BASE_SHA`
+omitido toma por defecto `origin/master`; un valor explícitamente vacío desactiva la comparación,
+como hace la verificación de lanzamientos hasta que resuelve una base de lanzamiento anterior. El
+candidato en sí mismo no es una base de comparación válida.
 `BUNDLE_BASELINE` supplies
 a saved report for that exact revision. GitHub retrieval additionally requires
 `GITHUB_REPOSITORY` and `GH_TOKEN`. JSON and Markdown evidence live in `tmp/bundle/`
 and CI retains reports for 30 days. The JSON includes per-file raw/gzip sizes and
-chunk source ownership; the summary identifies the largest JS files and startup
-membership. Reference artifacts are data, never executed source.
+propiedad de fuente del chunk; el resumen identifica los archivos JS más grandes y la pertenencia al
+arranque. Los artefactos de referencia son datos, nunca código fuente ejecutado.
 
-Self-tests are automatically discovered:
-- `scripts/bundle-report.test.mjs`: static closures/cycles, HTML preloads, deferred
-  editor, ownership independent of chunk names, missing/stale resources including
-  deferred CSS, size and
-  compression calculations, advisory growth and every hard-ceiling boundary.
-- `scripts/bundle-baseline.test.mjs`: exact SHA/event/conclusion selection, bootstrap
-  and explicit references, artifact retrieval and missing/invalid evidence.
-- `scripts/lint-workflows.test.mjs`: repository-relative workflow discovery from an
-  unrelated working directory, with injected actionlint execution.
-- `scripts/test-logic-runner.test.mjs`: actionable `--files` operand/schema failures
-  before any suite execution and conservative planning for an explicit empty list.
-- `scripts/build-demo.test.mjs`: private source/stage fixtures, real packaging and
-  recursive rejection of residual relative assets/fonts in every staged JS/CSS module.
-- `scripts/workflow-checks.test.mjs`: independent browser evidence and a mandatory
-  final bundle outcome verdict, retained reports and existing browser/probe gates.
-- `scripts/verify-full.test.mjs`: injected runner failures, prerequisites, all
-  independent evidence and identical serial/parallel gate coverage.
+Las autopruebas se detectan automáticamente:
+- `scripts/bundle-report.test.mjs`: cierres/ciclos estáticos, preloads HTML, editor diferido,
+  propiedad independiente de los nombres de chunk, recursos faltantes/obsoletos incluido CSS
+  diferido, cálculos de tamaño y compresión, crecimiento orientativo y todos los límites estrictos.
+- `scripts/bundle-baseline.test.mjs`: selección exacta de SHA/evento/conclusión, referencias de
+  arranque y explícitas, recuperación de artefactos y evidencia faltante/inválida.
+- `scripts/lint-workflows.test.mjs`: detección de workflows relativos al repositorio desde un
+  directorio de trabajo no relacionado, con ejecución inyectada de actionlint.
+- `scripts/test-logic-runner.test.mjs`: fallos accionables de operando `--files`/esquema antes de
+  cualquier ejecución de suite y planificación conservadora para una lista explícitamente vacía.
+- `scripts/build-demo.test.mjs`: fixtures privados de origen/staging, empaquetado real y rechazo
+  recursivo de assets/fuentes relativos residuales en cada módulo JS/CSS montado.
+- `scripts/workflow-checks.test.mjs`: evidencia independiente del navegador y un veredicto
+  obligatorio de resultado final del bundle, reportes conservados y compuertas existentes de
+  navegador/sondas.
+- `scripts/verify-full.test.mjs`: fallos inyectados del ejecutor, requisitos previos, toda la
+  evidencia independiente e identidad de cobertura serial/paralela.
 
-A bundle failure remains blocking, but no longer prevents production browser/demo
-acceptance after a valid build. CI's final verdict reads `steps.bundle.outcome`,
-not its success-shaped conclusion after `continue-on-error`. Full local runners
-likewise return failure after collecting the other verdicts. This preserves the
-failure while making it diagnosable. A secret or build failure still stops serving.
-For changes here, run affected self-tests, `pnpm verify`, `pnpm check:ui` and
-`pnpm verify:full`; do not add a browser scenario for a pure graph or runner decision.
+Un fallo del bundle sigue siendo bloqueante, pero ya no impide la aceptación de navegador/demo en
+producción tras un build válido. El veredicto final de CI lee `steps.bundle.outcome`, no su
+conclución con forma de éxito tras `continue-on-error`. Los ejecutores locales completos igualmente
+devuelven fallo tras recopilar los demás veredictos. Esto preserva el fallo y lo hace diagnosticable.
+Un fallo de secreto o de build sigue deteniendo el servicio. Para cambios aquí, ejecute las
+autopruebas afectadas, `pnpm verify`, `pnpm check:ui` y `pnpm verify:full`; no añada un escenario de
+navegador para una decisión pura de grafo o ejecutor.
 
-### Time range picker regression coverage
+### Cobertura de regresiones del selector de rango de tiempo
 
-- `scripts/test-time-range-draft.ts` pins the picker's rules as pure logic, automatically
-  discovered: the six-week grid, the two-press range and its restart, inclusive ends at day and
-  minute granularity, the offset in force on the picked date across a DST change, the three
-  refusals (incomplete, reversed, future) and the round trip from a committed window back to
-  its draft.
-- `scripts/test-usage-events-view-policy.ts` pins that every request-list preset is listed once.
-- The request-list acceptance sections cover the wiring only: the picker stays inside the
-  viewport as a popover and as a sheet with its custom range open, the calendar stays closed
-  until it is asked for, a preset and a custom range each reach the URL, and a half-picked
-  range does not.
+- `scripts/test-time-range-draft.ts` fija las reglas del selector como lógica pura, detectada
+  automáticamente: la cuadrícula de seis semanas, el rango de dos pulsaciones y su reinicio, los
+  extremos inclusivos a granularidad de día y minuto, el desplazamiento en vigor en la fecha elegida
+  a través de un cambio de horario de verano, los tres rechazos (incompleto, invertido, futuro) y el
+  ciclo de ida y vuelta desde una ventana confirmada hasta su borrador.
+- `scripts/test-usage-events-view-policy.ts` fija que cada preset de la lista de solicitudes aparece
+  una vez.
+- Las secciones de aceptación de la lista de solicitudes cubren solo el cableado: el selector se
+  mantiene dentro del viewport como popover y como hoja con su rango personalizado abierto, el
+  calendario permanece cerrado hasta que se le pide, un preset y un rango personalizado llegan cada
+  uno a la URL, y un rango a medio elegir no lo hace.
 
-### Mobile console and focused YAML coverage
+### Cobertura de la consola móvil y del YAML enfocado
 
-- `scripts/test-source-wrap.ts` pins phone/desktop defaults and manual-choice precedence.
-- `scripts/test-visible-viewport.ts` tests usable bounds, keyboard/caret panning, invalid/absent
-  readings, overscroll and pinch-zoom fallback as pure logic, automatically discovered.
-- `mobile-console` navigates all 15 live console routes through the phone navigation at
-  320/375/390px, waits for each route's own content, and measures content/header
-  overflow and reachable header tools, then checks selected preference state, 44px menu rows,
-  Back/focus restoration, 640/641 and 900/901 boundaries, desktop and landscape, plus simulated
-  keyboard bounds and Send hit-testing for both conversation workspaces. Each mounted route is
-  resized across the three phone widths without repeating navigation. Direct route mappings retain
-  the sweep (including Model Square); planner tests pin positive and negative cases.
-- `config-source-editor` owns real Monaco widgets, font/gutter/wrapping, long URLs and indentation,
-  phone find, in-place focused editing, draft/undo/focus continuity, nested Back, simulated keyboard
-  viewport bounds, invalid input, revision conflict, failed saves and single successful confirmation.
-  Phone geometry is measured after Monaco's render pass has resized the layers inside the editor.
-  It also forces the editor wider than its shell and requires the page not to widen: Monaco corrects
-  its pixel width only when its resize observer runs, and the shell clips it until then.
-  Neither React option changes nor the editor's own box certify that: its layout pass sizes the
-  box first, and until the render pass follows the closed find box keeps its desktop offset.
-  `scripts/acceptance/configuration-plugins.mjs` also formats a document from the built SPA to
-  exercise production worker asset paths and RPC, complementing the dev-server source scenario.
-  Both require native flow-sequence delimiter spacing, which the serializer fallback cannot produce;
-  a toast or dirty state alone does not establish worker health. The source screenshot uses a
-  repository-root absolute path under `tmp/`, independent of the caller's working directory.
-  `pricing-book` also checks the translated synchronization group title in phone tools.
-  Existing list/touch assertions remain; `config-backups` also exercises the phone menu-owned
-  dialog, local table scrolling and Back closure.
-- Automated visible-viewport simulation does not certify iPhone keyboard/selection behaviour. When a
-  change touches these paths and a real device is at hand, exercise address-bar collapse, the software
-  keyboard, long-press selection and caret movement in normal and focused editing, and say what was
-  checked; no automated run can stand in for it.
+- `scripts/test-source-wrap.ts` fija los valores por defecto de teléfono/escritorio y la precedencia
+  de la elección manual.
+- `scripts/test-visible-viewport.ts` prueba los límites utilizables, el desplazamiento de teclado y
+  cursor, las lecturas inválidas o ausentes, el overscroll y el fallback de pellizco para hacer zoom
+  como lógica pura, detectada automáticamente.
+- `mobile-console` navega las 15 rutas de la consola en vivo a través de la navegación en teléfono a
+  320/375/390px, espera el contenido propio de cada ruta y mide el desbordamiento de contenido y
+  encabezado y las herramientas de encabezado alcanzables, luego comprueba el estado de preferencia
+  seleccionado, las filas de menú de 44px, la restauración de Atrás/foco, los límites 640/641 y
+  900/901, escritorio y horizontal, más los límites simulados del teclado y el hit-testing de Send
+  para ambos espacios de trabajo de conversación. Cada ruta montada se redimensiona en los tres
+  anchos de teléfono sin repetir la navegación. Los mapeos de rutas directas conservan el barrido
+  (incluido Model Square); las pruebas del planificador fijan los casos positivos y negativos.
+- `config-source-editor` es dueño de los widgets reales de Monaco, la fuente/gutter/ajuste, las URL
+  largas y la indentación, la búsqueda en teléfono, la edición enfocada en el lugar, la continuidad
+  de borrador/deshacer/foco, el Atrás anidado, los límites del viewport con teclado simulado, la
+  entrada inválida, el conflicto de revisión, los guardados fallidos y la confirmación exitosa única.
+  La geometría en teléfono se mide después de que el paso de renderizado de Monaco haya redimensionado
+  las capas dentro del editor. También obliga al editor a ser más ancho que su shell y exige que la
+  página no se ensanche: Monaco corrige su ancho en píxeles solo cuando se ejecuta su observer de
+  redimensionado, y el shell lo recorta hasta entonces. Ni los cambios de opción de React ni la propia
+  caja del editor certifican eso: su paso de layout dimensiona primero la caja, y hasta que sigue el
+  paso de renderizado el cuadro de búsqueda cerrado conserva su desplazamiento de escritorio.
+  `scripts/acceptance/configuration-plugins.mjs` también formatea un documento desde la SPA compilada
+  para ejercitar las rutas de assets del worker de producción y el RPC, complementando el escenario
+  de fuente del servidor de desarrollo. Ambos requieren el espaciado nativo de delimitadores de
+  secuencia de flujo, que el fallback del serializador no puede producir; un toast o un estado sucio
+  por sí solos no establecen la salud del worker. La captura de pantalla de la fuente usa una ruta
+  absoluta desde la raíz del repositorio bajo `tmp/`, independiente del directorio de trabajo del
+  llamador. `pricing-book` también comprueba el título del grupo de sincronización traducido en las
+  herramientas del teléfono. Las aserciones existentes de lista y toque se conservan; `config-backups`
+  también ejercita el diálogo del menú del teléfono, el scroll local de la tabla y el cierre con
+  Atrás.
+- La simulación automatizada del viewport visible no certifica el comportamiento del teclado/selección
+  en iPhone. Cuando un cambio toca estas rutas y hay un dispositivo real disponible, ejercite el
+  colapso de la barra de dirección, el teclado de software, la selección con pulsación larga y el
+  movimiento del cursor en edición normal y enfocada, y anote lo que se comprobi; ninguna ejecución
+  automatizada puede suplirlo.
 
 
-### Quota reading coverage
+### Cobertura de lectura de cuota
 
-`internal/quota` owns what each provider's documents mean. That includes the xAI pair
-(a credits document supplying the window with the ledger's figures kept beside it, either
-document usable alone, a pair with no config failing), Kimi's counted limits and ratio
-pools (the period read from each pool's key, a counted limit winning its own period, an
-unknown key keeping its name, either ratio scale), and a Codex standard window taking its
-identity from the period the payload states. The same package owns the empty reading: a
-successful refresh that published no window is `unpublished`, it survives evaluation and a
-snapshot round trip, and a later window replaces it. `scripts/test-quota-empty-state.ts`
-owns which copy a credential with no window carries, and `scripts/test-oauth-workspace.ts`
-owns its triage bucket. The rendering of those readings stays with the existing
-`oauth-management` probe.
+`internal/quota` es dueño de lo que significan los documentos de cada proveedor. Eso incluye el par
+de xAI (un documento de créditos que suministra la ventana con las cifras del libro mayor junto a
+él, cualquiera de los dos documentos utilizable solo, un par sin configuración fallando), los límites
+contados y pools de ratios de Kimi (el período leído de la clave de cada pool, un límite contado que
+gana su propio período, una clave desconocida que conserva su nombre, cualquiera de las dos escalas
+de ratio) y una ventana estándar de Codex que toma su identidad del período que indica el payload.
+El mismo paquete es dueño de la lectura vacía: un refresco exitoso que no publicó ninguna ventana es
+`unpublished`, sobrevive a la evaluación y a un ciclo de instantánea, y una ventana posterior la
+reemplaza. `scripts/test-quota-empty-state.ts` es dueño del texto que lleva una credencial sin
+ventana, y `scripts/test-oauth-workspace.ts` es dueño de su grupo de triaje. El renderizado de esas
+lecturas se mantiene con la sonda `oauth-management` existente.
 
 `internal/quota/antigravity_test.go` owns period aliases, calendar-month versus
 fixed-duration semantics, display ordering and persisted bucket identities, including
