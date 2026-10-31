@@ -9,8 +9,8 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/tdewolff/parse/v2 v2.8.18
 	golang.org/x/image v0.45.0
-	golang.org/x/net v0.60.0
-	golang.org/x/sys v0.48.0
+	golang.org/x/net v0.62.0
+	golang.org/x/sys v0.49.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.39.1
 )
