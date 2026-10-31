@@ -185,7 +185,7 @@ legible as text on a dark one:
 
 The two modes share the hue and no value. Each palette authors its own link step, and `derivePalette`
 computes the two filled-control steps from it: a proportional OKLCH lightness step, then both fills
-deepened together until one label ink clears 4.5:1 on the resting fill and the pressed one alike. OMC
+deepened together until one label ink clears 4.5:1 on the resting fill and the pressed one alike. Shell-PAMC
 Light's link step is the deeper `#005d8f` because the bright `#00a2fb` reads **2.78:1** against white -
 which is both the light page and the label on a filled control - so it can only ever be the dark
 theme's text colour.
@@ -783,7 +783,7 @@ chosen span would turn into a report. There is no list of recent requests; that 
 │  MODELS CALLED 3                                   CREDENTIALS & PROVIDERS 3                         │
 │  [◎] gpt-5.6-luna     12 req · 1.2 s ●╮                     ╭─● [o] Codex  sk-…c002  Answered last │
 │  [✳] claude-opus-5.5   6 req · 2.0 s ●─╲     ┌──────────┐ ╱                                       │
-│  [◇] glm-5.3-flash     2 req · 0.6 s ●──▶    │ [OMC]    │───● [o] Codex  sk-…c001  Rate limited ·   │
+│  [◇] glm-5.3-flash     2 req · 0.6 s ●──▶    │ [Shell-PAMC]    │───● [o] Codex  sk-…c001  Rate limited ·   │
 │                                               │ Shell-PAMC│ ╲                      back in 21 s      │
 │                                               │ Round    │  ╰─● [A] Claude sk-…cl01  6 req · 2.0 s  │
 │                                               └──────────┘                                         │
@@ -812,7 +812,7 @@ lanes, the accent on the gateway, and status colour on a node surface where some
   state column says the one thing that is exceptional - `Rate limited`, `Quota exceeded` or `Cooling
   down` with a countdown, in the warn tone - or else that it answered last (accent), or its count and
   mean latency.
-- **The gateway** is the OMC mark on its own small tinted tile, the product name `Shell-PAMC`, the
+- **The gateway** is the Shell-PAMC mark on its own small tinted tile, the product name `Shell-PAMC`, the
   routing strategy CPA is configured with as a quiet chip, and the minute's attempts. A rail on each side is where the lanes dock, as long as
   the fan of lanes it receives. While any request is on the map its rails and glow brighten, and they settle back over 600ms once the last one
   has gone home.
@@ -1887,7 +1887,7 @@ every question with its answer, each one a link back to its tab, and Submit send
 declines them all. Only the question scrolls, so the actions stay in view. The chain step and the
 turn footer for a pending question read "Awaiting your answer".
 
-Sending needs no separate grant. The line beneath the composer states that a message, and the OMC
+Sending needs no separate grant. The line beneath the composer states that a message, and the Shell-PAMC
 data the agent reads to answer it, go to the selected CPA model and its upstream (ADR 0027); sending
 is the act that line describes. Model and reasoning effort use the same 28px quiet chip,
 shadowless hairline popover on `--surface`, and named option rows (ADR 0077). A surface opens
@@ -3159,7 +3159,7 @@ unavailable figures keep a visible fallback note rather than silently disappeari
 The OAuth toolbar opens a viewport-bounded Warmup settings Drawer with Codex and Claude
 section tabs. A draft prevents provider switching; close and native Back require a
 discard decision. Each provider edits a model, reset mode and one optional daily start,
-showing the effective OMC timezone and daily-priority rule. Defaults are off and `06:00`.
+showing the effective Shell-PAMC timezone and daily-priority rule. Defaults are off and `06:00`.
 Saving confirms the effect on all current and future inheriting credentials.
 
 The credential Quota tab adds a Window warmup section with provider inheritance or a

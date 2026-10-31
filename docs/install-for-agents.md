@@ -1,8 +1,8 @@
 # Install Shell-PAMC (for a coding agent)
 
-This runbook is for a coding agent installing Shell-PAMC (OMC) on a user's machine. OMC
+This runbook is for a coding agent installing Shell-PAMC on a user's machine. Shell-PAMC
 is a web console for CLIProxyAPI (CPA). It needs **CPA v8.0.0 or later** and CPA's plaintext
-management key, which is also OMC's sign-in password. The Docker image is
+management key, which is also Shell-PAMC's sign-in password. The Docker image is
 `ghcr.io/bizasbot/shell-pamc:latest` (amd64 and arm64). Native release archives cover Darwin,
 Windows, Linux and FreeBSD on amd64/arm64; a normal install builds nothing.
 
@@ -16,7 +16,7 @@ The work is: look at what is already there, pick a path, install, verify.
    to fill it in.
 2. **Do not change the existing CPA.** No upgrade, no config edit, no restart, no
    stopping another panel or tracker, unless the user agrees to that specific change.
-3. **Never replace an existing `SHELLPAMC_MASTER_KEY`.** If an OMC data directory already
+3. **Never replace an existing `SHELLPAMC_MASTER_KEY`.** If an Shell-PAMC data directory already
    exists, reuse its key. If the key is lost, stop and say so.
 4. **Ask before** using `sudo`, installing Docker or a toolchain, opening a port beyond
    `127.0.0.1`, giving a container the Docker socket, or sending a model request that
@@ -35,10 +35,10 @@ Find out:
 
 - Is CPA running? As a container (which network?), a host process (listening on
   `127.0.0.1` or on all interfaces?), or on another machine?
-- Is OMC already installed? Then this is an upgrade (step 5), not an install.
+- Is Shell-PAMC already installed? Then this is an upgrade (step 5), not an install.
 - Does anything else collect CPA's usage, such as another panel's statistics or an
   exporter? CPA gives each usage record to one reader only, so this decides step 3.
-- Which OS and CPU architecture will run OMC, and does the release provide a matching native archive?
+- Which OS and CPU architecture will run Shell-PAMC, and does the release provide a matching native archive?
 - Are ports 8080 and 8317 free?
 
 Ask the user only for what cannot be found out.
@@ -47,12 +47,12 @@ Ask the user only for what cannot be found out.
 
 | Found | Path |
 | --- | --- |
-| No CPA | **A**: install CPA and OMC together |
-| CPA runs from a Compose file the user can edit | **B1**: add an OMC service to that file |
-| CPA in Docker without such a file, on another machine, or on the host listening on all interfaces | **B2**: add OMC from its own Compose file |
+| No CPA | **A**: install CPA and Shell-PAMC together |
+| CPA runs from a Compose file the user can edit | **B1**: add an Shell-PAMC service to that file |
+| CPA in Docker without such a file, on another machine, or on the host listening on all interfaces | **B2**: add Shell-PAMC from its own Compose file |
 | A published native asset matches the detected OS/architecture, and either CPA listens on `127.0.0.1` only on the host or Docker is unavailable | **C**: install the matching native executable on the host |
 | User explicitly requests source, or no published native asset matches the detected OS/architecture | **D**: build from source |
-| OMC already installed | Step 5 |
+| Shell-PAMC already installed | Step 5 |
 
 Before starting, tell the user which path was chosen and what it will create.
 
@@ -63,12 +63,12 @@ equivalents of the minimal files in `docs/install.md` (read-only root filesystem
 dropped capabilities, every setting in `deploy/.env`).
 
 Every container path below includes an `shell-pamc-updater` service. It lets the user
-update OMC and CPA from the console, and it mounts the Docker socket, which amounts to
+update Shell-PAMC and CPA from the console, and it mounts the Docker socket, which amounts to
 control of Docker on the host. Say so before starting it (rule 4). If the user declines,
 delete the `shell-pamc-updater` service block from the Compose file before running
 `docker compose up`; nothing else depends on it.
 
-### A. CPA and OMC together
+### A. CPA and Shell-PAMC together
 
 Use a new directory. If any target file already exists, stop and ask.
 
@@ -90,7 +90,7 @@ docker compose -f deploy/compose.full.yml up -d
 If port 8080 or 8317 is taken, add `SHELLPAMC_BIND=127.0.0.1:<port>` or
 `CPA_BIND=127.0.0.1:<port>` to `deploy/.env`. Do not stop whatever holds the port.
 
-### B1. OMC in CPA's Compose file
+### B1. Shell-PAMC in CPA's Compose file
 
 Find CPA's Compose file (`docker inspect <cpa container>` shows it in the
 `com.docker.compose.project.config_files` label). Show the user the change, then add
@@ -147,7 +147,7 @@ Name the services. A bare `docker compose up -d` would also recreate CPA if its
 definition or image had drifted. Check afterwards that CPA's container ID and start
 time are unchanged. The data lives in a Docker volume, so no `chown` is needed.
 
-### B2. OMC beside an existing CPA
+### B2. Shell-PAMC beside an existing CPA
 
 ```bash
 mkdir -p shell-pamc/{deploy,shell-pamc-data} && cd shell-pamc
@@ -164,7 +164,7 @@ chmod 600 deploy/.env
 
 Then adjust `deploy/.env`:
 
-- **CPA URL.** It must be reachable from inside OMC's container.
+- **CPA URL.** It must be reachable from inside Shell-PAMC's container.
   - CPA in Docker: add `SHELLPAMC_NETWORK_NAME=<CPA's network>` and
     `SHELLPAMC_NETWORK_EXTERNAL=true`, and use `http://<CPA container name>:8317`.
   - CPA on this host, all interfaces: keep `http://host.docker.internal:8317`.
@@ -173,8 +173,8 @@ Then adjust `deploy/.env`:
   The bcrypt hash in CPA's `config.yaml` will not work.
 - **Time zone.** Add `TZ=` matching CPA's if it is not UTC.
 - **Usage collection.** If something else already collects CPA's usage, ask the user:
-  stop that tool so OMC records requests, or keep it and add
-  `SHELLPAMC_USAGE_INGEST_MODE=off` (OMC then manages CPA but shows no usage). If that
+  stop that tool so Shell-PAMC records requests, or keep it and add
+  `SHELLPAMC_USAGE_INGEST_MODE=off` (Shell-PAMC then manages CPA but shows no usage). If that
   cannot be determined, use `off` and say so. Another management panel that does not collect
   usage needs nothing; leave it running.
 
@@ -182,7 +182,7 @@ Then adjust `deploy/.env`:
 docker compose -f deploy/compose.omc.yml up -d
 ```
 
-In B1 and B2 alike, CPA treats OMC's container as a remote client. If health reports
+In B1 and B2 alike, CPA treats Shell-PAMC's container as a remote client. If health reports
 `cpa_connected: false` with a correct URL and key, CPA has `management.allow-remote`
 turned off. Turning it on is a change to CPA: explain it and ask first.
 
@@ -238,7 +238,7 @@ curl -fsS http://127.0.0.1:8080/shell-pamc/api/healthz
 ```
 
 The install is done only when the response has `"status":"ok"`, `"database_status":"ok"`
-and `"cpa_connected":true`. A container that Docker calls healthy is not proof: OMC
+and `"cpa_connected":true`. A container that Docker calls healthy is not proof: Shell-PAMC
 stays up with `"status":"degraded"` when it cannot reach CPA. If the check fails, report
 the actual reason. Common ones:
 
@@ -258,9 +258,9 @@ docker inspect -f '{{.State.Health.Status}}' shell-pamc-updater
 `healthy` is the expected answer. With the updater in CPA's own Compose file (B1) the
 container is named `<project>-shell-pamc-updater-1`; `docker compose ps` lists it.
 
-## 5. Upgrading an existing OMC
+## 5. Upgrading an existing Shell-PAMC
 
-Do not reinstall. For a native installation, stop only OMC, back up its `.env` and
+Do not reinstall. For a native installation, stop only Shell-PAMC, back up its `.env` and
 data directory, verify/extract the new archive separately and replace only the
 executable. Preserve its service account, working directory, data path and master
 key, restart and verify as in step 4. Restore the corresponding data backup to return
@@ -277,8 +277,8 @@ docker ps --filter name=shell-pamc-updater --format '{{.Names}} {{.Status}}'
 page, and nothing needs to be run. To upgrade for them now, use the Compose commands
 below and include `shell-pamc-updater` in both.
 
-**No updater, and OMC's image is not pinned to a version.** One command adds the updater
-and brings OMC to the current release, without editing the Compose file. It mounts the
+**No updater, and Shell-PAMC's image is not pinned to a version.** One command adds the updater
+and brings Shell-PAMC to the current release, without editing the Compose file. It mounts the
 Docker socket into a container, so explain that and get the user's agreement first
 (rule 4):
 
@@ -299,7 +299,7 @@ docker compose -f deploy/compose.omc.yml pull shell-pamc
 docker compose -f deploy/compose.omc.yml up -d --no-deps shell-pamc
 ```
 
-Use `compose.full.yml` if that is the file in place. When OMC is a service in CPA's
+Use `compose.full.yml` if that is the file in place. When Shell-PAMC is a service in CPA's
 Compose file, run `docker compose pull shell-pamc` and `docker compose up -d shell-pamc`
 in that directory. For a pinned image, change the pin to the wanted release first; do
 not unpin it without asking.
@@ -314,16 +314,16 @@ the backup. Verify as in step 4.
   `http://127.0.0.1:18080/shell-pamc/`.
 - That the sign-in password is the CPA management key, and which file holds it. Not
   the key itself.
-- To back up the `.env` file and OMC's data (the `shell-pamc-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
+- To back up the `.env` file and Shell-PAMC's data (the `shell-pamc-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
   cannot be read.
-- Whether OMC is collecting usage, and why not if it is off.
-- Whether the updater is installed. If it is: later releases of OMC and CPA can be
+- Whether Shell-PAMC is collecting usage, and why not if it is off.
+- Whether the updater is installed. If it is: later releases of Shell-PAMC and CPA can be
   installed from the console's System Information page, and the `shell-pamc-updater`
   container holds the Docker socket. If it is not: the command that adds it.
 - Anything changed outside the new `shell-pamc` directory.
 
-OMC redirects the bare `/shell-pamc` to `/shell-pamc/`. If a reverse proxy sits in front of it,
-route both `/shell-pamc` and `/shell-pamc/` to OMC (or redirect `/shell-pamc` to `/shell-pamc/` at the proxy) and
+Shell-PAMC redirects the bare `/shell-pamc` to `/shell-pamc/`. If a reverse proxy sits in front of it,
+route both `/shell-pamc` and `/shell-pamc/` to Shell-PAMC (or redirect `/shell-pamc` to `/shell-pamc/` at the proxy) and
 confirm `curl -sI <public address>/shell-pamc` answers `308`; a rule for `/shell-pamc/` alone leaves
 the bare path unreachable.
 

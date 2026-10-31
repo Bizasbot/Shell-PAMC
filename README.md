@@ -38,8 +38,8 @@ MCP · Visualization · Management
 </div>
 
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) (CPA) is an API gateway: it
-adapts protocols, holds credentials and proxies requests. **Shell-PAMC** (OMC) is a web
-console for it. OMC manages the gateway's providers, credentials and configuration, and
+adapts protocols, holds credentials and proxies requests. **Shell-PAMC** is a web
+console for it. Shell-PAMC manages the gateway's providers, credentials and configuration, and
 records the usage and cost of every request. It is a single Go
 binary with the React console embedded and a local SQLite database, runs offline, and
 signs in with CPA's management key.
@@ -293,7 +293,7 @@ for configuration, permissions and upgrades.
 > without it.
 
 CPA hands each usage record to a single reader. If another usage tracker reads the same
-CPA, stop it, or add `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` to use OMC
+CPA, stop it, or add `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` to use Shell-PAMC
 for management only. Other management panels do not conflict.
 
 `shell-pamc-updater` mounts the Docker socket, which amounts to control of Docker on that
@@ -462,7 +462,7 @@ Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Shell-PAMC 
 
 ## Documentation
 
-**Using OMC**
+**Using Shell-PAMC**
 
 | Document | Contents |
 | --- | --- |
@@ -474,7 +474,7 @@ Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Shell-PAMC 
 | [`docs/cpa-v8-compat.md`](docs/cpa-v8-compat.md) | CPA v8 baseline and configuration relocation |
 | [`docs/cpamc-parity.md`](docs/cpamc-parity.md) | Feature parity with the official CPA management center |
 
-**Developing OMC**
+**Developing Shell-PAMC**
 
 | Document | Contents |
 | --- | --- |

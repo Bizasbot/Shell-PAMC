@@ -1,8 +1,8 @@
 # CPA v8 compatibility
 
-Shell-PAMC (OMC) requires CLIProxyAPI (CPA) v8.0.0 or later and speaks its v8 Management
+Shell-PAMC requires CLIProxyAPI (CPA) v8.0.0 or later and speaks its v8 Management
 API (ADR 0034, which supersedes the one-build-for-v7-and-v8 decision of ADR 0028). This
-document records what v8 changed, what was measured against real binaries, how OMC
+document records what v8 changed, what was measured against real binaries, how Shell-PAMC
 decides that a gateway is v8, how it edits the configuration (ADR 0037), which routes it
 calls, and what remains unverified. Measurements against v7.3.20 below are kept as the record of how v8
 treats a v7 configuration file, which is what an upgraded deployment starts from.
@@ -12,7 +12,7 @@ treats a v7 configuration file, which is what an upgraded deployment starts from
 The CPA source contract at `d44f8682bc1438ac0f06159207435bd997bca4c9`
 adds optional `openapi` booleans to Vertex API-key model entries and OAuth
 aliases/settings, and `openapi` / `openapi-location` to Vertex API-key entries.
-OMC edits API-key defaults and model rows in AI Providers, provider-wide OAuth
+Shell-PAMC edits API-key defaults and model rows in AI Providers, provider-wide OAuth
 aliases in Model Rules, and credential aliases in credential detail. The facade
 keeps unset, explicit false and true distinct; model/alias overrides outrank
 credential defaults, which outrank CPA's automatic model-name detection. Two
@@ -35,7 +35,7 @@ This contract is verified against source and hermetic fixtures, not a live Verte
 ## SIWC local status and use
 
 The CPA source contract at `06fd5b8bc2807af5fceb6f39d2c5808c52e76034`
-adds `siwc_status: off|valid|invalid` to credential summaries. OMC reads this
+adds `siwc_status: off|valid|invalid` to credential summaries. Shell-PAMC reads this
 allowlisted enum from the credential list and existing Agent/MCP credential reads.
 Missing or unknown values remain unknown; neither stored expiry nor bound material
 implies validity. CPA evaluates expiry and remembered rejection locally without
@@ -49,14 +49,14 @@ disabling remains available. It neither binds nor establishes validity. Agent/MC
 uses confirmed `oauth_set_credential_fields`, while authorization stays operator-driven.
 Older gateways without status metadata show unknown and no enabled switch control.
 CPA's credential-status query (`GET /v8/management/oauth/siwc/status?name=...`
-or `auth_index`) is distinct from OMC's binding-session poll at
-`/management/oauth/siwc/status?state=...`; OMC does not call the dedicated query
+or `auth_index`) is distinct from Shell-PAMC's binding-session poll at
+`/management/oauth/siwc/status?state=...`; Shell-PAMC does not call the dedicated query
 because its credential-list read already supplies the local summary.
 
 ## Antigravity observation fingerprint
 
 The reviewed CPA source baseline `02e9e85204052dfed9bf73b7075c7b414111a4b3`
-uses Hub 2.24.0 and its verified changelist 1000335682. OMC's fixed quota and
+uses Hub 2.24.0 and its verified changelist 1000335682. Shell-PAMC's fixed quota and
 subscription User-Agent is
 `antigravity/hub/2.24.0 (aidev_client; os_type=darwin; arch=arm64; cl=1000335682)`.
 Update the version and verified changelist together. The daily `loadCodeAssist`
@@ -68,7 +68,7 @@ There is no dynamic vendor-version lookup or new outbound authority.
 
 CPA v8.0.35 adds `POST /v8/management/oauth/siwc/bind` and the Codex
 credential summaries `siwc_bind_supported`, `use_siwc`, `siwc_bound`, and
-optional RFC3339 `siwc_expires_at`. OMC projects these summaries through its
+optional RFC3339 `siwc_expires_at`. Shell-PAMC projects these summaries through its
 credential list and the existing Agent/MCP credential read. Missing support
 metadata disables binding. Stored material presence and expiry are not live
 validity checks.
@@ -83,13 +83,13 @@ exchanges tokens, saves the SIWC partition, and publishes it to its auth manager
 Binding sessions are process-local and target-scoped. The browser pastes the
 complete `http://127.0.0.1:1455/auth/callback` URL, including the issued
 `client_id`, even when that page cannot load: this flow starts no loopback
-listener. OMC forwards the URL unchanged after matching its state and redirect
+listener. Shell-PAMC forwards the URL unchanged after matching its state and redirect
 origin/path. Callback values are never stored in preferences or audit records.
 Attempt audits are fail-closed for start, callback and cancellation. Callback
 acceptance remains pending; only completed status followed by safe credential
 readback is success. Readback failure after completion stays in verification
 without offering a second mutation. Cancellation preserves `cancelled:false`.
-Uncompleted attempts expire after five minutes. OMC retains local records for
+Uncompleted attempts expire after five minutes. Shell-PAMC retains local records for
 ten minutes for terminal reconciliation, without retaining callback values.
 
 Source: [CPA v8.0.35 management contract](https://github.com/router-for-me/CLIProxyAPI/blob/v8.0.35/docs/management-api-v8.md).
@@ -103,7 +103,7 @@ A non-empty credential `excluded_models` list replaces provider
 The v8.0.33 helper stores only credential rules, and the runtime resolves the
 provider fallback. Older supported v8 builds can merge the lists instead; upgrade
 them before relying on credential overrides. This is a feature-specific behavior
-boundary, not a change to OMC's v8.0.0 Management API baseline. The console and
+boundary, not a change to Shell-PAMC's v8.0.0 Management API baseline. The console and
 Agent/MCP guidance state the requirement, and CPA's per-credential model list
 remains authoritative. See [OAuth model rules](operations.md#oauth-model-rules).
 
@@ -243,7 +243,7 @@ Two more precise statements than the usual summary:
   `server.tls.enable` is honoured, while a legacy `oauth-model-alias` map loses entirely
   to any v8 `oauth.model-alias` map, whatever providers each names.
 - `GET /v8/management/config.yaml` returns the *migrated view* of the file, not the file;
-  `GET /v0/management/config.yaml` returns the file as stored. OMC edits the former and
+  `GET /v0/management/config.yaml` returns the file as stored. Shell-PAMC edits the former and
   reads the latter only to keep a legacy file before its first v8 write (§4).
 
 ### v8 configuration writes (measured)
@@ -269,7 +269,7 @@ Measured on the v8.0.2 binary with a management password set.
 
 Observed but not part of the v8 change: several v0 writes sent back to back without a
 pause can lose all but the last (each write reloads the configuration asynchronously).
-It was seen on v8.0.2 during a scripted burst; it was not tested on v7. OMC's own writes
+It was seen on v8.0.2 during a scripted burst; it was not tested on v7. Shell-PAMC's own writes
 are serialised by its provider write gate and are one operator action at a time.
 
 ## 2. Review of the relocation list in the task brief
@@ -306,7 +306,7 @@ flat `antigravity-signature-*` keys, `multimedia.*`, and `oauth.model-alias` /
 `oauth.excluded-models` / `oauth.request-scoped-errors`. `routing.strategy`,
 `routing.session-affinity*` and `plugins.*` keep their paths. The complete list is §3.
 
-Checking OMC's editor against the real table also exposed two editor paths that were
+Checking Shell-PAMC's editor against the real table also exposed two editor paths that were
 wrong for v7 as well, now fixed: the Antigravity signature switches wrote
 `antigravity.signature-cache-enabled` / `antigravity.signature-bypass-strict`, which CPA
 never reads (the real keys are the flat `antigravity-signature-cache-enabled` /
@@ -316,7 +316,7 @@ string under `streaming`, while CPA reads an integer number of seconds at the ro
 ## 3. Complete legacy ↔ v8 mapping
 
 This is CPA's own table (`config_v8.go` at v8.0.2), which it applies when it converts a
-legacy file. OMC does not carry a copy: its editor schema (`web/src/types/configSchema.ts`)
+legacy file. Shell-PAMC does not carry a copy: its editor schema (`web/src/types/configSchema.ts`)
 names the v8 column. The last column names the editor field; a `—` means no editor field
 edits that setting.
 
@@ -339,10 +339,10 @@ unchanged, so the editor sets no maximum).
 
 ### Settings (leaves)
 
-A leaf is the unit of CPA's precedence rule. "OMC editor field" names the configuration
+A leaf is the unit of CPA's precedence rule. "Shell-PAMC editor field" names the configuration
 page field that edits it.
 
-| v8 section | Legacy path | v8 path | OMC editor field |
+| v8 section | Legacy path | v8 path | Shell-PAMC editor field |
 | --- | --- | --- | --- |
 | `server` | `commercial-mode` | `server.commercial-mode` | `commercialMode` |
 | `server` | `discovery.advertise-management` | `server.discovery.advertise-management` | `discoveryAdvertiseManagement` |
@@ -495,7 +495,7 @@ edits `requests.payload`).
 
 These move under the root `api-keys` mapping **and change shape**: each family is a list
 of groups (`name`, `base-url`, shared settings, `keys`), and CPA's runtime view, the v0
-per-family list, is those groups flattened one entry per key. OMC edits the flattened
+per-family list, is those groups flattened one entry per key. Shell-PAMC edits the flattened
 list and writes the family back as groups, keeping the operator's grouping (ADR 0038,
 §4). The masked configuration view hides every `api-key` value in them.
 
@@ -537,9 +537,9 @@ refuses a write to it (`config_rejected`); an untouched setting is never written
 | `oauth.providers.codex.signin-with-chatgpt-identifier` | v8.0.25 | `codexSigninWithChatgptIdentifier` |
 | `api-keys.claude[].keys[].native-tool-search` | v8.0.24 | The provider editor's per-key "Native tool search" switch |
 
-## 4. OMC's configuration write path
+## 4. Shell-PAMC's configuration write path
 
-ADR 0037. Measured end to end on 2026-09-29: OMC built from this change, CPA v8.0.2,
+ADR 0037. Measured end to end on 2026-09-29: Shell-PAMC built from this change, CPA v8.0.2,
 and a legacy file with a top comment, client keys, one `codex-api-key` entry, payload
 rules and an unknown `omc-operator-notes` section.
 
@@ -610,7 +610,7 @@ v8 layout, and a v8 write to a legacy file converts it. Client keys are
 family at a time by the provider editor (`api-keys.<family>`). Payload rules are `requests.payload`, one category per
 change.
 
-There is no save guard of OMC's own. CPA refuses a legacy name, an unknown section or a
+There is no save guard of Shell-PAMC's own. CPA refuses a legacy name, an unknown section or a
 mistyped value without writing that request (§1). The console reports
 `config_rejected` with CPA's reason if no earlier request in the change set landed, or
 `config_partially_applied` if earlier requests were already written. Shadowed legacy
@@ -659,9 +659,9 @@ The RESP usage channel is not part of the Management API and is unchanged.
 
 "Measured" means exercised against the real binary; "unverified" means not exercised end
 to end. The v7.3.20 column is the record from ADR 0028's change and no longer describes a
-supported gateway: OMC now refuses v7 before any request.
+supported gateway: Shell-PAMC now refuses v7 before any request.
 
-| OMC surface | CPA v8.0.2, legacy file | CPA v8.0.2, v8 file |
+| Shell-PAMC surface | CPA v8.0.2, legacy file | CPA v8.0.2, v8 file |
 | --- | --- | --- |
 | Configuration page save (change set) | Measured: backup, then CPA converts the file | Measured, per-path writes |
 | Source editor save | Refused by CPA on a legacy name (measured) | Measured |
@@ -693,18 +693,18 @@ flows and the contents of usage records were not exercised against a real binary
   sections do not come back from CPA's conversion; the original is kept as a pre-v8 backup
   until ten later pre-v8 copies have pushed it out (everyday v8 writes do not count
   against that). Any other v8 configuration writer (CPAMC, a script) converts the file
-  the same way, without OMC's backup.
+  the same way, without Shell-PAMC's backup.
 - **A change set is not atomic.** The merge goes first and is where CPA refuses a
   mistyped value; a map value or removal that fails after it leaves the merge applied.
   The save's answer re-reads CPA, so the editor shows what CPA holds.
 - **A family is written whole.** CPA has no path for one key of a group, so a provider
-  write sends the family's groups back. The provider write gate serialises OMC's own
+  write sends the family's groups back. The provider write gate serialises Shell-PAMC's own
   writes. Against CPA v8.0.31 or later, every write also carries `If-Match` with CPA's
-  entity tag for the file OMC read and backed up just before (the SHA-256 of its exact
+  entity tag for the file Shell-PAMC read and backed up just before (the SHA-256 of its exact
   bytes), and each later request of a change set names the tag CPA reported for its
   previous save. When a save's answer carries no tag (CPA could not read the file
   back), the requests after it in that change set are unconditional. A writer outside
-  OMC that saves in between makes CPA answer `412`,
+  Shell-PAMC that saves in between makes CPA answer `412`,
   which the console reports as `config_conflict` (nothing written) or
   `config_partially_applied` (an earlier request of the set had landed). Older
   gateways ignore the header, so there a concurrent writer editing the same family

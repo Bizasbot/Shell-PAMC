@@ -919,7 +919,7 @@ unavailable figures keep a visible fallback note rather than silently disappeari
 
 The OAuth toolbar offers a Warmup settings Drawer with Codex/Claude tabs, explicit model
 selection, reset mode and one daily time. Provider defaults are off; daily time is 06:00
-in the OMC timezone. Unsaved drafts guard close, native Back and provider switching.
+in the Shell-PAMC timezone. Unsaved drafts guard close, native Back and provider switching.
 The credential Quota tab shows full-policy inheritance/override, next check, last result
 and pause reason, with an optional confirmed Warm up now action. Selected-model activation
 observations and paid-fallback evidence are always visible as two quiet facts. An absent

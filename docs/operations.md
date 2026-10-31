@@ -13,7 +13,7 @@ certificate roots. The packaged environment template binds loopback and stores
 SQLite in `./data`; run under a dedicated user/service account, preserve its working
 directory and restrict environment/data access with Unix permissions or Windows ACLs.
 Container uid/gid `10001:10001` is not a requirement for native installs. Leave
-`SHELLPAMC_VERSION` unset to retain the injected release tag. Stop OMC before replacing
+`SHELLPAMC_VERSION` unset to retain the injected release tag. Stop Shell-PAMC before replacing
 the executable, keep the master key and data directory, and back up both before an
 upgrade. Only a matching data backup can undo forward migrations. The download,
 checksum and host configuration steps are in `docs/install.md`.
@@ -94,7 +94,7 @@ endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
   payloads. Back it up securely.
 - **Framed content**: The console's document declares `frame-src 'self' blob:`. It frames plugin pages from its own origin and the Agent's sandboxed canvases (ADR 0072); a reverse proxy must not replace that policy with one that allows other frame sources.
 - **Network security**: Keep CPA on a private network or loopback interface. The supplied
-  Compose files publish CPA and OMC only on loopback; use direct local access or an SSH
+  Compose files publish CPA and Shell-PAMC only on loopback; use direct local access or an SSH
   tunnel. Public access requires HTTPS through operator-owned infrastructure.
 - **Reverse proxy headers**: Set `SHELLPAMC_TRUSTED_PROXY_CIDRS` to the CIDRs of reverse
   proxies whose forwarding headers may be trusted. Both Compose files default to an
@@ -110,33 +110,33 @@ endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
   both mean `0`; the example's `3` and `30` apply only when explicitly configured.
   Header passthrough forwards filtered upstream response headers to clients.
   See `docs/cpa-v8-compat.md` for the other option semantics and upstream sources.
-- **Base path**: Direct OMC serving supports `/shell-pamc` or `/`. The console is served at
-  the prefix with a trailing slash (`/shell-pamc/`); OMC answers the bare prefix (`/shell-pamc`) with
+- **Base path**: Direct Shell-PAMC serving supports `/shell-pamc` or `/`. The console is served at
+  the prefix with a trailing slash (`/shell-pamc/`); Shell-PAMC answers the bare prefix (`/shell-pamc`) with
   a 308 redirect to it. An operator-owned proxy must preserve the prefix and route the
   bare prefix as well as everything beneath it (`deploy/nginx.conf` shows both rules;
   `docs/install.md` has the Caddy equivalent); CPA keeps its separate port regardless
-  of OMC's base path.
+  of Shell-PAMC's base path.
 - **Container image**: Compose pulls `ghcr.io/bizasbot/shell-pamc:latest` from GitHub Container Registry by
   default; the full-stack CPA image also defaults to `:latest`. Pin `SHELLPAMC_IMAGE` to the desired version or digest; updates recreate only
-  OMC with its existing data and master key. The image runs as uid/gid `10001:10001`,
+  Shell-PAMC with its existing data and master key. The image runs as uid/gid `10001:10001`,
   includes its own health probe and needs no mounted deployment scripts. A health
   result of `degraded` keeps the container healthy but does not establish CPA access.
-- **Existing CPA and panels**: OMC-only Compose can attach to an existing external
+- **Existing CPA and panels**: Shell-PAMC-only Compose can attach to an existing external
   Docker network. It does not replace the gateway or other panels; collection ownership
   must be resolved separately. See `docs/install.md` and `docs/install-for-agents.md`.
 
 ## Time zone
 
 Set `TZ=Asia/Kuala_Lumpur` (or another IANA timezone) in the deployment environment to
-choose the server calendar. The supplied Compose files pass `TZ` to both OMC and CPA and
+choose the server calendar. The supplied Compose files pass `TZ` to both Shell-PAMC and CPA and
 default to `UTC`. For a standalone container, pass `-e TZ=Asia/Kuala_Lumpur`. Native
 deployments otherwise use the operating system timezone.
 
 In **Shell-PAMC Settings → Time zone**, the server zone is selected automatically and marked
 **Server time zone**. Every option includes its current UTC offset. A manual choice is
 persisted for the deployment; selecting the server zone restores the deployment default.
-Timestamp displays, calendar selections, daily totals and OMC service logs use this
-setting without rewriting stored instants. Keep CPA and OMC deployment timezones equal:
+Timestamp displays, calendar selections, daily totals and Shell-PAMC service logs use this
+setting without rewriting stored instants. Keep CPA and Shell-PAMC deployment timezones equal:
 CPA log lines without an offset are interpreted in that shared timezone. Raw log
 downloads and explicit UTC pricing-tier rules retain their source semantics.
 
@@ -246,7 +246,7 @@ for as long as their turn is part of the conversation, are sent to the model wit
 round while they are among the conversation's newest eight, and are read back by the
 console from `GET /api/v1/agent/images/{id}` under the console session only.
 
-Agent runs and sessions are open-ended: OMC applies no token, round, tool-call, display-count,
+Agent runs and sessions are open-ended: Shell-PAMC applies no token, round, tool-call, display-count,
 run-duration or session-size ceiling. Provider context/output limits and capability payload and
 security checks still apply, as do the gateway's 120-second response-header and stream-idle
 timeouts and 1 MiB SSE-line limit. Completed turns send conclusions with bounded metadata to later
@@ -293,7 +293,7 @@ model still receives the rows and may use them in its answer or an explicit
 Weak connections and page refreshes reattach to the original server task rather than
 resend a model call or workflow. Stop explicitly cancels that task; closing the page
 does not. The latest completed replay journal is retained for 15 minutes, until another
-run replaces it or OMC restarts. Agent keeps its authoritative transcript. Agent replay journals grow with output and
+run replaces it or Shell-PAMC restarts. Agent keeps its authoritative transcript. Agent replay journals grow with output and
 have no byte ceiling or execution deadline. An active Agent run therefore consumes memory until it finishes
 or is stopped, and its completed journal remains subject to the retention window above.
 
@@ -351,11 +351,11 @@ routes and the fixed model directory, including configuration containing client 
 secrets. Install only plugins you trust: the page is same-origin with the console and acts
 with the signed-in operator's authority, while the plugin already runs inside CPA.
 
-The host adapts same-origin native API and resource fetches to carry the OMC session,
+The host adapts same-origin native API and resource fetches to carry the Shell-PAMC session,
 including pages that set `credentials: 'omit'`. This does not grant access without a
 console session or change credentials on external requests. Plugin scripts that identify
 their provider through direct `location.pathname` access receive the CPA-native resource
-path, while the frame itself remains under the configured OMC base path.
+path, while the frame itself remains under the configured Shell-PAMC base path.
 
 A plugin page may ask for a management key of its own. The host compares a page's explicit
 Authorization or X-Management-Key with the stored CPA management key and answers a wrong one
@@ -365,7 +365,7 @@ and every hosted page share one address). Only the key stored for the instance i
 there. CPA has a single configured key, not a list, but may also honour `MANAGEMENT_PASSWORD`
 and a loopback-only `--password`; when those differ from the stored key, enter the stored one. When both
 headers are absent, management calls use the stored key; resources carry no key, and
-`GET /v1/models` uses only the page's client Authorization. OMC does not publish or store its management key in browser storage;
+`GET /v1/models` uses only the page's client Authorization. Shell-PAMC does not publish or store its management key in browser storage;
 a third-party page may independently ask for and store a key the operator supplies.
 
 API reads and writes are audited as `plugin.route_call` and responses are uncached.
@@ -443,7 +443,7 @@ served again. CPA's per-credential model list is authoritative for availability.
 Disable a credential explicitly when it must stop serving.
 
 This precedence requires **CPA v8.0.33 or later**; upgrade an older gateway before
-relying on credential overrides. OMC's general v8.0.0 Management API baseline is
+relying on credential overrides. Shell-PAMC's general v8.0.0 Management API baseline is
 unchanged. The behavior follows CPA's [credential override change](https://github.com/router-for-me/CLIProxyAPI/commit/69d0ff8e295aea349966b16f20e2966421bfeb18).
 The upstream regression
 [`TestCodexExcludedModelsCredentialPriorityAfterPatchAndReload`](https://github.com/router-for-me/CLIProxyAPI/blob/2422c6b0f5fe16495320fa29456493874c1977a0/sdk/cliproxy/service_excluded_models_priority_test.go)
@@ -481,11 +481,11 @@ being filed under a period it does not describe (ADR 0071).
 
 ## Antigravity Gemini quota observations
 
-After a successful Antigravity quota summary read, OMC supplements missing Gemini
+After a successful Antigravity quota summary read, Shell-PAMC supplements missing Gemini
 scope with a read-only POST to the single allowlisted daily-host endpoint
 `https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels`.
 The request carries the credential's project ID and CPA's server-injected bearer
-marker; OMC does not download the OAuth token. A summary with a recognized Gemini
+marker; Shell-PAMC does not download the OAuth token. A summary with a recognized Gemini
 group already supplies that scope, so no additional model query is made.
 
 Gemini entries with `quotaInfo` become model-scoped observations under their raw
@@ -524,10 +524,10 @@ CPA cooldown cleared` with the `auth_index`, and appears in the audit log as
 ## Meta quota and live subscription tiers
 
 A Meta Muse quota refresh requires a stored credential with a valid `dca_token`.
-OMC downloads that credential server-side and sends a fixed POST to
+Shell-PAMC downloads that credential server-side and sends a fixed POST to
 `https://api.meta.ai/muse-code/key`; runtime-only files and missing DCA tokens are
 not replaced with an LLM API key. This endpoint can mint a key while reporting
-quota. OMC discards returned keys and account fields, does not update the stored
+quota. Shell-PAMC discards returned keys and account fields, does not update the stored
 credential, and records an attempt audit before downloading or calling it.
 Audit unavailability refuses the operation. Batch refresh trims and deduplicates
 auth indexes before auditing or exchanging keys, preserving first-seen order
@@ -586,7 +586,7 @@ refused. The server-side demo security classification is unchanged; ADR 0092 doc
 
 Configure provider defaults from OAuth management's Warmup settings, or a complete
 credential override from its Window warmup tab. Reset mode is Off, Weekly, or Weekly and five-hour.
-Daily warmup defaults off with 06:00 as its editable time in the effective OMC timezone.
+Daily warmup defaults off with 06:00 as its editable time in the effective Shell-PAMC timezone.
 Choose an available model; Claude's available Haiku models are listed first. Changing a
 model never silently selects a replacement. Saving an enabled policy authorizes automatic
 attempts once current billing and window checks permit them; a first manual activation
@@ -596,7 +596,7 @@ including credentials with no prior activation observation; defaults remain off.
 
 Paid fallback must be affirmatively disabled by a fresh usage read. Claude uses
 `extra_usage.is_enabled`; Codex uses the credits standing (published `has_credits`,
-`unlimited` and balance). Missing evidence remains unknown. OMC does not change upstream
+`unlimited` and balance). Missing evidence remains unknown. Shell-PAMC does not change upstream
 billing settings or redeem a reset credit to make warmup eligible. A zero reading with
 an active fixed boundary is not an idle window. Model-scoped Sonnet, Opus and Fable
 limits can pause the selected family without blocking unrelated Haiku. Fable evidence
@@ -608,7 +608,7 @@ than falling back to an apparently available legacy limit.
 The background loop checks once per minute, with bounded four-way rounds of 16, and
 reuses stored quota observations targeted for refresh every five minutes. Daily starts
 missed by more than one hour are not replayed. If starting now would overlap the next
-daily time, reset-driven requests wait, including weekly triggers. Changing the OMC
+daily time, reset-driven requests wait, including weekly triggers. Changing the Shell-PAMC
 zone changes future calendar decisions, not stored instants.
 
 The credential section always shows selected-model activation observations and paid-fallback
