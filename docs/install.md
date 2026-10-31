@@ -1,30 +1,30 @@
-# Installation
+# Instalación
 
-Shell-PAMC runs beside CLIProxyAPI
-(CPA) **v8.0.0 or later**. The console's sign-in password is CPA's management key. The
-image is **`ghcr.io/bizasbot/shell-pamc`** on GitHub Container Registry, for `linux/amd64` and `linux/arm64`.
+Shell-PAMC se ejecuta junto a CLIProxyAPI
+(CPA) **v8.0.0 o posterior**. La contraseña de inicio de sesión de la consola es la clave de administración de CPA. La
+imagen es **`ghcr.io/bizasbot/shell-pamc`** en GitHub Container Registry, para `linux/amd64` y `linux/arm64`.
 
-| Scenario | Method |
+| Escenario | Método |
 | --- | --- |
-| Run without Docker on macOS, Windows, Linux or FreeBSD on amd64/arm64, with a matching release asset | [Native executable](#native-executable) |
-| CPA is not deployed yet | [New install](#new-install) |
-| CPA is deployed with Docker Compose | [Add to the existing Compose file](#add-to-the-existing-compose-file) |
-| CPA is deployed another way | [Standalone](#standalone) |
-| Explicit source build, or no published native asset matches the host OS/architecture | [Build from source](#from-source) |
+| Ejecutar sin Docker en macOS, Windows, Linux o FreeBSD sobre amd64/arm64, con un recurso de versión que coincida | [Ejecutable nativo](#ejecutable-nativo) |
+| CPA todavía no está desplegado | [Instalación nueva](#instalación-nueva) |
+| CPA está desplegado con Docker Compose | [Añadir al archivo Compose existente](#añadir-al-archivo-compose-existente) |
+| CPA está desplegado de otra forma | [Independiente](#independiente) |
+| Compilación explícita desde el código fuente, o ningún recurso nativo publicado coincide con el sistema operativo o la arquitectura del equipo | [Compilar desde el código fuente](#desde-el-código-fuente) |
 
-A coding agent can run the same steps from
+Un agente de programación puede ejecutar los mismos pasos desde
 [`docs/install-for-agents.md`](install-for-agents.md).
 
-The Docker methods need Docker Engine with the Compose plugin. The commands assume a
-Linux or macOS shell with `curl` and `openssl`. The Compose files in the three methods
-are the minimum that runs; [release Compose files](#release-compose-files) describes
-the hardened files each release publishes.
+Los métodos con Docker requieren Docker Engine con el complemento Compose. Los comandos suponen una
+shell de Linux o macOS con `curl` y `openssl`. Los archivos Compose de los tres métodos
+son el mínimo que funciona; los [archivos Compose de las versiones](#archivos-compose-de-las-versiones) describen
+los archivos reforzados que publica cada versión.
 
-## New install
+## Instalación nueva
 
-Deploys CPA and Shell-PAMC together.
+Despliega CPA y Shell-PAMC juntos.
 
-1. Create a directory and save the following as `compose.yml`:
+1. Crea un directorio y guarda lo siguiente como `compose.yml`:
 
    ```yaml
    services:
@@ -70,18 +70,18 @@ Deploys CPA and Shell-PAMC together.
      shell-pamc-data:
    ```
 
-2. In the same directory, download the starter configuration for CPA:
+2. En el mismo directorio, descarga la configuración inicial de CPA:
 
    ```bash
    curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o config.yaml
    ```
 
-   The file must exist before the first start: Docker creates a directory in place of a
-   missing bind-mounted file. It enables remote management and usage statistics, which
-   Shell-PAMC needs, and holds no client keys.
+   El archivo debe existir antes del primer inicio: Docker crea un directorio en lugar de un
+   archivo montado que falta. Activa la administración remota y las estadísticas de uso, que
+   Shell-PAMC necesita, y no contiene claves de cliente.
 
-3. Generate the two keys. `CPA_MANAGEMENT_KEY` is CPA's management key and the console's
-   sign-in password; `SHELLPAMC_MASTER_KEY` encrypts Shell-PAMC's database.
+3. Genera las dos claves. `CPA_MANAGEMENT_KEY` es la clave de administración de CPA y la
+   contraseña de inicio de sesión de la consola; `SHELLPAMC_MASTER_KEY` cifra la base de datos de Shell-PAMC.
 
    ```bash
    cat > .env <<EOF
@@ -91,36 +91,36 @@ Deploys CPA and Shell-PAMC together.
    chmod 600 .env
    ```
 
-4. Start both services:
+4. Inicia ambos servicios:
 
    ```bash
    docker compose up -d
    ```
 
-5. Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the `CPA_MANAGEMENT_KEY` value
-   from `.env`.
+5. Abre **`http://127.0.0.1:8080/shell-pamc/`** e inicia sesión con el valor de `CPA_MANAGEMENT_KEY`
+   de `.env`.
 
-The new CPA has no providers and no client keys; add both in the console before sending
-requests. Clients send requests to CPA at `http://127.0.0.1:8317`.
+El CPA nuevo no tiene proveedores ni claves de cliente; añade ambos en la consola antes de enviar
+solicitudes. Los clientes envían las solicitudes a CPA en `http://127.0.0.1:8317`.
 
-What the directory holds afterwards:
+Lo que contiene el directorio después:
 
-- `config.yaml`, `auths/`, `logs/` and `plugins/` belong to CPA. Docker creates the
-  three directories on first start.
-- Shell-PAMC's database lives in the `shell-pamc-data` Docker volume, which the image already
-  owns as user `10001`.
-- `.env` holds both keys.
-- `shell-pamc-updater` applies the updates the console offers; see
-  [Upgrading](#upgrading). It mounts the Docker socket. Leave the service out to update
-  by hand instead; on a deployment already running, also remove its container with
-  `docker rm -f shell-pamc-updater`, since Compose leaves it running.
+- `config.yaml`, `auths/`, `logs/` y `plugins/` pertenecen a CPA. Docker crea los
+  tres directorios en el primer inicio.
+- La base de datos de Shell-PAMC vive en el volumen de Docker `shell-pamc-data`, que la imagen ya
+  asigna al usuario `10001`.
+- `.env` contiene ambas claves.
+- `shell-pamc-updater` aplica las actualizaciones que ofrece la consola; consulta
+  [Actualización](#actualización). Monta el socket de Docker. Omite el servicio para actualizar
+  manualmente; en un despliegue que ya está en ejecución, elimina además su contenedor con
+  `docker rm -f shell-pamc-updater`, porque Compose lo deja en ejecución.
 
-## Add to the existing Compose file
+## Añadir al archivo Compose existente
 
-Runs Shell-PAMC as one more service in the Compose file that already runs CPA.
+Ejecuta Shell-PAMC como un servicio más en el archivo Compose que ya ejecuta CPA.
 
-1. Add the services under `services:`. If the file already has a top-level `volumes:`
-   key, add `shell-pamc-data:` under it instead of repeating the key.
+1. Añade los servicios bajo `services:`. Si el archivo ya tiene una clave `volumes:`
+   de nivel superior, añade `shell-pamc-data:` debajo de ella en lugar de repetir la clave.
 
    ```yaml
      shell-pamc:
@@ -150,53 +150,53 @@ Runs Shell-PAMC as one more service in the Compose file that already runs CPA.
      shell-pamc-data:
    ```
 
-   `cli-proxy-api` is the service name in CPA's own Compose file. If the service has
-   another name, use it in `SHELLPAMC_CPA_BASE_URL`. Two services in one file share a
-   network, so the name is all Shell-PAMC needs.
+   `cli-proxy-api` es el nombre del servicio en el propio archivo Compose de CPA. Si el servicio tiene
+   otro nombre, úsalo en `SHELLPAMC_CPA_BASE_URL`. Dos servicios en un mismo archivo comparten una
+   red, así que el nombre es todo lo que Shell-PAMC necesita.
 
-2. In the directory that holds the Compose file, generate the master key. `>>` appends
-   to `.env` and creates it if it is missing, so existing lines stay.
+2. En el directorio que contiene el archivo Compose, genera la clave maestra. `>>` añade
+   al final de `.env` y lo crea si no existe, de modo que las líneas existentes se conservan.
 
    ```bash
    echo "SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)" >> .env
    chmod 600 .env
    ```
 
-3. Add CPA's management key to `.env`. It is the plaintext key typed to sign in, not the
-   bcrypt hash CPA stores in `config.yaml`.
+3. Añade la clave de administración de CPA a `.env`. Es la clave en texto plano que se escribe para iniciar sesión, no el
+   hash bcrypt que CPA guarda en `config.yaml`.
 
    ```dotenv
    SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>
    ```
 
-4. Start Shell-PAMC and its updater:
+4. Inicia Shell-PAMC y su actualizador:
 
    ```bash
    docker compose up -d shell-pamc shell-pamc-updater
    ```
 
-5. Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
+5. Abre **`http://127.0.0.1:8080/shell-pamc/`** e inicia sesión con la clave de administración.
 
-Effect on the existing deployment:
+Efecto sobre el despliegue existente:
 
-- `docker compose up -d shell-pamc shell-pamc-updater` creates those two containers only.
-  The CPA container keeps running; it is not recreated or restarted, and its configuration, keys and
-  volumes are unchanged.
-- Shell-PAMC's database lives in the `shell-pamc-data` Docker volume.
-- Other settings go in the `environment:` block under the names in
-  `docs/operations.md`, for example `TZ` to match CPA's time zone.
+- `docker compose up -d shell-pamc shell-pamc-updater` crea únicamente esos dos contenedores.
+  El contenedor de CPA sigue en ejecución; no se recrea ni se reinicia, y su configuración, claves y
+  volúmenes no cambian.
+- La base de datos de Shell-PAMC vive en el volumen de Docker `shell-pamc-data`.
+- Los demás ajustes van en el bloque `environment:` con los nombres que figuran en
+  `docs/operations.md`, por ejemplo `TZ` para coincidir con la zona horaria de CPA.
 
-CPA sees Shell-PAMC as a remote client. If the console reports that it cannot connect, see the
-note on `management.allow-remote` under [reaching CPA](#reaching-cpa); that is the one
-case where CPA's configuration has to change.
+CPA ve a Shell-PAMC como un cliente remoto. Si la consola informa de que no puede conectarse, consulta la
+nota sobre `management.allow-remote` en [acceso a CPA](#acceso-a-cpa); es el único
+caso en que la configuración de CPA tiene que cambiar.
 
-## Standalone
+## Independiente
 
-Runs Shell-PAMC from its own Compose file next to a CPA that runs on the host, in another
-Docker project or on another machine. CPA, its configuration and its keys are not
-changed.
+Ejecuta Shell-PAMC desde su propio archivo Compose junto a un CPA que se ejecuta en el host, en otro
+proyecto de Docker o en otra máquina. CPA, su configuración y sus claves no
+cambian.
 
-1. Create a directory and save the following as `compose.yml`:
+1. Crea un directorio y guarda lo siguiente como `compose.yml`:
 
    ```yaml
    services:
@@ -229,44 +229,44 @@ changed.
      shell-pamc-data:
    ```
 
-   Set `SHELLPAMC_CPA_BASE_URL` according to [reaching CPA](#reaching-cpa). If CPA's clock is
-   not UTC, add `TZ: <CPA's time zone>` under `environment:` so both agree on where a
-   day starts.
+   Define `SHELLPAMC_CPA_BASE_URL` según [acceso a CPA](#acceso-a-cpa). Si el reloj de CPA
+   no está en UTC, añade `TZ: <CPA's time zone>` en `environment:` para que ambos coincidan en dónde
+   empieza un día.
 
-2. Generate the master key:
+2. Genera la clave maestra:
 
    ```bash
    echo "SHELLPAMC_MASTER_KEY=$(openssl rand -hex 32)" >> .env
    chmod 600 .env
    ```
 
-3. Add CPA's management key to `.env`. It is the plaintext key typed to sign in, not the
-   bcrypt hash CPA stores in `config.yaml`.
+3. Añade la clave de administración de CPA a `.env`. Es la clave en texto plano que se escribe para iniciar sesión, no el
+   hash bcrypt que CPA guarda en `config.yaml`.
 
    ```dotenv
    SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>
    ```
 
-4. Start Shell-PAMC:
+4. Inicia Shell-PAMC:
 
    ```bash
    docker compose up -d
    ```
 
-5. Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
+5. Abre **`http://127.0.0.1:8080/shell-pamc/`** e inicia sesión con la clave de administración.
 
-### Reaching CPA
+### Acceso a CPA
 
-Shell-PAMC runs in a container, so `SHELLPAMC_CPA_BASE_URL` has to work from inside that container.
+Shell-PAMC se ejecuta en un contenedor, por lo que `SHELLPAMC_CPA_BASE_URL` tiene que funcionar desde dentro de ese contenedor.
 
-| CPA | Setting |
+| CPA | Ajuste |
 | --- | --- |
-| Runs on the same machine, listening on all interfaces | `http://host.docker.internal:8317` (the value above) |
-| Runs in another Docker project | `http://<CPA's container name>:8317`, with Shell-PAMC joined to CPA's network (below) |
-| Runs on another machine | Its private or HTTPS address |
-| Listens on `127.0.0.1` only | A container cannot reach it. Install the [native executable](#native-executable) on the host when a release asset matches its OS/architecture; otherwise [build from source](#from-source) |
+| Se ejecuta en la misma máquina, escuchando en todas las interfaces | `http://host.docker.internal:8317` (el valor anterior) |
+| Se ejecuta en otro proyecto de Docker | `http://<CPA's container name>:8317`, con Shell-PAMC unido a la red de CPA (véase abajo) |
+| Se ejecuta en otra máquina | Su dirección privada o HTTPS |
+| Escucha solo en `127.0.0.1` | Un contenedor no puede alcanzarlo. Instala el [ejecutable nativo](#ejecutable-nativo) en el host cuando un recurso de versión coincida con su sistema operativo y arquitectura; de lo contrario, [compila desde el código fuente](#desde-el-código-fuente) |
 
-To join CPA's Docker network, add this to the standalone `compose.yml`:
+Para unirte a la red de Docker de CPA, añade esto al `compose.yml` independiente:
 
 ```yaml
 networks:
@@ -275,40 +275,40 @@ networks:
     external: true
 ```
 
-CPA sees Shell-PAMC's container as a remote client. If Shell-PAMC starts but reports that it cannot
-connect, CPA is refusing remote management: set `management.allow-remote: true` in
-CPA's `config.yaml` (`remote-management.allow-remote` in older layouts). That setting
-lets any host that can reach the port try the management key, so keep the port off the
-public internet.
+CPA ve el contenedor de Shell-PAMC como un cliente remoto. Si Shell-PAMC arranca pero informa de que no puede
+conectarse, CPA está rechazando la administración remota: define `management.allow-remote: true` en el
+`config.yaml` de CPA (`remote-management.allow-remote` en disposiciones antiguas). Ese ajuste
+permite que cualquier host que alcance el puerto pruebe la clave de administración, así que mantén el puerto fuera de
+Internet público.
 
-## Other panels and usage trackers
+## Otros paneles y rastreadores de uso
 
-**Another management panel** can keep running. It and Shell-PAMC both edit the same CPA, so
-a change made in one shows up in the other. Shell-PAMC does not import the other panel's
-history or settings.
+**Otro panel de administración** puede seguir funcionando. Ese panel y Shell-PAMC editan el mismo CPA, de modo que
+un cambio hecho en uno aparece en el otro. Shell-PAMC no importa el historial ni los ajustes
+del otro panel.
 
-**Another usage tracker** conflicts. CPA hands each usage record to one reader and then
-deletes it, so two trackers would each get part of the traffic. The options:
+**Otro rastreador de uso** entra en conflicto. CPA entrega cada registro de uso a un solo lector y luego
+lo elimina, de modo que dos rastreadores recibirían cada uno parte del tráfico. Las opciones:
 
-- Stop the other tracker. Shell-PAMC records every request from then on.
-- Keep the other tracker and set `SHELLPAMC_USAGE_INGEST_MODE` to `off`: as
-  `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` in the Compose files above, or
-  as `SHELLPAMC_USAGE_INGEST_MODE=off` in `deploy/.env` with the release Compose files. Shell-PAMC
-  still manages CPA, but its dashboard and request records stay empty.
+- Detén el otro rastreador. Shell-PAMC registra todas las solicitudes a partir de ese momento.
+- Conserva el otro rastreador y establece `SHELLPAMC_USAGE_INGEST_MODE` en `off`: como
+  `SHELLPAMC_USAGE_INGEST_MODE: "off"` en `environment:` en los archivos Compose anteriores, o
+  como `SHELLPAMC_USAGE_INGEST_MODE=off` en `deploy/.env` con los archivos Compose de las versiones. Shell-PAMC
+  sigue administrando CPA, pero su panel y sus registros de solicitudes quedan vacíos.
 
-## Release Compose files
+## Archivos Compose de las versiones
 
-Each release publishes two Compose files, kept in `deploy/`. Compared with the files
-above they run the console with a read-only root filesystem, no added capabilities and
-no privilege escalation, start Shell-PAMC only after CPA is healthy, keep Shell-PAMC's data in a host
-directory, and read every setting from `.env`.
+Cada versión publica dos archivos Compose, guardados en `deploy/`. En comparación con los archivos
+anteriores, ejecutan la consola con un sistema de archivos raíz de solo lectura, sin capacidades añadidas y
+sin escalada de privilegios, inician Shell-PAMC solo después de que CPA esté en buen estado, guardan los datos de Shell-PAMC en un
+directorio del host y leen cada ajuste desde `.env`.
 
-| File | Equivalent method |
+| Archivo | Método equivalente |
 | --- | --- |
-| `compose.full.yml` | [New install](#new-install) |
-| `compose.omc.yml` | [Standalone](#standalone) |
+| `compose.full.yml` | [Instalación nueva](#instalación-nueva) |
+| `compose.omc.yml` | [Independiente](#independiente) |
 
-CPA and Shell-PAMC together:
+CPA y Shell-PAMC juntos:
 
 ```bash
 mkdir -p shell-pamc/{deploy,shell-pamc-data,cpa/auths,cpa/logs,cpa/plugins} && cd shell-pamc
@@ -325,7 +325,7 @@ chmod 600 deploy/.env
 docker compose -f deploy/compose.full.yml up -d
 ```
 
-Shell-PAMC beside an existing CPA:
+Shell-PAMC junto a un CPA existente:
 
 ```bash
 mkdir -p shell-pamc/{deploy,shell-pamc-data} && cd shell-pamc
@@ -339,84 +339,84 @@ EOF
 chmod 600 deploy/.env
 ```
 
-Add `SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>` to `deploy/.env`, in plaintext, and
-change the URL where [reaching CPA](#reaching-cpa) says so. To join CPA's Docker
-network, set `SHELLPAMC_NETWORK_NAME=<CPA's network>` and `SHELLPAMC_NETWORK_EXTERNAL=true`
-instead of editing the file. Then:
+Añade `SHELLPAMC_CPA_MANAGEMENT_KEY=<management key>` a `deploy/.env`, en texto plano, y
+cambia la URL donde [acceso a CPA](#acceso-a-cpa) lo indique. Para unirte a la red de Docker
+de CPA, define `SHELLPAMC_NETWORK_NAME=<CPA's network>` y `SHELLPAMC_NETWORK_EXTERNAL=true`
+en lugar de editar el archivo. Después:
 
 ```bash
 docker compose -f deploy/compose.omc.yml up -d
 ```
 
-The `chown` is there because the Shell-PAMC container runs as user `10001` and writes its
-database to the `shell-pamc-data` directory.
+El `chown` es necesario porque el contenedor de Shell-PAMC se ejecuta como el usuario `10001` y escribe su
+base de datos en el directorio `shell-pamc-data`.
 
-### Settings
+### Ajustes
 
-These are the variables the two release Compose files accept. Compose reads
-`deploy/.env`, which sits next to the Compose file. Relative paths are resolved from the
-`deploy` directory.
+Estas son las variables que aceptan los dos archivos Compose de las versiones. Compose lee
+`deploy/.env`, que está junto al archivo Compose. Las rutas relativas se resuelven desde el
+directorio `deploy`.
 
-| Variable | Default | Purpose |
+| Variable | Valor predeterminado | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_MASTER_KEY` | required | Encrypts the database. Back it up; never change it once data exists |
-| `CPA_MANAGEMENT_KEY` | required, full stack | The new CPA's management key and Shell-PAMC's sign-in password |
-| `SHELLPAMC_CPA_BASE_URL` | required, Shell-PAMC only | The existing CPA's address |
-| `SHELLPAMC_CPA_MANAGEMENT_KEY` | required, Shell-PAMC only | The existing CPA's plaintext management key |
-| `SHELLPAMC_IMAGE` | `ghcr.io/bizasbot/shell-pamc:latest` | Set a release tag or digest to pin a version |
-| `CPA_IMAGE` | `eceasy/cli-proxy-api:latest` | Full stack only |
-| `SHELLPAMC_BIND` | `127.0.0.1:8080` | Host address of the console; change it if the port is taken |
-| `CPA_BIND` | `127.0.0.1:8317` | Host address of CPA, full stack only |
-| `SHELLPAMC_PUBLIC_URL` | `http://127.0.0.1:8080` | The address browsers use. `https://` only when they really use TLS |
-| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | URL prefix; `/` serves the console at the root |
-| `TZ` | `UTC` | Calendar for daily totals; match CPA's |
-| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` when another tool collects this CPA's usage |
-| `SHELLPAMC_CPA_USAGE_ADDR` | derived from the CPA URL | Override for CPA's usage queue address, Shell-PAMC only |
-| `SHELLPAMC_TRUSTED_PROXY_CIDRS` | empty | Addresses of the reverse proxy |
-| `SHELLPAMC_DATA_PATH` | `../shell-pamc-data` | Shell-PAMC's data directory |
-| `CPA_CONFIG_PATH`, `CPA_AUTH_PATH`, `CPA_LOG_PATH`, `CPA_PLUGIN_PATH` | under `../cpa/` | CPA's files, full stack only |
-| `SHELLPAMC_NETWORK_NAME` | `shell-pamc` / `shell-pamc-standalone` | Docker network name (full stack / Shell-PAMC only) |
-| `SHELLPAMC_NETWORK_EXTERNAL` | `false` | Shell-PAMC only: `true` joins a network that already exists |
-| `SHELLPAMC_UPDATE_CHECK_ENABLED`, `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | Set both to `false` on a machine with no internet |
-| `SHELLPAMC_UPDATER_CONTAINER_NAME` | `shell-pamc-updater` | Container name of the updater |
-| `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | The Docker socket the updater mounts; differs with rootless Docker |
+| `SHELLPAMC_MASTER_KEY` | obligatoria | Cifra la base de datos. Haz una copia de seguridad; no la cambies nunca una vez que existan datos |
+| `CPA_MANAGEMENT_KEY` | obligatoria, pila completa | La clave de administración del CPA nuevo y la contraseña de inicio de sesión de Shell-PAMC |
+| `SHELLPAMC_CPA_BASE_URL` | obligatoria, solo Shell-PAMC | La dirección del CPA existente |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | obligatoria, solo Shell-PAMC | La clave de administración en texto plano del CPA existente |
+| `SHELLPAMC_IMAGE` | `ghcr.io/bizasbot/shell-pamc:latest` | Define una etiqueta de versión o un digest para fijar una versión |
+| `CPA_IMAGE` | `eceasy/cli-proxy-api:latest` | Solo pila completa |
+| `SHELLPAMC_BIND` | `127.0.0.1:8080` | Dirección del host de la consola; cámbiala si el puerto está ocupado |
+| `CPA_BIND` | `127.0.0.1:8317` | Dirección del host de CPA, solo pila completa |
+| `SHELLPAMC_PUBLIC_URL` | `http://127.0.0.1:8080` | La dirección que usan los navegadores. `https://` solo cuando realmente usan TLS |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Prefijo de URL; `/` sirve la consola en la raíz |
+| `TZ` | `UTC` | Calendario de los totales diarios; que coincida con el de CPA |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `off` cuando otra herramienta recopila el uso de este CPA |
+| `SHELLPAMC_CPA_USAGE_ADDR` | derivada de la URL de CPA | Sustituye la dirección de la cola de uso de CPA, solo Shell-PAMC |
+| `SHELLPAMC_TRUSTED_PROXY_CIDRS` | vacía | Direcciones del proxy inverso |
+| `SHELLPAMC_DATA_PATH` | `../shell-pamc-data` | Directorio de datos de Shell-PAMC |
+| `CPA_CONFIG_PATH`, `CPA_AUTH_PATH`, `CPA_LOG_PATH`, `CPA_PLUGIN_PATH` | bajo `../cpa/` | Archivos de CPA, solo pila completa |
+| `SHELLPAMC_NETWORK_NAME` | `shell-pamc` / `shell-pamc-standalone` | Nombre de la red de Docker (pila completa / solo Shell-PAMC) |
+| `SHELLPAMC_NETWORK_EXTERNAL` | `false` | Solo Shell-PAMC: `true` une a una red que ya existe |
+| `SHELLPAMC_UPDATE_CHECK_ENABLED`, `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | Define ambas en `false` en una máquina sin Internet |
+| `SHELLPAMC_UPDATER_CONTAINER_NAME` | `shell-pamc-updater` | Nombre del contenedor del actualizador |
+| `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | El socket de Docker que monta el actualizador; difiere con Docker sin privilegios de root |
 
-Everything else Shell-PAMC reads is in `docs/operations.md`.
+Todo lo demás que lee Shell-PAMC está en `docs/operations.md`.
 
-## Reaching the console from elsewhere
+## Acceso a la consola desde otro lugar
 
-Every Compose file here publishes on `127.0.0.1` only. From another machine, tunnel over
-SSH and open `http://127.0.0.1:18080/shell-pamc/`:
+Todos los archivos Compose de aquí publican solo en `127.0.0.1`. Desde otra máquina, crea un túnel por
+SSH y abre `http://127.0.0.1:18080/shell-pamc/`:
 
 ```bash
 ssh -L 18080:127.0.0.1:8080 user@server
 ```
 
-To serve Shell-PAMC over HTTPS, point the existing reverse proxy at `127.0.0.1:8080`, keep the
-`/shell-pamc` prefix, and set `SHELLPAMC_PUBLIC_URL` to the address browsers use. Set
-`SHELLPAMC_TRUSTED_PROXY_CIDRS` to the proxy's address so Shell-PAMC reads the client IP it
-forwards. Do not publish port 8080 on a public interface without TLS: the sign-in
-password is CPA's administrator key.
+Para servir Shell-PAMC por HTTPS, apunta el proxy inverso existente a `127.0.0.1:8080`, conserva el
+prefijo `/shell-pamc` y define `SHELLPAMC_PUBLIC_URL` con la dirección que usan los navegadores. Define
+`SHELLPAMC_TRUSTED_PROXY_CIDRS` con la dirección del proxy para que Shell-PAMC lea la IP del cliente que este
+reenvía. No publiques el puerto 8080 en una interfaz pública sin TLS: la contraseña de
+inicio de sesión es la clave de administrador de CPA.
 
-### `/shell-pamc` and `/shell-pamc/`
+### `/shell-pamc` y `/shell-pamc/`
 
-The console lives at `/shell-pamc/`. Shell-PAMC answers the bare `/shell-pamc` with a permanent redirect
-(308) to `/shell-pamc/`, so either address opens it when browsers reach Shell-PAMC directly.
+La consola vive en `/shell-pamc/`. Shell-PAMC responde a `/shell-pamc` sin barra final con una redirección permanente
+(308) a `/shell-pamc/`, de modo que cualquiera de las dos direcciones la abre cuando los navegadores llegan directamente a Shell-PAMC.
 
-Behind a reverse proxy the bare path only works if the proxy handles it. A rule that
-matches `/shell-pamc/` alone never passes `/shell-pamc` to Shell-PAMC, and the visitor gets whatever the
-proxy serves for unmatched paths instead of the console. Cover both: redirect the bare
-path at the proxy, or forward it and let Shell-PAMC redirect.
+Detrás de un proxy inverso, la ruta sin barra final solo funciona si el proxy la gestiona. Una regla que
+coincide solo con `/shell-pamc/` nunca pasa `/shell-pamc` a Shell-PAMC, y el visitante recibe lo que el
+proxy sirve para las rutas sin coincidencia en lugar de la consola. Cubre ambas: redirige la ruta
+sin barra final en el proxy, o reenvíala y deja que Shell-PAMC redirija.
 
-nginx (`deploy/nginx.conf` is a complete example that also routes the rest of the host
-to CPA):
+nginx (`deploy/nginx.conf` es un ejemplo completo que también enruta el resto del host
+a CPA):
 
 ```nginx
 location = /shell-pamc {
     return 308 /shell-pamc/;
 }
 
-# No trailing slash on proxy_pass: the /shell-pamc prefix must reach Shell-PAMC unchanged.
+# Sin barra final en proxy_pass: el prefijo /shell-pamc debe llegar a Shell-PAMC sin cambios.
 location ^~ /shell-pamc/ {
     proxy_pass http://127.0.0.1:8080;
     proxy_set_header Host $host;
@@ -432,68 +432,68 @@ Caddy:
 reverse_proxy @omc 127.0.0.1:8080
 ```
 
-Check both addresses through the proxy:
+Comprueba ambas direcciones a través del proxy:
 
 ```bash
 curl -sI https://example.com/shell-pamc | head -n 1                           # 308
 curl -fsS https://example.com/shell-pamc/api/healthz
 ```
 
-With a different `SHELLPAMC_BASE_PATH`, the same holds for that prefix. With `/` there is
-no bare path to handle.
+Con un `SHELLPAMC_BASE_PATH` distinto, lo mismo vale para ese prefijo. Con `/` no hay
+ninguna ruta sin barra final que gestionar.
 
-## Install as an app
+## Instalar como aplicación
 
-The console is an installable web app: Chrome and Edge on desktop and Chrome on Android
-install it from the served page, Samsung Internet does the same on Samsung devices, and
-iOS and iPadOS add it to the Home Screen. It then opens in its own window with the brand
-mark as its icon, instead of in a browser tab.
+La consola es una aplicación web instalable: Chrome y Edge en el escritorio y Chrome en Android
+la instalan desde la página servida, Samsung Internet hace lo mismo en dispositivos Samsung, e
+iOS e iPadOS la añaden a la pantalla de inicio. Después se abre en su propia ventana con la marca
+como icono, en lugar de en una pestaña del navegador.
 
-Installation is a browser feature, not a console setting, so there is no install button
-to look for on a page:
+La instalación es una función del navegador, no un ajuste de la consola, así que no hay ningún botón de instalación
+que buscar en una página:
 
-| Where | How |
+| Dónde | Cómo |
 | --- | --- |
-| Chrome or Edge on a computer | The install icon in the address bar, or the browser menu → **Install page as app** / **Apps → Install this site as an app** |
-| Chrome on Android with Google Mobile Services | Menu → **Install app** (or **Add to Home screen**) |
-| Samsung Internet on a Samsung device | **Add to Home screen** |
-| Safari on iOS or iPadOS | Share → **Add to Home Screen**. There is no in-page install prompt, and the console cannot open the Share sheet for you. On iOS and iPadOS 16.4 or later, the Share menu of Chrome, Edge, Firefox and Orion installs it too |
-| Safari on macOS | **File → Add to Dock** (Safari 17 on macOS 14 or later) |
+| Chrome o Edge en un ordenador | El icono de instalación en la barra de direcciones, o el menú del navegador → **Install page as app** / **Apps → Install this site as an app** |
+| Chrome en Android con Google Mobile Services | Menú → **Install app** (o **Add to Home screen**) |
+| Samsung Internet en un dispositivo Samsung | **Add to Home screen** |
+| Safari en iOS o iPadOS | Compartir → **Add to Home Screen**. No hay un aviso de instalación dentro de la página, y la consola no puede abrir por ti la hoja Compartir. En iOS e iPadOS 16.4 o posterior, el menú Compartir de Chrome, Edge, Firefox y Orion también la instala |
+| Safari en macOS | **File → Add to Dock** (Safari 17 en macOS 14 o posterior) |
 
-Two conditions come from the browser rather than from Shell-PAMC:
+Dos condiciones provienen del navegador y no de Shell-PAMC:
 
-- **Chromium's install criteria require a secure context.** Chrome and Edge treat the
-  console as installable only when it is served over `https://` through your reverse
-  proxy, or over `http://localhost` / `http://127.0.0.1` during local development. A
-  plain-HTTP deployment reached by a LAN IP or hostname does not meet that criterion,
-  even though the console itself works there. Do not expose the console over plain HTTP
-  on a network interface: the sign-in password is CPA's administrator key.
-- **The deployment stays reachable.** The PWA adds no service worker and no offline
-  cache of API responses or user content, so the installed app cannot load without a
-  connection. Existing session and caching rules are unchanged: the sign-in session
-  cookie and the hashed static assets keep the behavior they already have. Reinstalling
-  is not needed to pick up an update; every launch loads the current bundle from the
-  deployment.
+- **Los criterios de instalación de Chromium exigen un contexto seguro.** Chrome y Edge consideran la
+  consola instalable solo cuando se sirve por `https://` a través de tu proxy
+  inverso, o por `http://localhost` / `http://127.0.0.1` durante el desarrollo local. Un
+  despliegue con HTTP simple al que se accede por una IP de la red local o un nombre de host no cumple ese criterio,
+  aunque la consola en sí funcione allí. No expongas la consola por HTTP simple
+  en una interfaz de red: la contraseña de inicio de sesión es la clave de administrador de CPA.
+- **El despliegue sigue siendo accesible.** La PWA no añade ningún service worker ni caché
+  sin conexión de respuestas de la API o de contenido de usuario, por lo que la aplicación instalada no puede cargar sin
+  conexión. Las reglas existentes de sesión y caché no cambian: la cookie de sesión de inicio de sesión
+  y los recursos estáticos con hash conservan el comportamiento que ya tenían. No es necesario reinstalar
+  para recibir una actualización; cada inicio carga el paquete actual desde el
+  despliegue.
 
-The mount point is part of the installed identity. `/`, `/shell-pamc` and a nested
-`SHELLPAMC_BASE_PATH` are three different apps to the browser, so installing one does not
-replace another, and an app installed at a path that later changes has to be installed
-again. The manifest's URLs are relative and resolve against the manifest's own address,
-which is what keeps this working behind a proxy that preserves the prefix.
+El punto de montaje forma parte de la identidad instalada. `/`, `/shell-pamc` y un
+`SHELLPAMC_BASE_PATH` anidado son tres aplicaciones distintas para el navegador, por lo que instalar una no
+reemplaza a otra, y una aplicación instalada en una ruta que después cambia tiene que instalarse
+de nuevo. Las URL del manifiesto son relativas y se resuelven respecto a la propia dirección del manifiesto,
+lo que mantiene esto funcionando detrás de un proxy que conserva el prefijo.
 
-## Native executable
+## Ejecutable nativo
 
-[GitHub Releases](https://github.com/Bizasbot/Shell-PAMC/releases) publish Shell-PAMC for
-Darwin (macOS), Windows, Linux and FreeBSD, each on **amd64** and **arm64**. `x86_64`
-is amd64; `aarch64` and Apple Silicon are arm64. Unix archives are `.tar.gz`; Windows
-archives are `.zip`. CPA must already be installed separately (v8.0.0 or later).
-The console and IANA time-zone database are embedded, so neither Node, Go nor Docker
-is needed. HTTPS uses the operating system's certificate roots. Darwin/Windows
-binaries are unsigned; inspect the release and verify its checksum before handling
-any operating-system trust prompt.
+[GitHub Releases](https://github.com/Bizasbot/Shell-PAMC/releases) publica Shell-PAMC para
+Darwin (macOS), Windows, Linux y FreeBSD, cada uno en **amd64** y **arm64**. `x86_64`
+es amd64; `aarch64` y Apple Silicon son arm64. Los archivos de Unix son `.tar.gz`; los de Windows
+son `.zip`. CPA ya debe estar instalado por separado (v8.0.0 o posterior).
+La consola y la base de datos de zonas horarias IANA están integradas, por lo que no hacen falta ni Node, ni Go ni Docker.
+HTTPS usa las raíces de certificados del sistema operativo. Los binarios de Darwin/Windows
+no están firmados; inspecciona la versión y verifica su suma de comprobación antes de atender
+cualquier aviso de confianza del sistema operativo.
 
-Choose one published version and its matching OS/architecture asset. On Unix, set
-these values to that release and host; the example uses Linux amd64:
+Elige una versión publicada y su recurso que coincida con el sistema operativo y la arquitectura. En Unix, define
+estos valores con esa versión y ese host; el ejemplo usa Linux amd64:
 
 ```bash
 VERSION=MAJOR.MINOR.PATCH
@@ -505,9 +505,9 @@ curl -fLO "https://github.com/Bizasbot/Shell-PAMC/releases/download/v${VERSION}/
 curl -fLO "https://github.com/Bizasbot/Shell-PAMC/releases/download/v${VERSION}/checksums.txt"
 ```
 
-Verify **only the downloaded archive's entry** (the manifest also lists the other
-platforms and installation attachments). On Linux use `sha256sum -c`, on macOS
-`shasum -a 256 -c`, or on FreeBSD compare `sha256 -q "$ASSET"` with its entry:
+Verifica **solo la entrada del archivo descargado** (el manifiesto también enumera las demás
+plataformas y los adjuntos de instalación). En Linux usa `sha256sum -c`, en macOS
+`shasum -a 256 -c`, o en FreeBSD compara `sha256 -q "$ASSET"` con su entrada:
 
 ```bash
 grep -F "  $ASSET" checksums.txt | sha256sum -c -
@@ -516,36 +516,36 @@ cp -n .env.example .env
 chmod 600 .env
 ```
 
-On Windows, download the matching ZIP and `checksums.txt` from the same release,
-use PowerShell `Get-FileHash -Algorithm SHA256` and compare with that ZIP's manifest
-entry, then `Expand-Archive` into a new directory and copy `.env.example` to `.env`.
-Restrict access to `.env` and the data directory to the service account with Windows
-file ACLs. Do not overwrite an existing configuration or data directory.
+En Windows, descarga el ZIP correspondiente y `checksums.txt` de la misma versión,
+usa `Get-FileHash -Algorithm SHA256` de PowerShell y compara con la entrada del manifiesto
+de ese ZIP; después usa `Expand-Archive` en un directorio nuevo y copia `.env.example` a `.env`.
+Restringe el acceso a `.env` y al directorio de datos a la cuenta de servicio con las ACL de archivos
+de Windows. No sobrescribas una configuración ni un directorio de datos existentes.
 
-Set `SHELLPAMC_MASTER_KEY` once to a random 64-character hex string (`openssl rand -hex 32`
-on Unix; use a cryptographic random generator on Windows), set CPA's plaintext
-management key and its reachable URL, and match CPA's `TZ`. Keep `SHELLPAMC_VERSION`
-unset so the tagged build reports its embedded version. The included template binds
-`127.0.0.1:8080`, serves `/shell-pamc` and writes SQLite to `./data` under the working directory.
-When CPA is on the same host, its loopback URL works without changing CPA's remote
-management policy. Review [usage-reader ownership](#other-panels-and-usage-trackers)
-before keeping `SHELLPAMC_USAGE_INGEST_MODE=auto`; use `off` if another reader continues.
+Define `SHELLPAMC_MASTER_KEY` una sola vez con una cadena hexadecimal aleatoria de 64 caracteres (`openssl rand -hex 32`
+en Unix; usa un generador aleatorio criptográfico en Windows), define la clave de administración
+en texto plano de CPA y su URL accesible, y haz coincidir el `TZ` de CPA. Deja `SHELLPAMC_VERSION`
+sin definir para que la compilación etiquetada informe su versión integrada. La plantilla incluida se enlaza a
+`127.0.0.1:8080`, sirve `/shell-pamc` y escribe SQLite en `./data` bajo el directorio de trabajo.
+Cuando CPA está en el mismo host, su URL de loopback funciona sin cambiar la política de administración
+remota de CPA. Revisa la [titularidad del lector de uso](#otros-paneles-y-rastreadores-de-uso)
+antes de conservar `SHELLPAMC_USAGE_INGEST_MODE=auto`; usa `off` si otro lector continúa.
 
-Run `./shell-pamc` on Unix or `.\shell-pamc.exe` on Windows from that directory. Verify
-[health and connectivity](#verifying-the-install), then open `http://127.0.0.1:8080/shell-pamc/`
-and sign in with CPA's management key. For an operator-owned service manager, keep the
-same working directory, environment file, service account and data path. Do not open
-the listener to the network without configuring remote access and HTTPS.
+Ejecuta `./shell-pamc` en Unix o `.\shell-pamc.exe` en Windows desde ese directorio. Verifica
+la [salud y la conectividad](#verificar-la-instalación) y después abre `http://127.0.0.1:8080/shell-pamc/`
+e inicia sesión con la clave de administración de CPA. Para un gestor de servicios propio del operador, conserva el
+mismo directorio de trabajo, archivo de entorno, cuenta de servicio y ruta de datos. No abras
+el listener a la red sin configurar el acceso remoto y HTTPS.
 
-To upgrade a native install, stop Shell-PAMC alone, back up `.env` and its data directory,
-verify/extract the new archive separately, then replace only the executable and start
-it from the original working directory. Preserve the master key and state. Verify
-health and the new running version. Migrations are forward-only; returning to an
-older executable requires restoring the corresponding data backup.
+Para actualizar una instalación nativa, detén solo Shell-PAMC, haz una copia de seguridad de `.env` y de su directorio de datos,
+verifica y extrae el archivo nuevo por separado, y después reemplaza solo el ejecutable e inícialo
+desde el directorio de trabajo original. Conserva la clave maestra y el estado. Verifica
+la salud y la versión nueva en ejecución. Las migraciones solo avanzan; volver a un
+ejecutable anterior requiere restaurar la copia de seguridad de datos correspondiente.
 
-## From source
+## Desde el código fuente
 
-Needs Go 1.26+, Node.js 22+, pnpm 11+ and a running CPA.
+Requiere Go 1.26+, Node.js 22+, pnpm 11+ y un CPA en ejecución.
 
 ```bash
 git clone https://github.com/Bizasbot/Shell-PAMC.git
@@ -554,8 +554,8 @@ pnpm install --frozen-lockfile
 cp .env.example .env
 ```
 
-In `.env`, set `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`), `SHELLPAMC_CPA_MANAGEMENT_KEY`
-and `SHELLPAMC_CPA_BASE_URL`. Then:
+En `.env`, define `SHELLPAMC_MASTER_KEY` (`openssl rand -hex 32`), `SHELLPAMC_CPA_MANAGEMENT_KEY`
+y `SHELLPAMC_CPA_BASE_URL`. Después:
 
 ```bash
 pnpm build
@@ -563,130 +563,130 @@ go build -trimpath -o bin/shell-pamc ./cmd/shell-pamc
 ./bin/shell-pamc
 ```
 
-Open `http://127.0.0.1:8080/shell-pamc/`. The process runs in the foreground; a service manager
-such as systemd keeps it running. Variables in the environment win over `.env`, and
-`SHELLPAMC_ENV_FILE` points at a different file. A build from an untagged checkout reports
-itself as `v0.1.0-dev`. For hot reload while developing, see
+Abre `http://127.0.0.1:8080/shell-pamc/`. El proceso se ejecuta en primer plano; un gestor de servicios
+como systemd lo mantiene en ejecución. Las variables del entorno tienen prioridad sobre `.env`, y
+`SHELLPAMC_ENV_FILE` apunta a otro archivo. Una compilación de un checkout sin etiqueta se informa
+como `v0.1.0-dev`. Para la recarga en caliente durante el desarrollo, consulta
 [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
-## Verifying the install
+## Verificar la instalación
 
 ```bash
 curl -fsS http://127.0.0.1:8080/shell-pamc/api/healthz
 ```
 
-A working install returns `"status":"ok"` and `"cpa_connected":true`. A container that
-Docker reports as healthy is not enough: Shell-PAMC stays up, with `"status":"degraded"`, when
-it cannot reach CPA.
+Una instalación que funciona devuelve `"status":"ok"` y `"cpa_connected":true`. No basta con que un contenedor
+sea informado como saludable por Docker: Shell-PAMC sigue activo, con `"status":"degraded"`, cuando
+no puede alcanzar CPA.
 
-| Symptom | Cause |
+| Síntoma | Causa |
 | --- | --- |
-| `permission denied`, or the database will not open | With the release Compose files: `shell-pamc-data` is not owned by `10001:10001`, or is on a network filesystem |
-| CPA fails to start and `config.yaml` is a directory | `config.yaml` did not exist at first start. Remove the directory, download the file and start again |
-| `status` is `degraded` | Wrong CPA URL or management key, or CPA refuses remote management. See [reaching CPA](#reaching-cpa) |
-| Sign-in succeeds, then asks again | `SHELLPAMC_PUBLIC_URL` says `https://` but the browser uses plain HTTP |
-| The console asks for a CPA upgrade | CPA is older than v8.0.0 |
-| Request records stay empty | Another tool is collecting usage, `SHELLPAMC_USAGE_INGEST_MODE=off` is set, or usage statistics are disabled in CPA |
-| Port already in use | Change the host side of the `ports:` entry, or set `SHELLPAMC_BIND` / `CPA_BIND` with the release Compose files |
+| `permission denied`, o la base de datos no se abre | Con los archivos Compose de las versiones: `shell-pamc-data` no pertenece a `10001:10001`, o está en un sistema de archivos de red |
+| CPA no arranca y `config.yaml` es un directorio | `config.yaml` no existía en el primer inicio. Elimina el directorio, descarga el archivo e inicia de nuevo |
+| `status` es `degraded` | URL o clave de administración de CPA incorrectas, o CPA rechaza la administración remota. Consulta [acceso a CPA](#acceso-a-cpa) |
+| El inicio de sesión funciona y luego vuelve a pedirse | `SHELLPAMC_PUBLIC_URL` indica `https://` pero el navegador usa HTTP simple |
+| La consola pide actualizar CPA | CPA es anterior a v8.0.0 |
+| Los registros de solicitudes siguen vacíos | Otra herramienta está recopilando el uso, `SHELLPAMC_USAGE_INGEST_MODE=off` está definido, o las estadísticas de uso están desactivadas en CPA |
+| El puerto ya está en uso | Cambia el lado del host de la entrada `ports:`, o define `SHELLPAMC_BIND` / `CPA_BIND` con los archivos Compose de las versiones |
 
-## Upgrading
+## Actualización
 
-Upgrades migrate the database and there is no downgrade: the way back to an older
-version is to restore a backup. Shell-PAMC takes an encrypted backup by itself before it
-applies a migration; `docs/ops/sqlite-operations.md` is the runbook for backups taken by
-hand, and for restoring one. Back up `.env` separately.
+Las actualizaciones migran la base de datos y no hay vuelta atrás: el camino de regreso a una versión
+anterior es restaurar una copia de seguridad. Shell-PAMC hace por sí mismo una copia de seguridad cifrada antes de
+aplicar una migración; `docs/ops/sqlite-operations.md` es el manual de procedimientos para las copias de seguridad hechas
+manualmente y para restaurarlas. Haz una copia de seguridad de `.env` por separado.
 
-> **Breaking change: container, service, network and data names were renamed.** The
-> defaults `oh-my-cpa`, `oh-my-cpa-updater` and `oh-my-cpa-data` are now `shell-pamc`,
-> `shell-pamc-updater` and `shell-pamc-data`, and the console is served under
-> `/shell-pamc` instead of `/omc` (set `SHELLPAMC_BASE_PATH=/omc` to keep the old path).
-> The updater finds containers by name, so an installation upgraded in place has to
-> recreate them: stop and remove the old containers, rename the services in the Compose
-> file, and move the data (`docker volume` contents or the `oh-my-cpa-data` directory)
-> to the new name before `docker compose up -d`. The database file inside is renamed
-> by Shell-PAMC itself on first start. Back up first.
+> **Cambio incompatible: se renombraron los nombres de contenedor, servicio, red y datos.** Los
+> valores predeterminados `oh-my-cpa`, `oh-my-cpa-updater` y `oh-my-cpa-data` ahora son `shell-pamc`,
+> `shell-pamc-updater` y `shell-pamc-data`, y la consola se sirve bajo
+> `/shell-pamc` en lugar de `/omc` (define `SHELLPAMC_BASE_PATH=/omc` para conservar la ruta antigua).
+> El actualizador encuentra los contenedores por nombre, por lo que una instalación actualizada in situ tiene que
+> recrearlos: detén y elimina los contenedores antiguos, renombra los servicios en el archivo
+> Compose y mueve los datos (el contenido de `docker volume` o el directorio `oh-my-cpa-data`)
+> al nombre nuevo antes de `docker compose up -d`. El archivo de base de datos interno lo renombra
+> Shell-PAMC por sí mismo en el primer inicio. Haz una copia de seguridad antes.
 
-### From the console
+### Desde la consola
 
-When a newer release exists, **System Information** shows **Update now** beside Oh My
-CPA or CLIProxyAPI. Confirming it makes the `shell-pamc-updater` container:
+Cuando existe una versión más reciente, **Información del sistema** muestra **Actualizar ahora** junto a Oh My
+CPA o CLIProxyAPI. Al confirmarlo, el contenedor `shell-pamc-updater`:
 
-1. pull the new image. For Shell-PAMC this is the exact image named by the release's
-   signed manifest; for CLIProxyAPI it is the tag the container already uses;
-2. stop the running container and start a replacement with the same environment,
-   volumes, ports, networks and Compose labels;
-3. wait for the replacement to report healthy, then remove the old container. A
-   replacement that exits or stays unhealthy is removed and the old container is started
-   again under its own name.
+1. descarga la imagen nueva. Para Shell-PAMC es la imagen exacta indicada por el manifiesto
+   firmado de la versión; para CLIProxyAPI es la etiqueta que el contenedor ya usa;
+2. detiene el contenedor en ejecución e inicia uno de reemplazo con el mismo entorno,
+   volúmenes, puertos, redes y etiquetas de Compose;
+3. espera a que el reemplazo informe de que está saludable y después elimina el contenedor antiguo. Un
+   reemplazo que termina o sigue sin estar saludable se elimina y el contenedor antiguo se inicia
+   de nuevo con su propio nombre.
 
-Updating Shell-PAMC disconnects the console for a few seconds and the page reloads on
-the new version. Updating CLIProxyAPI restarts the gateway, which interrupts requests in
-flight. Each update and its outcome are written to the audit log.
+Actualizar Shell-PAMC desconecta la consola unos segundos y la página se recarga con
+la versión nueva. Actualizar CLIProxyAPI reinicia la pasarela, lo que interrumpe las solicitudes en
+curso. Cada actualización y su resultado se escriben en el registro de auditoría.
 
-The action is not offered in three cases, and the page says which:
+La acción no se ofrece en tres casos, y la página indica cuál:
 
-| Case | What to do |
+| Caso | Qué hacer |
 | --- | --- |
-| The image is pinned to a version tag or digest, for example `SHELLPAMC_IMAGE=ghcr.io/bizasbot/shell-pamc:vX.Y.Z` | Change the pin and redeploy. The console leaves a pinned image alone, because the next `docker compose up` would put the pinned version back over a database that has already been migrated |
-| CPA does not run as a container on the same Docker host | Update CPA where it runs |
-| The build carries no release signing key, as a build from source does | Update by hand, below |
+| La imagen está fijada a una etiqueta de versión o a un digest, por ejemplo `SHELLPAMC_IMAGE=ghcr.io/bizasbot/shell-pamc:vX.Y.Z` | Cambia la versión fijada y vuelve a desplegar. La consola no toca una imagen fijada, porque el siguiente `docker compose up` volvería a poner la versión fijada sobre una base de datos que ya se migró |
+| CPA no se ejecuta como contenedor en el mismo host de Docker | Actualiza CPA donde se ejecuta |
+| La compilación no incluye clave de firma de versiones, como ocurre con una compilación desde el código fuente | Actualiza manualmente, como se indica abajo |
 
-### Enabling console updates on an existing deployment
+### Activar las actualizaciones desde la consola en un despliegue existente
 
-A deployment whose Compose file has no `shell-pamc-updater` service gains one with a
-single command on the Docker host. The Compose file is not edited:
+Un despliegue cuyo archivo Compose no tiene el servicio `shell-pamc-updater` lo obtiene con un
+solo comando en el host de Docker. El archivo Compose no se edita:
 
 ```bash
 docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-The command:
+El comando:
 
-- finds the running Shell-PAMC container, whichever of the Compose files in this guide
-  started it. When more than one is running, add `--container <name>`; when CPA runs as
-  a container the updater cannot identify, add `--cpa-container <name>`;
-- creates a container named `shell-pamc-updater` from the same image, on a network of the
-  same name, and attaches the console to that network. The console finds the updater by
-  that name; no setting is added to either container, and CPA is not touched;
-- replaces the console with the current release when it is older, with the rollback
-  described above. A pinned console is left as it is.
+- encuentra el contenedor de Shell-PAMC en ejecución, sea cual sea el archivo Compose de esta guía
+  que lo inició. Cuando hay más de uno en ejecución, añade `--container <name>`; cuando CPA se ejecuta como
+  un contenedor que el actualizador no puede identificar, añade `--cpa-container <name>`;
+- crea un contenedor llamado `shell-pamc-updater` a partir de la misma imagen, en una red del
+  mismo nombre, y conecta la consola a esa red. La consola encuentra el actualizador por
+  ese nombre; no se añade ningún ajuste a ninguno de los contenedores y CPA no se toca;
+- reemplaza la consola por la versión actual cuando es más antigua, con la reversión
+  descrita arriba. Una consola fijada se deja como está.
 
-`--pull always` fetches the current image: the host already holds an older
-`ghcr.io/bizasbot/shell-pamc:latest`, which has no updater. `-u 0` is needed because the Docker
-socket belongs to root. Running the command again
-repairs or refreshes the installation. `docker rm -f shell-pamc-updater` removes it, and
-the console then shows the command again in place of the update action.
+`--pull always` obtiene la imagen actual: el host ya tiene una
+`ghcr.io/bizasbot/shell-pamc:latest` más antigua, que no incluye actualizador. `-u 0` es necesario porque el socket de
+Docker pertenece a root. Ejecutar el comando de nuevo
+repara o renueva la instalación. `docker rm -f shell-pamc-updater` la elimina, y
+la consola vuelve entonces a mostrar el comando en lugar de la acción de actualización.
 
-The updater container holds the Docker socket, which amounts to control of Docker on
-that host. It runs with a read-only filesystem and no capabilities, publishes no port,
-and accepts only two requests from the console: report status, and update Shell-PAMC or
-CLIProxyAPI. `docs/operations.md` describes the boundary.
+El contenedor del actualizador tiene el socket de Docker, lo que equivale a controlar Docker en
+ese host. Se ejecuta con un sistema de archivos de solo lectura y sin capacidades, no publica ningún puerto
+y solo acepta dos solicitudes de la consola: informar del estado, y actualizar Shell-PAMC o
+CLIProxyAPI. `docs/operations.md` describe el límite.
 
-A Compose file that later declares the `shell-pamc-updater` service itself conflicts with
-the installed container's name: remove the installed one first with
+Un archivo Compose que más tarde declare por sí mismo el servicio `shell-pamc-updater` entra en conflicto con
+el nombre del contenedor instalado: elimina primero el instalado con
 `docker rm -f shell-pamc-updater`.
 
-### By hand
+### Manualmente
 
-In the directory that holds the Compose file:
+En el directorio que contiene el archivo Compose:
 
 ```bash
 docker compose pull shell-pamc shell-pamc-updater
 docker compose up -d --no-deps shell-pamc shell-pamc-updater
 ```
 
-Leave `shell-pamc-updater` out of both commands when the file does not declare it. With a
-release Compose file, add `-f deploy/compose.full.yml` or `-f deploy/compose.omc.yml` to
-both commands.
+Omite `shell-pamc-updater` en ambos comandos cuando el archivo no lo declara. Con un
+archivo Compose de versión, añade `-f deploy/compose.full.yml` o `-f deploy/compose.omc.yml` a
+ambos comandos.
 
-This upgrades Shell-PAMC and leaves CPA as it is. To move to a specific version, change the
-`image:` tag to `ghcr.io/bizasbot/shell-pamc:vX.Y.Z`, or set `SHELLPAMC_IMAGE` in `deploy/.env` with
-a release Compose file. With the files in this guide the data is in the Docker volume
-`<project>_shell-pamc-data`, and `docker volume inspect` prints its path. How releases
-are published is in `docs/releasing.md`.
+Esto actualiza Shell-PAMC y deja CPA como está. Para pasar a una versión concreta, cambia la
+etiqueta de `image:` a `ghcr.io/bizasbot/shell-pamc:vX.Y.Z`, o define `SHELLPAMC_IMAGE` en `deploy/.env` con
+un archivo Compose de versión. Con los archivos de esta guía, los datos están en el volumen de Docker
+`<project>_shell-pamc-data`, y `docker volume inspect` muestra su ruta. Cómo se publican las versiones
+está en `docs/releasing.md`.
 
-## Constraints
+## Restricciones
 
-- Keep `SHELLPAMC_MASTER_KEY` safe and unchanged. Without it the stored data is unreadable.
-- One Shell-PAMC per data directory, on a local disk.
-- One usage collector per CPA.
+- Mantén `SHELLPAMC_MASTER_KEY` a salvo y sin cambios. Sin ella, los datos almacenados no se pueden leer.
+- Un solo Shell-PAMC por directorio de datos, en un disco local.
+- Un solo recopilador de uso por CPA.

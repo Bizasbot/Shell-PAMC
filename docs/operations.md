@@ -1,203 +1,205 @@
-# Configuration & Operations
+# Configuración y operaciones
 
-What an operator needs after `docs/install.md`: the settings Shell-PAMC reads, the
-constraints a deployment must respect, and how the parts that outlive a page visit
-behave. Database backup, restore and maintenance from the host have their own runbook,
-`docs/ops/sqlite-operations.md`.
+Lo que necesita un operador después de `docs/install.md`: los ajustes que lee Shell-PAMC, las
+restricciones que debe respetar un despliegue y el comportamiento de las partes que sobreviven a una
+visita de página. La copia de seguridad, restauración y mantenimiento de la base de datos desde el host
+tienen su propio manual de procedimientos, `docs/ops/sqlite-operations.md`.
 
-## Native deployments
+## Despliegues nativos
 
-Native releases support Darwin, Windows, Linux and FreeBSD on amd64/arm64. The
-executable embeds the SPA and IANA time-zone database, but HTTPS still uses OS
-certificate roots. The packaged environment template binds loopback and stores
-SQLite in `./data`; run under a dedicated user/service account, preserve its working
-directory and restrict environment/data access with Unix permissions or Windows ACLs.
-Container uid/gid `10001:10001` is not a requirement for native installs. Leave
-`SHELLPAMC_VERSION` unset to retain the injected release tag. Stop Shell-PAMC before replacing
-the executable, keep the master key and data directory, and back up both before an
-upgrade. Only a matching data backup can undo forward migrations. The download,
-checksum and host configuration steps are in `docs/install.md`.
+Las versiones nativas admiten Darwin, Windows, Linux y FreeBSD en amd64/arm64. El
+ejutable integra la SPA y la base de datos de zonas horarias IANA, pero HTTPS sigue usando las
+raíces de certificados del sistema operativo. La plantilla de entorno incluida enlaza al loopback y guarda
+SQLite en `./data`; ejecútalo con un usuario o cuenta de servicio dedicados, conserva su directorio de
+trabajo y restringe el acceso al entorno y los datos con permisos Unix o ACL de Windows.
+El uid/gid `10001:10001` del contenedor no es un requisito para instalaciones nativas. Deja
+`SHELLPAMC_VERSION` sin definir para conservar la etiqueta de versión inyectada. Detiene Shell-PAMC antes de reemplazar
+el ejecutable, conserva la clave maestra y el directorio de datos, y haz una copia de seguridad de ambos antes de una
+actualización. Solo una copia de seguridad de datos que coincida puede deshacer las migraciones de avance. Los pasos de descarga,
+suma de comprobación y configuración del host están en `docs/install.md`.
 
-## Settings
+## Ajustes
 
-> **Breaking change: environment variables were renamed.** Every `OMCPA_*` variable is now `SHELLPAMC_*` (for example `OMCPA_MASTER_KEY` is `SHELLPAMC_MASTER_KEY`). The old names are not read, so an installation upgraded in place must rename them in its `.env`, Compose file or service unit before the first start; without `SHELLPAMC_MASTER_KEY` the process refuses to start.
+> **Cambio incompatible: se renombraron las variables de entorno.** Cada variable `OMCPA_*` es ahora `SHELLPAMC_*` (por ejemplo, `OMCPA_MASTER_KEY` es ahora `SHELLPAMC_MASTER_KEY`). Los nombres antiguos no se leen, por lo que una instalación actualizada in situ debe renombrarlos en su `.env`, archivo Compose o unidad de servicio antes del primer inicio; sin `SHELLPAMC_MASTER_KEY` el proceso se niega a arrancar.
 
-Everything is an environment variable. The binary also reads `.env` from its working
-directory (`SHELLPAMC_ENV_FILE` names another file); real environment variables win.
-`internal/config/config.go` is authoritative, and a malformed value stops start-up with
-a message naming the variable.
+Todo es una variable de entorno. El binario también lee `.env` desde su directorio de trabajo
+(`SHELLPAMC_ENV_FILE` nombra otro archivo); las variables de entorno reales tienen prioridad.
+`internal/config/config.go` es autoritativo, y un valor mal formado detiene el inicio con
+un mensaje que nombra la variable.
 
-### Required
+### Obligatorias
 
-| Variable | Purpose |
+| Variable | Propósito |
 | --- | --- |
-| `SHELLPAMC_CPA_BASE_URL` | CPA's address, for example `http://127.0.0.1:8317` |
-| `SHELLPAMC_CPA_MANAGEMENT_KEY` | CPA's plaintext management key. Also the console's sign-in password |
-| `SHELLPAMC_MASTER_KEY` | At-rest encryption key: a 64-character hex key (`openssl rand -hex 32`) or at least 32 bytes |
+| `SHELLPAMC_CPA_BASE_URL` | Dirección de CPA, por ejemplo `http://127.0.0.1:8317` |
+| `SHELLPAMC_CPA_MANAGEMENT_KEY` | Clave de administración de CPA en texto plano. También es la contraseña de inicio de sesión de la consola |
+| `SHELLPAMC_MASTER_KEY` | Clave de cifrado en reposo: una clave hexadecimal de 64 caracteres (`openssl rand -hex 32`) o al menos 32 bytes |
 
-### Serving
+### Servicio
 
-| Variable | Default | Purpose |
+| Variable | Valor predeterminado | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_VERSION` | embedded stable tag; `v0.1.0-dev` for untagged source builds | Optional display/User-Agent version override; does not change the installed build |
-| `SHELLPAMC_LISTEN_ADDR` | `:8080` | Listen address |
-| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Sub-path the console is served under. `omc`, `/shell-pamc/` and `/shell-pamc` are equivalent; `/` serves it at the root |
-| `SHELLPAMC_DATA_DIR` | `./data` | Directory holding `shell-pamc.db`. Local disk only. A database left under the old name `oh-my-cpa.db` (with its `-wal` and `-shm` files) is renamed on the first start; if both names exist the start fails and you keep the one that holds your data |
-| `SHELLPAMC_PUBLIC_URL` | unset | The address browsers use. An `https://` value marks the session cookie `Secure` |
-| `SHELLPAMC_TRUSTED_PROXY_CIDRS` | unset | Comma-separated CIDRs of reverse proxies whose forwarding headers may be trusted for login throttling |
-| `TZ` | system zone | Server calendar; see [Time zone](#time-zone) |
+| `SHELLPAMC_VERSION` | etiqueta estable integrada; `v0.1.0-dev` para compilaciones de código fuente sin etiquetar | Anulación opcional de la versión para visualización y User-Agent; no cambia la compilación instalada |
+| `SHELLPAMC_LISTEN_ADDR` | `:8080` | Dirección de escucha |
+| `SHELLPAMC_BASE_PATH` | `/shell-pamc` | Subruta bajo la que se sirve la consola. `omc`, `/shell-pamc/` y `/shell-pamc` son equivalentes; `/` la sirve en la raíz |
+| `SHELLPAMC_DATA_DIR` | `./data` | Directorio que contiene `shell-pamc.db`. Solo disco local. Una base de datos bajo el nombre antiguo `oh-my-cpa.db` (con sus archivos `-wal` y `-shm`) se renombra en el primer inicio; si existen ambos nombres el inicio falla y se conserva el que contiene los datos |
+| `SHELLPAMC_PUBLIC_URL` | no definida | La dirección que usan los navegadores. Un valor `https://` marca la cookie de sesión como `Secure` |
+| `SHELLPAMC_TRUSTED_PROXY_CIDRS` | no definida | CIDRs separados por coma de los proxies inversos cuyos encabezados de reenvío pueden ser de confianza para la limitación del inicio de sesión |
+| `TZ` | zona del sistema | Calendario del servidor; consulta [Zona horaria](#zona-horaria) |
 
-### Gateway connection
+### Conexión a la pasarela
 
-| Variable | Default | Purpose |
+| Variable | Valor predeterminado | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_CPA_USAGE_ADDR` | host and port of `SHELLPAMC_CPA_BASE_URL` | `host:port` of CPA's usage stream |
-| `SHELLPAMC_REQUEST_TIMEOUT` | `15s` | Timeout for ordinary CPA management calls |
-| `SHELLPAMC_CPA_TLS_SKIP_VERIFY` | `false` | Skip certificate verification when CPA uses a private certificate |
+| `SHELLPAMC_CPA_USAGE_ADDR` | host y puerto de `SHELLPAMC_CPA_BASE_URL` | `host:port` del flujo de uso de CPA |
+| `SHELLPAMC_REQUEST_TIMEOUT` | `15s` | Tiempo de espera para las llamadas ordinarias de administración de CPA |
+| `SHELLPAMC_CPA_TLS_SKIP_VERIFY` | `false` | Omitir la verificación del certificado cuando CPA usa un certificado privado |
 
-### Usage collection
+### Recopilación de uso
 
-| Variable | Default | Purpose |
+| Variable | Valor predeterminado | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `auto`, `subscribe`, `resp_pull`, `http_pull` or `off` |
-| `SHELLPAMC_USAGE_IDLE_INTERVAL` | `1s` | First wait after an empty poll |
-| `SHELLPAMC_USAGE_MAX_IDLE_INTERVAL` | `10s` | Ceiling the idle backoff grows to. Keep it well below CPA's `redis-usage-queue-retention-seconds` |
-| `SHELLPAMC_USAGE_BATCH_SIZE` | `1000` | Records read per poll (1–10000) |
-| `SHELLPAMC_USAGE_RETENTION_DAYS` | `90` | Days of request records (the request list and its detail) kept, `0` to keep them all. Ninety matches the request list's longest preset. Dashboard statistics do not depend on it: they are kept permanently as usage facts |
-| `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS` | `7` | Days a captured payload is kept after it was decoded into a request record, `0` to keep it as long as the record. Payloads are the largest part of the database and nothing reads them once decoded except a re-decode after a decoder fix |
+| `SHELLPAMC_USAGE_INGEST_MODE` | `auto` | `auto`, `subscribe`, `resp_pull`, `http_pull` u `off` |
+| `SHELLPAMC_USAGE_IDLE_INTERVAL` | `1s` | Primera espera tras un sondeo vacío |
+| `SHELLPAMC_USAGE_MAX_IDLE_INTERVAL` | `10s` | Límite máximo al que crece el retroceso en inactividad. Manténlo muy por debajo de `redis-usage-queue-retention-seconds` de CPA |
+| `SHELLPAMC_USAGE_BATCH_SIZE` | `1000` | Registros leídos por sondeo (1–10 000) |
+| `SHELLPAMC_USAGE_RETENTION_DAYS` | `90` | Días que se conservan los registros de solicitudes (la lista de solicitudes y sus detalles), `0` para conservarlos todos. Noventa coincide con el ajuste preestablecido más largo de la lista de solicitudes. Las estadísticas del panel no dependen de esto: se conservan permanentemente como hechos de uso |
+| `SHELLPAMC_USAGE_INBOX_RETENTION_DAYS` | `7` | Días que se conserva una carga útil capturada tras decodificarse en un registro de solicitud, `0` para conservarla tanto como el registro. Las cargas útiles son la parte más grande de la base de datos y nada las lee una vez decodificadas, salvo una redecodificación tras una corrección del decodificador |
 
-### Update checks and demo
+### Comprobaciones de actualizaciones y demo
 
-| Variable | Default | Purpose |
+| Variable | Valor predeterminado | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_UPDATE_CHECK_ENABLED` | `true` | The six-hourly release sweep |
-| `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | The check the System Information page makes when opened |
-| `SHELLPAMC_OMC_REPO` / `SHELLPAMC_CPA_REPO` | `Bizasbot/Shell-PAMC` / `router-for-me/CLIProxyAPI` | `owner/name` the checks read, for a fork |
-| `SHELLPAMC_DEMO_MODE` | `false` | Serve the console from the built-in fixture; see [Demo mode](#demo-mode) |
-| `SHELLPAMC_UPDATER_ENABLED` | `true` | `false` makes the console ignore an updater and offer no update action; see [Console updates](#console-updates) |
-| `SHELLPAMC_UPDATER_URL` | `http://shell-pamc-updater:8090` | Where the console looks for the updater. The default is the service and container name every install method uses |
-| `SHELLPAMC_GOOGLE_FONTS_URL` | `https://fonts.googleapis.com` | The Google Fonts stylesheet API the font library installs from, or a compatible mirror for a deployment that cannot reach Google. Requests honour `HTTPS_PROXY`; font files are downloaded only from Google's font hosts or the mirror's own site. Used only when an operator installs a family; uploading needs no network |
+| `SHELLPAMC_UPDATE_CHECK_ENABLED` | `true` | El barrido de versiones cada seis horas |
+| `SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD` | `true` | La comprobación que realiza la página Información del sistema al abrirse |
+| `SHELLPAMC_OMC_REPO` / `SHELLPAMC_CPA_REPO` | `Bizasbot/Shell-PAMC` / `router-for-me/CLIProxyAPI` | `propietario/nombre` que leen las comprobaciones, para una bifurcación |
+| `SHELLPAMC_DEMO_MODE` | `false` | Sirve la consola desde el fixture integrado; consulta [Modo demo](#modo-demo) |
+| `SHELLPAMC_UPDATER_ENABLED` | `true` | `false` hace que la consola ignore un actualizador y no ofrezca ninguna acción de actualización; consulta [Actualizaciones desde la consola](#actualizaciones-desde-la-consola) |
+| `SHELLPAMC_UPDATER_URL` | `http://shell-pamc-updater:8090` | Dónde busca la consola el actualizador. El valor predeterminado es el nombre de servicio y contenedor que usan todos los métodos de instalación |
+| `SHELLPAMC_GOOGLE_FONTS_URL` | `https://fonts.googleapis.com` | La API de hojas de estilo de Google Fonts desde la que instala la biblioteca de fuentes, o un espejo compatible para un despliegue que no puede acceder a Google. Las solicitudes respetan `HTTPS_PROXY`; los archivos de fuentes solo se descargan desde los hosts de fuentes de Google o desde el propio sitio del espejo. Se usa solo cuando un operador instala una familia; la subida no necesita red |
 
-The MCP stdio bridge (`shell-pamc mcp`) reads `SHELLPAMC_SERVER_URL`,
-`SHELLPAMC_CPA_MANAGEMENT_KEY` and the optional `SHELLPAMC_VERSION` only; the remote MCP
-endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
+El puente stdio MCP (`shell-pamc mcp`) lee solo `SHELLPAMC_SERVER_URL`,
+`SHELLPAMC_CPA_MANAGEMENT_KEY` y el opcional `SHELLPAMC_VERSION`; el endpoint MCP remoto
+no tiene ningún ajuste propio. Consulta [Agente y MCP](#agente-y-mcp).
 
-## Deployment constraints
+## Restricciones del despliegue
 
-- **Single collector**: The CPA usage queue is destructive. Only one collector may read
-  from a CPA instance. If another service collects usage, set
+- **Recopilador único**: la cola de uso de CPA es destructiva. Solo un recopilador puede leer
+  de una instancia de CPA. Si otro servicio recopila el uso, define
   `SHELLPAMC_USAGE_INGEST_MODE=off`.
-- **Single replica**: SQLite WAL requires exclusive single-process access. Run one
-  replica mounting the data directory; do not mount over network filesystems
+- **Réplica única**: SQLite WAL requiere acceso exclusivo de un solo proceso. Ejecuta una
+  réplica que monte el directorio de datos; no lo montes sobre sistemas de archivos de red
   (NFS/CIFS).
-- **Master key**: `SHELLPAMC_MASTER_KEY` is required to decrypt stored credentials and
-  payloads. Back it up securely.
-- **Framed content**: The console's document declares `frame-src 'self' blob:`. It frames plugin pages from its own origin and the Agent's sandboxed canvases (ADR 0072); a reverse proxy must not replace that policy with one that allows other frame sources.
-- **Network security**: Keep CPA on a private network or loopback interface. The supplied
-  Compose files publish CPA and Shell-PAMC only on loopback; use direct local access or an SSH
-  tunnel. Public access requires HTTPS through operator-owned infrastructure.
-- **Reverse proxy headers**: Set `SHELLPAMC_TRUSTED_PROXY_CIDRS` to the CIDRs of reverse
-  proxies whose forwarding headers may be trusted. Both Compose files default to an
-  empty trust list. Name only actual proxy peers; leave it unset for direct clients;
-  never trust a public range.
-- **Gateway version**: The console requires CPA v8.0.0 or later and speaks its v8
-  Management API; a gateway older than v8 is refused and every page shows upgrade
-  guidance instead. CPA v8 reads an existing v7 `config.yaml` unchanged, so upgrading
-  CPA needs no configuration change. The console's first configuration save converts
-  such a file to the v8 layout, after keeping an encrypted copy of the original that the
-  configuration page offers for download (see `docs/cpa-v8-compat.md`).
-- **Gateway configuration**: Omitted request retries and maximum cooldown wait
-  both mean `0`; the example's `3` and `30` apply only when explicitly configured.
-  Header passthrough forwards filtered upstream response headers to clients.
-  See `docs/cpa-v8-compat.md` for the other option semantics and upstream sources.
-- **Base path**: Direct Shell-PAMC serving supports `/shell-pamc` or `/`. The console is served at
-  the prefix with a trailing slash (`/shell-pamc/`); Shell-PAMC answers the bare prefix (`/shell-pamc`) with
-  a 308 redirect to it. An operator-owned proxy must preserve the prefix and route the
-  bare prefix as well as everything beneath it (`deploy/nginx.conf` shows both rules;
-  `docs/install.md` has the Caddy equivalent); CPA keeps its separate port regardless
-  of Shell-PAMC's base path.
-- **Container image**: Compose pulls `ghcr.io/bizasbot/shell-pamc:latest` from GitHub Container Registry by
-  default; the full-stack CPA image also defaults to `:latest`. Pin `SHELLPAMC_IMAGE` to the desired version or digest; updates recreate only
-  Shell-PAMC with its existing data and master key. The image runs as uid/gid `10001:10001`,
-  includes its own health probe and needs no mounted deployment scripts. A health
-  result of `degraded` keeps the container healthy but does not establish CPA access.
-- **Existing CPA and panels**: Shell-PAMC-only Compose can attach to an existing external
-  Docker network. It does not replace the gateway or other panels; collection ownership
-  must be resolved separately. See `docs/install.md` and `docs/install-for-agents.md`.
+- **Clave maestra**: `SHELLPAMC_MASTER_KEY` es necesaria para descifrar las credenciales y
+  cargas útiles almacenadas. Haz una copia de seguridad de forma segura.
+- **Contenido enmarcado**: el documento de la consola declara `frame-src 'self' blob:`. Enmarca páginas de complementos desde su propio origen y los lienzos en sandbox del Agente (ADR 0072); un proxy inverso no debe reemplazar esa política por una que permita otras fuentes de marcos.
+- **Seguridad de red**: mantén CPA en una red privada o en la interfaz de loopback. Los archivos
+  Compose suministrados publican CPA y Shell-PAMC solo en loopback; usa acceso local directo o un túnel
+  SSH. El acceso público requiere HTTPS a través de infraestructura propia del operador.
+- **Encabezados del proxy inverso**: define `SHELLPAMC_TRUSTED_PROXY_CIDRS` con los CIDRs de los proxies
+  inversos cuyos encabezados de reenvío pueden ser de confianza. Ambos archivos Compose tienen por defecto una
+  lista de confianza vacía. Nombra solo los pares proxy reales; déjalo sin definir para clientes directos;
+  nunca confíes en un rango público.
+- **Versión de la pasarela**: la consola requiere CPA v8.0.0 o posterior y habla su API de
+  administración v8; una pasarela anterior a v8 es rechazada y cada página muestra guía de actualización
+  en su lugar. CPA v8 lee un `config.yaml` v7 existente sin cambios, así que actualizar
+  CPA no necesita ningún cambio de configuración. El primer guardado de configuración de la consola convierte
+  dicho archivo al formato v8, después de conservar una copia cifrada del original que la página
+  de configuración ofrece para descargar (consulta `docs/cpa-v8-compat.md`).
+- **Configuración de la pasarela**: los reintentos de solicitud y el tiempo máximo de espera de
+  enfriamiento omitidos equivalen a `0`; el `3` y el `30` del ejemplo se aplican solo cuando se configuran
+  explícitamente. El reenvío de encabezados propaga al cliente los encabezados de respuesta de ámbito superior
+  filtrados. Consulta `docs/cpa-v8-compat.md` para conocer la semántica de las otras opciones y las fuentes de
+  ámbito superior.
+- **Ruta base**: el servicio directo de Shell-PAMC admite `/shell-pamc` o `/`. La consola se sirve en
+  el prefijo con barra final (`/shell-pamc/`); Shell-PAMC responde al prefijo sin barra (`/shell-pamc`) con
+  una redirección 308 hacia él. Un proxy propio del operador debe conservar el prefijo y enrutar
+  tanto el prefijo sin barra como todo lo que hay debajo (`deploy/nginx.conf` muestra ambas reglas;
+  `docs/install.md` tiene el equivalente de Caddy); CPA conserva su puerto separado
+  independientemente de la ruta base de Shell-PAMC.
+- **Imagen del contenedor**: Compose descarga `ghcr.io/bizasbot/shell-pamc:latest` de GitHub Container Registry
+  por defecto; la imagen CPA de pila completa también usa `:latest` por defecto. Fija `SHELLPAMC_IMAGE` a la
+  versión o digest deseados; las actualizaciones recrean solo Shell-PAMC con sus datos y clave maestra
+  existentes. La imagen se ejecuta como uid/gid `10001:10001`, incluye su propio sondeo de salud y no
+  necesita scripts de despliegue montados. Un resultado de salud `degraded` mantiene el contenedor
+  saludable pero no establece acceso a CPA.
+- **CPA y paneles existentes**: el Compose solo de Shell-PAMC puede adjuntarse a una red Docker
+  externa existente. No reemplaza la pasarela ni otros paneles; la titularidad de la
+  recopilación debe resolverse por separado. Consulta `docs/install.md` y `docs/install-for-agents.md`.
 
-## Time zone
+## Zona horaria
 
-Set `TZ=Asia/Kuala_Lumpur` (or another IANA timezone) in the deployment environment to
-choose the server calendar. The supplied Compose files pass `TZ` to both Shell-PAMC and CPA and
-default to `UTC`. For a standalone container, pass `-e TZ=Asia/Kuala_Lumpur`. Native
-deployments otherwise use the operating system timezone.
+Define `TZ=Asia/Kuala_Lumpur` (u otra zona horaria IANA) en el entorno del despliegue para
+elegir el calendario del servidor. Los archivos Compose suministrados pasan `TZ` a Shell-PAMC y a CPA y
+por defecto usan `UTC`. Para un contenedor independiente, pasa `-e TZ=Asia/Kuala_Lumpur`. Los
+despliegues nativos usan de lo contrario la zona horaria del sistema operativo.
 
-In **Shell-PAMC Settings → Time zone**, the server zone is selected automatically and marked
-**Server time zone**. Every option includes its current UTC offset. A manual choice is
-persisted for the deployment; selecting the server zone restores the deployment default.
-Timestamp displays, calendar selections, daily totals and Shell-PAMC service logs use this
-setting without rewriting stored instants. Keep CPA and Shell-PAMC deployment timezones equal:
-CPA log lines without an offset are interpreted in that shared timezone. Raw log
-downloads and explicit UTC pricing-tier rules retain their source semantics.
+En **Ajustes de Shell-PAMC → Zona horaria**, la zona del servidor se selecciona automáticamente y se
+marca como **Zona horaria del servidor**. Cada opción incluye su desplazamiento UTC actual. Una elección
+manual se persiste para el despliegue; seleccionar la zona del servidor restaura el valor
+predeterminado del despliegue. Las visualizaciones de marcas de tiempo, las selecciones de calendario, los totales
+diarios y los registros del servicio de Shell-PAMC usan este ajuste sin reescribir los instantes almacenados. Mantén
+iguales las zonas horarias del despliegue de CPA y Shell-PAMC: las líneas de registro de CPA sin desplazamiento se
+interpretan en esa zona horaria compartida. Las descargas de registros en bruto y las reglas de nivel de
+precios UTC explícitas conservan la semántica de su fuente.
 
-## Update checks
+## Comprobaciones de actualizaciones
 
-The System Information page reports the running and published versions of both Oh My
-CPA and your gateway. It reads release metadata from `api.github.com` only — fixed host,
-no operator-supplied URL — following `HTTP_PROXY`/`HTTPS_PROXY` like the price sync
-does. A sweep runs every six hours; opening the page and the **Check for updates**
-button also check, subject to a fifteen-minute floor per product — inside it the answer
-comes from the stored index and the message says so, because the feed is one shared
-per-address budget.
+La página Información del sistema informa de las versiones en ejecución y publicadas de Oh My
+CPA y de la pasarela. Lee los metadatos de las versiones solo desde `api.github.com` — host
+fijo, sin URL suministrada por el operador —, siguiendo `HTTP_PROXY`/`HTTPS_PROXY` igual que
+hace la sincronización de precios. Un barrido se ejecuta cada seis horas; abrir la página y el botón
+**Buscar actualizaciones** también comprueban, sujetos a un mínimo de quince minutos por producto —
+dentro de ese intervalo la respuesta proviene del índice almacenado y el mensaje lo indica, porque el
+feed es un presupuesto compartido por dirección.
 
-When either product has a newer published release, the **System Information** entry in
-the navigation carries a small amber dot. It reflects the stored answer and costs no
-request of its own, so it appears once a sweep or a check has found the release; an open
-console re-reads that answer hourly. **Ignore this version** on the product's row clears the
-dot for that one release and is remembered by the deployment, not the browser; pressing it
-again restores the reminder, and a later release is flagged regardless.
+Cuando alguno de los productos tiene una versión publicada más reciente, la entrada **Información del
+sistema** en la navegación lleva un pequeño punto ámbar. Refleja la respuesta almacenada y no tiene
+costo propio, por lo que aparece una vez que un barrido o comprobación ha encontrado la versión; una
+consola abierta relee esa respuesta cada hora. **Ignorar esta versión** en la fila del producto borra el
+punto para esa única versión y es recordado por el despliegue, no por el navegador; pulsarlo de nuevo
+restablece el recordatorio, y una versión posterior se marca independientemente.
 
-The header's GitHub link shows the project's star count, read by the server from the same
-host and held in memory. It costs at most one request an hour: the sweep refreshes it, and
-so does a console page load when page-load checks are allowed. With both switches below
-off, or until a first read has succeeded, the link simply shows no count. Once a read has
-succeeded the count stays for the life of the process: a refresh that fails keeps the
-previous count.
+El enlace de GitHub en el encabezado muestra el recuento de estrellas del proyecto, leído por el servidor
+desde el mismo host y guardado en memoria. Cuesta como máximo una solicitud por hora: el barrido lo
+actualiza, así como una carga de página de la consola cuando se permiten las comprobaciones en la carga
+de página. Con ambos interruptores de abajo desactivados, o hasta que una primera lectura haya tenido éxito,
+el enlace simplemente no muestra ningún recuento. Una vez que una lectura ha tenido éxito, el recuento
+permanece durante la vida del proceso: una actualización que falla conserva el recuento anterior.
 
-Two switches, because they answer different questions.
-`SHELLPAMC_UPDATE_CHECK_ENABLED=false` stops the sweep on an offline deployment; the page
-then keeps working from the last answer it stored, and a check that fails is reported
-with its reason and the time it was attempted.
-`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` additionally stops the check the page performs
-when it is opened, which is what an air-gapped or test deployment wants, since a page
-visit is not an operator asking a question. The **Check for updates** button works
-either way. GitHub's unauthenticated budget is 60 requests per hour for the address
-making them, and the page says so when a check is refused for that reason. Release notes
-are held in memory rather than stored, so after a restart the page names the versions
-and links to the source while the notes themselves are unavailable — see
-`docs/architecture.md` §10.
+Dos interruptores, porque responden a preguntas diferentes.
+`SHELLPAMC_UPDATE_CHECK_ENABLED=false` detiene el barrido en un despliegue sin conexión; la página
+sigue funcionando a partir de la última respuesta que almacenó, y una comprobación que falla se informa
+con su motivo y la hora en que se intentó.
+`SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD=false` detiene además la comprobación que la página realiza
+al abrirse, que es lo que quiere un despliegue en red aislada o de prueba, ya que una visita a la
+página no es un operador haciendo una pregunta. El botón **Buscar actualizaciones** funciona de cualquier
+forma. El presupuesto no autenticado de GitHub es de 60 solicitudes por hora para la dirección que las
+hace, y la página lo indica cuando una comprobación es rechazada por ese motivo. Las notas de versión
+se guardan en memoria en lugar de almacenarse, por lo que tras un reinicio la página nombra las versiones
+y enlaza a la fuente mientras las notas en sí no están disponibles — consulta `docs/architecture.md` §10.
 
-## Console updates
+## Actualizaciones desde la consola
 
-On a container deployment with an updater (ADR 0099), the System Information page offers
-**Update now** beside a product that has a newer release. `docs/install.md` ("Upgrading")
-is the operator's guide, including the one command that adds an updater to a deployment
-that predates it.
+En un despliegue de contenedor con actualizador (ADR 0099), la página Información del sistema ofrece
+**Actualizar ahora** junto a un producto que tiene una versión más reciente. `docs/install.md` ("Actualización")
+es la guía del operador, incluido el comando único que añade un actualizador a un despliegue
+anterior.
 
-The updater is the Shell-PAMC image run as `shell-pamc updater serve`. It listens on
-`:8090` inside the Docker network and publishes no port. Its settings are read from its
-own environment, and an installation needs none of them:
+El actualizador es la imagen de Shell-PAMC ejecutada como `shell-pamc updater serve`. Escucha en
+`:8090` dentro de la red de Docker y no publica ningún puerto. Sus ajustes se leen desde su
+propio entorno, y una instalación no necesita ninguno de ellos:
 
-| Variable | Default | Purpose |
+| Variable | Valor predeterminado | Propósito |
 | --- | --- | --- |
-| `SHELLPAMC_UPDATER_LISTEN_ADDR` | `:8090` | Listen address inside the container |
-| `SHELLPAMC_UPDATER_SOCKET` | `/var/run/docker.sock` | The Docker socket as mounted in the container |
-| `SHELLPAMC_UPDATER_OMC_CONTAINER` | found by image | The console container, when more than one Shell-PAMC runs on the host |
-| `SHELLPAMC_UPDATER_CPA_CONTAINER` | found from `SHELLPAMC_CPA_BASE_URL` | The gateway container, when it cannot be found that way |
-| `SHELLPAMC_UPDATER_LINK_NETWORK` | empty | Set by `updater install`: the network the updater keeps the console attached to. Empty when both are services of one Compose file |
-| `SHELLPAMC_UPDATER_PUBLIC_KEY` | built in | Base64 Ed25519 public key that replaces the built-in release key, for a fork that signs its own releases |
+| `SHELLPAMC_UPDATER_LISTEN_ADDR` | `:8090` | Dirección de escucha dentro del contenedor |
+| `SHELLPAMC_UPDATER_SOCKET` | `/var/run/docker.sock` | El socket de Docker tal como está montado en el contenedor |
+| `SHELLPAMC_UPDATER_OMC_CONTAINER` | encontrado por imagen | El contenedor de la consola, cuando hay más de un Shell-PAMC en ejecución en el host |
+| `SHELLPAMC_UPDATER_CPA_CONTAINER` | encontrado desde `SHELLPAMC_CPA_BASE_URL` | El contenedor de la pasarela, cuando no se puede encontrar de esa forma |
+| `SHELLPAMC_UPDATER_LINK_NETWORK` | vacía | Definida por `updater install`: la red a la que el actualizador mantiene conectada la consola. Vacía cuando ambos son servicios de un mismo archivo Compose |
+| `SHELLPAMC_UPDATER_PUBLIC_KEY` | integrada | Clave pública Ed25519 en Base64 que reemplaza la clave de versión integrada, para una bifurcación que firma sus propias versiones |
 
-Security boundary:
+Límite de seguridad:
 
 - The updater holds the Docker socket, which is control of Docker on that host. The
   console does not, and stays read-only and unprivileged. Anyone who can already run
