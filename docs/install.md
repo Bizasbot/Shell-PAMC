@@ -596,6 +596,16 @@ version is to restore a backup. OMC takes an encrypted backup by itself before i
 applies a migration; `docs/ops/sqlite-operations.md` is the runbook for backups taken by
 hand, and for restoring one. Back up `.env` separately.
 
+> **Breaking change: container, service, network and data names were renamed.** The
+> defaults `oh-my-cpa`, `oh-my-cpa-updater` and `oh-my-cpa-data` are now `shell-pamc`,
+> `shell-pamc-updater` and `shell-pamc-data`, and the console is served under
+> `/shell-pamc` instead of `/omc` (set `SHELLPAMC_BASE_PATH=/omc` to keep the old path).
+> The updater finds containers by name, so an installation upgraded in place has to
+> recreate them: stop and remove the old containers, rename the services in the Compose
+> file, and move the data (`docker volume` contents or the `oh-my-cpa-data` directory)
+> to the new name before `docker compose up -d`. The database file inside is renamed
+> by Shell-PAMC itself on first start. Back up first.
+
 ### From the console
 
 When a newer release exists, **System Information** shows **Update now** beside Oh My
