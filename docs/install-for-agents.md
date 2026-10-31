@@ -62,10 +62,10 @@ Paths A and B2 use the Compose files each release publishes. They are the harden
 equivalents of the minimal files in `docs/install.md` (read-only root filesystem,
 dropped capabilities, every setting in `deploy/.env`).
 
-Every container path below includes an `oh-my-cpa-updater` service. It lets the user
+Every container path below includes an `shell-pamc-updater` service. It lets the user
 update OMC and CPA from the console, and it mounts the Docker socket, which amounts to
 control of Docker on the host. Say so before starting it (rule 4). If the user declines,
-delete the `oh-my-cpa-updater` service block from the Compose file before running
+delete the `shell-pamc-updater` service block from the Compose file before running
 `docker compose up`; nothing else depends on it.
 
 ### A. CPA and OMC together
@@ -73,10 +73,10 @@ delete the `oh-my-cpa-updater` service block from the Compose file before runnin
 Use a new directory. If any target file already exists, stop and ask.
 
 ```bash
-mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data,cpa/auths,cpa/logs,cpa/plugins} && cd oh-my-cpa
+mkdir -p shell-pamc/{deploy,shell-pamc-data,cpa/auths,cpa/logs,cpa/plugins} && cd shell-pamc
 curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.full.yml -o deploy/compose.full.yml
 curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/cpa.config.example.yaml -o cpa/config.yaml
-sudo chown 10001:10001 oh-my-cpa-data
+sudo chown 10001:10001 shell-pamc-data
 
 cat > deploy/.env <<EOF
 CPA_MANAGEMENT_KEY=$(openssl rand -hex 24)
@@ -97,7 +97,7 @@ Find CPA's Compose file (`docker inspect <cpa container>` shows it in the
 these under `services:` and leave every existing line as it is:
 
 ```yaml
-  oh-my-cpa:
+  shell-pamc:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
@@ -108,9 +108,9 @@ these under `services:` and leave every existing line as it is:
       SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
       SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
+  shell-pamc-updater:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
@@ -121,11 +121,11 @@ these under `services:` and leave every existing line as it is:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 Set the host in `SHELLPAMC_CPA_BASE_URL` to CPA's service name in that file. If a
-top-level `volumes:` key exists, add `oh-my-cpa-data:` under it. Then, in the Compose
+top-level `volumes:` key exists, add `shell-pamc-data:` under it. Then, in the Compose
 file's directory:
 
 ```bash
@@ -140,7 +140,7 @@ Have the user fill in the management key, apply the time-zone and usage-collecti
 points from B2 (as `environment:` entries here), and start the new services alone:
 
 ```bash
-docker compose up -d oh-my-cpa oh-my-cpa-updater
+docker compose up -d shell-pamc shell-pamc-updater
 ```
 
 Name the services. A bare `docker compose up -d` would also recreate CPA if its
@@ -150,9 +150,9 @@ time are unchanged. The data lives in a Docker volume, so no `chown` is needed.
 ### B2. OMC beside an existing CPA
 
 ```bash
-mkdir -p oh-my-cpa/{deploy,oh-my-cpa-data} && cd oh-my-cpa
+mkdir -p shell-pamc/{deploy,shell-pamc-data} && cd shell-pamc
 curl -fsSL https://github.com/Bizasbot/Shell-PAMC/releases/latest/download/compose.omc.yml -o deploy/compose.omc.yml
-sudo chown 10001:10001 oh-my-cpa-data
+sudo chown 10001:10001 shell-pamc-data
 
 cat > deploy/.env <<EOF
 SHELLPAMC_CPA_BASE_URL=http://host.docker.internal:8317
@@ -214,7 +214,7 @@ requested, retaining the working directory and data path.
 Needs Go 1.26+, Node.js 22+ and pnpm 11+.
 
 ```bash
-git clone https://github.com/Bizasbot/Shell-PAMC.git && cd oh-my-cpa
+git clone https://github.com/Bizasbot/Shell-PAMC.git && cd Shell-PAMC
 pnpm install --frozen-lockfile
 cp -n .env.example .env
 ```
@@ -244,7 +244,7 @@ the actual reason. Common ones:
 
 | Symptom | Cause |
 | --- | --- |
-| Database will not open | The `oh-my-cpa-data` directory is not owned by `10001:10001` (A and B2) |
+| Database will not open | The `shell-pamc-data` directory is not owned by `10001:10001` (A and B2) |
 | `degraded`, `cpa_connected: false` | Wrong URL or key, or CPA refuses remote management |
 | `cpa_management_api: unsupported` | CPA is older than v8.0.0; the user must upgrade it |
 
@@ -252,11 +252,11 @@ On a container path with the updater, also check that it is running and that the
 has not lost it:
 
 ```bash
-docker inspect -f '{{.State.Health.Status}}' oh-my-cpa-updater
+docker inspect -f '{{.State.Health.Status}}' shell-pamc-updater
 ```
 
 `healthy` is the expected answer. With the updater in CPA's own Compose file (B1) the
-container is named `<project>-oh-my-cpa-updater-1`; `docker compose ps` lists it.
+container is named `<project>-shell-pamc-updater-1`; `docker compose ps` lists it.
 
 ## 5. Upgrading an existing OMC
 
@@ -270,12 +270,12 @@ For a container installation, find the existing Compose file, data directory and
 `.env`, and back up the data directory and `.env`. Then check for the updater:
 
 ```bash
-docker ps --filter name=oh-my-cpa-updater --format '{{.Names}} {{.Status}}'
+docker ps --filter name=shell-pamc-updater --format '{{.Names}} {{.Status}}'
 ```
 
 **The updater is running.** The user can update from the console's System Information
 page, and nothing needs to be run. To upgrade for them now, use the Compose commands
-below and include `oh-my-cpa-updater` in both.
+below and include `shell-pamc-updater` in both.
 
 **No updater, and OMC's image is not pinned to a version.** One command adds the updater
 and brings OMC to the current release, without editing the Compose file. It mounts the
@@ -289,18 +289,18 @@ docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock 
 Keep `--pull always`: without it Docker runs the older `latest` the host already has,
 which has no updater. It prints the console container it found and what it did. If it reports more than one
 Shell-PAMC container, rerun it with `--container <name>`. It does not touch CPA (rule 2).
-Afterwards `docker inspect -f '{{.State.Health.Status}}' oh-my-cpa-updater` must print
-`healthy`. `docker rm -f oh-my-cpa-updater` undoes it.
+Afterwards `docker inspect -f '{{.State.Health.Status}}' shell-pamc-updater` must print
+`healthy`. `docker rm -f shell-pamc-updater` undoes it.
 
 **The user declines, or the image is pinned.** Upgrade through Compose:
 
 ```bash
-docker compose -f deploy/compose.omc.yml pull oh-my-cpa
-docker compose -f deploy/compose.omc.yml up -d --no-deps oh-my-cpa
+docker compose -f deploy/compose.omc.yml pull shell-pamc
+docker compose -f deploy/compose.omc.yml up -d --no-deps shell-pamc
 ```
 
 Use `compose.full.yml` if that is the file in place. When OMC is a service in CPA's
-Compose file, run `docker compose pull oh-my-cpa` and `docker compose up -d oh-my-cpa`
+Compose file, run `docker compose pull shell-pamc` and `docker compose up -d shell-pamc`
 in that directory. For a pinned image, change the pin to the wanted release first; do
 not unpin it without asking.
 
@@ -314,13 +314,13 @@ the backup. Verify as in step 4.
   `http://127.0.0.1:18080/shell-pamc/`.
 - That the sign-in password is the CPA management key, and which file holds it. Not
   the key itself.
-- To back up the `.env` file and OMC's data (the `oh-my-cpa-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
+- To back up the `.env` file and OMC's data (the `shell-pamc-data` directory or volume). Without `SHELLPAMC_MASTER_KEY` the data
   cannot be read.
 - Whether OMC is collecting usage, and why not if it is off.
 - Whether the updater is installed. If it is: later releases of OMC and CPA can be
-  installed from the console's System Information page, and the `oh-my-cpa-updater`
+  installed from the console's System Information page, and the `shell-pamc-updater`
   container holds the Docker socket. If it is not: the command that adds it.
-- Anything changed outside the new `oh-my-cpa` directory.
+- Anything changed outside the new `shell-pamc` directory.
 
 OMC redirects the bare `/shell-pamc` to `/shell-pamc/`. If a reverse proxy sits in front of it,
 route both `/shell-pamc` and `/shell-pamc/` to OMC (or redirect `/shell-pamc` to `/shell-pamc/` at the proxy) and

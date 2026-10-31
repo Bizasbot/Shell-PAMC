@@ -185,7 +185,7 @@ export async function omcSettings({ base, page, check, context, expectProblem })
   );
   // The exact, once-only popup is synthetic: it proves navigation without allowing
   // an undeclared destination or contacting the external service.
-  expectProblem({ kind: 'outbound', url: /^https:\/\/github\.com\/WizisCool\/oh-my-cpa$/, method: 'GET', count: 1 });
+  expectProblem({ kind: 'outbound', url: /^https:\/\/github\.com\/Bizasbot\/Shell-PAMC$/, method: 'GET', count: 1 });
   await context.route(repositoryURL, (route) => route.fulfill({ contentType: 'text/html', body: '<title>Repository</title>' }));
   const consoleURL = page.url();
   const [repositoryPage] = await Promise.all([page.waitForEvent('popup'), repositoryLink.click()]);

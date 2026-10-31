@@ -50,7 +50,7 @@ type Config struct {
 
 // DefaultUpdaterURL is the updater sidecar's address: the name both an installed
 // sidecar and the Compose service answer to on a network shared with the console.
-const DefaultUpdaterURL = "http://oh-my-cpa-updater:8090"
+const DefaultUpdaterURL = "http://shell-pamc-updater:8090"
 
 // UpdaterConfig locates the sidecar that applies updates the console asks for.
 type UpdaterConfig struct {

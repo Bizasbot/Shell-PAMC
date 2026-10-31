@@ -88,7 +88,7 @@ func (c *OpenRouterClient) Fetch(ctx context.Context) (Catalog, error) {
 		return Catalog{}, err
 	}
 	request.Header.Set("Accept", "application/json")
-	request.Header.Set("User-Agent", "oh-my-cpa-pricing/3")
+	request.Header.Set("User-Agent", "shell-pamc-pricing/3")
 	response, err := c.client.Do(request)
 	if err != nil {
 		return Catalog{}, fmt.Errorf("fetch OpenRouter prices: %w", err)

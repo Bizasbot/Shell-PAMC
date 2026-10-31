@@ -1,7 +1,7 @@
 # Agent capabilities
 
 The console's **Agent** page (`/agent`), the remote MCP endpoint (`/api/mcp`) and the
-`oh-my-cpa mcp` stdio bridge all drive Shell-PAMC through one capability registry. This document is the contract for adding to
+`shell-pamc mcp` stdio bridge all drive Shell-PAMC through one capability registry. This document is the contract for adding to
 it; see `docs/adr/0026-one-capability-registry-over-shared-operations.md` for why the
 registry exists in this shape.
 
@@ -369,7 +369,7 @@ The registry is served to MCP clients in two ways, from one tool definition
 **Remote, by URL.** The console serves Streamable HTTP at `<console URL>/api/mcp`:
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://shell-pamc.example.com/shell-pamc/api/mcp \
+claude mcp add --transport http shell-pamc https://shell-pamc.example.com/shell-pamc/api/mcp \
   --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
@@ -386,7 +386,7 @@ capability HTTP endpoints:
 ```bash
 SHELLPAMC_SERVER_URL=https://shell-pamc.example.com/shell-pamc \
 SHELLPAMC_CPA_MANAGEMENT_KEY=<your CPA management key> \
-oh-my-cpa mcp
+shell-pamc mcp
 ```
 
 The subcommand runs before configuration, database, and CPA client initialization, so

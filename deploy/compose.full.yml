@@ -31,13 +31,13 @@ services:
       start_period: 5s
     restart: unless-stopped
     networks:
-      - oh-my-cpa
+      - shell-pamc
     ports:
       - ${CPA_BIND:-127.0.0.1:8317}:8317
 
-  oh-my-cpa:
+  shell-pamc:
     image: ${SHELLPAMC_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}
-    container_name: ${SHELLPAMC_CONTAINER_NAME:-oh-my-cpa}
+    container_name: ${SHELLPAMC_CONTAINER_NAME:-shell-pamc}
     user: "10001:10001"
     read_only: true
     security_opt:
@@ -64,20 +64,20 @@ services:
       SHELLPAMC_UPDATE_CHECK_ENABLED: ${SHELLPAMC_UPDATE_CHECK_ENABLED:-true}
       SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD: ${SHELLPAMC_UPDATE_CHECK_ON_PAGE_LOAD:-true}
     volumes:
-      - ${SHELLPAMC_DATA_PATH:-../oh-my-cpa-data}:/data
+      - ${SHELLPAMC_DATA_PATH:-../shell-pamc-data}:/data
     restart: unless-stopped
     networks:
-      - oh-my-cpa
+      - shell-pamc
     ports:
       - ${SHELLPAMC_BIND:-127.0.0.1:8080}:8080
 
   # Applies the updates the console's System Information page offers. It holds the Docker
   # socket, which is control of this host's Docker. To update by hand instead, delete
-  # this service and run `docker rm -f oh-my-cpa-updater`: Compose leaves the container
+  # this service and run `docker rm -f shell-pamc-updater`: Compose leaves the container
   # of a deleted service running (docs/install.md, "Upgrading").
-  oh-my-cpa-updater:
+  shell-pamc-updater:
     image: ${SHELLPAMC_IMAGE:-ghcr.io/bizasbot/shell-pamc:latest}
-    container_name: ${SHELLPAMC_UPDATER_CONTAINER_NAME:-oh-my-cpa-updater}
+    container_name: ${SHELLPAMC_UPDATER_CONTAINER_NAME:-shell-pamc-updater}
     command: ["updater", "serve"]
     # The socket belongs to root on the host; with every capability dropped this is root
     # that can open the socket and nothing else.
@@ -91,8 +91,8 @@ services:
       - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
     restart: unless-stopped
     networks:
-      - oh-my-cpa
+      - shell-pamc
 
 networks:
-  oh-my-cpa:
-    name: ${SHELLPAMC_NETWORK_NAME:-oh-my-cpa}
+  shell-pamc:
+    name: ${SHELLPAMC_NETWORK_NAME:-shell-pamc}

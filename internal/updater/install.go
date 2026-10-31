@@ -11,14 +11,14 @@ import (
 
 // SIDECAR_NAME is both the installed updater's container name and the DNS name the
 // console looks for it under.
-const SIDECAR_NAME = "oh-my-cpa-updater"
+const SIDECAR_NAME = "shell-pamc-updater"
 
 // LINK_NETWORK is the network an installed updater shares with the console.
 //
 // It is the updater's own network rather than the deployment's Compose network: a
 // container Compose does not know about, attached to a Compose network, makes
 // `docker compose down` fail on a network that still has an endpoint.
-const LINK_NETWORK = "oh-my-cpa-updater"
+const LINK_NETWORK = "shell-pamc-updater"
 
 // Environment variables an updater container is configured with.
 const (

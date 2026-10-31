@@ -93,7 +93,7 @@ export async function verifyDockerImage(image, version) {
   }
 }
 
-const UPDATER_NAME = 'oh-my-cpa-updater';
+const UPDATER_NAME = 'shell-pamc-updater';
 const DOCKER_SOCKET = '/var/run/docker.sock';
 
 function containerExists(name) {
@@ -187,7 +187,7 @@ export async function verifyUpdaterInstall(image) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const image = process.argv[2] ?? 'oh-my-cpa:release-test';
+  const image = process.argv[2] ?? 'shell-pamc:release-test';
   await verifyUpdaterRoleProbe(image);
   await verifyUpdaterInstall(image);
   await verifyDockerImage(image, process.env.RELEASE_TAG ?? 'v0.1.0');

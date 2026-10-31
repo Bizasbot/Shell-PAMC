@@ -80,4 +80,4 @@ body:
     id: evidence
     attributes:
       label: Logs and screenshots
-      description: Container logs (`docker compose logs oh-my-cpa`), browser console errors, failed network responses, or screenshots. Redact secrets first.
+      description: Container logs (`docker compose logs shell-pamc`), browser console errors, failed network responses, or screenshots. Redact secrets first.

@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "oh-my-cpa-demo",
+  "name": "shell-pamc-demo",
   "main": "worker.mjs",
   // The demonstration answers on its own domain only. The `workers.dev` route is off
   // because that subdomain is account-level and is derived from the operator's account

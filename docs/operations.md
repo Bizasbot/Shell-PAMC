@@ -75,10 +75,10 @@ a message naming the variable.
 | `SHELLPAMC_OMC_REPO` / `SHELLPAMC_CPA_REPO` | `Bizasbot/Shell-PAMC` / `router-for-me/CLIProxyAPI` | `owner/name` the checks read, for a fork |
 | `SHELLPAMC_DEMO_MODE` | `false` | Serve the console from the built-in fixture; see [Demo mode](#demo-mode) |
 | `SHELLPAMC_UPDATER_ENABLED` | `true` | `false` makes the console ignore an updater and offer no update action; see [Console updates](#console-updates) |
-| `SHELLPAMC_UPDATER_URL` | `http://oh-my-cpa-updater:8090` | Where the console looks for the updater. The default is the service and container name every install method uses |
+| `SHELLPAMC_UPDATER_URL` | `http://shell-pamc-updater:8090` | Where the console looks for the updater. The default is the service and container name every install method uses |
 | `SHELLPAMC_GOOGLE_FONTS_URL` | `https://fonts.googleapis.com` | The Google Fonts stylesheet API the font library installs from, or a compatible mirror for a deployment that cannot reach Google. Requests honour `HTTPS_PROXY`; font files are downloaded only from Google's font hosts or the mirror's own site. Used only when an operator installs a family; uploading needs no network |
 
-The MCP stdio bridge (`oh-my-cpa mcp`) reads `SHELLPAMC_SERVER_URL`,
+The MCP stdio bridge (`shell-pamc mcp`) reads `SHELLPAMC_SERVER_URL`,
 `SHELLPAMC_CPA_MANAGEMENT_KEY` and the optional `SHELLPAMC_VERSION` only; the remote MCP
 endpoint has no setting of its own. See [Agent and MCP](#agent-and-mcp).
 
@@ -184,7 +184,7 @@ On a container deployment with an updater (ADR 0099), the System Information pag
 is the operator's guide, including the one command that adds an updater to a deployment
 that predates it.
 
-The updater is the Shell-PAMC image run as `oh-my-cpa updater serve`. It listens on
+The updater is the Shell-PAMC image run as `shell-pamc updater serve`. It listens on
 `:8090` inside the Docker network and publishes no port. Its settings are read from its
 own environment, and an installation needs none of them:
 
@@ -261,7 +261,7 @@ External agents connect over MCP to the same capability registry, in one of two 
 | Transport | Address | Credential |
 | --- | --- | --- |
 | Streamable HTTP, served by the console | `<console URL>/api/mcp`, for example `https://shell-pamc.example.com/shell-pamc/api/mcp` | `Authorization: Bearer <CPA management key>` |
-| stdio, the `oh-my-cpa mcp` bridge process | `SHELLPAMC_SERVER_URL` (the console URL, including any base path) | `SHELLPAMC_CPA_MANAGEMENT_KEY` |
+| stdio, the `shell-pamc mcp` bridge process | `SHELLPAMC_SERVER_URL` (the console URL, including any base path) | `SHELLPAMC_CPA_MANAGEMENT_KEY` |
 
 The HTTP endpoint needs nothing installed where the agent runs; the **Connect** action at
 the top of `/agent` shows the deployment's address and copyable client
@@ -274,7 +274,7 @@ that require OAuth discovery cannot use it and use the bridge instead.
 
 The stdio bridge is for clients that only speak stdio. It accepts plain HTTP only for
 loopback addresses, refuses redirects, opens no data directory, and prints its usage for
-`oh-my-cpa mcp --help`.
+`shell-pamc mcp --help`.
 
 There is no separate external credential: holding the management key is
 administrator-equivalent, so an external agent can prepare an operation and read its

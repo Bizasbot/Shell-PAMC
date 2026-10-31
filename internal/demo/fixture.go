@@ -548,7 +548,7 @@ func pluginStoreCatalog() []storePluginEntry {
 			tags: []string{"routing"}, logo: fixtureLogo("TR", "#BE185D"), sourceID: "community"},
 		// Shell-PAMC's own registry: the source the console manages itself, and the one
 		// whose entries it pins above every other registry's.
-		{id: "usage-digest", name: "Usage digest", version: "0.3.0", author: "oh-my-cpa",
+		{id: "usage-digest", name: "Usage digest", version: "0.3.0", author: "shell-pamc",
 			description: "Posts a daily spend and request summary for this console to a webhook.",
 			repository:  "WizisCool/omc-plugin-usage-digest", license: "MIT",
 			tags: []string{"observability", "digest"}, logo: fixtureLogo("UD", "#0369A1"),

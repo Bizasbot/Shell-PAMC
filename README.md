@@ -120,7 +120,7 @@ services:
       - ./logs:/CLIProxyAPI/logs
       - ./plugins:/CLIProxyAPI/plugins
 
-  oh-my-cpa:
+  shell-pamc:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     depends_on:
@@ -133,9 +133,9 @@ services:
       SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
       SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
+  shell-pamc-updater:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
@@ -146,7 +146,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 In that directory, download CPA's starter configuration, generate the two keys and start
@@ -166,12 +166,12 @@ to CPA at `http://127.0.0.1:8317`.
 #### CLIProxyAPI is already installed
 
 Add the services under `services:` in the Compose file that runs CPA, and merge
-`oh-my-cpa-data:` into the top-level `volumes:` key if one exists. `cli-proxy-api` is
+`shell-pamc-data:` into the top-level `volumes:` key if one exists. `cli-proxy-api` is
 the service name in CPA's own Compose file; replace it if the service is named
 differently.
 
 ```yaml
-  oh-my-cpa:
+  shell-pamc:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
@@ -182,9 +182,9 @@ differently.
       SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
       SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
+  shell-pamc-updater:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
@@ -195,7 +195,7 @@ differently.
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 Add two lines to `.env` in the same directory:
@@ -205,8 +205,8 @@ SHELLPAMC_CPA_MANAGEMENT_KEY=<CPA's management key in plaintext, not the hash in
 SHELLPAMC_MASTER_KEY=<output of: openssl rand -hex 32>
 ```
 
-Add the `oh-my-cpa-updater` service from the snippet as well to update from the console.
-Run `docker compose up -d oh-my-cpa oh-my-cpa-updater`, which leaves the CPA container
+Add the `shell-pamc-updater` service from the snippet as well to update from the console.
+Run `docker compose up -d shell-pamc shell-pamc-updater`, which leaves the CPA container
 running as it is.
 Open **`http://127.0.0.1:8080/shell-pamc/`** and sign in with the management key.
 
@@ -219,7 +219,7 @@ lists the other cases.
 
 ```yaml
 services:
-  oh-my-cpa:
+  shell-pamc:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     ports:
@@ -232,9 +232,9 @@ services:
       SHELLPAMC_MASTER_KEY: ${SHELLPAMC_MASTER_KEY:?}
       SHELLPAMC_DATA_DIR: /data
     volumes:
-      - oh-my-cpa-data:/data
+      - shell-pamc-data:/data
 
-  oh-my-cpa-updater:
+  shell-pamc-updater:
     image: ghcr.io/bizasbot/shell-pamc:latest
     restart: unless-stopped
     command: ["updater", "serve"]
@@ -245,7 +245,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  oh-my-cpa-data:
+  shell-pamc-data:
 ```
 
 Create `.env` in the same directory:
@@ -260,7 +260,7 @@ the management key.
 
 ### Updating
 
-With the `oh-my-cpa-updater` service in place, **System Information** in the console shows
+With the `shell-pamc-updater` service in place, **System Information** in the console shows
 **Update now** beside a newer release of Shell-PAMC or CLIProxyAPI. The updater pulls the
 image, replaces the container with its settings, volumes and networks unchanged, and
 restores the previous container if the new one does not start.
@@ -272,8 +272,8 @@ Docker host; the Compose file is not edited:
 docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-The command adds an `oh-my-cpa-updater` container and brings Shell-PAMC up to the current
-release in the same step. `docker rm -f oh-my-cpa-updater` removes it. An image pinned to
+The command adds an `shell-pamc-updater` container and brings Shell-PAMC up to the current
+release in the same step. `docker rm -f shell-pamc-updater` removes it. An image pinned to
 a version tag is never changed from the console. [Upgrading](docs/install.md#upgrading)
 describes each case and the manual alternative.
 
@@ -296,9 +296,9 @@ CPA hands each usage record to a single reader. If another usage tracker reads t
 CPA, stop it, or add `SHELLPAMC_USAGE_INGEST_MODE: "off"` under `environment:` to use OMC
 for management only. Other management panels do not conflict.
 
-`oh-my-cpa-updater` mounts the Docker socket, which amounts to control of Docker on that
+`shell-pamc-updater` mounts the Docker socket, which amounts to control of Docker on that
 host. Console updates are turned off by deleting the service from the Compose file and
-removing its running container with `docker rm -f oh-my-cpa-updater`; Compose leaves a
+removing its running container with `docker rm -f shell-pamc-updater`; Compose leaves a
 container whose service was deleted running. Updates are then applied with
 `docker compose pull && docker compose up -d`.
 
@@ -374,14 +374,14 @@ with ready-to-copy configuration.
 Claude Code:
 
 ```bash
-claude mcp add --transport http oh-my-cpa https://cpa.example.com/shell-pamc/api/mcp \
+claude mcp add --transport http shell-pamc https://cpa.example.com/shell-pamc/api/mcp \
   --header "Authorization: Bearer $SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
 
 Codex (`~/.codex/config.toml`):
 
 ```toml
-[mcp_servers.oh-my-cpa]
+[mcp_servers.shell-pamc]
 url = "https://cpa.example.com/shell-pamc/api/mcp"
 bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ```
@@ -391,7 +391,7 @@ Clients configured in JSON, such as Cursor:
 ```json
 {
   "mcpServers": {
-    "oh-my-cpa": {
+    "shell-pamc": {
       "url": "https://cpa.example.com/shell-pamc/api/mcp",
       "headers": { "Authorization": "Bearer <CPA management key>" }
     }
@@ -407,7 +407,7 @@ The binary carries a stdio bridge that forwards to the console:
 ```json
 {
   "mcpServers": {
-    "oh-my-cpa": {
+    "shell-pamc": {
       "command": "/path/to/shell-pamc",
       "args": ["mcp"],
       "env": {

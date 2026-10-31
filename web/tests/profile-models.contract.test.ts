@@ -7,12 +7,12 @@ const base = (names: string[]) => ({ models: names.map(row), targets: [], routes
 
 describe('profile model filter', () => {
   it('maps profile ids to the displayed name', () => {
-    expect(profileModelName('oh-my-cpa/pv-claude-opus-5-5')).toBe('gemini-claude-opus-5.5');
-    expect(profileModelName('oh-my-cpa/claude-sonnet-5-5')).toBe('claude-sonnet-5-5');
-    expect(profileModelName('oh-my-cpa/pv-vc001-gemini-3-5-flash-lite')).toBe('gemini-3.5-flash-lite');
+    expect(profileModelName('shell-pamc/pv-claude-opus-5-5')).toBe('gemini-claude-opus-5.5');
+    expect(profileModelName('shell-pamc/claude-sonnet-5-5')).toBe('claude-sonnet-5-5');
+    expect(profileModelName('shell-pamc/pv-vc001-gemini-3-5-flash-lite')).toBe('gemini-3.5-flash-lite');
   });
   it('keeps only profile models and their routes', () => {
-    const allowed = allowedProfileModels(['oh-my-cpa/pv-claude-opus-5-5']);
+    const allowed = allowedProfileModels(['shell-pamc/pv-claude-opus-5-5']);
     const out = filterRoutingByProfiles(base(['gemini-claude-opus-5.5', 'gpt-image-2', 'gpt-oss-120b']), allowed);
     expect(out.models.map((m) => m.name)).toEqual(['gemini-claude-opus-5.5']);
     expect(out.routes).toHaveLength(1);
@@ -28,7 +28,7 @@ describe('profile model filter', () => {
 describe('direct subscriptions', () => {
   it('a routed pv-gpt profile entry also admits the directly served gpt model', async () => {
     const { allowedProfileModels } = await import('../src/types/profileModels');
-    const allowed = allowedProfileModels(['oh-my-cpa/pv-gpt-6-1-sol', 'oh-my-cpa/pv-claude-opus-5-5'])!;
+    const allowed = allowedProfileModels(['shell-pamc/pv-gpt-6-1-sol', 'shell-pamc/pv-claude-opus-5-5'])!;
     expect(allowed.has('gpt-6.1-sol')).toBe(true);
     expect(allowed.has('gemini-gpt-6.1-sol')).toBe(true);
     expect(allowed.has('claude-opus-5.5')).toBe(true);

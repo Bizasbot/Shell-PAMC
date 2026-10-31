@@ -236,7 +236,7 @@ and running-version endpoints. It also runs the image as the updater: the image'
 health probe must report that role healthy, and `updater install` must create a hardened
 updater beside a running console, leave the console in place, and let the console read
 the updater's status with no setting on either side. That check replaces a container
-named `oh-my-cpa-updater`, so it refuses to start on a host that already has one. It is
+named `shell-pamc-updater`, so it refuses to start on a host that already has one. It is
 not part of `test:fast` or ordinary static gates.
 Release identity is resolved first, then static, full built-browser/demo and three probe shards run on the exact revision in parallel. The `verify` aggregate requires every result to succeed before native packaging or container publication. The browser lanes provision and launch-probe Chromium with
 `scripts/install-chromium.mjs`; local parity is `pnpm verify:full`. Dependency installation alone does not install the browser binary.

@@ -138,7 +138,7 @@ cycle even though the `internal/usage` directory appears in both directions.
 | `internal/usage/ingest` | Collector loop, decode processor, usage-fact fold and data-lifecycle maintenance | `repository`, `management`, `security`, `usage` |
 | `internal/quota` | Per-provider quota probes and normalization | `management` |
 | `internal/release` | Published-version observation: version comparison, the release feed client, the stored index, and the project's star count for the header link | `repository` |
-| `internal/updater` | The updater role of the binary (`oh-my-cpa updater serve\|install\|healthcheck`, ADR 0099): a Docker Engine API client over the unix socket, container replacement with rollback, signed-manifest verification, the two-request control service, the one-command installer, and the client the console uses to reach it | `release` |
+| `internal/updater` | The updater role of the binary (`shell-pamc updater serve\|install\|healthcheck`, ADR 0099): a Docker Engine API client over the unix socket, container replacement with rollback, signed-manifest verification, the two-request control service, the one-command installer, and the client the console uses to reach it | `release` |
 | `internal/demo` | The publication fixture: an in-process CPA stand-in, the seeded history, and the capture state the console renders | `domain`, `pricing`, `quota`, `repository`, `security`, `usage`, `usage/ingest` |
 | `internal/capability` | Agent capability declarations, JSON Schema validation, permission/risk rules, pending-operation store, executor audit | `repository`, `crypto` |
 | `internal/operations` | Shared management operations (usage analysis, requests, providers, OAuth, quota, keys, config, pricing, system, model directory) used by both console handlers and capabilities | `capability`, `cpa/management`, `cpa/gateway`, `modelcatalog`, `pricing`, `quota`, `repository` |
@@ -412,7 +412,7 @@ one tool per capability offered to the `mcp` adapter, plus `omc_operation_status
   outside `/api/v1` and its session middleware: it accepts the management key as a
   bearer token only, spends the login throttle on a wrong one, is stateless with plain
   JSON responses, and is refused by the demo policy.
-- `oh-my-cpa mcp` is a stdio process whose backend forwards to the `/api/v1/capabilities`
+- `shell-pamc mcp` is a stdio process whose backend forwards to the `/api/v1/capabilities`
   endpoints with the same bearer credential. The subcommand is dispatched before
   configuration, database, and CPA client initialization, so it opens no data directory.
   Non-loopback URLs must be HTTPS, redirects are refused, responses are bounded, and only
@@ -2593,7 +2593,7 @@ System Information page
        ├─ omc only: stored release answer says update_available
        │            └─ internal/release downloads release-manifest.json + .sig (forwarded unread)
        ├─ audit system.update.apply = admitted   (a failed audit write refuses the update)
-       └─ POST http://oh-my-cpa-updater:8090/v1/update   Authorization: Bearer HMAC(master key)
+       └─ POST http://shell-pamc-updater:8090/v1/update   Authorization: Bearer HMAC(master key)
             ├─ omc: verify signature, repository and non-regressing version; pull repo@digest; tag
             ├─ cpa: pull the configured tag
             ├─ stop old, rename it to <name>-omc-previous, create + start replacement, await healthy

@@ -376,7 +376,7 @@ func (db *DB) createMigrationBackup(ctx context.Context, migrationVersion int) e
 		return fmt.Errorf("encode migration backup: %w", err)
 	}
 	stamp := time.Now().UTC().Format("20060102T150405.000000000Z")
-	backupPath := filepath.Join(backupDir, fmt.Sprintf("oh-my-cpa-%s-before-migration-%d.db.enc", stamp, migrationVersion))
+	backupPath := filepath.Join(backupDir, fmt.Sprintf("shell-pamc-%s-before-migration-%d.db.enc", stamp, migrationVersion))
 	if err := writePrivateFile(backupPath, encoded); err != nil {
 		return fmt.Errorf("write migration backup: %w", err)
 	}

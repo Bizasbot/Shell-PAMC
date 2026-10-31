@@ -283,7 +283,7 @@ func TestApplyRefusesWithoutAskingTheSidecar(t *testing.T) {
 	})
 	t.Run("a name that is not a product", func(t *testing.T) {
 		fixture := newUpdaterFixture(t)
-		if status, _ := fixture.apply(t, "oh-my-cpa"); status != http.StatusBadRequest {
+		if status, _ := fixture.apply(t, "shell-pamc"); status != http.StatusBadRequest {
 			t.Fatalf("status = %d", status)
 		}
 	})
@@ -337,7 +337,7 @@ func TestInterruptedConsoleUpdateIsRecordedByTheNextProcess(t *testing.T) {
 	// The process that replaced the console starts while the update is still verifying
 	// it, and the sidecar then replaces itself, so it is briefly unreachable.
 	answer(updater.StageVerifying, nil)
-	answer("", errors.New("dial tcp: lookup oh-my-cpa-updater: no such host"))
+	answer("", errors.New("dial tcp: lookup shell-pamc-updater: no such host"))
 	answer(updater.StageVerifying, nil)
 	if recorded := fixture.audits(t, "system.update.completed"); len(recorded) != 0 {
 		t.Fatalf("an unfinished job has no outcome yet: %+v", recorded)

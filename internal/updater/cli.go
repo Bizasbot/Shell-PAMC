@@ -21,7 +21,7 @@ Applies updates the console asks for by replacing this deployment's containers.
 It needs the Docker socket, which the console itself never has.
 
 Commands:
-  serve        run the updater; the console reaches it at http://oh-my-cpa-updater:8090
+  serve        run the updater; the console reaches it at http://shell-pamc-updater:8090
   install      add the updater to a deployment that is already running:
                  docker run --rm --pull always -u 0 \
                    -v /var/run/docker.sock:/var/run/docker.sock \

@@ -27,8 +27,8 @@ Bug reports and feature requests go through the issue forms under [`.github/ISSU
 
 1. **Fork and clone the repository**:
    ```bash
-   git clone https://github.com/<your-username>/oh-my-cpa.git
-   cd oh-my-cpa
+   git clone https://github.com/<your-username>/Shell-PAMC.git
+   cd Shell-PAMC
    pnpm install --frozen-lockfile
    ```
 

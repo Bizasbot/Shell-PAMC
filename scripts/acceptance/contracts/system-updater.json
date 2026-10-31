@@ -33,7 +33,7 @@
     },
     {
       "id": "unknown-product",
-      "body": { "product": "oh-my-cpa" },
+      "body": { "product": "shell-pamc" },
       "status": 400,
       "response": { "error": "unknown release product" }
     }
