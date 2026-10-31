@@ -17,12 +17,11 @@ MCP · Visualization · Management
 [![CI](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml/badge.svg)](https://github.com/Bizasbot/Shell-PAMC/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/Bizasbot/Shell-PAMC?style=flat&label=stars)](https://github.com/Bizasbot/Shell-PAMC/stargazers)
 [![Container image](https://img.shields.io/badge/ghcr.io-bizasbot%2Fshell--pamc-2496ED?style=flat&logo=docker&logoColor=white)](https://github.com/Bizasbot/Shell-PAMC/pkgs/container/shell-pamc)
-[![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)](https://github.com/router-for-me/CLIProxyAPI)
+![CLIProxyAPI](https://img.shields.io/badge/CLIProxyAPI-v8+-4f46e5?style=flat)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
 <br />
 
-**[Live Demo](https://omc-demo.junze.dev)** ·
 [Install](#install) ·
 [Features](#features) ·
 [Agents and MCP](#agents-and-mcp) ·
@@ -31,21 +30,18 @@ MCP · Visualization · Management
 
 <br />
 
-<a href="https://omc-demo.junze.dev">
+
   <img src="docs/images/readme/hero-split.en.webp" alt="The Shell-PAMC dashboard, half in the light theme and half in the dark theme" width="100%">
-</a>
+
 
 </div>
 
-[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) (CPA) is an API gateway: it
+CLIProxyAPI (CPA) is an API gateway: it
 adapts protocols, holds credentials and proxies requests. **Shell-PAMC** is a web
 console for it. Shell-PAMC manages the gateway's providers, credentials and configuration, and
 records the usage and cost of every request. It is a single Go
 binary with the React console embedded and a local SQLite database, runs offline, and
 signs in with CPA's management key.
-
-> [!TIP]
-> **[Try the Live Demo](https://omc-demo.junze.dev)**
 
 ## Screenshots
 
@@ -506,7 +502,7 @@ public issue.
 
 ## Acknowledgements
 
-Shell-PAMC is built on [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), which
+Shell-PAMC is built on CLIProxyAPI, which
 handles protocol adaptation, credentials and request proxying.
 
 Thanks also to the [Linux.do community](https://linux.do).

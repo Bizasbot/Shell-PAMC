@@ -444,9 +444,9 @@ Disable a credential explicitly when it must stop serving.
 
 This precedence requires **CPA v8.0.33 or later**; upgrade an older gateway before
 relying on credential overrides. Shell-PAMC's general v8.0.0 Management API baseline is
-unchanged. The behavior follows CPA's [credential override change](https://github.com/router-for-me/CLIProxyAPI/commit/69d0ff8e295aea349966b16f20e2966421bfeb18).
+unchanged. The behavior follows CPA's credential override change.
 The upstream regression
-[`TestCodexExcludedModelsCredentialPriorityAfterPatchAndReload`](https://github.com/router-for-me/CLIProxyAPI/blob/2422c6b0f5fe16495320fa29456493874c1977a0/sdk/cliproxy/service_excluded_models_priority_test.go)
+`TestCodexExcludedModelsCredentialPriorityAfterPatchAndReload`
 checks immediate PATCH effects, reloads and restored inheritance after clearing.
 
 The facade exposes GET/PATCH at `/api/v1/management/auth-files/model-aliases` and

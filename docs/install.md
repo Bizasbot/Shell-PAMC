@@ -1,6 +1,6 @@
 # Installation
 
-Shell-PAMC runs beside [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
+Shell-PAMC runs beside CLIProxyAPI
 (CPA) **v8.0.0 or later**. The console's sign-in password is CPA's management key. The
 image is **`ghcr.io/bizasbot/shell-pamc`** on GitHub Container Registry, for `linux/amd64` and `linux/arm64`.
 
