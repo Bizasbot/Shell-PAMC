@@ -25,7 +25,7 @@ If you discover a potential vulnerability in Shell-PAMC, please report it throug
    - Affected components, endpoints, or versions.
    - Potential impact of exploitation.
 
-If GitHub Private Vulnerability Reporting is unavailable, you may contact the maintainers directly via email at `127123086+WizisCool@users.noreply.github.com` with `[SECURITY]` in the subject line.
+If GitHub Private Vulnerability Reporting is unavailable, you may contact the maintainers directly via email at `nversionesmybrd@gmail.com` with `[SECURITY]` in the subject line.
 
 ## Response Process
 
