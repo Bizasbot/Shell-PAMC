@@ -170,7 +170,7 @@ failure as well as success.
 
 ## Deploying
 
-The demonstration is served at **`omc-demo.junze.dev`**, as a Cloudflare custom domain.
+Shell-PAMC has no public demonstration yet. `wrangler.jsonc` declares no route, so a deploy publishes nothing on any domain until the operator adds a custom domain under `routes`.
 The `workers.dev` route is off in `wrangler.jsonc`, on purpose: that subdomain is
 account-level and derived from the account's identity, so leaving it on would publish the
 demonstration at an address carrying personal information. Both settings are stated in the
