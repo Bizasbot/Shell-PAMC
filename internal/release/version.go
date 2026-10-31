@@ -1,4 +1,4 @@
-// Package release observes the published versions of Oh My CPA and the gateway it
+// Package release observes the published versions of Shell-PAMC and the gateway it
 // manages, and reports what changed between the version running here and the newest
 // release.
 //

@@ -26,7 +26,7 @@ const (
 var ErrKeyRequired = errors.New("CPA management key is required")
 
 // Manager implements a stateless, single-admin session whose only login
-// credential is the CPA management key. Oh My CPA has no separate admin
+// credential is the CPA management key. Shell-PAMC has no separate admin
 // password: entering the management key in the UI is exactly how the bundled
 // CPA panel works. The key never leaves the server process; the browser only
 // receives an HMAC-signed, expiring cookie.

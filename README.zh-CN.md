@@ -1,10 +1,10 @@
 <div align="center">
 
 <a href="#gh-light-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Shell-PAMC" width="340">
 </a>
 <a href="#gh-dark-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Shell-PAMC" width="340">
 </a>
 
 ### 集中管理 API 与 OAuth，可视化观测请求、成本、用量
@@ -32,13 +32,13 @@ MCP · 可视化 · 管理
 <br />
 
 <a href="https://omc-demo.junze.dev">
-  <img src="docs/images/readme/hero-split.zh.webp" alt="Oh My CPA 仪表盘，左半为浅色主题，右半为深色主题" width="100%">
+  <img src="docs/images/readme/hero-split.zh.webp" alt="Shell-PAMC 仪表盘，左半为浅色主题，右半为深色主题" width="100%">
 </a>
 
 </div>
 
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)（CPA）是一个 API 网关，负责协议适配、凭据管理与请求代理。
-**Oh My CPA**（OMC）是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
+**Shell-PAMC**（OMC）是配套的 Web 控制台：管理网关的提供商、凭据与配置，并记录每条请求的用量与费用。
 OMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本地 SQLite，可离线运行，登录使用 CPA 的管理密钥。
 
 > [!TIP]
@@ -81,7 +81,7 @@ OMC 是单个 Go 二进制文件，内嵌 React 控制台，数据存放在本�
 将以下内容交给 Claude Code、Codex、Cursor 或其他 Agent。Agent 会检查机器现状，选择合适的安装方式并执行：
 
 ```text
-按照这份指南帮我安装 Oh My CPA：
+按照这份指南帮我安装 Shell-PAMC：
 https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/docs/install-for-agents.md
 ```
 
@@ -247,7 +247,7 @@ SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 
 ### 更新
 
-编排文件中包含 `oh-my-cpa-updater` 服务时，控制台的**系统信息**页会在 Oh My CPA 或 CLIProxyAPI
+编排文件中包含 `oh-my-cpa-updater` 服务时，控制台的**系统信息**页会在 Shell-PAMC 或 CLIProxyAPI
 有新版本时显示**立即更新**。更新程序拉取新镜像，按原有的配置、数据卷与网络重建容器；新容器未能正常启动时恢复原容器。
 
 在该服务出现之前安装的部署，在 Docker 主机上执行一条命令即可启用，无需修改编排文件：
@@ -256,7 +256,7 @@ SHELLPAMC_MASTER_KEY=<openssl rand -hex 32 的输出>
 docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-该命令添加 `oh-my-cpa-updater` 容器，并同时把 Oh My CPA 升级到当前版本。`docker rm -f oh-my-cpa-updater`
+该命令添加 `oh-my-cpa-updater` 容器，并同时把 Shell-PAMC 升级到当前版本。`docker rm -f oh-my-cpa-updater`
 可将其移除。镜像固定为版本标签时，控制台不会改动它。各种情况及手动更新方式见[升级](docs/install.md#upgrading)（英文）。
 
 ### 安装原生可执行文件
@@ -414,7 +414,7 @@ bearer_token_env_var = "SHELLPAMC_CPA_MANAGEMENT_KEY"
 ## 架构
 
 ```text
-浏览器 ──▶ 直接访问 / 已有 HTTPS 入口 ──▶ Oh My CPA (:8080)
+浏览器 ──▶ 直接访问 / 已有 HTTPS 入口 ──▶ Shell-PAMC (:8080)
                                            ├─ 内嵌 React SPA (/shell-pamc/)
                                            ├─ SQLite WAL (/data)
                                            └─ 用量采集器 ──▶ CLIProxyAPI (:8317)
@@ -472,7 +472,7 @@ pnpm dev          # Air + Vite 热重载，地址 http://127.0.0.1:5173/shell-pa
 
 ## 致谢
 
-Oh My CPA 基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 构建，协议适配、凭据管理与请求代理均由后者完成。
+Shell-PAMC 基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 构建，协议适配、凭据管理与请求代理均由后者完成。
 
 也感谢 [Linux.do 社区](https://linux.do)。
 

@@ -17,10 +17,10 @@ import (
 )
 
 /**
- * Oh My CPA's own plugin registry as a store source.
+ * Shell-PAMC's own plugin registry as a store source.
  *
  * CPA lists the built-in official registry and every `plugins.store-sources` entry.
- * Oh My CPA's registry is not in the file because an operator put it there: it is
+ * Shell-PAMC's registry is not in the file because an operator put it there: it is
  * part of what this console ships, so the store reconciles the file with the
  * operator's preference before it is read, and a configuration save that drops the
  * address is repaired in the same transaction. The preference
@@ -32,7 +32,7 @@ import (
  */
 
 // isOMCPluginStoreURL reports whether a registry URL is
-// Oh My CPA's own registry.
+// Shell-PAMC's own registry.
 func isOMCPluginStoreURL(raw string) bool {
 	return strings.TrimSpace(raw) == pluginregistry.OMCSourceURL
 }
@@ -154,7 +154,7 @@ func writePluginSourceError(writer http.ResponseWriter, err error, isAfterConfig
 			// The cause goes to the log; the response stays fixed.
 			slog.Error("the managed plugin source could not be restored after a configuration save", "error", err)
 			writeJSON(writer, http.StatusInternalServerError, map[string]any{
-				"error": "the configuration was saved, but the Oh My CPA plugin source could not be restored",
+				"error": "the configuration was saved, but the Shell-PAMC plugin source could not be restored",
 				"code":  "plugin_source_reconcile_failed",
 			})
 			return
@@ -166,9 +166,9 @@ func writePluginSourceError(writer http.ResponseWriter, err error, isAfterConfig
 	case errors.Is(err, errPluginSourceAuditUnavailable):
 		// Fail-closed: nothing was written, so the response says the repair was
 		// refused rather than what the audit insert reported.
-		message := "the Oh My CPA plugin source could not be changed because its audit record could not be written"
+		message := "the Shell-PAMC plugin source could not be changed because its audit record could not be written"
 		if isAfterConfigSave {
-			message = "the configuration was saved, but the Oh My CPA plugin source could not be restored because its audit record could not be written"
+			message = "the configuration was saved, but the Shell-PAMC plugin source could not be restored because its audit record could not be written"
 		}
 		writeJSON(writer, http.StatusInternalServerError, map[string]any{
 			"error": message,
@@ -177,9 +177,9 @@ func writePluginSourceError(writer http.ResponseWriter, err error, isAfterConfig
 		return
 	}
 
-	message := "the Oh My CPA plugin source could not be written to the gateway configuration: "
+	message := "the Shell-PAMC plugin source could not be written to the gateway configuration: "
 	if isAfterConfigSave {
-		message = "the configuration was saved, but the Oh My CPA plugin source could not be restored: "
+		message = "the configuration was saved, but the Shell-PAMC plugin source could not be restored: "
 	}
 	message += publicCPAErrorMessage(err)
 	writeJSON(writer, http.StatusBadGateway, map[string]any{
@@ -191,5 +191,5 @@ func writePluginSourceError(writer http.ResponseWriter, err error, isAfterConfig
 // pluginSourceReadError reports a preference read that failed, before any store or
 // settings read depends on it.
 func (h *Handler) pluginSourceReadError(writer http.ResponseWriter, err error) {
-	writeInternalError(writer, fmt.Errorf("read the Oh My CPA plugin source preference: %w", err))
+	writeInternalError(writer, fmt.Errorf("read the Shell-PAMC plugin source preference: %w", err))
 }

@@ -14,7 +14,7 @@ import (
 type APIGeneration string
 
 const (
-	// APIGenerationV8 is /v8/management, the API Oh My CPA is built on.
+	// APIGenerationV8 is /v8/management, the API Shell-PAMC is built on.
 	APIGenerationV8 APIGeneration = "v8"
 	// APIGenerationV0 is /v0/management. It is addressed only for the reads and
 	// configuration writes the console has not moved to the v8 tree (see
@@ -27,7 +27,7 @@ const (
 // Management API. A CPA older than v8 would otherwise answer 404 to every path,
 // which reads as a scattering of "unsupported operation" errors rather than the
 // one fact the operator has to act on.
-var ErrManagementV8Required = errors.New("CPA does not serve the v8 Management API; Oh My CPA requires CPA v8.0.0 or later")
+var ErrManagementV8Required = errors.New("CPA does not serve the v8 Management API; Shell-PAMC requires CPA v8.0.0 or later")
 
 // ErrManagementDisabled is returned, before any request is sent, while the
 // gateway serves no Management API at all. CPA answers 404 on every management

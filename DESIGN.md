@@ -1,5 +1,5 @@
 ---
-name: Oh My CPA
+name: Shell-PAMC
 description: A quiet developer console for AI resource identity & organization
 colors:
   primary: "#0579bd"          # dark mode's filled-control step; light mode uses #004a73
@@ -158,13 +158,13 @@ components:
     padding: "20px"
 ---
 
-# Design System: Oh My CPA
+# Design System: Shell-PAMC
 
 ## Overview
 
 **Creative North Star: "The Quiet Panel"**
 
-Oh My CPA is a dedicated developer control plane for AI resources and proxy telemetry. Built upon an OpenCode-inspired minimalist console philosophy, the system delivers dense, honest, and high-frequency operational visibility without aesthetic clutter. It repudiates decorative gradients, glassmorphism and flying entrances: the work sits on one quiet panel, and only what the reader summons rises above it.
+Shell-PAMC is a dedicated developer control plane for AI resources and proxy telemetry. Built upon an OpenCode-inspired minimalist console philosophy, the system delivers dense, honest, and high-frequency operational visibility without aesthetic clutter. It repudiates decorative gradients, glassmorphism and flying entrances: the work sits on one quiet panel, and only what the reader summons rises above it.
 
 The navigation stands on a canvas one step behind the page (`--canvas`); the header and the route content share a single inset panel at `--bg`, rounded 12px. Static surfaces are a fill and a hairline; menus, popovers, toasts, dialogs and side sheets carry a soft shadow because they are above the work. Typography defaults to Sarasa Mono SC across Latin, Cyrillic, and CJK characters; operators choose the interface and monospace roles separately, and code and aligned data use the mono role with tabular numerals. The interface follows the doctrine of "Quiet chrome, loud data"—the surrounding scaffolding remains dark and muted, reserving saturated chromatic accents exclusively for genuine operational states.
 
@@ -263,7 +263,7 @@ saturated at the top; see `docs/design.md` §2.
 
 **Embedded font:** the complete Regular and Bold Sarasa Mono SC, cut into `unicode-range` woff2 shards: the core shard (ASCII, punctuation and the console's own copy) loads with the first frame, the rest only when a page draws one of their characters (ADR 0094). `pnpm subset-font` regenerates them.
 
-**Character:** Unified, technical, and precise. The monospaced character set across Chinese, English, Malay, and code symbols gives Oh My CPA the rhythm of an interactive terminal monitor while retaining high CJK legibility. The two roles still differ in what they are for: an operator who picks a proportional interface face gets it for names, models and figures, while identifiers, keys, paths and code keep the mono role.
+**Character:** Unified, technical, and precise. The monospaced character set across Chinese, English, Malay, and code symbols gives Shell-PAMC the rhythm of an interactive terminal monitor while retaining high CJK legibility. The two roles still differ in what they are for: an operator who picks a proportional interface face gets it for names, models and figures, while identifiers, keys, paths and code keep the mono role.
 
 ### Hierarchy
 - **Display** (700, 42px, line-height 1.1, letter-spacing -0.04em): The single prominent dashboard KPI (e.g. Total Requests, Estimated Cost).
@@ -746,7 +746,7 @@ footprint is not repeated as allocated pages or record counts; internal geometry
 and connection settings belong in the sanitized diagnostics bundle.
 
 Component health has four divided rows, each with a component name, semantic status and one
-short inline operational summary. The gateway shows its credential count, Oh My CPA its start
+short inline operational summary. The gateway shows its credential count, Shell-PAMC its start
 age and memory, SQLite its request count, and the collector the latest usage age. Each summary
 uses at most two paired facts, with labels beside values rather than separate metric grids.
 Positive ingestion backlog and collection gaps appear as warning readings; healthy zero values

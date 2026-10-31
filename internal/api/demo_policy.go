@@ -119,7 +119,7 @@ var demoPolicy = []demoPolicyRule{
 	// own data even though it is a POST.
 	{http.MethodPost, "/api/v1/instances/default/discover", demoAllow, ""},
 
-	// Oh My CPA's own metadata. None of these reaches CPA or the network.
+	// Shell-PAMC's own metadata. None of these reaches CPA or the network.
 	{http.MethodGet, "/api/v1/resources", demoAllow, ""},
 	{http.MethodGet, "/api/v1/capabilities", demoAllow, ""},
 	{http.MethodPost, "/api/v1/capabilities/invoke", demoRefuse, "agent execution and authorization are unavailable in the demonstration"},

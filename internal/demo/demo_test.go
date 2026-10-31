@@ -280,7 +280,7 @@ func TestSeedAggregatesRollups(t *testing.T) {
 	}
 }
 
-// The caller-key names are Oh My CPA's own metadata, and they are what the request
+// The caller-key names are Shell-PAMC's own metadata, and they are what the request
 // list shows instead of a mask. The alias has to be stored under the same fingerprint
 // the seeded records carry, or the list would show the mask.
 func TestSeedNamesTheCallerKeys(t *testing.T) {
@@ -673,7 +673,7 @@ func TestFixturePublishesNoPluginLogoURL(t *testing.T) {
 }
 
 // A store entry is joined to its registry by the entry's own source_url: the console
-// decides whether an entry belongs to Oh My CPA's managed registry from that field. A
+// decides whether an entry belongs to Shell-PAMC's managed registry from that field. A
 // fixture that omits it makes every entry look like it came from nowhere, so the managed
 // entries cannot be marked, pinned first, or withheld when the switch is off - the whole
 // feature would silently be a no-op in the demonstration.

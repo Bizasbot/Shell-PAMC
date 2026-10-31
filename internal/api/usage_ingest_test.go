@@ -258,7 +258,7 @@ func TestUsageIngestRefreshStoresRecordsBeforeItReportsSuccess(t *testing.T) {
 	})
 
 	// CPA accepts a request after the collector has already polled, so this record
-	// exists nowhere in Oh My CPA until the refresh pulls it. The first poll is
+	// exists nowhere in Shell-PAMC until the refresh pulls it. The first poll is
 	// awaited explicitly: queuing earlier would let the background collector win
 	// the race and prove nothing about the endpoint.
 	fixture.waitForInitialPoll(t)

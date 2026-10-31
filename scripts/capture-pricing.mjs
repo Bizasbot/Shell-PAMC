@@ -20,7 +20,7 @@ const baseUrl = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:5173/shell-pamc'
 // Resolved against the repository root so a relative override still lands in the
 // worktree, and defaulted into gitignored tmp/ so captures cannot be committed.
 const outDir = path.resolve(root, process.env.SHELLPAMC_CAPTURE_DIR || 'tmp/captures');
-// Oh My CPA has no separate admin password: login uses the CPA management key.
+// Shell-PAMC has no separate admin password: login uses the CPA management key.
 const password = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
 
 function readEnvFile(name) {

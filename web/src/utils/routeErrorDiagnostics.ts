@@ -83,7 +83,7 @@ export function createRouteErrorDiagnostics(
 /** Copy only the same bounded, redacted projection shown on screen, never the thrown object. */
 export function formatRouteErrorReport(diagnostics: RouteErrorDiagnostics): string {
   return [
-    'Oh My CPA',
+    'Shell-PAMC',
     `Error: ${diagnostics.errorType}`,
     `Message: ${diagnostics.message}`,
     ...(diagnostics.status !== undefined ? [`HTTP: ${diagnostics.status}`] : []),

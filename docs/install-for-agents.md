@@ -1,6 +1,6 @@
-# Install Oh My CPA (for a coding agent)
+# Install Shell-PAMC (for a coding agent)
 
-This runbook is for a coding agent installing Oh My CPA (OMC) on a user's machine. OMC
+This runbook is for a coding agent installing Shell-PAMC (OMC) on a user's machine. OMC
 is a web console for CLIProxyAPI (CPA). It needs **CPA v8.0.0 or later** and CPA's plaintext
 management key, which is also OMC's sign-in password. The Docker image is
 `ghcr.io/bizasbot/shell-pamc:latest` (amd64 and arm64). Native release archives cover Darwin,
@@ -288,7 +288,7 @@ docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock 
 
 Keep `--pull always`: without it Docker runs the older `latest` the host already has,
 which has no updater. It prints the console container it found and what it did. If it reports more than one
-Oh My CPA container, rerun it with `--container <name>`. It does not touch CPA (rule 2).
+Shell-PAMC container, rerun it with `--container <name>`. It does not touch CPA (rule 2).
 Afterwards `docker inspect -f '{{.State.Health.Status}}' oh-my-cpa-updater` must print
 `healthy`. `docker rm -f oh-my-cpa-updater` undoes it.
 

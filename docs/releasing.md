@@ -122,7 +122,7 @@ the [v0.3.9 release notes](releases/v0.3.9.md).
    git switch master
    git pull --ff-only
    test -z "$(git status --porcelain)"
-   git tag -a v0.3.9 -m "Oh My CPA v0.3.9"
+   git tag -a v0.3.9 -m "Shell-PAMC v0.3.9"
    git push origin v0.3.9
    ```
 

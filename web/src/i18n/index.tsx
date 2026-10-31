@@ -868,7 +868,7 @@ const DICT: Record<string, [string, string]> = {
   'agent.capability.quota_auto_refresh_set': ['修改自动刷新额度策略', 'Change automatic quota refresh policy'],
   'agent.capability.quota_auto_refresh_set.description': ['设置后台用凭证读取额度的间隔，以及额度重置后是否自动刷新。', 'Set how often credentials are read in the background, and whether a reset quota is read again.'],
   'omc.section_quota': ['额度', 'Quota'],
-  'omc.section_plugin_source': ['Oh My CPA 插件注册表', 'Oh My CPA plugin registry'],
+  'omc.section_plugin_source': ['Shell-PAMC 插件注册表', 'Shell-PAMC plugin registry'],
   'omc.plugin_source': ['Shell-PAMC 插件源', 'Shell-PAMC plugin registry'],
   'omc.plugin_source_desc': ['把 Shell-PAMC 维护的插件注册表加入插件源，并保持该源启用。', 'Adds the plugin registry Shell-PAMC maintains to the plugin sources and keeps it enabled.'],
   // Both rows say what the process will do on its own, because each automatic read is a

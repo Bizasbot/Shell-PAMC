@@ -13,7 +13,7 @@ import (
 //
 // The copy is the file as stored, read just before the write: that is the only
 // moment the state the operation replaces is readable, and it also captures an
-// edit made outside Oh My CPA since the last write. The first v8 write to a
+// edit made outside Shell-PAMC since the last write. The first v8 write to a
 // pre-v8 file is not reversible from CPA at all (it reformats the whole file,
 // moves every setting and turns sections CPA does not know into comments), so a
 // write whose copy cannot be kept is refused.

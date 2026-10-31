@@ -531,7 +531,7 @@ func (h *Handler) listUsageEvents(writer http.ResponseWriter, request *http.Requ
 // so the distinct fingerprints of the page are resolved together. The lookup is
 // best effort: a failure leaves `api_key_alias` empty and the console falls back
 // to the mask, because losing a cosmetic name must not fail the request list
-// itself. Aliases are Oh My CPA metadata and never carry key material, so nothing
+// itself. Aliases are Shell-PAMC metadata and never carry key material, so nothing
 // sensitive is read or returned here.
 func (h *Handler) attachClientKeyAliases(request *http.Request, items []usageEventResponse) {
 	if h.repo == nil || len(items) == 0 {

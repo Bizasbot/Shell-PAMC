@@ -30,7 +30,7 @@ type configFixtureCPA struct {
 }
 
 // configFixtureManagedPlugins is the plugins section in the managed steady state: the
-// console has already put Oh My CPA's registry into store-sources. A suite about the
+// console has already put Shell-PAMC's registry into store-sources. A suite about the
 // operator's own configuration save starts from it, so its save is the only write it
 // observes; the reconciliation's own write, backup and audit are owned by
 // management_plugin_source_test.go.

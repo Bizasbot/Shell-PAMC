@@ -117,9 +117,9 @@ func TestSystemInfoEndpoint(t *testing.T) {
 		t.Fatalf("decode system info: %v", err)
 	}
 
-	// Oh My CPA's own build version is reported as-is.
+	// Shell-PAMC's own build version is reported as-is.
 	if data.OMCVersion.RunningVersion != "v0.1.0-sys-test" {
-		t.Errorf("running Oh My CPA version = %q, want v0.1.0-sys-test", data.OMCVersion.RunningVersion)
+		t.Errorf("running Shell-PAMC version = %q, want v0.1.0-sys-test", data.OMCVersion.RunningVersion)
 	}
 	// The gateway's version is observed from the gateway, independently of any
 	// release check - a deployment that cannot reach GitHub must still be able to say
@@ -130,10 +130,10 @@ func TestSystemInfoEndpoint(t *testing.T) {
 	// No release service is attached in this test server, so the honest answer is
 	// "not checked yet" rather than a comparison against nothing.
 	if data.OMCVersion.State != release.UpdateIndeterminate {
-		t.Errorf("Oh My CPA state = %q, want %q", data.OMCVersion.State, release.UpdateIndeterminate)
+		t.Errorf("Shell-PAMC state = %q, want %q", data.OMCVersion.State, release.UpdateIndeterminate)
 	}
 	if data.OMCVersion.Reason != release.ReasonNoData {
-		t.Errorf("Oh My CPA reason = %q, want %q", data.OMCVersion.Reason, release.ReasonNoData)
+		t.Errorf("Shell-PAMC reason = %q, want %q", data.OMCVersion.Reason, release.ReasonNoData)
 	}
 
 	if data.Database.Status != "ok" {

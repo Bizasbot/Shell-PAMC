@@ -1,6 +1,6 @@
 # Configuration & Operations
 
-What an operator needs after `docs/install.md`: the settings Oh My CPA reads, the
+What an operator needs after `docs/install.md`: the settings Shell-PAMC reads, the
 constraints a deployment must respect, and how the parts that outlive a page visit
 behave. Database backup, restore and maintenance from the host have their own runbook,
 `docs/ops/sqlite-operations.md`.
@@ -184,7 +184,7 @@ On a container deployment with an updater (ADR 0099), the System Information pag
 is the operator's guide, including the one command that adds an updater to a deployment
 that predates it.
 
-The updater is the Oh My CPA image run as `oh-my-cpa updater serve`. It listens on
+The updater is the Shell-PAMC image run as `oh-my-cpa updater serve`. It listens on
 `:8090` inside the Docker network and publishes no port. Its settings are read from its
 own environment, and an installation needs none of them:
 
@@ -192,7 +192,7 @@ own environment, and an installation needs none of them:
 | --- | --- | --- |
 | `SHELLPAMC_UPDATER_LISTEN_ADDR` | `:8090` | Listen address inside the container |
 | `SHELLPAMC_UPDATER_SOCKET` | `/var/run/docker.sock` | The Docker socket as mounted in the container |
-| `SHELLPAMC_UPDATER_OMC_CONTAINER` | found by image | The console container, when more than one Oh My CPA runs on the host |
+| `SHELLPAMC_UPDATER_OMC_CONTAINER` | found by image | The console container, when more than one Shell-PAMC runs on the host |
 | `SHELLPAMC_UPDATER_CPA_CONTAINER` | found from `SHELLPAMC_CPA_BASE_URL` | The gateway container, when it cannot be found that way |
 | `SHELLPAMC_UPDATER_LINK_NETWORK` | empty | Set by `updater install`: the network the updater keeps the console attached to. Empty when both are services of one Compose file |
 | `SHELLPAMC_UPDATER_PUBLIC_KEY` | built in | Base64 Ed25519 public key that replaces the built-in release key, for a fork that signs its own releases |
@@ -209,13 +209,13 @@ Security boundary:
 - The updater accepts a product name only. It never takes an image, a container name or
   a command from the console, updates only the two containers it identified, and
   refuses an image pinned to a version tag or digest.
-- Oh My CPA is replaced only by the image a release's signed manifest names, and never
+- Shell-PAMC is replaced only by the image a release's signed manifest names, and never
   by an older version. CLIProxyAPI is an upstream image this project cannot sign: its
   update pulls the tag the container already uses.
 - A build without the release public key reports `signature_unavailable` and offers no
-  console update for Oh My CPA.
+  console update for Shell-PAMC.
 
-Network use: applying an Oh My CPA update makes the console download
+Network use: applying an Shell-PAMC update makes the console download
 `release-manifest.json` and its `.sig` from the release's assets on `github.com`,
 following redirects only to GitHub's own asset hosts over HTTPS, through the same proxy
 settings as the update check. The image pull is made by the Docker daemon with its own
@@ -331,15 +331,15 @@ The server-stored `omc_tps_calculation_mode` preference (`exclude_ttft` /
 `include_ttft`) also supports Agent/MCP reads and writes; historical timing and usage
 remain unchanged.
 
-## Oh My CPA plugin registry
+## Shell-PAMC plugin registry
 
 CPA reads its built-in `official` registry plus the registries in
 `plugins.store-sources`; the console no longer has a plugin store page, so the registry
-setting is what remains of it. Oh My CPA's own registry
+setting is what remains of it. Shell-PAMC's own registry
 (`https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json`)
 is a managed entry: the server adds it when the source is on (the default) and restores
 it after a configuration save that removed it, so the switch is **OMC Settings →
-Oh My CPA plugin registry** (`omc_plugin_source_enabled`, ADR 0104), not the configuration editor
+Shell-PAMC plugin registry** (`omc_plugin_source_enabled`, ADR 0104), not the configuration editor
 and not the source list on the plugin settings tab. Turning it off removes the
 address on the next plugin-settings or configuration save.
 

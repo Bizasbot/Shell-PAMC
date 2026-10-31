@@ -1,4 +1,4 @@
-// Package applog keeps a bounded, redacted copy of Oh My CPA's own service log so
+// Package applog keeps a bounded, redacted copy of Shell-PAMC's own service log so
 // the console can read it without shell access to the container.
 //
 // The process still writes every record to stderr, which stays the durable log a

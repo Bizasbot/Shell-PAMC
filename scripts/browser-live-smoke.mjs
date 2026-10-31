@@ -1,6 +1,6 @@
-// Browser acceptance for the Oh My CPA management centre.
+// Browser acceptance for the Shell-PAMC management centre.
 //
-// It drives a real Chromium against a running Oh My CPA instance. By default
+// It drives a real Chromium against a running Shell-PAMC instance. By default
 // it targets the embedded production build at http://127.0.0.1:8080/shell-pamc/;
 // override SHELLPAMC_URL with http://127.0.0.1:5173/shell-pamc/ to exercise the Vite dev
 // entry. The API facade and CPA instance configured in .env remain real.
@@ -21,7 +21,7 @@ import { chromium } from 'playwright-core';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appURL = (process.env.SHELLPAMC_URL || 'http://127.0.0.1:8080/shell-pamc/').replace(/\/$/, '');
-// Oh My CPA has no separate admin password: login uses the CPA management key.
+// Shell-PAMC has no separate admin password: login uses the CPA management key.
 const password = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
 const managementKey = process.env.SHELLPAMC_CPA_MANAGEMENT_KEY || readEnvFile('SHELLPAMC_CPA_MANAGEMENT_KEY') || '';
 

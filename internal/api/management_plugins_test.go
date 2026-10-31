@@ -430,7 +430,7 @@ func TestPluginSettingsRoundTrip(t *testing.T) {
 	state.mu.Unlock()
 	// One PATCH of the three keys the page owns: `dir` and `configs` are never
 	// written, only the variable the rule's type reads is sent, the source list is
-	// de-duplicated, and the managed Oh My CPA registry is put back because its
+	// de-duplicated, and the managed Shell-PAMC registry is put back because its
 	// switch is on.
 	want := `PATCH /v8/management/config {"plugins":{"enabled":true,"store-auth":[{"apply-to":["registry","artifact"],"match":"https://plugins.example/","token-env":"PLUGIN_TOKEN","type":"bearer"}],"store-sources":["https://plugins.example/registry.json","https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json"]}}`
 	if len(writes) != 1 || writes[0] != want {

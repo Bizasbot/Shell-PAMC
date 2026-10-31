@@ -764,7 +764,7 @@ which is the only check that catches a readback falling back to the default.
 
 ### Managed plugin source reconciliation coverage
 
-`internal/api/management_plugin_source_test.go` owns Oh My CPA's registry as a store
+`internal/api/management_plugin_source_test.go` owns Shell-PAMC's registry as a store
 source (ADR 0104): a store read adds the address, both configuration save paths restore
 it, the plugin settings save keeps it out of the editable list, an install adds it again
 before CPA is called, the switch removes it, and a demonstration filters its entries

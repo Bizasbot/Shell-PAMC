@@ -1,4 +1,4 @@
-# Oh My CPA architecture
+# Shell-PAMC architecture
 
 Module map, data flows, and the invariants that hold them together. Domain
 vocabulary lives in `CONTEXT.md`; visual rules live in `docs/design.md`; the
@@ -18,7 +18,7 @@ Go process ──▶ CPA management API (/v8/management; CPA v8+) ──▶ upst
 Go process ──▶ CPA RESP usage channel
 ```
 
-One process, one SQLite file, one Oh My CPA replica. The Go process owns the
+One process, one SQLite file, one Shell-PAMC replica. The Go process owns the
 base path contract: the SPA is served at `<base>/`, the API at `<base>/api/v1`,
 media at `<base>/media`. The embedded bundle's hashed assets are served from
 `<base>/assets/` and provider SVGs from `<base>/lobe-icons/`; unknown non-API
@@ -184,14 +184,14 @@ on their `plugins.*` paths (`configyaml.PluginSettingsEdit`), under the provider
 gate, the configuration mutex and the revision the page loaded, exactly like a
 configuration save.
 
-Oh My CPA's own registry is a managed entry of that list rather than a configured one
+Shell-PAMC's own registry is a managed entry of that list rather than a configured one
 (`internal/api/management_plugin_source.go`, ADR 0104). `internal/pluginregistry`
 compiles in the address published from `plugins/registry.json`; the server reads the
 `omc_plugin_source_enabled` preference (default on) and keeps `plugins.store-sources`
 in agreement with it. A plugin-settings save and both
 configuration save paths add or remove the address under the gate and the mutex, and a
 configuration save that removed it is repaired inside the save's own lock scope so the
-revision it reports already contains it. The plugin settings tab names the source `Oh My CPA` instead of CPA's URL host as one fixed line.
+revision it reports already contains it. The plugin settings tab names the source `Shell-PAMC` instead of CPA's URL host as one fixed line.
 
 The facade preserves CPA's `supports_oauth` wire field. CPA derives it from the presence
 of an auth provider, so the installed-plugin badge names the **Auth provider** capability
@@ -617,7 +617,7 @@ Properties to preserve when changing this code:
 
 ### The CPA v8 baseline
 
-Oh My CPA requires CPA v8.0.0 or later (ADR 0034, superseding ADR 0028; the mapping and
+Shell-PAMC requires CPA v8.0.0 or later (ADR 0034, superseding ADR 0028; the mapping and
 measurements are in `docs/cpa-v8-compat.md`). The management client addresses
 `/v8/management` for every operation and never follows a redirect: the management key
 rides on every request, so a redirect is returned to the caller as the response it is
@@ -693,7 +693,7 @@ apart (`CONFIG_LEGACY_BACKUP_RETENTION`), so everyday writes never push out the 
 before a conversion. A write whose copy cannot be kept is refused before anything is sent
 (`503 config_backup_failed`); only a v8 file with no store configured is written uncopied.
 The file is read before every write rather than remembered, which also captures an edit
-made outside Oh My CPA since the last one. The v8 writes after which CPA itself saves the
+made outside Shell-PAMC since the last one. The v8 writes after which CPA itself saves the
 file (`InstallPlugin`, `DeletePlugin`, `PatchAuthFileStatus`) take the same copy first. A
 change set CPA stops partway through is `ErrConfigPartiallyApplied`
 (`502 config_partially_applied`), and CPA's reason for a refused save has the stored
@@ -996,7 +996,7 @@ than by following a tail. An older `/logs?source=audit` link redirects there.
   read as `request_log.download` and is refused in demo mode. This route, not the
   request list, is how a request with no usage record is read (see Failure Detail in
   `CONTEXT.md`).
-- **Service log** — Oh My CPA's own process log. `cmd/shell-pamc` builds the logger as
+- **Service log** — Shell-PAMC's own process log. `cmd/shell-pamc` builds the logger as
   `applog.NewHandler(jsonStderrHandler, buffer)`, so stderr remains the durable log a
   deployment collects, and `NewHandler` in `internal/api` finds the buffer through
   `applog.BufferOf`. The buffer keeps the latest `applog.DefaultCapacity` records,
@@ -1546,7 +1546,7 @@ panel's reading; the exception is scoped in `docs/design.md` §7 rule 9 and ADR 
 
 ### Manual sync versus background collection
 
-The request list reads Oh My CPA's own database, so a manual refresh that only
+The request list reads Shell-PAMC's own database, so a manual refresh that only
 re-read it could never show a request CPA accepted a moment ago. `POST
 /usage/ingest/refresh` therefore drains CPA first: `ingest.Pipeline.RefreshNow`
 hands a request to the collector goroutine (a second consumer would divert
@@ -1816,7 +1816,7 @@ Three consequences shape the implementation:
   deleted key's history still needs its name; an alias belongs to the identity, not
   to the current configuration. Renaming is read-time resolution, so it changes how
   historical rows read without rewriting a single usage record.
-- **Alias writes never touch CPA's configuration.** Naming a key is Oh My CPA
+- **Alias writes never touch CPA's configuration.** Naming a key is Shell-PAMC
   metadata with its own endpoint, because routing it through `PUT /config.yaml`
   would rotate the revision for every other editor and rewrite a secret the
   operator did not touch.
@@ -1983,7 +1983,7 @@ Four properties are load-bearing:
 ### Streaming status and throughput (TPS) derivation
 
 CPA usage payloads include a boolean `stream` field indicating whether the request
-was executed in streaming mode. Oh My CPA records this in `usage_events.stream`
+was executed in streaming mode. Shell-PAMC records this in `usage_events.stream`
 (migration 023) as a nullable integer: `1` for streaming, `0` for non-streaming,
 and `NULL` for historical rows where the flag was not captured.
 

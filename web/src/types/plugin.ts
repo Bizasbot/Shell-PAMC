@@ -88,7 +88,7 @@ export interface PluginSettings {
   dir: string;
   store_sources: string[];
   store_auth: PluginStoreAuthRule[];
-  /** The registry Oh My CPA manages itself; it is not an entry of `store_sources`. */
+  /** The registry Shell-PAMC manages itself; it is not an entry of `store_sources`. */
   omc_source_url: string;
   omc_source_enabled: boolean;
 }

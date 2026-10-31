@@ -1,4 +1,4 @@
-// One-command development loop for Oh My CPA:
+// One-command development loop for Shell-PAMC:
 //   pnpm dev       -> Air (Go API) + Vite (frontend HMR)
 //   pnpm dev:api   -> Air only
 //   pnpm dev:web   -> Vite only (declared in package.json)

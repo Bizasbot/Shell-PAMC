@@ -2,7 +2,7 @@
 export const DEMO_ROUTES = [
   { path: '/dashboard', heading: '仪表盘', reads: ['/management/dashboard', '/management/dashboard/models', '/management/dashboard/token-heatmap', '/management/overview', '/management/dashboard/providers', '/management/auth-files', '/management/quota', '/usage/routing'], content: '.heatmap-panel .heatmap-grid' },
   { path: '/model-square', heading: '模型广场', reads: ['/management/model-square', '/pricing', '/usage/facets'], content: '.model-square-page [data-model-identity]' },
-  { path: '/agent', heading: 'Oh My CPA', headingSelector: '[data-testid="agent-empty"] [aria-label="Oh My CPA"]', reads: ['/agent/session', '/capabilities'], content: '[data-testid="agent-empty"]' },
+  { path: '/agent', heading: 'Shell-PAMC', headingSelector: '[data-testid="agent-empty"] [aria-label="Shell-PAMC"]', reads: ['/agent/session', '/capabilities'], content: '[data-testid="agent-empty"]' },
   // Nothing can be prepared in the demonstration, so the page states that instead of reading an operation.
   { path: '/authorize/:id', heading: '授权外部 Agent', reads: [], content: '[data-testid="agent-authorize-demo"]' },
   { path: '/ai-providers', heading: 'AI 提供商', reads: ['/management/providers'], content: '.providers-page .ant-table-row' },

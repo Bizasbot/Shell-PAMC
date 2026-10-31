@@ -63,7 +63,7 @@ func TestClientKeyListExposesUsageIdentity(t *testing.T) {
 	}
 }
 
-// An alias is Oh My CPA metadata. Naming a key must not write CPA's
+// An alias is Shell-PAMC metadata. Naming a key must not write CPA's
 // configuration document, which would rotate the revision for every other editor
 // and rewrite a secret the operator never touched.
 func TestClientKeyAliasDoesNotTouchCPAConfig(t *testing.T) {

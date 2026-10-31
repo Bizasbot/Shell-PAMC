@@ -1,7 +1,7 @@
 # Agent capabilities
 
 The console's **Agent** page (`/agent`), the remote MCP endpoint (`/api/mcp`) and the
-`oh-my-cpa mcp` stdio bridge all drive Oh My CPA through one capability registry. This document is the contract for adding to
+`oh-my-cpa mcp` stdio bridge all drive Shell-PAMC through one capability registry. This document is the contract for adding to
 it; see `docs/adr/0026-one-capability-registry-over-shared-operations.md` for why the
 registry exists in this shape.
 
@@ -313,7 +313,7 @@ a new capability must not add them:
   model-visible capability arguments or previews;
 - arbitrary URL, CPA, or HTTP proxying; SQL beyond the read-only query surface above
   (no writes, no hidden table, no redacted column); filesystem; shell; or host maintenance;
-- applying an update to Oh My CPA or CLIProxyAPI. Replacing a container is host
+- applying an update to Shell-PAMC or CLIProxyAPI. Replacing a container is host
   maintenance: it stays a console action with its own confirmation (ADR 0099), and the
   system information capability only reports that a newer release exists;
 - plugin installation, execution, or configuration, including the plugin system settings;

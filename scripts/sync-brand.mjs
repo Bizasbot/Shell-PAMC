@@ -117,7 +117,7 @@ export function renderFaviconSvg(colors) {
   const rules = (palette) => `.omc-ink { fill: ${palette.ink}; } .omc-accent { fill: ${palette.accent}; }`;
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${drawing.viewBox}" width="${drawing.width}" height="${drawing.height}">`,
-    '<title>Oh My CPA</title>',
+    '<title>Shell-PAMC</title>',
     '<style>',
     `  ${rules(colors.light)}`,
     `  @media (prefers-color-scheme: dark) { ${rules(colors.dark)} }`,

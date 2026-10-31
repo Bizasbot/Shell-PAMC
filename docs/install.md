@@ -1,6 +1,6 @@
 # Installation
 
-Oh My CPA (OMC) runs beside [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
+Shell-PAMC (OMC) runs beside [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
 (CPA) **v8.0.0 or later**. The console's sign-in password is CPA's management key. The
 image is **`ghcr.io/bizasbot/shell-pamc`** on GitHub Container Registry, for `linux/amd64` and `linux/arm64`.
 
@@ -601,7 +601,7 @@ hand, and for restoring one. Back up `.env` separately.
 When a newer release exists, **System Information** shows **Update now** beside Oh My
 CPA or CLIProxyAPI. Confirming it makes the `oh-my-cpa-updater` container:
 
-1. pull the new image. For Oh My CPA this is the exact image named by the release's
+1. pull the new image. For Shell-PAMC this is the exact image named by the release's
    signed manifest; for CLIProxyAPI it is the tag the container already uses;
 2. stop the running container and start a replacement with the same environment,
    volumes, ports, networks and Compose labels;
@@ -609,7 +609,7 @@ CPA or CLIProxyAPI. Confirming it makes the `oh-my-cpa-updater` container:
    replacement that exits or stays unhealthy is removed and the old container is started
    again under its own name.
 
-Updating Oh My CPA disconnects the console for a few seconds and the page reloads on
+Updating Shell-PAMC disconnects the console for a few seconds and the page reloads on
 the new version. Updating CLIProxyAPI restarts the gateway, which interrupts requests in
 flight. Each update and its outcome are written to the audit log.
 
@@ -632,7 +632,7 @@ docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock 
 
 The command:
 
-- finds the running Oh My CPA container, whichever of the Compose files in this guide
+- finds the running Shell-PAMC container, whichever of the Compose files in this guide
   started it. When more than one is running, add `--container <name>`; when CPA runs as
   a container the updater cannot identify, add `--cpa-container <name>`;
 - creates a container named `oh-my-cpa-updater` from the same image, on a network of the
@@ -649,7 +649,7 @@ the console then shows the command again in place of the update action.
 
 The updater container holds the Docker socket, which amounts to control of Docker on
 that host. It runs with a read-only filesystem and no capabilities, publishes no port,
-and accepts only two requests from the console: report status, and update Oh My CPA or
+and accepts only two requests from the console: report status, and update Shell-PAMC or
 CLIProxyAPI. `docs/operations.md` describes the boundary.
 
 A Compose file that later declares the `oh-my-cpa-updater` service itself conflicts with

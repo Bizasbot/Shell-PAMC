@@ -23,7 +23,7 @@ const (
 	PreferenceOAuthManagementView = "oauth_management_view_v1"
 
 	// PreferenceTokenStyle, PreferenceTpsCalculationMode, PreferenceModelView, PreferenceTheme and PreferenceScrollSmoothing
-	// are Oh My CPA's own display settings: how token counts are abbreviated across the
+	// are Shell-PAMC's own display settings: how token counts are abbreviated across the
 	// console, how TPS accounts for first-token latency, how the dashboard's model panels group their series (by call point or by
 	// upstream model), which palette each theme mode uses along with any palette the operator
 	// authored, and whether wheel and keyboard scrolls glide. They
@@ -69,7 +69,7 @@ const (
 	// credentials are read, made from the console that shows the readings.
 	PreferenceQuotaAutoRefresh = "omc_quota_auto_refresh"
 
-	// PreferenceOMCPluginSource is whether Oh My CPA's own plugin registry is listed in
+	// PreferenceOMCPluginSource is whether Shell-PAMC's own plugin registry is listed in
 	// the plugin store. The server reads it: the store reconciles CPA's
 	// `plugins.store-sources` with it, which is what keeps the registry present without
 	// anyone configuring it and removes it when the operator switches it off. A

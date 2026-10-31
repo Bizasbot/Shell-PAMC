@@ -1,4 +1,4 @@
-// Package pluginregistry names the plugin registry Oh My CPA publishes for CPA's
+// Package pluginregistry names the plugin registry Shell-PAMC publishes for CPA's
 // plugin store.
 //
 // The registry document itself lives in this repository (`plugins/registry.json`) and
@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	// OMCSourceURL is where CPA reads Oh My CPA's plugin registry.
+	// OMCSourceURL is where CPA reads Shell-PAMC's plugin registry.
 	OMCSourceURL = "https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/plugins/registry.json"
 	// OMCSourceName is what the console calls the registry. CPA derives a source's
 	// name from the URL's host, which for a raw GitHub address says nothing about
 	// who publishes it.
-	OMCSourceName = "Oh My CPA"
+	OMCSourceName = "Shell-PAMC"
 )
 
 // SourceID is the id CPA assigns a configured registry: `source-` followed by the

@@ -1,4 +1,4 @@
-// Package updater replaces the containers of an Oh My CPA deployment with newer images.
+// Package updater replaces the containers of an Shell-PAMC deployment with newer images.
 //
 // It runs as a sidecar (`oh-my-cpa updater serve`) because it needs the Docker socket,
 // which is equivalent to root on the host. Keeping that authority in a process with a

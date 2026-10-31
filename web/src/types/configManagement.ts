@@ -17,7 +17,7 @@ export interface ConfigScalars {
 /**
  * Whether the gateway's stored file is still in the pre-v8 layout. The editor
  * always reads and writes the v8 layout; a legacy file is converted by CPA on
- * the first save, after Oh My CPA keeps an encrypted copy of it.
+ * the first save, after Shell-PAMC keeps an encrypted copy of it.
  */
 export type StoredConfigLayout = 'v8' | 'legacy' | 'unknown';
 

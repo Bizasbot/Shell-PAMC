@@ -1,4 +1,4 @@
-# AGENTS.md — Oh My CPA Agent Contract
+# AGENTS.md — Shell-PAMC Agent Contract
 
 > Coding agents load this file at the start of a session (a local `AGENTS.override.md` supersedes it). The root `CLAUDE.md` is a symlink to this file, so every agent reads one contract; edit `AGENTS.md`, never the link.
 >
@@ -8,7 +8,7 @@
 
 ## 1. The project
 
-CLIProxyAPI (CPA) handles protocol adaptation, credential execution, and proxying requests; Oh My CPA (OMC) provides **user-owned identity, naming, organization, a management facade, and usage observability** above it. Both are co-deployed in the same stack. OMC is a single-replica Go modular monolith + embedded React SPA + SQLite WAL, operating completely offline with zero CDN dependencies.
+CLIProxyAPI (CPA) handles protocol adaptation, credential execution, and proxying requests; Shell-PAMC (OMC) provides **user-owned identity, naming, organization, a management facade, and usage observability** above it. Both are co-deployed in the same stack. OMC is a single-replica Go modular monolith + embedded React SPA + SQLite WAL, operating completely offline with zero CDN dependencies.
 
 Read documentation when a task needs it, not up front. Useful starting points: `CONTEXT.md` (domain vocabulary and rules), `docs/architecture.md` (module map, data flows, invariants), `docs/design.md` (visual system), `docs/testing.md` (test placement and the verification detail). Read or grep the part you need instead of loading whole documents.
 

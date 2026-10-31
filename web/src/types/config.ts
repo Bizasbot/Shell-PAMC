@@ -23,7 +23,7 @@ declare global {
 }
 
 /**
- * Reads the runtime configuration injected by Oh My CPA Go server,
+ * Reads the runtime configuration injected by Shell-PAMC Go server,
  * with safe fallbacks when running standalone or in development.
  */
 export function getAppConfig(): AppConfig {
@@ -55,7 +55,7 @@ export function getAppConfig(): AppConfig {
     mediaBaseUrl = mediaBaseUrl.slice(0, -1);
   }
 
-  const appName = injected?.appName || 'Oh My CPA';
+  const appName = injected?.appName || 'Shell-PAMC';
 
   return {
     basePath,

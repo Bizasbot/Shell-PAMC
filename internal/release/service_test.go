@@ -345,7 +345,7 @@ func TestFailedCheckKeepsThePreviousIndexAndReportsWhy(t *testing.T) {
 
 func TestCheckFailureDoesNotEraseTheOtherProduct(t *testing.T) {
 	service, _ := newTestService(t, func(writer http.ResponseWriter, request *http.Request) {
-		// The gateway's feed fails; Oh My CPA's succeeds. They have separate sources
+		// The gateway's feed fails; Shell-PAMC's succeeds. They have separate sources
 		// and must fail independently.
 		if strings.Contains(request.URL.Path, "CLIProxyAPI") {
 			writer.WriteHeader(http.StatusNotFound)

@@ -323,10 +323,10 @@ func TestBuildPayloadOverridePriority(t *testing.T) {
 // here reports `invalid_parameters` instead of letting the send fail as an outage.
 func TestUserAgentResolutionAndValidation(t *testing.T) {
 	for _, test := range []struct{ version, want string }{
-		{"v1.2.3", "Oh-My-CPA/1.2.3"},
-		{"1.2.3", "Oh-My-CPA/1.2.3"},
-		{"v0.1.0-dev", "Oh-My-CPA/0.1.0-dev"},
-		{"v0.1.0-demo", "Oh-My-CPA/0.1.0-demo"},
+		{"v1.2.3", "Shell-PAMC/1.2.3"},
+		{"1.2.3", "Shell-PAMC/1.2.3"},
+		{"v0.1.0-dev", "Shell-PAMC/0.1.0-dev"},
+		{"v0.1.0-demo", "Shell-PAMC/0.1.0-demo"},
 		{"", DefaultUserAgent},
 		{"   ", DefaultUserAgent},
 		{"v", DefaultUserAgent},

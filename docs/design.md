@@ -1,8 +1,8 @@
-# Oh My CPA · Brand & Theme Tokens
+# Shell-PAMC · Brand & Theme Tokens
 
 Single source of truth for the visual system. The information density and engineer-first
 patterns draw on minimalist developer consoles; the brand wordmark, the palettes, the CPA
-information architecture and the security boundaries belong to Oh My CPA.
+information architecture and the security boundaries belong to Shell-PAMC.
 The palette is declared and derived in code at:
 
 - `web/src/theme/palette.ts` — the nine authored tokens per palette, the eighteen derived tokens, and
@@ -784,7 +784,7 @@ chosen span would turn into a report. There is no list of recent requests; that 
 │  [◎] gpt-5.6-luna     12 req · 1.2 s ●╮                     ╭─● [o] Codex  sk-…c002  Answered last │
 │  [✳] claude-opus-5.5   6 req · 2.0 s ●─╲     ┌──────────┐ ╱                                       │
 │  [◇] glm-5.3-flash     2 req · 0.6 s ●──▶    │ [OMC]    │───● [o] Codex  sk-…c001  Rate limited ·   │
-│                                               │ Oh My CPA│ ╲                      back in 21 s      │
+│                                               │ Shell-PAMC│ ╲                      back in 21 s      │
 │                                               │ Round    │  ╰─● [A] Claude sk-…cl01  6 req · 2.0 s  │
 │                                               └──────────┘                                         │
 └────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -812,7 +812,7 @@ lanes, the accent on the gateway, and status colour on a node surface where some
   state column says the one thing that is exceptional - `Rate limited`, `Quota exceeded` or `Cooling
   down` with a countdown, in the warn tone - or else that it answered last (accent), or its count and
   mean latency.
-- **The gateway** is the OMC mark on its own small tinted tile, the product name `Oh My CPA`, the
+- **The gateway** is the OMC mark on its own small tinted tile, the product name `Shell-PAMC`, the
   routing strategy CPA is configured with as a quiet chip, and the minute's attempts. A rail on each side is where the lanes dock, as long as
   the fan of lanes it receives. While any request is on the map its rails and glow brighten, and they settle back over 600ms once the last one
   has gone home.
@@ -1183,7 +1183,7 @@ and corner and becomes the screen.
 
 ### OpenCode-inspired patterns
 
-Oh My CPA draws from OpenCode's minimalist, high-density, engineer-first console philosophy while preserving Oh My CPA's warm charcoal palette, security boundaries, and technical architecture:
+Shell-PAMC draws from OpenCode's minimalist, high-density, engineer-first console philosophy while preserving Shell-PAMC's warm charcoal palette, security boundaries, and technical architecture:
 
 1. **Open List Pattern**
    - Lists of models, credentials, configuration items, etc., favor open rows over nested outer Card wrappers.
@@ -2491,7 +2491,7 @@ Three rules keep the two identifiers from being confused:
 | Unnamed falls back to the mask, never to a fingerprint | The fingerprint is a hashed identity; printing it would name a filter in a form the operator never chose. |
 
 **Counts must state their scope.** Per-key request counts and last-used times come
-from Oh My CPA's own stored events in one window, not from CPA and not from the
+from Shell-PAMC's own stored events in one window, not from CPA and not from the
 key's whole life. The table says so next to them: a count that reads as a lifetime
 total would be a fact the system does not have. A key with no matching records
 shows "not linked" rather than a fabricated `0` or an invented creation date — CPA
@@ -3022,7 +3022,7 @@ footprint is not repeated as allocated pages or record counts; internal geometry
 and connection settings belong in the sanitized diagnostics bundle.
 
 Component health has four divided rows, each with a component name, semantic status and one
-short inline operational summary. The gateway shows its credential count, Oh My CPA its start
+short inline operational summary. The gateway shows its credential count, Shell-PAMC its start
 age and memory, SQLite its request count, and the collector the latest usage age. Each summary
 uses at most two paired facts, with labels beside values rather than separate metric grids.
 Positive ingestion backlog and collection gaps appear as warning readings; healthy zero values

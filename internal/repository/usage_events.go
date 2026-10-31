@@ -601,7 +601,7 @@ type UsageFacetValue struct {
 
 // ClientKeyUsage is the observed traffic for one caller key in a window.
 //
-// Every number is derived from Oh My CPA's own retained usage events, so it says
+// Every number is derived from Shell-PAMC's own retained usage events, so it says
 // what this console has actually seen rather than what CPA might report. A key
 // with no matching records is simply absent from the result; the console renders
 // that as "no requests observed", never as a fabricated creation date.

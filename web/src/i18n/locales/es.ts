@@ -680,7 +680,7 @@ export const ES: Readonly<Record<string, string>> = {
   "agent.capability.quota_auto_refresh_set": "Cambiar la política de actualización automática de cuota",
   "agent.capability.quota_auto_refresh_set.description": "Define con qué frecuencia se leen las credenciales en segundo plano y si se vuelve a leer una cuota reiniciada.",
   "omc.section_quota": "Cuota",
-  "omc.section_plugin_source": "Registro de plugins de Oh My CPA",
+  "omc.section_plugin_source": "Registro de plugins de Shell-PAMC",
   "omc.plugin_source": "Registro de plugins de Shell-PAMC",
   "omc.plugin_source_desc": "Añade el registro de plugins que mantiene Shell-PAMC a las fuentes de plugins y mantiene habilitada la fuente. Al desactivarlo, se quita de la configuración del gateway.",
   "omc.quota_auto_refresh_interval": "Actualización programada de cuota",

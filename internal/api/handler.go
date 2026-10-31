@@ -305,7 +305,7 @@ func (h *Handler) routes() chi.Router {
 				v1.Get("/management/api-keys", h.listClientAPIKeys)
 				v1.Post("/management/api-keys", h.createClientAPIKey)
 				v1.Delete("/management/api-keys/{index}", h.deleteClientAPIKey)
-				// Key aliases are Oh My CPA's own metadata keyed by the usage
+				// Key aliases are Shell-PAMC's own metadata keyed by the usage
 				// fingerprint, so they are separate from the CPA config writes above.
 				v1.Get("/management/client-key-aliases", h.listClientKeyAliases)
 				v1.Put("/management/client-key-aliases", h.putClientKeyAlias)
@@ -977,7 +977,7 @@ func injectRuntimeConfig(indexHTML string, cfg config.Config) (string, error) {
 		"basePath":     basePath,
 		"apiBaseUrl":   apiBase,
 		"mediaBaseUrl": mediaBase,
-		"appName":      "Oh My CPA",
+		"appName":      "Shell-PAMC",
 		"demo":         cfg.IsDemoMode,
 		// The running build's own version, so the console names the version this
 		// deployment actually is instead of a second copy of the number maintained

@@ -34,7 +34,7 @@ RUN apk add --no-cache ca-certificates tzdata \
 FROM alpine:3.21
 ARG VERSION=v0.1.0-dev
 ARG REVISION=unknown
-LABEL org.opencontainers.image.title="Oh My CPA" \
+LABEL org.opencontainers.image.title="Shell-PAMC" \
     org.opencontainers.image.description="Self-hosted management and usage observability for CLIProxyAPI" \
     org.opencontainers.image.source="https://github.com/Bizasbot/Shell-PAMC" \
     org.opencontainers.image.licenses="MIT" \

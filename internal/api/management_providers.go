@@ -66,7 +66,7 @@ type ProviderItemDTO struct {
 	// Behavior is nil for a family with no request-behaviour switches.
 	Behavior *ProviderBehaviorDTO `json:"behavior,omitempty"`
 
-	// Website is the provider's own homepage. It is Oh My CPA management metadata
+	// Website is the provider's own homepage. It is Shell-PAMC management metadata
 	// rather than a CPA configuration field - CPA has nowhere to put it - so it is
 	// stored beside the display name and joined on the same positional id. Only an
 	// absolute http/https URL is ever reported, because the list renders it as a

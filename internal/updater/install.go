@@ -82,9 +82,9 @@ func Install(ctx context.Context, options InstallOptions) error {
 	if errors.As(err, &unavailable) {
 		switch unavailable.Reason {
 		case ReasonAmbiguousContainer:
-			return errors.New("more than one Oh My CPA container is running; name one with --container <name>")
+			return errors.New("more than one Shell-PAMC container is running; name one with --container <name>")
 		default:
-			return errors.New("no running Oh My CPA container was found; start it first, or name it with --container <name>")
+			return errors.New("no running Shell-PAMC container was found; start it first, or name it with --container <name>")
 		}
 	}
 	if err != nil {

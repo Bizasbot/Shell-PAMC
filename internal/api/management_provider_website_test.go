@@ -30,7 +30,7 @@ func websiteOfProvider(t *testing.T, client *http.Client, baseURL, id string) Pr
 	return ProviderItemDTO{}
 }
 
-// The website is Oh My CPA management metadata, not a CPA configuration field.
+// The website is Shell-PAMC management metadata, not a CPA configuration field.
 // It must round trip through the provider document, survive a save that does not
 // mention it, and never reach CPA's own config.
 func TestProviderWebsiteRoundTrip(t *testing.T) {
@@ -68,7 +68,7 @@ func TestProviderWebsiteRoundTrip(t *testing.T) {
 		t.Fatalf("an explicit empty website must clear the entry, got %q", got)
 	}
 
-	// The website lives in Oh My CPA's own storage, never in CPA's config: a
+	// The website lives in Shell-PAMC's own storage, never in CPA's config: a
 	// `website` key appearing on the CPA entry would mean the field had been
 	// smuggled into the gateway's document, which CPA cannot read back.
 	state.mu.Lock()

@@ -179,7 +179,7 @@ func (h *Handler) SetUsagePipeline(pipeline usagePipeline) {
 	h.usage = pipeline
 }
 
-// dashboard answers purely from Oh My CPA's own database.
+// dashboard answers purely from Shell-PAMC's own database.
 //
 // This is deliberate: CPA's usage queue is destructive and short-lived, so the
 // history the UI promises can only come from records we captured ourselves. It

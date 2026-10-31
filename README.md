@@ -1,10 +1,10 @@
 <div align="center">
 
 <a href="#gh-light-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-light.svg#gh-light-mode-only" alt="Shell-PAMC" width="340">
 </a>
 <a href="#gh-dark-mode-only">
-  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Oh-My-CPA" width="340">
+  <img src="web/src/assets/brand/omc-wordmark-dark.svg#gh-dark-mode-only" alt="Shell-PAMC" width="340">
 </a>
 
 ### Manage APIs and OAuth in one place, visualize requests, cost and usage
@@ -32,13 +32,13 @@ MCP · Visualization · Management
 <br />
 
 <a href="https://omc-demo.junze.dev">
-  <img src="docs/images/readme/hero-split.en.webp" alt="The Oh My CPA dashboard, half in the light theme and half in the dark theme" width="100%">
+  <img src="docs/images/readme/hero-split.en.webp" alt="The Shell-PAMC dashboard, half in the light theme and half in the dark theme" width="100%">
 </a>
 
 </div>
 
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) (CPA) is an API gateway: it
-adapts protocols, holds credentials and proxies requests. **Oh My CPA** (OMC) is a web
+adapts protocols, holds credentials and proxies requests. **Shell-PAMC** (OMC) is a web
 console for it. OMC manages the gateway's providers, credentials and configuration, and
 records the usage and cost of every request. It is a single Go
 binary with the React console embedded and a local SQLite database, runs offline, and
@@ -85,7 +85,7 @@ Paste the following into Claude Code, Codex, Cursor or another coding agent. The
 inspects the machine, picks the matching method and installs it:
 
 ```text
-Install Oh My CPA for me by following
+Install Shell-PAMC for me by following
 https://raw.githubusercontent.com/Bizasbot/Shell-PAMC/main/docs/install-for-agents.md
 ```
 
@@ -261,7 +261,7 @@ the management key.
 ### Updating
 
 With the `oh-my-cpa-updater` service in place, **System Information** in the console shows
-**Update now** beside a newer release of Oh My CPA or CLIProxyAPI. The updater pulls the
+**Update now** beside a newer release of Shell-PAMC or CLIProxyAPI. The updater pulls the
 image, replaces the container with its settings, volumes and networks unchanged, and
 restores the previous container if the new one does not start.
 
@@ -272,7 +272,7 @@ Docker host; the Compose file is not edited:
 docker run --rm --pull always -u 0 -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/bizasbot/shell-pamc:latest updater install
 ```
 
-The command adds an `oh-my-cpa-updater` container and brings Oh My CPA up to the current
+The command adds an `oh-my-cpa-updater` container and brings Shell-PAMC up to the current
 release in the same step. `docker rm -f oh-my-cpa-updater` removes it. An image pinned to
 a version tag is never changed from the console. [Upgrading](docs/install.md#upgrading)
 describes each case and the manual alternative.
@@ -447,7 +447,7 @@ The full reference, with deployment constraints and operational notes, is
 ## Architecture
 
 ```text
-Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Oh My CPA (:8080)
+Browser ──▶ Direct listener / existing HTTPS ingress ──▶ Shell-PAMC (:8080)
                                                  ├─ Embedded React SPA (/shell-pamc/)
                                                  ├─ SQLite WAL (/data)
                                                  └─ Usage collector ──▶ CLIProxyAPI (:8317)
@@ -506,7 +506,7 @@ public issue.
 
 ## Acknowledgements
 
-Oh My CPA is built on [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), which
+Shell-PAMC is built on [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), which
 handles protocol adaptation, credentials and request proxying.
 
 Thanks also to the [Linux.do community](https://linux.do).

@@ -53,10 +53,10 @@ async function checkRouteRecovery({ base, page, context, check, errors, expectPr
     const heading = page.getByRole('heading', { name: reading.title, exact: true });
     await heading.waitFor();
     check(`${failureMode}/${reading.lang}: a real route failure reached the OMC boundary`, hasInjectedFailure);
-    check(`${failureMode}/${reading.lang}: branded logo is visible`, await page.getByRole('img', { name: 'Oh My CPA', exact: true }).isVisible());
+    check(`${failureMode}/${reading.lang}: branded logo is visible`, await page.getByRole('img', { name: 'Shell-PAMC', exact: true }).isVisible());
     check(`${failureMode}/${reading.lang}: the error owns focus and the tab title`,
       await heading.evaluate((element) => document.activeElement === element) &&
-      await page.title() === `Oh My CPA · ${reading.title}`);
+      await page.title() === `Shell-PAMC · ${reading.title}`);
     const text = await page.locator('body').innerText();
     check(`${failureMode}/${reading.lang}: no framework fallback or private exception content`,
       !text.includes('Unexpected Application Error!') && !text.includes('errorElement') &&
@@ -136,7 +136,7 @@ export async function routeRenderError(fixtures) {
   await page.getByTestId('route-error-message').waitFor();
   check('a broken shell still has a standalone root recovery page',
     (await page.getByTestId('route-error-message').innerText()).includes(FAILURE_MARKER) &&
-    await page.getByRole('img', { name: 'Oh My CPA', exact: true }).isVisible() &&
+    await page.getByRole('img', { name: 'Shell-PAMC', exact: true }).isVisible() &&
     await page.locator('.app-shell').count() === 0);
   await context.unroute(shellModulePattern, failShell);
 }
@@ -213,7 +213,7 @@ export async function routeLazyError(fixtures) {
     await page.getByTestId('route-error-message').waitFor();
     check('a failed shell download still shows branded diagnostic recovery',
       (await page.getByTestId('route-error-message').innerText()).includes('Failed to fetch dynamically imported module') &&
-      await page.getByRole('img', { name: 'Oh My CPA', exact: true }).isVisible() &&
+      await page.getByRole('img', { name: 'Shell-PAMC', exact: true }).isVisible() &&
       await page.locator('.app-shell').count() === 0);
     await page.evaluate(() => {
       window.__routeErrorCopied = '';

@@ -321,9 +321,9 @@ export async function pluginManagement({ base, page, check, writes }) {
   const settings = page.locator('[data-plugin-panel="settings"]');
   await settings.waitFor({ timeout: 10000 });
   const omcRow = settings.locator('[data-plugin-omc-source]');
-  check('the managed Oh My CPA source is a fixed row rather than an editable source',
+  check('the managed Shell-PAMC source is a fixed row rather than an editable source',
     (await omcRow.count()) === 1 && (await omcRow.locator('input').count()) === 0
-      && (await omcRow.innerText()).includes('Oh My CPA'));
+      && (await omcRow.innerText()).includes('Shell-PAMC'));
   const omcRowText = await omcRow.innerText();
   check('the managed source row is one compact line: no registry address and no state label',
     !/https?:\/\//.test(omcRowText) && !/(已启用|已关闭|\bOn\b|\bOff\b)/.test(omcRowText), omcRowText);

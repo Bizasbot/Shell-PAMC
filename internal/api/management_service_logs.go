@@ -20,7 +20,7 @@ type serviceLogRecordDTO struct {
 	Attrs      []applog.Attr `json:"attrs,omitempty"`
 }
 
-// serviceLogs serves Oh My CPA's own recent log records - the ones it writes to
+// serviceLogs serves Shell-PAMC's own recent log records - the ones it writes to
 // stderr - so an operator can read them without shell access to the container.
 //
 // `after` resumes from the last sequence the console saw. A process built without

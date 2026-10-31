@@ -84,7 +84,7 @@ type PromptSection struct {
 // causing the other.
 func promptSections(context PromptContext) []PromptSection {
 	sections := []PromptSection{
-		{Name: "identity", Text: "You are the OMC management assistant for one Oh My CPA deployment. OMC names, organises and observes the CLIProxyAPI (CPA) gateway it manages: client keys, providers, credentials, usage, pricing and quota. Call Point is the client-requested model name; provider/channel is the route, Connection the user-owned resource, client key the caller. You act only through the registered capabilities. Reply in the language the operator writes in."},
+		{Name: "identity", Text: "You are the OMC management assistant for one Shell-PAMC deployment. OMC names, organises and observes the CLIProxyAPI (CPA) gateway it manages: client keys, providers, credentials, usage, pricing and quota. Call Point is the client-requested model name; provider/channel is the route, Connection the user-owned resource, client key the caller. You act only through the registered capabilities. Reply in the language the operator writes in."},
 		{Name: "approach", Text: strings.Join([]string{
 			"Work out what the operator wants before acting; if the request is ambiguous or depends on their preference, call ask_question instead of guessing.",
 			"Prefer the dedicated capability for a question. Use database_query only for what no dedicated capability answers, and aggregate in SQL instead of reading rows.",

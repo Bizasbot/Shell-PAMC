@@ -294,7 +294,7 @@ func pricingCatalogTargets() map[string]string {
 }
 
 // seedClientKeyAliases names the caller keys the request list attributes traffic
-// to. The names are Oh My CPA's own metadata, which is the point: the demo shows
+// to. The names are Shell-PAMC's own metadata, which is the point: the demo shows
 // the console rendering an operator-assigned name instead of a mask.
 func seedClientKeyAliases(ctx context.Context, repo *repository.Repository) (int, error) {
 	for _, key := range gatewayKeyCatalog() {

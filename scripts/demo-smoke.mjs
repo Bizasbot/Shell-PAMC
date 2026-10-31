@@ -90,7 +90,7 @@ const REFUSED = [
 
 /**
  * Writes that the demonstration performs instead of refusing. They reach the
- * fixture or Oh My CPA's own metadata, and each one has to answer with success and
+ * fixture or Shell-PAMC's own metadata, and each one has to answer with success and
  * with the header that says the result is not durable.
  */
 const SIMULATED = [

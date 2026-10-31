@@ -96,7 +96,7 @@ func newApp(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, 
 	if err != nil {
 		return nil, fmt.Errorf("initialize secret cipher: %w", err)
 	}
-	// Oh My CPA has no separate administrator password: the CPA management key
+	// Shell-PAMC has no separate administrator password: the CPA management key
 	// is the only login credential. The app still boots without one so the UI
 	// can explain what to configure; the login endpoint then reports 503.
 	var authManager *auth.Manager

@@ -159,7 +159,7 @@ func TestDemoPolicyKeepsTheReadingSurface(t *testing.T) {
 		{http.MethodGet, "/api/v1/pricing/models/gpt-5"},
 		{http.MethodGet, "/api/v1/resources"},
 		{http.MethodGet, "/api/v1/agent/models"},
-		// Writes the demonstration can perform on its own fixture or on Oh My CPA's
+		// Writes the demonstration can perform on its own fixture or on Shell-PAMC's
 		// own metadata.
 		{http.MethodPatch, "/api/v1/management/auth-files/status"},
 		{http.MethodPatch, "/api/v1/management/auth-files/fields"},

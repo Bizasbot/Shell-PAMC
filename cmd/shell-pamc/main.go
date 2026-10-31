@@ -18,7 +18,7 @@ import (
 
 const MCP_USAGE = `Usage: shell-pamc mcp
 
-Serves Oh My CPA's capabilities to an MCP client over standard input and output.
+Serves Shell-PAMC's capabilities to an MCP client over standard input and output.
 A client that speaks Streamable HTTP does not need this process: it connects to
 <console URL>/api/mcp with "Authorization: Bearer <CPA management key>".
 
@@ -86,7 +86,7 @@ func main() {
 
 	running, err := app.New(ctx, cfg, logger)
 	if err != nil {
-		logger.Error("failed to initialize Oh My CPA", "error", err)
+		logger.Error("failed to initialize Shell-PAMC", "error", err)
 		os.Exit(1)
 	}
 	logger = slog.Default()
