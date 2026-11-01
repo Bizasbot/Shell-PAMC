@@ -270,7 +270,7 @@ export const AppLayout: React.FC = () => {
             >
               {/* 58px cannot hold the wordmark at a legible size, so the collapsed rail
                   shows the square mark. */}
-              <BrandArtwork shape="mark" height={20} />
+              <BrandArtwork shape="mark" height={28} />
             </div>
           ) : brand}
           <OverlayScrollArea className="app-sider-scroll" viewportClassName="app-sider-viewport">{menu}</OverlayScrollArea>

@@ -336,7 +336,7 @@ export function RoutingMap({ model, colorOf, nowMs, strategy, sources, arrivals 
           <span ref={washes.ref(GATEWAY_NODE)} className={clsx(styles['wash'], styles['wash-centre'])} aria-hidden="true" />
           <span className={clsx(styles['gateway-rail'], styles['gateway-rail-in'])} aria-hidden="true" />
           <span className={clsx(styles['gateway-rail'], styles['gateway-rail-out'])} aria-hidden="true" />
-          <span className={styles['gateway-mark']} aria-hidden="true"><BrandArtwork shape="mark" height={22} /></span>
+          <span className={styles['gateway-mark']} aria-hidden="true"><BrandArtwork shape="mark" height={32} /></span>
           <span className={styles['gateway-name']}>{t('routing.gateway')}</span>
           {strategy && <span className={styles['gateway-strategy']}>{strategy}</span>}
           <span className={styles['gateway-meta']}>

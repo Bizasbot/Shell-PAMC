@@ -26,7 +26,7 @@ export const ShellLoading: React.FC = () => {
     <div className="shell-loading">
       <aside className="shell-loading-sider" aria-hidden="true">
         <div className="app-brand">
-          <BrandArtwork shape="wordmark" height={20} className="app-brand-logo" />
+          <BrandArtwork shape="wordmark" height={30} className="app-brand-logo" />
         </div>
         <div className="shell-loading-nav">
           {NAV_GROUPS.map((items, group) => (
