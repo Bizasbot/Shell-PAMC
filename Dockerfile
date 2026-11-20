@@ -8,7 +8,7 @@ COPY web/ ./web/
 COPY scripts/ ./scripts/
 RUN pnpm --dir web run build
 
-FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS server
+FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine AS server
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
